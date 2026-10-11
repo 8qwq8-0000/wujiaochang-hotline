@@ -1,0 +1,9 @@
+# Scenes
+
+- `bootstrap`：启动、主入口及全局场景
+- `ui`：主菜单、HUD、背包、结算界面
+- `levels/rooms`：可抽取的预制战斗房间
+- `actors/player`：玩家场景
+- `actors/enemies`：敌人场景
+- `actors/npcs`：人质和基地 NPC 场景
+- `systems`：需要场景节点承载的系统
