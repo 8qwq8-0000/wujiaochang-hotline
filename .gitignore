@@ -1,0 +1,7 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+.codex-backups/
+builds/
+exports/
+/addons/.godot_ai_update/
