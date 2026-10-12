@@ -1,0 +1,37 @@
+[gd_scene format=3 uid="uid://bsbnc56cevsvq"]
+
+[ext_resource type="Script" uid="uid://bompy2qluwg10" path="res://scripts/bootstrap_main.gd" id="1"]
+[ext_resource type="Script" uid="uid://clasl3uguvc1v" path="res://scripts/core/scene_container_manager.gd" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/ui/combat_hud.tscn" id="3"]
+[ext_resource type="Script" uid="uid://crjqaa3hl31n4" path="res://scripts/presentation/vfx_manager.gd" id="4"]
+[ext_resource type="Script" uid="uid://dgr8enssrrkm3" path="res://scripts/presentation/audio_cue_manager.gd" id="5"]
+
+[node name="Main" type="Node" unique_id=88177702]
+script = ExtResource("1")
+
+[node name="SceneContainer" type="Node2D" parent="." unique_id=619592552]
+
+[node name="VFXManager" type="Node2D" parent="." unique_id=1573087612]
+script = ExtResource("4")
+
+[node name="AudioCueManager" type="Node" parent="." unique_id=1278085769]
+script = ExtResource("5")
+
+[node name="CombatHUD" parent="." unique_id=1310232417 instance=ExtResource("3")]
+
+[node name="TransitionLayer" type="CanvasLayer" parent="." unique_id=927069868]
+layer = 100
+
+[node name="Fade" type="ColorRect" parent="TransitionLayer" unique_id=798691434]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.025, 0.03, 0.045, 1)
+
+[node name="SceneFlow" type="Node" parent="." unique_id=952396173]
+script = ExtResource("2")
+scene_container_path = NodePath("../SceneContainer")
+fade_rect_path = NodePath("../TransitionLayer/Fade")

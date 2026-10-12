@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="MobilityMode" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/mobility/mobility_mode.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"walk"
+display_name = "步行（无套件）"
+max_speed = 155.0
+acceleration = 1250.0
+braking = 1650.0

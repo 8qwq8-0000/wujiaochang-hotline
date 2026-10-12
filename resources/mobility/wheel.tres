@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="WheelMobilityMode" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/mobility/wheel_mobility_mode.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"wheel"
+display_name = "轮式推进组件"
+max_speed = 245.0
+acceleration = 900.0
+braking = 1000.0
+ability_cooldown = 1.4
+ability_impulse = 360.0
+knockback_multiplier = 0.9
+steering_response = 4.6
+lateral_grip = 0.68

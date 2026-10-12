@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="FlightMobilityMode" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/mobility/flight_mobility_mode.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"flight"
+display_name = "悬浮飞行组件"
+max_speed = 215.0
+acceleration = 740.0
+braking = 640.0
+ability_cooldown = 1.6
+ability_impulse = 390.0
+knockback_multiplier = 1.0
+ignores_ground_slow = true
+crosses_low_obstacles = true
+inertia_ratio = 0.84

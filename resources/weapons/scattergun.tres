@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="WeaponComponentData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/combat/weapon_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"scattergun"
+display_name = "热能散射器"
+attack_kind = 2
+damage = 1
+cooldown = 0.72
+heat_per_attack = 38.0
+attack_range = 300.0
+projectile_speed = 430.0
+projectile_count = 5
+spread_degrees = 26.0
+damage_type = &"thermal"

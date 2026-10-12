@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="QuadrupedMobilityMode" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/mobility/quadruped_mobility_mode.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"quadruped"
+display_name = "四足越障架"
+max_speed = 185.0
+acceleration = 1800.0
+braking = 1900.0
+ability_cooldown = 1.8
+ability_impulse = 330.0
+knockback_multiplier = 0.5
+ignores_ground_slow = true
+crosses_low_obstacles = true
+rough_terrain_multiplier = 0.95

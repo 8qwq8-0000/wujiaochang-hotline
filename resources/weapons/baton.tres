@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="WeaponComponentData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/combat/weapon_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"baton"
+display_name = "破门警棍"
+attack_kind = 0
+damage = 1
+cooldown = 0.38
+heat_per_attack = 8.0
+attack_range = 30.0
+damage_type = &"impact"
+status_tags = PackedStringArray("stagger")

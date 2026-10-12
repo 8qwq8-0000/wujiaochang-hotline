@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="EnemyProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/enemies/enemy_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"heavy_anchor"
+display_name = "重型锚点"
+role = 2
+max_health = 4
+move_speed = 58.0
+attack_range = 34.0
+attack_cooldown = 1.45
+body_color = Color(0.68, 0.12, 0.2, 1)

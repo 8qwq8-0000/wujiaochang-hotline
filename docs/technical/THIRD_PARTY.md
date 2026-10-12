@@ -22,3 +22,16 @@
 - SaveMadeEasy 1.3 默认关闭加密；若以后启用，必须替换示例密钥。
 - GLoot 的组件词条、合成和黑匣规则由项目适配层实现。
 - 第三方许可证副本统一放在 `docs/legal/third_party/`。
+
+## 仅作为设计/算法参考，未复制进工程
+
+2026-10-13 的战斗基础框架调研还参考了以下 MIT 项目，但当前仓库没有复制其源码、场景或素材，因此它们不是运行时依赖：
+
+- https://github.com/nezvers/Godot-GameTemplate
+- https://github.com/cluttered-code/godot-health-hitbox-hurtbox
+- https://github.com/Criscarr26/smart-top-down
+- https://github.com/37Rb/godot-overhead-car-2d
+- https://github.com/DumpsterFireLabs/SuperStarFighter
+- https://github.com/Minoqi/minos-damage-numbers-for-godot
+
+若以后复制任何代码，必须先锁定 commit、补录许可证副本，并把本节条目移动到上方正式依赖表。

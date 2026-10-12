@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="EnemyProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/enemies/enemy_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"melee_pressure"
+display_name = "近战施压者"
+role = 0
+max_health = 2
+move_speed = 105.0
+attack_range = 28.0
+attack_cooldown = 0.85
+body_color = Color(0.95, 0.24, 0.18, 1)
