@@ -1,5 +1,7 @@
 extends Node
 
+var _restart_requested := false
+
 
 func _ready() -> void:
 	_ensure_input_map()
@@ -8,7 +10,30 @@ func _ready() -> void:
 		run_manager.begin_run()
 
 
+func _unhandled_input(event: InputEvent) -> void:
+	if _restart_requested or event.is_echo():
+		return
+	if event.is_action_pressed("restart_room"):
+		_restart_requested = true
+		get_viewport().set_input_as_handled()
+		call_deferred("_restart_combat")
+
+
+func _restart_combat() -> void:
+	# Reload Main as well: projectiles and feedback can live outside SceneContainer.
+	var run_manager := get_node_or_null("/root/RunManager")
+	var error := get_tree().reload_current_scene()
+	if error != OK:
+		_restart_requested = false
+		push_error("重开战斗失败：%s" % error_string(error))
+		return
+	if run_manager != null:
+		run_manager.set_mandatory_enemy_count(0)
+		run_manager.set_scene_payload({})
+
+
 func _ensure_input_map() -> void:
+	_add_key_action(&"restart_room", KEY_R)
 	_add_key_action(&"move_left", KEY_A)
 	_add_key_action(&"move_right", KEY_D)
 	_add_key_action(&"move_up", KEY_W)
