@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3 uid="uid://c1week1combat01"]
+[gd_scene load_steps=16 format=3 uid="uid://cqyh8dw1e1njs"]
 
 [ext_resource type="Script" path="res://scripts/levels/week1_combat_room.gd" id="0_script"]
 [ext_resource type="Texture2D" path="res://assets/art/environment/tile_wall.png" id="1_wall"]
@@ -6,6 +6,9 @@
 [ext_resource type="Texture2D" path="res://assets/art/environment/door_elevator_placeholder.png" id="3_door"]
 [ext_resource type="Texture2D" path="res://assets/art/environment/prop_cover_a.png" id="4_prop_a"]
 [ext_resource type="Texture2D" path="res://assets/art/environment/prop_cover_b.png" id="5_prop_b"]
+[ext_resource type="PackedScene" path="res://scenes/actors/player/player.tscn" id="6_player"]
+[ext_resource type="PackedScene" path="res://scenes/actors/enemies/enemy.tscn" id="7_enemy"]
+[ext_resource type="PackedScene" path="res://scenes/items/test_component.tscn" id="8_component"]
 
 [sub_resource type="RectangleShape2D" id="rect_wall_top"]
 size = Vector2(640, 32)
@@ -120,6 +123,23 @@ shape = SubResource("rect_obstacle_b")
 [node name="Sprite2D" type="Sprite2D" parent="ObstacleB"]
 texture = ExtResource("5_prop_b")
 
+[node name="Instances" type="Node2D" parent="."]
+
+[node name="Player" parent="Instances" instance=ExtResource("6_player")]
+position = Vector2(320, 288)
+
+[node name="Enemy1" parent="Instances" instance=ExtResource("7_enemy")]
+position = Vector2(96, 96)
+
+[node name="Enemy2" parent="Instances" instance=ExtResource("7_enemy")]
+position = Vector2(544, 96)
+
+[node name="Enemy3" parent="Instances" instance=ExtResource("7_enemy")]
+position = Vector2(320, 160)
+
+[node name="TestComponent" parent="Instances" instance=ExtResource("8_component")]
+position = Vector2(544, 288)
+
 [node name="ClearPrompt" type="CanvasLayer" parent="."]
 visible = false
 
@@ -131,7 +151,3 @@ offset_bottom = 60.0
 text = "AREA CLEARED"
 horizontal_alignment = 1
 vertical_alignment = 1
-
-[node name="Camera2D" type="Camera2D" parent="."]
-position = Vector2(320, 192)
-position_smoothing_enabled = true
