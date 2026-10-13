@@ -65,7 +65,7 @@ func _on_died(_packet: DamagePacket) -> void:
 	modulate = Color(0.4, 0.4, 0.4, 0.7)
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null:
-		events.publish_message("线路中断：原型中按 F6 重新运行", Color(1.0, 0.35, 0.25))
+		events.publish_message("线路中断：按 R 重开战斗", Color(1.0, 0.35, 0.25))
 
 
 func _draw() -> void:

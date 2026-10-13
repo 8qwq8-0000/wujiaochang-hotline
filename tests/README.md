@@ -15,3 +15,11 @@
 - `test_floor_assembler.gd`：手工房间池的加权抽取边界。
 
 可从 Godot AI 测试面板运行全部 `test_*.gd`，也可在编辑器中打开主场景后执行测试。
+
+重开流程另有独立集成检查（不通过 MCP 单元测试面板运行）：
+
+```sh
+godot --headless --path . --script res://tests/integration/restart_room_check.gd
+```
+
+覆盖 R 键输入、忽略按键重复、连续触发合并，以及战斗中、死亡后、清场后的三次重开；检查玩家/敌人/热量/出口重置与旧子弹清理。
