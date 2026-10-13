@@ -17,6 +17,7 @@ Godot 4.7 俯视角肉鸽动作课程项目。三人团队开发，Windows 键�
 ## 项目入口
 
 - 策划案：`docs/design/五角场热线_开发流程策划案.md`
+- 素材制作基线：`docs/design/素材制作基线.md`
 - 项目结构：`docs/technical/项目结构.md`
 - 第三方依赖：`docs/technical/THIRD_PARTY.md`
 - 战斗基础框架：`docs/technical/战斗基础框架实施说明.md`
