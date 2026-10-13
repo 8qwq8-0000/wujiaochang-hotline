@@ -86,17 +86,19 @@ centered = false
 texture = ExtResource("2_window")
 
 [node name="DoorRoom" type="Sprite2D" parent="."]
-position = Vector2(416, 0)
+position = Vector2(584, 128)
 centered = true
+flip_h = true
 texture = ExtResource("7_door_room")
 
 [node name="ElevatorDoor" type="StaticBody2D" parent="."]
-position = Vector2(452, 182)
+position = Vector2(585, 272)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="ElevatorDoor"]
 shape = SubResource("rect_door")
 
 [node name="Sprite2D" type="Sprite2D" parent="ElevatorDoor"]
+flip_h = true
 texture = ExtResource("3_door")
 scale = Vector2(0.94, 0.57)
 
@@ -105,9 +107,6 @@ position = Vector2(320, 288)
 
 [node name="EnemySpawn1" type="Marker2D" parent="."]
 position = Vector2(96, 96)
-
-[node name="EnemySpawn2" type="Marker2D" parent="."]
-position = Vector2(544, 96)
 
 [node name="EnemySpawn3" type="Marker2D" parent="."]
 position = Vector2(320, 160)
@@ -160,9 +159,6 @@ position = Vector2(320, 288)
 
 [node name="Enemy1" parent="Instances" instance=ExtResource("11_enemy")]
 position = Vector2(96, 96)
-
-[node name="Enemy2" parent="Instances" instance=ExtResource("11_enemy")]
-position = Vector2(544, 96)
 
 [node name="Enemy3" parent="Instances" instance=ExtResource("11_enemy")]
 position = Vector2(320, 160)
