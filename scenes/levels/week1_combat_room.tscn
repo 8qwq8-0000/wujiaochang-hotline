@@ -86,13 +86,13 @@ centered = false
 texture = ExtResource("2_window")
 
 [node name="DoorRoom" type="Sprite2D" parent="."]
-position = Vector2(584, 128)
+position = Vector2(585.5, 128)
 centered = true
 flip_h = true
 texture = ExtResource("7_door_room")
 
 [node name="ElevatorDoor" type="StaticBody2D" parent="."]
-position = Vector2(585, 272)
+position = Vector2(585.5, 272)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="ElevatorDoor"]
 shape = SubResource("rect_door")
