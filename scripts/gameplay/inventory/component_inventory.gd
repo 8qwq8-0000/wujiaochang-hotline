@@ -1,0 +1,165 @@
+class_name ComponentInventory
+extends Node
+
+# Project-facing adapter: GLoot owns item storage; gameplay owns equipment rules.
+signal changed
+signal feedback(text: String, cue: StringName)
+const CAPACITY := 6
+const PROTOTYPES: JSON = preload("res://resources/items/components.json")
+const PANEL_SCENE := preload("res://scenes/ui/inventory/inventory_panel.tscn")
+var backpack: Inventory
+var weapon_slot: ItemSlot
+var mobility_slot: ItemSlot
+var panel: CanvasLayer
+var is_open := false
+static var _active_users := 0
+var _serial := 0
+@onready var player: PlayerController = get_parent()
+
+func _ready() -> void:
+	_active_users += 1
+	# The player scene also supports F6 without Bootstrap.
+	for action in {&"interact": KEY_E, &"inventory_toggle": KEY_TAB, &"pause": KEY_ESCAPE}:
+		if not InputMap.has_action(action):
+			InputMap.add_action(action)
+		if InputMap.action_get_events(action).is_empty():
+			var key := InputEventKey.new()
+			key.physical_keycode = {&"interact": KEY_E, &"inventory_toggle": KEY_TAB, &"pause": KEY_ESCAPE}[action]
+			InputMap.action_add_event(action, key)
+	backpack = Inventory.new()
+	backpack.name = "Backpack"
+	backpack.protoset = PROTOTYPES
+	# GLoot caches prototype trees; restore it after the previous battle released it.
+	if backpack.get_prototree().is_empty():
+		backpack.get_prototree().deserialize(PROTOTYPES)
+	var limit := ItemCountConstraint.new()
+	limit.capacity = CAPACITY
+	backpack.add_child(limit)
+	add_child(backpack)
+	weapon_slot = _create_slot("WeaponSlot")
+	mobility_slot = _create_slot("MobilitySlot")
+	panel = PANEL_SCENE.instantiate()
+	panel.inventory = self
+	add_child(panel)
+	_apply_equipment()
+
+func _create_slot(slot_name: String) -> ItemSlot:
+	var slot := ItemSlot.new()
+	slot.name = slot_name
+	slot.protoset = PROTOTYPES
+	add_child(slot)
+	return slot
+
+func _input(event: InputEvent) -> void:
+	if event.is_echo():
+		return
+	if event.is_action_pressed("inventory_toggle"):
+		is_open = not is_open and not player.health.is_dead()
+		panel.set_open(is_open)
+		get_viewport().set_input_as_handled()
+	elif is_open and event.is_action_pressed("pause"):
+		is_open = false
+		panel.set_open(false)
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("interact") and not is_open and not player.health.is_dead():
+		try_pick_nearest()
+		get_viewport().set_input_as_handled()
+
+func can_change_equipment() -> bool:
+	if player.health.is_dead():
+		return false
+	var run := get_node_or_null("/root/RunManager")
+	if run != null and run.mandatory_enemies_remaining > 0:
+		return false
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if enemy is EnemyController and enemy.state != EnemyController.State.DEAD:
+			return false
+	return true
+
+func pickup(component_id: String) -> bool:
+	if player.health.is_dead() or not PROTOTYPES.data.has(component_id):
+		return false
+	var item := backpack.create_and_add_item(component_id)
+	if item == null:
+		_notify("背包已满（6/6），组件留在地上", &"full")
+		return false
+	_serial += 1
+	item.set_property("instance_id", "%d-%d-%d" % [get_instance_id(), Time.get_ticks_usec(), _serial])
+	changed.emit()
+	_notify("已拾取：%s" % item.get_title(), &"pickup")
+	return true
+
+func try_pick_nearest() -> bool:
+	var nearest: ComponentPickup
+	var distance := 45.0
+	for node in get_tree().get_nodes_in_group("component_pickups"):
+		var pickup_node := node as ComponentPickup
+		if pickup_node == null or not pickup_node.can_reach(player):
+			continue
+		var candidate := player.global_position.distance_to(pickup_node.global_position)
+		if candidate < distance:
+			distance = candidate
+			nearest = pickup_node
+	if nearest == null:
+		_notify("靠近组件后按 E 拾取", &"full")
+		return false
+	return nearest.try_pickup(self)
+
+func equip(index: int) -> bool:
+	if not can_change_equipment():
+		_notify("战斗中不能换装，请先清场", &"full")
+		return false
+	var items := backpack.get_items()
+	if index < 0 or index >= items.size():
+		return false
+	var item := items[index]
+	var slot := _slot_for(str(item.get_property("slot", "")))
+	if slot == null:
+		return false
+	var old := slot.get_item()
+	# GLoot swap retains both items even when all six backpack cells are occupied.
+	var success := InventoryItem.swap(item, old) if old != null else slot.equip(item)
+	if not success:
+		return false
+	_apply_equipment()
+	changed.emit()
+	_notify("已装备：%s" % item.get_title(), &"equip")
+	return true
+
+func unequip(slot_name: String) -> bool:
+	if not can_change_equipment():
+		_notify("战斗中不能换装，请先清场", &"full")
+		return false
+	var slot := _slot_for(slot_name)
+	if slot == null or slot.get_item() == null:
+		return false
+	var item := slot.get_item()
+	if not backpack.add_item(item):
+		_notify("背包已满，无法卸下", &"full")
+		return false
+	_apply_equipment()
+	changed.emit()
+	_notify("已卸下：%s" % item.get_title(), &"equip")
+	return true
+
+func _slot_for(slot_name: String) -> ItemSlot:
+	return weapon_slot if slot_name == "weapon" else (mobility_slot if slot_name == "mobility" else null)
+
+func _apply_equipment() -> void:
+	var weapon := weapon_slot.get_item()
+	player.get_node("WeaponController").set_equipped_weapon(load(str(weapon.get_property("effect"))) if weapon != null else null)
+	var mode := mobility_slot.get_item()
+	player.get_node("MobilityController").set_equipped_mode(load(str(mode.get_property("effect"))) if mode != null else null)
+
+func _notify(text: String, cue: StringName) -> void:
+	feedback.emit(text, cue)
+	var events := get_node_or_null("/root/CombatEvents")
+	if events != null:
+		events.publish_message(text)
+
+
+func _exit_tree() -> void:
+	_active_users -= 1
+	if _active_users == 0 and is_instance_valid(backpack):
+		# Break GLoot's prototype parent/child references when this catalog is unused.
+		backpack.get_prototree().clear()

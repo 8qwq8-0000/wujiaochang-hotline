@@ -23,7 +23,7 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _dead:
+	if _dead or $ComponentInventory.is_open:
 		return
 	if event.is_action_pressed("guard"):
 		guard.begin_guard(aim_direction)
@@ -46,12 +46,12 @@ func _physics_process(delta: float) -> void:
 	if aim_direction.is_zero_approx():
 		aim_direction = Vector2.RIGHT
 	guard.update_direction(aim_direction)
-	var input_vector := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	var input_vector := Vector2.ZERO if $ComponentInventory.is_open else Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	if not _external_velocity.is_zero_approx():
 		velocity += _external_velocity
 		_external_velocity = _external_velocity.move_toward(Vector2.ZERO, 900.0 * delta)
 	mobility.tick(self, input_vector, aim_direction, delta)
-	if Input.is_action_pressed("attack") and guard.can_attack():
+	if not $ComponentInventory.is_open and Input.is_action_pressed("attack") and guard.can_attack():
 		weapons.try_attack(global_position, aim_direction, self)
 	queue_redraw()
 

@@ -61,3 +61,11 @@ func get_knockback_multiplier() -> float:
 
 func can_cross_low_obstacle() -> bool:
 	return get_current_mode().crosses_low_obstacles
+
+
+func set_equipped_mode(mode: MobilityMode) -> void:
+	modes.clear()
+	modes.append(mode if mode != null else DEFAULT_MODES[0])
+	current_index = 0
+	ability_cooldown_remaining = 0.0
+	mode_changed.emit(current_index, get_current_mode())

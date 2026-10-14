@@ -112,3 +112,12 @@ func _make_packet(data: WeaponComponentData, origin: Vector2, direction: Vector2
 	packet.source_position = origin
 	packet.travel_direction = direction
 	return packet
+
+
+func set_equipped_weapon(data: WeaponComponentData) -> void:
+	weapons.clear()
+	# The permanent initial weapon is not an inventory item.
+	weapons.append(data if data != null else preload("res://resources/weapons/initial_baton.tres"))
+	current_index = 0
+	_cooldown_remaining = 0.0
+	weapon_changed.emit(current_index, get_current_weapon())

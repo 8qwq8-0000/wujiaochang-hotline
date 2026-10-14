@@ -1,8 +1,10 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/gameplay/rooms/combat_floor.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/actors/player/player.tscn" id="2"]
 [ext_resource type="Script" path="res://scripts/gameplay/rooms/floor_assembler.gd" id="3"]
+
+[ext_resource type="PackedScene" path="res://scenes/items/component_pickup.tscn" id="4"]
 
 [node name="CombatPrototype" type="Node2D"]
 script = ExtResource("1")
@@ -12,3 +14,11 @@ script = ExtResource("3")
 
 [node name="Player" parent="." instance=ExtResource("2")]
 position = Vector2(74, 180)
+
+[node name="TestWeapon" parent="." instance=ExtResource("4")]
+position = Vector2(110, 180)
+component_id = "pistol"
+
+[node name="TestMobility" parent="." instance=ExtResource("4")]
+position = Vector2(110, 240)
+component_id = "wheel"

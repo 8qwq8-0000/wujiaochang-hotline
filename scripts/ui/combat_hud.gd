@@ -33,9 +33,9 @@ func _process(_delta: float) -> void:
 	health_label.text = "耐久  %d / %d" % [_player.health.current_health, _player.health.max_health]
 	heat_label.text = "热量  %03d / %03d%s" % [roundi(_player.heat.current_heat), roundi(_player.heat.max_heat), "  过热" if _player.heat.is_overheated else ""]
 	var mode := _player.mobility.get_current_mode()
-	mobility_label.text = "机动  %s  [1-4]" % mode.display_name
+	mobility_label.text = "机动  %s" % mode.display_name
 	var weapon := _player.weapons.get_current_weapon()
-	weapon_label.text = "武装  %s  [滚轮]" % (weapon.display_name if weapon != null else "无")
+	weapon_label.text = "武装  %s" % (weapon.display_name if weapon != null else "无")
 	guard_label.text = "格挡  %s" % _guard_state_name(_player.guard.state)
 
 

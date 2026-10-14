@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://scripts/gameplay/player_controller.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/gameplay/combat/health_component.gd" id="2"]
@@ -7,6 +7,11 @@
 [ext_resource type="Script" path="res://scripts/gameplay/mobility/mobility_controller.gd" id="5"]
 [ext_resource type="Script" path="res://scripts/gameplay/combat/weapon_controller.gd" id="6"]
 [ext_resource type="Script" path="res://scripts/gameplay/combat/hurt_box.gd" id="7"]
+
+[ext_resource type="Script" path="res://scripts/gameplay/inventory/component_inventory.gd" id="8"]
+[ext_resource type="Script" path="res://scripts/presentation/inventory_audio.gd" id="9"]
+
+[ext_resource type="Script" path="res://scripts/gameplay/items/enemy_loot.gd" id="10"]
 
 [sub_resource type="CircleShape2D" id="BodyShape"]
 radius = 10.0
@@ -53,3 +58,12 @@ shape = SubResource("BodyShape")
 [node name="Camera2D" type="Camera2D" parent="."]
 position_smoothing_enabled = true
 position_smoothing_speed = 7.0
+
+[node name="ComponentInventory" type="Node" parent="."]
+script = ExtResource("8")
+
+[node name="InventoryAudio" type="Node" parent="ComponentInventory"]
+script = ExtResource("9")
+
+[node name="EnemyLoot" type="Node" parent="ComponentInventory"]
+script = ExtResource("10")

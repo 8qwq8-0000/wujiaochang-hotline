@@ -1,0 +1,30 @@
+{
+  "baton": {
+    "name": "破门警棍",
+    "slot": "weapon",
+    "effect": "res://resources/weapons/baton.tres",
+    "image": "res://assets/art/items/baton.svg",
+    "maximum_stack_size": 1
+  },
+  "pistol": {
+    "name": "制式手枪",
+    "slot": "weapon",
+    "effect": "res://resources/weapons/service_pistol.tres",
+    "image": "res://assets/art/items/pistol.svg",
+    "maximum_stack_size": 1
+  },
+  "scattergun": {
+    "name": "散射武装",
+    "slot": "weapon",
+    "effect": "res://resources/weapons/scattergun.tres",
+    "image": "res://assets/art/items/scattergun.svg",
+    "maximum_stack_size": 1
+  },
+  "wheel": {
+    "name": "轮式推进组件",
+    "slot": "mobility",
+    "effect": "res://resources/mobility/wheel.tres",
+    "image": "res://assets/art/items/wheel.svg",
+    "maximum_stack_size": 1
+  }
+}
