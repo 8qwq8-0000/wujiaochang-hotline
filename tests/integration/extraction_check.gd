@@ -98,7 +98,7 @@ func run_checks() -> void:
 	check(not paused and not run.run_finished and run.floor_index == 0, "new run resumes fresh floor")
 	check(player.inventory.backpack.get_items().is_empty(), "new run has no old loot")
 	await clear_floor()
-	player.core.circuit_breaker_armed = false
+	player.set_circuit_breaker_equipped(false)
 	player.health.apply_damage(100, DamagePacket.new())
 	check(player.health.is_dead(), "death fixture bypasses one-time insurance")
 	check(not run.finish_extraction(player), "dead player cannot extract")
