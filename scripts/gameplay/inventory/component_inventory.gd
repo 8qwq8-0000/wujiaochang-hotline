@@ -12,11 +12,13 @@ var weapon_slot: ItemSlot
 var mobility_slot: ItemSlot
 var panel: CanvasLayer
 var is_open := false
+var _owns_pause := false
 static var _active_users := 0
 var _serial := 0
 @onready var player: PlayerController = get_parent()
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	_active_users += 1
 	# The player scene also supports F6 without Bootstrap.
 	for action in {&"interact": KEY_E, &"inventory_toggle": KEY_TAB, &"pause": KEY_ESCAPE}:
@@ -42,6 +44,7 @@ func _ready() -> void:
 	panel.inventory = self
 	add_child(panel)
 	_apply_equipment()
+	player.get_node("HealthComponent").died.connect(_on_player_died)
 
 func _create_slot(slot_name: String) -> ItemSlot:
 	var slot := ItemSlot.new()
@@ -51,19 +54,40 @@ func _create_slot(slot_name: String) -> ItemSlot:
 	return slot
 
 func _input(event: InputEvent) -> void:
-	if event.is_echo():
+	if event.is_echo() or (get_tree().paused and not is_open):
 		return
 	if event.is_action_pressed("inventory_toggle"):
-		is_open = not is_open and not player.health.is_dead()
-		panel.set_open(is_open)
+		set_open(not is_open)
 		get_viewport().set_input_as_handled()
 	elif is_open and event.is_action_pressed("pause"):
-		is_open = false
-		panel.set_open(false)
+		set_open(false)
 		get_viewport().set_input_as_handled()
+	elif is_open and event.is_action_pressed("restart_room"):
+		# Resume first, then let Bootstrap (or the standalone room) handle R.
+		set_open(false)
 	elif event.is_action_pressed("interact") and not is_open and not player.health.is_dead():
 		try_pick_nearest()
 		get_viewport().set_input_as_handled()
+
+func set_open(value: bool) -> void:
+	value = value and not player.health.is_dead()
+	if value == is_open:
+		return
+	is_open = value
+	if is_open:
+		_owns_pause = not get_tree().paused
+		get_tree().paused = true
+	else:
+		_release_pause()
+	panel.set_open(is_open)
+
+func _release_pause() -> void:
+	if _owns_pause:
+		get_tree().paused = false
+		_owns_pause = false
+
+func _on_player_died(_packet: DamagePacket) -> void:
+	set_open(false)
 
 func can_change_equipment() -> bool:
 	if player.health.is_dead():
@@ -159,6 +183,7 @@ func _notify(text: String, cue: StringName) -> void:
 
 
 func _exit_tree() -> void:
+	_release_pause()
 	_active_users -= 1
 	if _active_users == 0 and is_instance_valid(backpack):
 		# Break GLoot's prototype parent/child references when this catalog is unused.

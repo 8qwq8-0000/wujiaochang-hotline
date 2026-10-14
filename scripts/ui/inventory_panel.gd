@@ -9,6 +9,7 @@ var _weapon: Button
 var _mobility: Button
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	_overlay = Control.new()
 	_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_overlay)
@@ -78,7 +79,7 @@ func _ready() -> void:
 func set_open(value: bool) -> void:
 	_overlay.visible = value
 	if value:
-		_message.text = "点击背包组件装备；点击装备槽卸下。游戏继续运行。"
+		_message.text = "点击背包组件装备；点击装备槽卸下。全图已暂停。"
 		refresh()
 	else:
 		for button in _buttons:
@@ -90,8 +91,7 @@ func _process(_delta: float) -> void:
 	if not _overlay.visible:
 		return
 	if inventory.player.health.is_dead():
-		inventory.is_open = false
-		set_open(false)
+		inventory.set_open(false)
 		return
 	_status.text = "背包 %d / 6    %s" % [inventory.backpack.get_item_count(), "安全：可换装" if inventory.can_change_equipment() else "战斗中：清场后可换装"]
 
