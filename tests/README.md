@@ -1,5 +1,9 @@
 # Tests
 
+射击输入与方向：`godot --headless --path . --script res://tests/integration/shooting_input_check.gd`，覆盖 HUD 点击透传、上下左右子弹方向与实际物理帧移动，防止向上子弹碰到发射者自身而消失。
+
+撤离结算：`godot --headless --path . --script res://tests/integration/extraction_check.gd`，覆盖真实出口选择、未清场/死亡拒绝、继续层状态保留、暂停恢复、装备与背包带出、重复结算和新一局重置。当前结算保存在运行内，永久仓库和存档尚未接入。
+
 放置 `test_*.gd` 测试脚本。优先覆盖：
 
 - 组件词条继承与最高值合并
