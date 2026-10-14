@@ -16,6 +16,7 @@ var is_open := false
 var _owns_pause := false
 static var _active_users := 0
 var _serial := 0
+var _has_picked_up_weapon := false
 @onready var player: PlayerController = get_parent()
 
 func _ready() -> void:
@@ -105,14 +106,25 @@ func can_change_equipment() -> bool:
 func pickup(component_id: String) -> bool:
 	if player.health.is_dead() or not PROTOTYPES.data.has(component_id):
 		return false
-	var item := backpack.create_and_add_item(component_id)
-	if item == null:
+	var item := backpack.create_item(component_id)
+	var is_weapon := str(item.get_property("slot", "")) == "weapon"
+	var auto_secondary := is_weapon and not _has_picked_up_weapon and secondary_weapon_slot.get_item() == null
+	# The first weapon goes directly into an empty reserve, even with a full bag.
+	var stored := secondary_weapon_slot.equip(item) if auto_secondary else backpack.add_item(item)
+	if not stored:
 		_notify("背包已满（6/6），组件留在地上", &"full")
 		return false
 	_serial += 1
 	item.set_property("instance_id", "%d-%d-%d" % [get_instance_id(), Time.get_ticks_usec(), _serial])
+	if is_weapon:
+		_has_picked_up_weapon = true
+	if auto_secondary:
+		_apply_equipment()
 	changed.emit()
-	_notify("已拾取：%s" % item.get_title(), &"pickup")
+	if auto_secondary:
+		_notify("首次武器已装入副槽：%s · Q/滚轮切换" % item.get_title(), &"pickup")
+	else:
+		_notify("已拾取：%s" % item.get_title(), &"pickup")
 	return true
 
 func try_pick_nearest() -> bool:

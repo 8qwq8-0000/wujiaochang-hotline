@@ -58,14 +58,14 @@ func run() -> void:
 			await process_frame
 			key(KEY_E)
 			await process_frame
-		check(inventory.backpack.get_item_count() == 1, "E adds component to backpack")
+		check(inventory.backpack.get_item_count() == 0 and inventory.secondary_weapon_slot.get_item() != null, "E auto-equips first weapon")
 		for enemy in get_nodes_in_group("enemies"):
 			enemy.health.apply_damage(enemy.health.max_health, DamagePacket.new())
 		await process_frame
 		await process_frame
 		check(root.get_node("RunManager").mandatory_enemies_remaining == 0, "room clear updates objective")
 		check(get_nodes_in_group("component_pickups").size() == actual_count, "one drop per enemy in teammate room")
-		check(inventory.equip(0), "can equip after teammate room clears")
+		check(inventory.pickup("pistol") and inventory.equip(0), "can equip later weapon after teammate room clears")
 		key(KEY_R)
 		player = await wait_room(scene)
 		check(player != null, "standalone and Main support restart")

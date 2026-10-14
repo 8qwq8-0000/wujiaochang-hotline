@@ -35,10 +35,11 @@ func run() -> void:
 			quit(1)
 			return
 		var inventory := player.get_node("ComponentInventory") as ComponentInventory
-		check(inventory.backpack.get_item_count() == 0 and inventory.weapon_slot.get_item() == null, "fresh run has no stale inventory")
+		check(inventory.backpack.get_item_count() == 0 and inventory.weapon_slot.get_item() == null and inventory.secondary_weapon_slot.get_item() == null, "fresh run has no stale inventory")
 		press_key(KEY_E)
 		await process_frame
-		check(inventory.backpack.get_item_count() == 1, "E picks up starting component")
+		check(inventory.backpack.get_item_count() == 0 and inventory.secondary_weapon_slot.get_item() != null, "E puts first weapon into reserve")
+		check(inventory.pickup("pistol"), "later weapon enters backpack")
 		press_key(KEY_TAB)
 		await process_frame
 		check(inventory.is_open, "Tab opens actual panel")

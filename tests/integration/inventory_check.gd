@@ -25,7 +25,9 @@ func run() -> void:
 		enemy.set_physics_process(false)
 	var inventory := player.get_node("ComponentInventory") as ComponentInventory
 	check(inventory.backpack.get_item_count() == 0, "backpack starts empty")
-	check(inventory.pickup("pistol"), "pickup pistol")
+	check(inventory.pickup("pistol"), "first weapon equips reserve")
+	check(inventory.secondary_weapon_slot.get_item() != null, "reserve filled automatically")
+	check(inventory.pickup("pistol"), "later weapon enters backpack")
 	check(not inventory.equip(0), "cannot equip during combat")
 	for enemy in get_nodes_in_group("enemies"):
 		enemy.health.apply_damage(enemy.health.max_health, DamagePacket.new())

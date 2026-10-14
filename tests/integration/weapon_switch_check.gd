@@ -28,7 +28,8 @@ func run() -> void:
 	press(KEY_Q)
 	await process_frame
 	check(player.weapons.current_index == 0, "empty reserve is skipped")
-	check(inventory.pickup("pistol"), "pickup reserve pistol")
+	check(inventory.pickup("baton"), "first weapon equips reserve")
+	check(inventory.pickup("pistol"), "pickup reserve replacement")
 	inventory.set_open(true)
 	inventory.panel.get("_weapon_target").select(1)
 	inventory.panel.get("_buttons")[0].pressed.emit()
@@ -39,6 +40,8 @@ func run() -> void:
 	await process_frame
 	check(player.weapons.current_index == 1, "paused inventory blocks weapon cycling")
 	inventory.set_open(false)
+	check(inventory.backpack.get_item_count() == 1, "old reserve returned to bag")
+	inventory.backpack.remove_item(inventory.backpack.get_items()[0])
 	root.get_node("RunManager").set_mandatory_enemy_count(1)
 	player.weapons.set("_cooldown_remaining", 0.8)
 	player.heat.current_heat = 30
