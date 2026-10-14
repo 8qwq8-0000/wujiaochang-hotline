@@ -25,3 +25,9 @@ enum Role {
 @export_range(0.0, 1.0, 0.05) var blocked_sound_multiplier: float = 0.4
 @export_range(0.0, 500.0, 1.0) var ally_alert_range: float = 96.0
 @export_range(0.1, 10.0, 0.1) var alert_memory_seconds: float = 3.0
+
+@export var patrol_enabled: bool = false
+@export_range(8.0, 128.0, 1.0) var patrol_distance: float = 32.0
+@export_range(0.1, 1.0, 0.05) var patrol_speed_ratio: float = 0.45
+@export_range(0.0, 5.0, 0.1) var patrol_pause_seconds: float = 1.2
+@export_range(0.2, 5.0, 0.1) var patrol_blocked_timeout: float = 1.0

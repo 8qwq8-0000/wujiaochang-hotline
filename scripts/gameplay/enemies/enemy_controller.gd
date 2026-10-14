@@ -10,6 +10,7 @@ enum State {
 	STAGGERED,
 	DEAD,
 	WINDUP,
+	PATROL,
 }
 
 const PROJECTILE_SCENE := preload("res://scenes/combat/projectile.tscn")
@@ -20,6 +21,12 @@ var facing := Vector2.LEFT
 var _alerted := false
 var _memory_remaining := 0.0
 var _last_known_position := Vector2.ZERO
+var _patrol_anchor := Vector2.ZERO
+var _patrol_axis := Vector2.LEFT
+var _patrol_index := 0
+var _patrol_wait_remaining := 0.0
+var _patrol_blocked_seconds := 0.0
+var _returning_to_patrol := false
 var mandatory: bool = true
 var state: State = State.IDLE
 var _attack_cooldown_remaining: float = 0.0
@@ -47,6 +54,9 @@ func _ready() -> void:
 	if profile == null:
 		profile = preload("res://resources/enemies/melee_pressure.tres")
 	apply_profile(profile)
+	_patrol_anchor = global_position
+	_patrol_axis = facing
+	_patrol_wait_remaining = profile.patrol_pause_seconds
 	_warning_audio = AudioStreamPlayer.new()
 	_warning_audio.stream = ATTACK_WARNING
 	_warning_audio.volume_db = -16.0
@@ -76,7 +86,13 @@ func _physics_process(delta: float) -> void:
 			if candidate is Node2D and _same_room(candidate):
 				_target = candidate
 				break
-	if not is_instance_valid(_target) or (_target is PlayerController and _target.health.is_dead()):
+	if not is_instance_valid(_target):
+		_forget_target()
+		_windup_remaining = 0.0
+		_tick_patrol(delta)
+		queue_redraw()
+		return
+	if _target is PlayerController and _target.health.is_dead():
 		_forget_target()
 		_windup_remaining = 0.0
 		velocity = Vector2.ZERO
@@ -90,9 +106,8 @@ func _physics_process(delta: float) -> void:
 		if _memory_remaining <= 0.0:
 			_forget_target()
 	if not _alerted:
-		state = State.IDLE
-		velocity = Vector2.ZERO
 		_windup_remaining = 0.0
+		_tick_patrol(delta)
 		queue_redraw()
 		return
 	if state == State.WINDUP:
@@ -300,6 +315,53 @@ func _on_damaged(_amount: int, packet: DamagePacket) -> void:
 
 
 func _forget_target() -> void:
+	if _alerted:
+		_returning_to_patrol = true
+		_patrol_wait_remaining = profile.patrol_pause_seconds
+		_patrol_blocked_seconds = 0.0
 	_alerted = false
 	_memory_remaining = 0.0
 	state = State.IDLE
+
+
+func _tick_patrol(delta: float) -> void:
+	state = State.IDLE
+	velocity = Vector2.ZERO
+	if not profile.patrol_enabled:
+		return
+	if _patrol_wait_remaining > 0.0:
+		_patrol_wait_remaining = maxf(_patrol_wait_remaining - delta, 0.0)
+		return
+	if global_position.distance_to(_patrol_anchor) > profile.patrol_distance + 4.0:
+		_returning_to_patrol = true
+	var sign_value := 1.0 if _patrol_index == 0 else -1.0
+	var destination := _patrol_anchor if _returning_to_patrol else _patrol_anchor + _patrol_axis * profile.patrol_distance * sign_value
+	if global_position.distance_to(destination) <= 5.0:
+		_returning_to_patrol = false
+		_finish_patrol_leg()
+		return
+	var direction := _direction_to_position(destination)
+	var speed := profile.move_speed * profile.patrol_speed_ratio
+	var next_position := global_position + direction * speed * delta
+	# A route around cover must not turn a short patrol into a map-wide walk.
+	if not _returning_to_patrol and next_position.distance_to(_patrol_anchor) > profile.patrol_distance + 4.0:
+		_finish_patrol_leg()
+		return
+	state = State.PATROL
+	velocity = direction * speed
+	if not direction.is_zero_approx():
+		facing = direction
+	var previous := global_position
+	move_and_slide()
+	_patrol_blocked_seconds = _patrol_blocked_seconds + delta if global_position.distance_to(previous) < 0.05 else 0.0
+	if _patrol_blocked_seconds >= profile.patrol_blocked_timeout:
+		# Skip blocked endpoints; a return path is retried after a short pause.
+		_finish_patrol_leg()
+
+
+func _finish_patrol_leg() -> void:
+	_patrol_index = 1 - _patrol_index
+	_patrol_wait_remaining = profile.patrol_pause_seconds
+	_patrol_blocked_seconds = 0.0
+	state = State.IDLE
+	velocity = Vector2.ZERO

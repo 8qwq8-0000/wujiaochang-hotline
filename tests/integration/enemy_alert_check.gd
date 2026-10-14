@@ -10,6 +10,7 @@ func check(value: bool, message: String) -> void:
 func enemy_at(parent: Node, location: Vector2) -> EnemyController:
 	var enemy: EnemyController = load("res://scenes/actors/enemies/enemy.tscn").instantiate()
 	enemy.profile = load("res://resources/enemies/melee_pressure.tres").duplicate()
+	enemy.profile.patrol_enabled = false
 	enemy.profile.awareness_range = 200
 	enemy.profile.hearing_range = 180
 	enemy.profile.ally_alert_range = 0
