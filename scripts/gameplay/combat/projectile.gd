@@ -70,3 +70,12 @@ func _make_damage_packet() -> DamagePacket:
 	packet.is_projectile = true
 	packet.reflectable = reflectable
 	return packet
+
+
+static func room_for_actor(actor: Node) -> Node:
+	var node := actor
+	while node != null:
+		if node.is_in_group("combat_rooms"):
+			return node
+		node = node.get_parent()
+	return actor.get_tree().current_scene

@@ -15,10 +15,12 @@ func _on_defeated(entity: Node) -> void:
 		EnemyProfile.Role.HEAVY_ANCHOR:
 			component = "wheel"
 	# Snapshot location now; the enemy is freed at the end of the frame.
-	call_deferred("_spawn", component, entity.global_position)
+	call_deferred("_spawn", component, entity.global_position, CombatProjectile.room_for_actor(entity))
 
-func _spawn(component: String, location: Vector2) -> void:
+func _spawn(component: String, location: Vector2, room: Node) -> void:
+	if not is_instance_valid(room) or room.is_queued_for_deletion() or not room.is_inside_tree():
+		return
 	var pickup: ComponentPickup = PICKUP_SCENE.instantiate()
 	pickup.component_id = component
-	get_tree().current_scene.add_child(pickup)
+	room.add_child(pickup)
 	pickup.global_position = location

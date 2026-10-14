@@ -30,6 +30,7 @@ func _restart_combat() -> void:
 	if run_manager != null:
 		run_manager.set_mandatory_enemy_count(0)
 		run_manager.set_scene_payload({})
+		run_manager.set_player_state({})
 
 
 func _ensure_input_map() -> void:

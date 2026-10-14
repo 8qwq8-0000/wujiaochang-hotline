@@ -8,21 +8,9 @@ const CAPACITY := 6
 const PROTOTYPES: JSON = preload("res://resources/items/components.json")
 const PANEL_SCENE := preload("res://scenes/ui/inventory/inventory_panel.tscn")
 var backpack: Inventory
-# Weapon slots select items in the backpack; they never own separate storage.
-class WeaponSlotRef extends RefCounted:
-	var item: InventoryItem
-	func get_item() -> InventoryItem:
-		return item
-	func equip(value: InventoryItem) -> bool:
-		item = value
-		return value != null
-	func clear() -> bool:
-		var existed := item != null
-		item = null
-		return existed
-
-var weapon_slot: WeaponSlotRef
-var secondary_weapon_slot: WeaponSlotRef
+# Equipped items live in independent GLoot slots, outside the six-cell bag.
+var weapon_slot: ItemSlot
+var secondary_weapon_slot: ItemSlot
 var mobility_slot: ItemSlot
 var panel: CanvasLayer
 var is_open := false
@@ -50,16 +38,17 @@ func _ready() -> void:
 	if backpack.get_prototree().is_empty():
 		backpack.get_prototree().deserialize(PROTOTYPES)
 	var limit := ItemCountConstraint.new()
+	limit.name = "Capacity"
 	limit.capacity = CAPACITY
 	backpack.add_child(limit)
 	add_child(backpack)
-	weapon_slot = WeaponSlotRef.new()
-	secondary_weapon_slot = WeaponSlotRef.new()
+	weapon_slot = _create_slot("WeaponSlot")
+	secondary_weapon_slot = _create_slot("SecondaryWeaponSlot")
 	mobility_slot = _create_slot("MobilitySlot")
 	panel = PANEL_SCENE.instantiate()
 	panel.inventory = self
 	add_child(panel)
-	var initial := backpack.create_and_add_item("initial_baton")
+	var initial := InventoryItem.new(PROTOTYPES, "initial_baton")
 	_assign_instance_id(initial)
 	weapon_slot.equip(initial)
 	_apply_equipment()
@@ -86,9 +75,10 @@ func _input(event: InputEvent) -> void:
 	elif is_open and event.is_action_pressed("restart_room"):
 		# Resume first, then let Bootstrap (or the standalone room) handle R.
 		set_open(false)
-	elif event.is_action_pressed("interact") and not is_open and not player.health.is_dead():
-		try_pick_nearest()
-		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("interact") and not is_open and player.is_input_enabled():
+		if player.interactor.get_best_target(player) == null:
+			try_pick_nearest()
+			get_viewport().set_input_as_handled()
 
 func set_open(value: bool) -> void:
 	value = value and not player.health.is_dead()
@@ -128,18 +118,18 @@ func _assign_instance_id(item: InventoryItem) -> void:
 func pickup(component_id: String) -> bool:
 	if player.health.is_dead() or not PROTOTYPES.data.has(component_id):
 		return false
-	# All acquired weapons occupy backpack space, including equipped weapons.
-	var item := backpack.create_and_add_item(component_id)
-	if item == null:
+	var is_weapon := str(PROTOTYPES.data[component_id].get("slot", "")) == "weapon"
+	var auto_secondary := is_weapon and not _has_picked_up_weapon and secondary_weapon_slot.get_item() == null
+	var item := InventoryItem.new(PROTOTYPES, component_id)
+	# The first weapon can go straight into a free reserve even if the bag is full.
+	var stored := secondary_weapon_slot.equip(item) if auto_secondary else backpack.add_item(item)
+	if not stored:
 		_notify("背包已满（6/6），组件留在地上", &"full")
 		return false
 	_assign_instance_id(item)
-	var is_weapon := str(item.get_property("slot", "")) == "weapon"
-	var auto_secondary := is_weapon and not _has_picked_up_weapon and secondary_weapon_slot.get_item() == null
 	if is_weapon:
 		_has_picked_up_weapon = true
 	if auto_secondary:
-		secondary_weapon_slot.equip(item)
 		_apply_equipment()
 	changed.emit()
 	if auto_secondary:
@@ -175,23 +165,14 @@ func equip(index: int, weapon_position: int = 0) -> bool:
 	var slot_name := str(item.get_property("slot", ""))
 	if slot_name == "weapon" and weapon_position not in [0, 1]:
 		return false
-	if slot_name == "weapon":
-		var target := weapon_slot if weapon_position == 0 else secondary_weapon_slot
-		var other := secondary_weapon_slot if weapon_position == 0 else weapon_slot
-		if target.get_item() == item:
-			return false
-		# One physical item cannot be selected into both positions.
-		if other.get_item() == item:
-			other.equip(target.get_item())
-		target.equip(item)
-	else:
-		var slot := _slot_for(slot_name)
-		if slot == null:
-			return false
-		var old: InventoryItem = slot.get_item()
-		var success: bool = InventoryItem.swap(item, old) if old != null else slot.equip(item)
-		if not success:
-			return false
+	var slot := _slot_for("weapon_secondary" if slot_name == "weapon" and weapon_position == 1 else slot_name)
+	if slot == null:
+		return false
+	var old: InventoryItem = slot.get_item()
+	# Exchange preserves both instances, including when the bag is full.
+	var success: bool = InventoryItem.swap(item, old) if old != null else slot.equip(item)
+	if not success:
+		return false
 	_apply_equipment()
 	if slot_name == "weapon":
 		player.weapons.select_weapon(weapon_position)
@@ -207,9 +188,7 @@ func unequip(slot_name: String) -> bool:
 	if slot == null or slot.get_item() == null:
 		return false
 	var item: InventoryItem = slot.get_item()
-	if slot_name in ["weapon", "weapon_secondary"]:
-		slot.clear()
-	elif not backpack.add_item(item):
+	if not backpack.add_item(item):
 		_notify("背包已满，无法卸下", &"full")
 		return false
 	_apply_equipment()
@@ -227,14 +206,7 @@ func _slot_for(slot_name: String) -> Object:
 			return mobility_slot
 	return null
 
-func _on_backpack_item_removed(item: InventoryItem) -> void:
-	var was_equipped := false
-	for slot in [weapon_slot, secondary_weapon_slot]:
-		if slot.get_item() == item:
-			slot.clear()
-			was_equipped = true
-	if was_equipped:
-		_apply_equipment()
+func _on_backpack_item_removed(_item: InventoryItem) -> void:
 	changed.emit()
 
 func _apply_equipment() -> void:
@@ -259,3 +231,26 @@ func _exit_tree() -> void:
 	if _active_users == 0 and is_instance_valid(backpack):
 		# Break GLoot's prototype parent/child references when this catalog is unused.
 		backpack.get_prototree().clear()
+
+
+func export_run_state() -> Dictionary:
+	return {
+		"backpack": backpack.serialize(),
+		"primary": weapon_slot.serialize(),
+		"secondary": secondary_weapon_slot.serialize(),
+		"mobility": mobility_slot.serialize(),
+		"active_weapon": player.weapons.current_index,
+		"has_picked_up_weapon": _has_picked_up_weapon,
+	}
+
+
+func import_run_state(state: Dictionary) -> void:
+	# RunManager passes an in-memory snapshot from export_run_state, not a save file.
+	backpack.deserialize(state["backpack"])
+	weapon_slot.deserialize(state["primary"])
+	secondary_weapon_slot.deserialize(state["secondary"])
+	mobility_slot.deserialize(state["mobility"])
+	_has_picked_up_weapon = bool(state.get("has_picked_up_weapon", false))
+	player.weapons.current_index = clampi(int(state.get("active_weapon", 0)), 0, 1)
+	_apply_equipment()
+	changed.emit()

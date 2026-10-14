@@ -184,6 +184,7 @@ func export_run_state() -> Dictionary:
 	var weapon := weapons.get_current_weapon()
 	var mode := mobility.get_current_mode()
 	return {
+		"inventory": inventory.export_run_state(),
 		"current_health": health.current_health,
 		"weapon_id": String(weapon.id) if weapon != null else "",
 		"mobility_id": String(mode.id) if mode != null else "walk",
@@ -194,9 +195,11 @@ func export_run_state() -> Dictionary:
 func import_run_state(state: Dictionary) -> void:
 	if state.is_empty():
 		return
-	if state.has("weapon_id"):
+	if state.has("inventory") and state["inventory"] is Dictionary:
+		inventory.import_run_state(state["inventory"])
+	elif state.has("weapon_id"):
 		weapons.equip_weapon_by_id(StringName(state["weapon_id"]))
-	if state.has("mobility_id"):
+	if not state.has("inventory") and state.has("mobility_id"):
 		mobility.equip_mode_by_id(StringName(state["mobility_id"]))
 	if state.has("core") and state["core"] is Dictionary:
 		core.import_state(state["core"])

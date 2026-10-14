@@ -131,7 +131,7 @@ func perform_attack() -> void:
 		return
 	if profile.role == EnemyProfile.Role.RANGED_SIGHTLINE:
 		var projectile: CombatProjectile = PROJECTILE_SCENE.instantiate()
-		get_tree().current_scene.add_child(projectile)
+		CombatProjectile.room_for_actor(self).add_child(projectile)
 		projectile.global_position = global_position + direction * 16.0
 		projectile.setup(self, CombatFaction.Id.ENEMY, direction, profile.damage, 310.0)
 		return

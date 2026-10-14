@@ -29,11 +29,13 @@ func _wait_for_battle(previous: Node = null) -> Node:
 func _press_restart(echo: bool = false) -> void:
 	var key := InputEventKey.new()
 	key.physical_keycode = KEY_R
+	key.keycode = KEY_R
 	key.pressed = true
 	key.echo = echo
 	Input.parse_input_event(key)
 	var release := InputEventKey.new()
 	release.physical_keycode = KEY_R
+	release.keycode = KEY_R
 	Input.parse_input_event(release)
 
 func _run_checks() -> void:
@@ -59,6 +61,7 @@ func _run_checks() -> void:
 		player.heat.try_add_heat(player.heat.max_heat)
 		run_manager.set_scene_payload({"stale": true})
 		if round_index == 1:
+			player.core.equip_core(&"", false)
 			player.health.apply_damage(player.health.max_health, DamagePacket.new())
 			_check(player.get("_dead"), "Player should be dead before restart")
 		if round_index == 2:

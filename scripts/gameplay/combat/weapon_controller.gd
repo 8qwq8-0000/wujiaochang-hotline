@@ -164,7 +164,7 @@ func _perform_projectiles(data: WeaponComponentData, origin: Vector2, direction:
 		if count > 1:
 			offset = lerpf(-data.spread_degrees * 0.5, data.spread_degrees * 0.5, float(index) / float(count - 1))
 		var projectile: CombatProjectile = PROJECTILE_SCENE.instantiate()
-		get_tree().current_scene.add_child(projectile)
+		CombatProjectile.room_for_actor(source_node).add_child(projectile)
 		projectile.global_position = origin + direction * 18.0
 		projectile.setup(source_node, faction, direction.rotated(deg_to_rad(offset)), data.damage, data.projectile_speed)
 

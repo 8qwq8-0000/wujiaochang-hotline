@@ -41,4 +41,10 @@ godot --headless --path . --script res://tests/integration/playthrough_check.gd
 
 首次武器自动装副槽：`godot --headless --path . --script res://tests/integration/first_weapon_pickup_check.gd`，覆盖战斗中拾取、满包、副槽占用、仅首次触发、当前武器保留、立即使用和重复拾取保护。
 
-武器占格与开局配置：`godot --headless --path . --script res://tests/integration/backpack_weapon_capacity_check.gd`，覆盖初始 1/6、无地图赠品、主副武器计入六格、满包卸下不释放空间、同物品不重复装备，以及移除物品解除引用。
+装备不占格与开局配置：`godot --headless --path . --script res://tests/integration/backpack_weapon_capacity_check.gd`，覆盖初始 0/6、独立主副武器与机动槽、满包拒绝卸下、满包安全替换、卸下后占格和实例不重复。
+
+集成分支：`integration/week1` 暂不接入 last1118 的关卡；`week1_room_check.gd` 的 SKIP 不计为通过。
+
+房间切换：`godot --headless --path . --script res://tests/integration/room_transition_check.gd`，覆盖背包与装备快照、实例编号、首次拾取资格，以及旧房间掉落／子弹清理。
+
+单元检查：`godot --headless --path . --script res://tests/run_unit_checks.gd`。

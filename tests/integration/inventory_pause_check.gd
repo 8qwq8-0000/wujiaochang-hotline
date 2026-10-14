@@ -9,10 +9,12 @@ func check(value: bool, message: String) -> void:
 func key(code: Key) -> void:
 	var event := InputEventKey.new()
 	event.physical_keycode = code
+	event.keycode = code
 	event.pressed = true
 	Input.parse_input_event(event)
 	var release := InputEventKey.new()
 	release.physical_keycode = code
+	release.keycode = code
 	Input.parse_input_event(release)
 func run() -> void:
 	var main: Node = load("res://scenes/bootstrap/main.tscn").instantiate()
@@ -64,10 +66,21 @@ func run() -> void:
 	check(paused, "closing does not undo an existing pause")
 	paused = false
 	inventory.set_open(true)
+	player.core.equip_core(&"", false)
 	player.health.apply_damage(player.health.max_health, DamagePacket.new())
 	check(not paused and not inventory.is_open, "death releases inventory pause")
 	# Restart input from a paused panel must reach the normal restart handler.
-	player.health.current_health = player.health.max_health
+	main.queue_free()
+	await process_frame
+	main = load("res://scenes/bootstrap/main.tscn").instantiate()
+	root.add_child(main)
+	current_scene = main
+	for frame in 600:
+		player = get_first_node_in_group("player") as PlayerController
+		if player != null and not main.get_node("SceneFlow").get("_is_loading"):
+			break
+		await process_frame
+	inventory = player.inventory
 	inventory.set_open(true)
 	key(KEY_R)
 	for frame in 600:

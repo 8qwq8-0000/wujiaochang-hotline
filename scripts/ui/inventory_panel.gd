@@ -93,7 +93,7 @@ func _ready() -> void:
 func set_open(value: bool) -> void:
 	_overlay.visible = value
 	if value:
-		_message.text = "选槽后点击组件装备；Q/滚轮切换。全图已暂停。"
+		_message.text = "已装备物品不占背包格。选槽后点击装备；全图已暂停。"
 		refresh()
 	else:
 		for button in _buttons:
@@ -115,12 +115,7 @@ func refresh() -> void:
 	var items := inventory.backpack.get_items()
 	for index in _buttons.size():
 		var item: InventoryItem = items[index] if index < items.size() else null
-		var tag := ""
-		if item != null and inventory.weapon_slot.get_item() == item:
-			tag = " [主]"
-		elif item != null and inventory.secondary_weapon_slot.get_item() == item:
-			tag = " [副]"
-		_buttons[index].text = item.get_title().replace("（绑定）", "") + tag if item != null else "空格"
+		_buttons[index].text = item.get_title().replace("（绑定）", "") if item != null else "空格"
 		_buttons[index].icon = item.get_texture() if item != null else null
 		_buttons[index].disabled = item == null
 		_buttons[index].tooltip_text = "点击装备：%s" % item.get_title() if item != null else ""
