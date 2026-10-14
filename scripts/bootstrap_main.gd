@@ -37,6 +37,7 @@ func _ensure_input_map() -> void:
 	_add_key_action(&"interact", KEY_E)
 	_add_key_action(&"inventory_toggle", KEY_TAB)
 	_add_key_action(&"pause", KEY_ESCAPE)
+	_add_key_action(&"weapon_switch", KEY_Q)
 	_add_key_action(&"move_left", KEY_A)
 	_add_key_action(&"move_right", KEY_D)
 	_add_key_action(&"move_up", KEY_W)

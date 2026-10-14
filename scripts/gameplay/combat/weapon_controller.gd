@@ -38,16 +38,21 @@ func get_current_weapon() -> WeaponComponentData:
 
 
 func select_weapon(index: int) -> void:
-	if index < 0 or index >= weapons.size() or index == current_index:
+	if index < 0 or index >= weapons.size() or index == current_index or weapons[index] == null:
 		return
 	current_index = index
 	weapon_changed.emit(current_index, get_current_weapon())
 
 
 func cycle_weapon(step: int) -> void:
-	if weapons.is_empty():
+	if weapons.is_empty() or step == 0:
 		return
-	select_weapon(posmod(current_index + step, weapons.size()))
+	var direction := 1 if step > 0 else -1
+	for offset in range(1, weapons.size() + 1):
+		var index := posmod(current_index + direction * offset, weapons.size())
+		if weapons[index] != null:
+			select_weapon(index)
+			return
 
 
 func try_attack(origin: Vector2, direction: Vector2, source_node: Node) -> bool:
@@ -115,9 +120,13 @@ func _make_packet(data: WeaponComponentData, origin: Vector2, direction: Vector2
 
 
 func set_equipped_weapon(data: WeaponComponentData) -> void:
-	weapons.clear()
-	# The permanent initial weapon is not an inventory item.
-	weapons.append(data if data != null else preload("res://resources/weapons/initial_baton.tres"))
-	current_index = 0
-	_cooldown_remaining = 0.0
+	# Compatibility for integrations that still provide a single weapon.
+	set_carried_weapons(data, null)
+
+
+func set_carried_weapons(primary: WeaponComponentData, secondary: WeaponComponentData) -> void:
+	weapons.assign([primary if primary != null else preload("res://resources/weapons/initial_baton.tres"), secondary])
+	if current_index >= weapons.size() or weapons[current_index] == null:
+		current_index = 0
+	# Switching slots keeps the shared attack cooldown and player heat.
 	weapon_changed.emit(current_index, get_current_weapon())

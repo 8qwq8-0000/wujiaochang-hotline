@@ -9,6 +9,7 @@ const PROTOTYPES: JSON = preload("res://resources/items/components.json")
 const PANEL_SCENE := preload("res://scenes/ui/inventory/inventory_panel.tscn")
 var backpack: Inventory
 var weapon_slot: ItemSlot
+var secondary_weapon_slot: ItemSlot
 var mobility_slot: ItemSlot
 var panel: CanvasLayer
 var is_open := false
@@ -21,12 +22,12 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_active_users += 1
 	# The player scene also supports F6 without Bootstrap.
-	for action in {&"interact": KEY_E, &"inventory_toggle": KEY_TAB, &"pause": KEY_ESCAPE}:
+	for action in {&"interact": KEY_E, &"inventory_toggle": KEY_TAB, &"pause": KEY_ESCAPE, &"weapon_switch": KEY_Q}:
 		if not InputMap.has_action(action):
 			InputMap.add_action(action)
 		if InputMap.action_get_events(action).is_empty():
 			var key := InputEventKey.new()
-			key.physical_keycode = {&"interact": KEY_E, &"inventory_toggle": KEY_TAB, &"pause": KEY_ESCAPE}[action]
+			key.physical_keycode = {&"interact": KEY_E, &"inventory_toggle": KEY_TAB, &"pause": KEY_ESCAPE, &"weapon_switch": KEY_Q}[action]
 			InputMap.action_add_event(action, key)
 	backpack = Inventory.new()
 	backpack.name = "Backpack"
@@ -39,6 +40,7 @@ func _ready() -> void:
 	backpack.add_child(limit)
 	add_child(backpack)
 	weapon_slot = _create_slot("WeaponSlot")
+	secondary_weapon_slot = _create_slot("SecondaryWeaponSlot")
 	mobility_slot = _create_slot("MobilitySlot")
 	panel = PANEL_SCENE.instantiate()
 	panel.inventory = self
@@ -129,7 +131,7 @@ func try_pick_nearest() -> bool:
 		return false
 	return nearest.try_pickup(self)
 
-func equip(index: int) -> bool:
+func equip(index: int, weapon_position: int = 0) -> bool:
 	if not can_change_equipment():
 		_notify("战斗中不能换装，请先清场", &"full")
 		return false
@@ -137,7 +139,10 @@ func equip(index: int) -> bool:
 	if index < 0 or index >= items.size():
 		return false
 	var item := items[index]
-	var slot := _slot_for(str(item.get_property("slot", "")))
+	var slot_name := str(item.get_property("slot", ""))
+	if slot_name == "weapon" and weapon_position not in [0, 1]:
+		return false
+	var slot := secondary_weapon_slot if slot_name == "weapon" and weapon_position == 1 else _slot_for(slot_name)
 	if slot == null:
 		return false
 	var old := slot.get_item()
@@ -146,6 +151,8 @@ func equip(index: int) -> bool:
 	if not success:
 		return false
 	_apply_equipment()
+	if slot_name == "weapon":
+		player.weapons.select_weapon(weapon_position)
 	changed.emit()
 	_notify("已装备：%s" % item.get_title(), &"equip")
 	return true
@@ -167,11 +174,21 @@ func unequip(slot_name: String) -> bool:
 	return true
 
 func _slot_for(slot_name: String) -> ItemSlot:
-	return weapon_slot if slot_name == "weapon" else (mobility_slot if slot_name == "mobility" else null)
+	match slot_name:
+		"weapon":
+			return weapon_slot
+		"weapon_secondary":
+			return secondary_weapon_slot
+		"mobility":
+			return mobility_slot
+	return null
 
 func _apply_equipment() -> void:
 	var weapon := weapon_slot.get_item()
-	player.get_node("WeaponController").set_equipped_weapon(load(str(weapon.get_property("effect"))) if weapon != null else null)
+	var secondary := secondary_weapon_slot.get_item()
+	player.get_node("WeaponController").set_carried_weapons(
+		load(str(weapon.get_property("effect"))) if weapon != null else null,
+		load(str(secondary.get_property("effect"))) if secondary != null else null)
 	var mode := mobility_slot.get_item()
 	player.get_node("MobilityController").set_equipped_mode(load(str(mode.get_property("effect"))) if mode != null else null)
 

@@ -35,7 +35,7 @@ func _process(_delta: float) -> void:
 	var mode := _player.mobility.get_current_mode()
 	mobility_label.text = "机动  %s" % mode.display_name
 	var weapon := _player.weapons.get_current_weapon()
-	weapon_label.text = "武装  %s" % (weapon.display_name if weapon != null else "无")
+	weapon_label.text = "武装 %d/2  %s [Q/滚轮]" % [_player.weapons.current_index + 1, weapon.display_name if weapon != null else "无"]
 	guard_label.text = "格挡  %s" % _guard_state_name(_player.guard.state)
 
 

@@ -23,12 +23,14 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _dead or $ComponentInventory.is_open:
+	if _dead or $ComponentInventory.is_open or event.is_echo():
 		return
 	if event.is_action_pressed("guard"):
 		guard.begin_guard(aim_direction)
 	if event.is_action_pressed("mobility_ability"):
 		mobility.activate_ability(self, aim_direction)
+	if event.is_action_pressed("weapon_switch"):
+		weapons.cycle_weapon(1)
 	if event.is_action_pressed("weapon_next"):
 		weapons.cycle_weapon(1)
 	if event.is_action_pressed("weapon_previous"):
