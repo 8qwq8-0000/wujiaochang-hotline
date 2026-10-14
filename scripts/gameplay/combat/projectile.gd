@@ -42,21 +42,26 @@ func _draw() -> void:
 func _on_area_entered(area: Area2D) -> void:
 	if not area.has_method("receive_hit"):
 		return
+	var packet := _make_damage_packet()
+	var result: DamageResult = area.receive_hit(packet)
+	if result.reflected:
+		faction = result.packet.source_faction
+		source = result.packet.source if is_instance_valid(result.packet.source) else null
+		direction = result.packet.travel_direction.normalized()
+		tint = Color(0.95, 0.75, 0.15)
+		queue_redraw()
+		return
+	queue_free()
+
+
+func _make_damage_packet() -> DamagePacket:
 	var packet := DamagePacket.new()
 	packet.base_damage = damage
-	packet.source = source
+	packet.source = source if is_instance_valid(source) else null
 	packet.source_faction = faction
 	packet.source_position = global_position - direction * 8.0
 	packet.travel_direction = direction
 	packet.knockback = direction * 85.0
 	packet.is_projectile = true
 	packet.reflectable = reflectable
-	var result: DamageResult = area.receive_hit(packet)
-	if result.reflected:
-		faction = result.packet.source_faction
-		source = result.packet.source
-		direction = result.packet.travel_direction.normalized()
-		tint = Color(0.95, 0.75, 0.15)
-		queue_redraw()
-		return
-	queue_free()
+	return packet

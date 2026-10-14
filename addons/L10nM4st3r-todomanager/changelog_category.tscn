@@ -1,9 +1,8 @@
-[gd_scene load_steps=5 format=3 uid="uid://dj0ueqk8n4i0l"]
+[gd_scene load_steps=4 format=3 uid="uid://dj0ueqk8n4i0l"]
 
-[ext_resource type="Texture2D" uid="uid://q1kbul8wtus7" path="res://addons/todomenu/icon_add.svg" id="1_kbghk"]
-[ext_resource type="Script" path="res://addons/todomenu/changelog_category.gd" id="1_xl8tv"]
-[ext_resource type="Texture2D" uid="uid://b67iq6brk6qus" path="res://addons/todomenu/icon_complete.svg" id="2_x5mk2"]
-[ext_resource type="Texture2D" uid="uid://c7gmlvugobsv0" path="res://addons/todomenu/icon_edit.svg" id="4_yvoir"]
+[ext_resource type="Script" path="res://addons/L10nM4st3r-todomanager/changelog_category.gd" id="1_xl8tv"]
+[ext_resource type="Texture2D" uid="uid://b67iq6brk6qus" path="res://addons/L10nM4st3r-todomanager/icon_complete.svg" id="2_x5mk2"]
+[ext_resource type="Texture2D" uid="uid://c7gmlvugobsv0" path="res://addons/L10nM4st3r-todomanager/icon_edit.svg" id="4_yvoir"]
 
 [node name="s" type="ScrollContainer"]
 custom_minimum_size = Vector2(260, 0)
@@ -48,11 +47,10 @@ texture_normal = ExtResource("2_x5mk2")
 stretch_mode = 3
 flip_h = true
 
-[node name="add" type="TextureButton" parent="item_list/p/h"]
+[node name="add" type="Button" parent="item_list/p/h"]
 layout_mode = 2
 tooltip_text = "Add item to this category"
-texture_normal = ExtResource("1_kbghk")
-stretch_mode = 3
+text = "+"
 
 [node name="edit" type="TextureButton" parent="item_list/p/h"]
 layout_mode = 2

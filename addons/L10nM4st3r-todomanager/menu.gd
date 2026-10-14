@@ -3,8 +3,8 @@
 @onready var todo_list :VBoxContainer= $tabs/todo/h
 @onready var changelog_list :HBoxContainer= $tabs/changelog/h
 
-const TodoItem:=preload("res://addons/todomenu/todo_item.tscn")
-const Category:=preload("res://addons/todomenu/changelog_category.tscn")
+const TodoItem:=preload("res://addons/L10nM4st3r-todomanager/todo_item.tscn")
+const Category:=preload("res://addons/L10nM4st3r-todomanager/changelog_category.tscn")
 
 var changelog:=[]
 var todo:=[]

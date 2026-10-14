@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://be7j3nkrnfcan"]
 
-[ext_resource type="Script" path="res://addons/todomenu/menu.gd" id="1_lesix"]
+[ext_resource type="Script" path="res://addons/L10nM4st3r-todomanager/menu.gd" id="1_lesix"]
 
 [node name="menu" type="Control"]
 clip_contents = true

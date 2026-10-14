@@ -21,7 +21,7 @@ var reflected: bool = false
 func duplicate_packet() -> DamagePacket:
 	var copy := DamagePacket.new()
 	copy.base_damage = base_damage
-	copy.source = source
+	copy.source = source if is_instance_valid(source) else null
 	copy.source_faction = source_faction
 	copy.damage_type = damage_type
 	copy.status_tags = status_tags.duplicate()

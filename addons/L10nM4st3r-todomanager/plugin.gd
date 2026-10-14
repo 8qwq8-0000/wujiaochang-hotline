@@ -14,7 +14,7 @@ func _enter_tree():
 		ProjectSettings.set_initial_value("addons/todo/changelog",[])
 	ProjectSettings.save()
 
-	menu=preload("res://addons/todomenu/menu.tscn").instantiate()
+	menu=preload("res://addons/L10nM4st3r-todomanager/menu.tscn").instantiate()
 	add_control_to_bottom_panel(menu,"Todo")
 
 func _exit_tree():

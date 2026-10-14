@@ -60,3 +60,15 @@ func test_damage_resolver_applies_integer_damage() -> void:
 	assert_eq(health.current_health, 3)
 	health.free()
 	target.free()
+
+
+func test_projectile_discards_freed_source_reference() -> void:
+	var projectile := CombatProjectile.new()
+	var source := Node.new()
+	projectile.setup(source, CombatFaction.Id.ENEMY, Vector2.LEFT, 2, 310.0)
+	source.free()
+	var packet := projectile._make_damage_packet()
+	assert_true(packet.source == null)
+	assert_eq(packet.source_faction, CombatFaction.Id.ENEMY)
+	assert_eq(packet.base_damage, 2)
+	projectile.free()
