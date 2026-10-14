@@ -5,11 +5,16 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/combat_hud.tscn" id="3"]
 [ext_resource type="Script" uid="uid://crjqaa3hl31n4" path="res://scripts/presentation/vfx_manager.gd" id="4"]
 [ext_resource type="Script" uid="uid://dgr8enssrrkm3" path="res://scripts/presentation/audio_cue_manager.gd" id="5"]
+[ext_resource type="Script" uid="uid://by7puspusmvfs" path="res://scripts/ui/extraction_flow.gd" id="6"]
 
 [node name="Main" type="Node" unique_id=88177702]
 script = ExtResource("1")
 
 [node name="SceneContainer" type="Node2D" parent="." unique_id=619592552]
+
+[node name="ExtractionFlow" type="CanvasLayer" parent="." unique_id=1477941403]
+layer = 90
+script = ExtResource("6")
 
 [node name="VFXManager" type="Node2D" parent="." unique_id=1573087612]
 script = ExtResource("4")

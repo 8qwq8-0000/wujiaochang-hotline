@@ -28,7 +28,10 @@ func spawn_all() -> void:
 	var base_seed: int = run_manager.run_seed if run_manager != null else 1
 	random.seed = base_seed + seed_offset
 	var marker_root := get_node(marker_root_path)
-	var spawn_parent := get_node(spawn_parent_path)
+	var spawn_parent := get_node(spawn_parent_path) as Node2D
+	if spawn_parent == null:
+		push_error("EnemySpawner requires a Node2D spawn parent")
+		return
 	for child in marker_root.get_children():
 		if not child is EnemySpawnMarker:
 			continue
@@ -38,8 +41,9 @@ func spawn_all() -> void:
 		var enemy: EnemyController = ENEMY_SCENE.instantiate()
 		enemy.profile = marker.profile
 		enemy.mandatory = marker.mandatory
+		# Set the final local position before _ready records the patrol anchor.
+		enemy.position = spawn_parent.to_local(marker.global_position)
 		spawn_parent.add_child(enemy)
-		enemy.global_position = marker.global_position
 		enemy.defeated.connect(_on_enemy_defeated)
 		if marker.mandatory:
 			required_remaining += 1

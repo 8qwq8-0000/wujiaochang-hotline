@@ -45,6 +45,10 @@ func _draw() -> void:
 
 
 func _on_area_entered(area: Area2D) -> void:
+	# The player's upward-offset hurt box overlaps the upward muzzle position.
+	# Ignore only the shooter, preserving friendly-fire hits on other actors.
+	if area is HurtBox2DComponent and is_instance_valid(source) and area.actor == source:
+		return
 	if not area.has_method("receive_hit"):
 		return
 	var packet := _make_damage_packet()
