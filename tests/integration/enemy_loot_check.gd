@@ -49,7 +49,10 @@ func run() -> void:
 	var initial := player.health.current_health
 	melee.perform_attack()
 	check(player.health.current_health == initial, "melee cannot hit through cover")
-	# Follow the baked route around Cover A, not into its side.
+	# A previously alerted enemy follows its last known sighting around cover.
+	melee._alert_to(player.global_position, false)
+	melee.profile = melee.profile.duplicate()
+	melee.profile.alert_memory_seconds = 10.0
 	for frame in 360:
 		melee._physics_process(1.0 / 60.0)
 		if melee.global_position.distance_to(player.global_position) <= melee.profile.attack_range:

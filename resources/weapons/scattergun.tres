@@ -15,3 +15,4 @@ projectile_speed = 430.0
 projectile_count = 5
 spread_degrees = 26.0
 damage_type = &"thermal"
+noise_radius = 300.0

@@ -1,6 +1,8 @@
 extends Node
 
 ## 战斗表现层只监听这里，不直接依赖武器、敌人或玩家实现。
+signal noise_emitted(source: Node, origin: Vector2, radius: float)
+
 signal damage_resolved(result: DamageResult)
 signal perfect_guarded(result: DamageResult)
 signal entity_defeated(entity: Node)
@@ -29,3 +31,8 @@ func publish_floor_cleared() -> void:
 
 func publish_message(text: String, color: Color = Color.WHITE) -> void:
 	combat_message_requested.emit(text, color)
+
+
+func publish_noise(source: Node, origin: Vector2, radius: float) -> void:
+	if is_instance_valid(source) and source.is_inside_tree() and radius > 0.0:
+		noise_emitted.emit(source, origin, radius)

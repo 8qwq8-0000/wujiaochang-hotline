@@ -104,6 +104,9 @@ func try_attack(origin: Vector2, direction: Vector2, source_node: Node) -> bool:
 			_begin_melee(data, direction.normalized())
 		WeaponComponentData.AttackKind.PROJECTILE, WeaponComponentData.AttackKind.SPREAD:
 			_perform_projectiles(data, origin, direction.normalized(), source_node)
+	var events := get_node_or_null("/root/CombatEvents")
+	if events != null and data.noise_radius > 0.0:
+		events.publish_noise(source_node, origin, data.noise_radius)
 	attack_performed.emit(data)
 	return true
 

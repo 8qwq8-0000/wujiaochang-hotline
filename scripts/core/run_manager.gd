@@ -10,6 +10,8 @@ var floor_index: int = 0
 var scene_payload: Dictionary = {}
 var mandatory_enemies_remaining: int = 0
 var player_state: Dictionary = {}
+var extraction_result: Dictionary = {}
+var run_finished := false
 
 
 func begin_run(seed_value: int = 0) -> void:
@@ -17,6 +19,8 @@ func begin_run(seed_value: int = 0) -> void:
 	floor_index = 0
 	mandatory_enemies_remaining = 0
 	player_state.clear()
+	extraction_result.clear()
+	run_finished = false
 	run_started.emit(run_seed)
 
 
@@ -47,6 +51,21 @@ func set_player_state(value: Dictionary) -> void:
 
 func get_player_state() -> Dictionary:
 	return player_state.duplicate(true)
+
+
+func finish_extraction(player: PlayerController) -> bool:
+	if run_finished or not is_instance_valid(player) or player.health.is_dead():
+		return false
+	if mandatory_enemies_remaining > 0:
+		return false
+	extraction_result = {
+		"seed": run_seed,
+		"floor": floor_index + 1,
+		"player_state": capture_player_state(player),
+		"items": player.inventory.get_extraction_items(),
+	}
+	run_finished = true
+	return true
 
 
 func capture_player_state(player: PlayerController, repair_amount: int = 0) -> Dictionary:

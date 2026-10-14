@@ -12,3 +12,4 @@ move_speed = 105.0
 attack_range = 28.0
 attack_cooldown = 0.85
 body_color = Color(0.95, 0.24, 0.18, 1)
+patrol_enabled = true

@@ -244,6 +244,28 @@ func export_run_state() -> Dictionary:
 	}
 
 
+func get_extraction_items() -> Array[Dictionary]:
+	# Copy each instance, including properties/quality added by future item systems.
+	var result: Array[Dictionary] = []
+	var seen: Dictionary = {}
+	var locations := {"主武器": weapon_slot, "副武器": secondary_weapon_slot, "机动装备": mobility_slot}
+	for location in locations:
+		var item: InventoryItem = locations[location].get_item()
+		if item != null:
+			_append_extraction_item(result, seen, item, location)
+	for item in backpack.get_items():
+		_append_extraction_item(result, seen, item, "背包")
+	return result
+
+
+func _append_extraction_item(result: Array[Dictionary], seen: Dictionary, item: InventoryItem, location: String) -> void:
+	var id := str(item.get_property("instance_id", str(item.get_instance_id())))
+	if seen.has(id):
+		return
+	seen[id] = true
+	result.append({"name": item.get_title(), "location": location, "item": item.serialize().duplicate(true)})
+
+
 func import_run_state(state: Dictionary) -> void:
 	# RunManager passes an in-memory snapshot from export_run_state, not a save file.
 	backpack.deserialize(state["backpack"])

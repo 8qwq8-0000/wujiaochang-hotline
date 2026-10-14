@@ -12,3 +12,4 @@ cooldown = 0.22
 heat_per_attack = 17.0
 attack_range = 520.0
 projectile_speed = 520.0
+noise_radius = 240.0

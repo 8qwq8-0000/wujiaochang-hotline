@@ -2,12 +2,14 @@ class_name ExitElevator
 extends Area2D
 
 signal entered
+signal exited
 
 var enabled: bool = false
 
 
 func _ready() -> void:
 	body_entered.connect(_on_body_entered)
+	body_exited.connect(_on_body_exited)
 	queue_redraw()
 
 
@@ -23,9 +25,11 @@ func set_enabled(value: bool) -> void:
 func _on_body_entered(body: Node) -> void:
 	if enabled and body.is_in_group("player"):
 		entered.emit()
-		var events := get_node_or_null("/root/CombatEvents")
-		if events != null:
-			events.publish_message("已抵达出口；完整流程将在 FloorController 接续", Color(0.35, 0.85, 1.0))
+
+
+func _on_body_exited(body: Node) -> void:
+	if body.is_in_group("player"):
+		exited.emit()
 
 
 func _draw() -> void:
