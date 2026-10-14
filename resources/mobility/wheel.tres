@@ -14,3 +14,4 @@ ability_impulse = 360.0
 knockback_multiplier = 0.9
 steering_response = 4.6
 lateral_grip = 0.68
+ability_active_seconds = 0.18

@@ -5,11 +5,18 @@ func _ready() -> void:
 	var run_manager := get_node_or_null("/root/RunManager")
 	if run_manager != null and run_manager.run_seed == 0:
 		run_manager.begin_run()
+	var player := get_node_or_null("Player") as PlayerController
+	if run_manager != null and is_instance_valid(player):
+		player.import_run_state(run_manager.get_player_state())
 	queue_redraw()
 
 
-func receive_scene_payload(_payload: Dictionary) -> void:
-	pass
+func receive_scene_payload(payload: Dictionary) -> void:
+	var player := get_node_or_null("Player") as PlayerController
+	if not is_instance_valid(player):
+		return
+	if payload.has("player_state") and payload["player_state"] is Dictionary:
+		player.import_run_state(payload["player_state"])
 
 
 func _draw() -> void:

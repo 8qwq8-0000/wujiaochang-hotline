@@ -1,54 +1,214 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=31 format=3]
 
-[ext_resource type="Script" path="res://scripts/gameplay/player_controller.gd" id="1"]
-[ext_resource type="Script" path="res://scripts/gameplay/combat/health_component.gd" id="2"]
-[ext_resource type="Script" path="res://scripts/gameplay/combat/heat_component.gd" id="3"]
-[ext_resource type="Script" path="res://scripts/gameplay/combat/guard_component.gd" id="4"]
-[ext_resource type="Script" path="res://scripts/gameplay/mobility/mobility_controller.gd" id="5"]
-[ext_resource type="Script" path="res://scripts/gameplay/combat/weapon_controller.gd" id="6"]
-[ext_resource type="Script" path="res://scripts/gameplay/combat/hurt_box.gd" id="7"]
+[ext_resource type="Script" path="res://scripts/gameplay/player_controller.gd" id="1_controller"]
+[ext_resource type="Script" path="res://scripts/gameplay/combat/health_component.gd" id="2_health"]
+[ext_resource type="Script" path="res://scripts/gameplay/combat/heat_component.gd" id="3_heat"]
+[ext_resource type="Script" path="res://scripts/gameplay/combat/guard_component.gd" id="4_guard"]
+[ext_resource type="Script" path="res://scripts/gameplay/mobility/mobility_controller.gd" id="5_mobility"]
+[ext_resource type="Script" path="res://scripts/gameplay/combat/weapon_controller.gd" id="6_weapon"]
+[ext_resource type="Script" path="res://scripts/gameplay/combat/hurt_box.gd" id="7_hurtbox"]
+[ext_resource type="Script" path="res://scripts/gameplay/player/status_component.gd" id="8_status"]
+[ext_resource type="Script" path="res://scripts/gameplay/player/core_controller.gd" id="9_core"]
+[ext_resource type="Script" path="res://scripts/gameplay/player/interactor_component.gd" id="10_interactor"]
+[ext_resource type="Script" path="res://scripts/gameplay/player/player_visual_controller.gd" id="11_visual"]
+[ext_resource type="Script" path="res://scripts/gameplay/player/guard_arc_visual.gd" id="12_guard_visual"]
+[ext_resource type="Resource" path="res://resources/player/default_player_config.tres" id="13_config"]
+[ext_resource type="Texture2D" path="res://assets/art/characters/player/placeholder/placeholder_player_down.png" id="14_down"]
+[ext_resource type="Texture2D" path="res://assets/art/characters/player/placeholder/placeholder_player_up.png" id="15_up"]
+[ext_resource type="Texture2D" path="res://assets/art/characters/player/placeholder/placeholder_player_side.png" id="16_side"]
 
-[sub_resource type="CircleShape2D" id="BodyShape"]
-radius = 10.0
+[sub_resource type="AtlasTexture" id="Atlas_down_0"]
+atlas = ExtResource("14_down")
+region = Rect2(0, 0, 20, 30)
+
+[sub_resource type="AtlasTexture" id="Atlas_down_1"]
+atlas = ExtResource("14_down")
+region = Rect2(21, 0, 20, 30)
+
+[sub_resource type="AtlasTexture" id="Atlas_down_2"]
+atlas = ExtResource("14_down")
+region = Rect2(42, 0, 20, 30)
+
+[sub_resource type="AtlasTexture" id="Atlas_down_3"]
+atlas = ExtResource("14_down")
+region = Rect2(63, 0, 20, 30)
+
+[sub_resource type="AtlasTexture" id="Atlas_up_0"]
+atlas = ExtResource("15_up")
+region = Rect2(0, 0, 20, 30)
+
+[sub_resource type="AtlasTexture" id="Atlas_up_1"]
+atlas = ExtResource("15_up")
+region = Rect2(21, 0, 20, 30)
+
+[sub_resource type="AtlasTexture" id="Atlas_up_2"]
+atlas = ExtResource("15_up")
+region = Rect2(42, 0, 20, 30)
+
+[sub_resource type="AtlasTexture" id="Atlas_up_3"]
+atlas = ExtResource("15_up")
+region = Rect2(63, 0, 20, 30)
+
+[sub_resource type="AtlasTexture" id="Atlas_side_0"]
+atlas = ExtResource("16_side")
+region = Rect2(0, 0, 20, 30)
+
+[sub_resource type="AtlasTexture" id="Atlas_side_1"]
+atlas = ExtResource("16_side")
+region = Rect2(21, 0, 20, 30)
+
+[sub_resource type="SpriteFrames" id="PlayerSpriteFrames"]
+animations = [{
+"frames": [{"duration": 1.0, "texture": SubResource("Atlas_down_0")}],
+"loop": true,
+"name": &"idle_down",
+"speed": 4.0
+}, {
+"frames": [{"duration": 1.0, "texture": SubResource("Atlas_side_0")}],
+"loop": true,
+"name": &"idle_side",
+"speed": 4.0
+}, {
+"frames": [{"duration": 1.0, "texture": SubResource("Atlas_up_0")}],
+"loop": true,
+"name": &"idle_up",
+"speed": 4.0
+}, {
+"frames": [{"duration": 1.0, "texture": SubResource("Atlas_down_0")}, {"duration": 1.0, "texture": SubResource("Atlas_down_1")}, {"duration": 1.0, "texture": SubResource("Atlas_down_2")}, {"duration": 1.0, "texture": SubResource("Atlas_down_3")}],
+"loop": true,
+"name": &"walk_down",
+"speed": 8.0
+}, {
+"frames": [{"duration": 1.0, "texture": SubResource("Atlas_side_0")}, {"duration": 1.0, "texture": SubResource("Atlas_side_1")}],
+"loop": true,
+"name": &"walk_side",
+"speed": 8.0
+}, {
+"frames": [{"duration": 1.0, "texture": SubResource("Atlas_up_0")}, {"duration": 1.0, "texture": SubResource("Atlas_up_1")}, {"duration": 1.0, "texture": SubResource("Atlas_up_2")}, {"duration": 1.0, "texture": SubResource("Atlas_up_3")}],
+"loop": true,
+"name": &"walk_up",
+"speed": 8.0
+}]
+
+[sub_resource type="RectangleShape2D" id="WorldCollisionShape"]
+size = Vector2(14, 10)
+
+[sub_resource type="RectangleShape2D" id="HurtBoxShape"]
+size = Vector2(18, 24)
+
+[sub_resource type="CircleShape2D" id="InteractionShape"]
+radius = 28.0
 
 [node name="Player" type="CharacterBody2D"]
 collision_layer = 2
 collision_mask = 1
-script = ExtResource("1")
+script = ExtResource("1_controller")
+config = ExtResource("13_config")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-shape = SubResource("BodyShape")
+[node name="WorldCollision" type="CollisionShape2D" parent="."]
+position = Vector2(0, -5)
+shape = SubResource("WorldCollisionShape")
 
 [node name="HealthComponent" type="Node" parent="."]
-script = ExtResource("2")
-max_health = 5
+script = ExtResource("2_health")
+max_health = 3
 
 [node name="HeatComponent" type="Node" parent="."]
-script = ExtResource("3")
+script = ExtResource("3_heat")
 
 [node name="GuardComponent" type="Node" parent="."]
-script = ExtResource("4")
+script = ExtResource("4_guard")
 
 [node name="MobilityController" type="Node" parent="."]
-script = ExtResource("5")
+script = ExtResource("5_mobility")
 
 [node name="WeaponController" type="Node2D" parent="."]
-script = ExtResource("6")
+script = ExtResource("6_weapon")
 heat_component_path = NodePath("../HeatComponent")
+
+[node name="StatusComponent" type="Node" parent="."]
+script = ExtResource("8_status")
+
+[node name="CoreController" type="Node" parent="."]
+script = ExtResource("9_core")
 
 [node name="HurtBox" type="Area2D" parent="."]
 collision_layer = 8
 collision_mask = 0
 monitoring = false
 monitorable = true
-script = ExtResource("7")
+script = ExtResource("7_hurtbox")
 faction = 1
 health_path = NodePath("../HealthComponent")
 guard_path = NodePath("../GuardComponent")
 actor_path = NodePath("..")
+damage_invulnerability_seconds = 0.18
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="HurtBox"]
-shape = SubResource("BodyShape")
+position = Vector2(0, -12)
+shape = SubResource("HurtBoxShape")
+
+[node name="InteractionDetector" type="Area2D" parent="."]
+position = Vector2(0, -10)
+collision_layer = 0
+collision_mask = 32
+monitoring = true
+monitorable = false
+script = ExtResource("10_interactor")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="InteractionDetector"]
+shape = SubResource("InteractionShape")
+
+[node name="VisualRoot" type="Node2D" parent="."]
+texture_filter = 1
+script = ExtResource("11_visual")
+body_sprite_path = NodePath("BodyVisual")
+weapon_pivot_path = NodePath("WeaponPivot")
+guard_visual_path = NodePath("GuardVisual")
+
+[node name="MobilityVisual" type="Node2D" parent="VisualRoot"]
+position = Vector2(0, -4)
+z_index = -2
+
+[node name="BodyVisual" type="AnimatedSprite2D" parent="VisualRoot"]
+position = Vector2(-10, -28)
+sprite_frames = SubResource("PlayerSpriteFrames")
+animation = &"idle_down"
+autoplay = "idle_down"
+centered = false
+
+[node name="WeaponPivot" type="Node2D" parent="VisualRoot"]
+position = Vector2(0, -14)
+z_index = 1
+
+[node name="WeaponVisual" type="Line2D" parent="VisualRoot/WeaponPivot"]
+points = PackedVector2Array(3, 0, 18, 0)
+width = 3.0
+default_color = Color(0.55, 0.9, 1, 1)
+antialiased = false
+
+[node name="MuzzleSocket" type="Marker2D" parent="VisualRoot/WeaponPivot"]
+position = Vector2(20, 0)
+
+[node name="GuardVisual" type="Node2D" parent="VisualRoot"]
+z_index = 3
+script = ExtResource("12_guard_visual")
+
+[node name="VFXSockets" type="Node2D" parent="."]
+
+[node name="Body" type="Marker2D" parent="VFXSockets"]
+position = Vector2(0, -14)
+
+[node name="Foot" type="Marker2D" parent="VFXSockets"]
+
+[node name="Overhead" type="Marker2D" parent="VFXSockets"]
+position = Vector2(0, -32)
+
+[node name="AudioSockets" type="Node2D" parent="."]
+
+[node name="MovementLoop" type="AudioStreamPlayer2D" parent="AudioSockets"]
+position = Vector2(0, -8)
+max_distance = 420.0
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position_smoothing_enabled = true

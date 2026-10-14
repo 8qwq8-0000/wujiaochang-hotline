@@ -30,13 +30,13 @@ func _process(_delta: float) -> void:
 			_bind_player(_player)
 	if not is_instance_valid(_player):
 		return
-	health_label.text = "耐久  %d / %d" % [_player.health.current_health, _player.health.max_health]
-	heat_label.text = "热量  %03d / %03d%s" % [roundi(_player.heat.current_heat), roundi(_player.heat.max_heat), "  过热" if _player.heat.is_overheated else ""]
-	var mode := _player.mobility.get_current_mode()
-	mobility_label.text = "机动  %s  [1-4]" % mode.display_name
-	var weapon := _player.weapons.get_current_weapon()
-	weapon_label.text = "武装  %s  [滚轮]" % (weapon.display_name if weapon != null else "无")
-	guard_label.text = "格挡  %s" % _guard_state_name(_player.guard.state)
+	var health_state := _player.get_health_state()
+	var heat_state := _player.get_heat_state()
+	health_label.text = "耐久  %d / %d" % [health_state.current, health_state.maximum]
+	heat_label.text = "热量  %03d / %03d%s" % [roundi(heat_state.current), roundi(heat_state.maximum), "  过热" if heat_state.overheated else ""]
+	mobility_label.text = "机动  %s" % _player.get_mobility_display_name()
+	weapon_label.text = "武装  %s" % _player.get_weapon_display_name()
+	guard_label.text = "格挡  %s" % _guard_state_name(_player.get_guard_state())
 
 
 func _bind_player(player: PlayerController) -> void:

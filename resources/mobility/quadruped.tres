@@ -15,3 +15,6 @@ knockback_multiplier = 0.5
 ignores_ground_slow = true
 crosses_low_obstacles = true
 rough_terrain_multiplier = 0.95
+ability_active_seconds = 0.32
+locks_attack = true
+locks_guard = true

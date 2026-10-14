@@ -50,6 +50,10 @@ func is_guard_active() -> bool:
 	return state == State.PERFECT or state == State.NORMAL
 
 
+func reset_to_idle() -> void:
+	_enter_state(State.IDLE, 0.0)
+
+
 func advance_timing(delta: float) -> void:
 	var remaining_delta := maxf(delta, 0.0)
 	while state != State.IDLE and remaining_delta >= _time_remaining:

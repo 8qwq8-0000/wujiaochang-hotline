@@ -5,8 +5,9 @@ signal weapon_changed(index: int, data: WeaponComponentData)
 signal attack_performed(data: WeaponComponentData)
 
 const PROJECTILE_SCENE := preload("res://scenes/combat/projectile.tscn")
-const DEFAULT_WEAPONS := [
-	preload("res://resources/weapons/baton.tres"),
+const BATON := preload("res://resources/weapons/baton.tres")
+const DEBUG_WEAPONS := [
+	BATON,
 	preload("res://resources/weapons/service_pistol.tres"),
 	preload("res://resources/weapons/scattergun.tres"),
 ]
@@ -15,43 +16,76 @@ const DEFAULT_WEAPONS := [
 @export var heat_component_path: NodePath
 
 var weapons: Array[WeaponComponentData] = []
-var current_index: int = 1
+var current_index: int = 0
+var debug_loadout_enabled: bool = false
+var _current_weapon: WeaponComponentData = BATON
 var _cooldown_remaining: float = 0.0
+var _swing_remaining: float = 0.0
+var _swing_duration: float = 0.0
+var _swing_direction := Vector2.RIGHT
+var _swing_sign: float = -1.0
+var _swing_hits: Dictionary = {}
 
 @onready var heat_component: HeatComponent = get_node(heat_component_path)
 
 
 func _ready() -> void:
-	for data in DEFAULT_WEAPONS:
+	for data in DEBUG_WEAPONS:
 		weapons.append(data)
-	weapon_changed.emit(current_index, get_current_weapon())
+	weapon_changed.emit(current_index, _current_weapon)
 
 
 func _physics_process(delta: float) -> void:
 	_cooldown_remaining = maxf(_cooldown_remaining - delta, 0.0)
+	_swing_remaining = maxf(_swing_remaining - delta, 0.0)
+
+
+func configure(default_weapon: WeaponComponentData, enable_debug_loadout: bool) -> void:
+	debug_loadout_enabled = enable_debug_loadout
+	equip_weapon(default_weapon if default_weapon != null else BATON)
 
 
 func get_current_weapon() -> WeaponComponentData:
-	if weapons.is_empty():
-		return null
-	return weapons[current_index]
+	return _current_weapon
+
+
+func equip_weapon(data: WeaponComponentData) -> void:
+	if data == null:
+		return
+	_current_weapon = data
+	current_index = _index_for_id(data.id)
+	_cancel_swing()
+	weapon_changed.emit(current_index, _current_weapon)
+
+
+func equip_weapon_by_id(id: StringName) -> bool:
+	for data in weapons:
+		if data.id == id:
+			equip_weapon(data)
+			return true
+	return false
 
 
 func select_weapon(index: int) -> void:
-	if index < 0 or index >= weapons.size() or index == current_index:
+	if not debug_loadout_enabled or index < 0 or index >= weapons.size():
 		return
-	current_index = index
-	weapon_changed.emit(current_index, get_current_weapon())
+	equip_weapon(weapons[index])
 
 
 func cycle_weapon(step: int) -> void:
-	if weapons.is_empty():
+	if not debug_loadout_enabled or weapons.is_empty():
 		return
 	select_weapon(posmod(current_index + step, weapons.size()))
 
 
+func update_attack_pose(origin: Vector2, _direction: Vector2, source_node: Node) -> void:
+	if _swing_remaining <= 0.0 or _current_weapon == null:
+		return
+	_perform_melee_tick(_current_weapon, origin, _swing_direction, source_node)
+
+
 func try_attack(origin: Vector2, direction: Vector2, source_node: Node) -> bool:
-	var data := get_current_weapon()
+	var data := _current_weapon
 	if data == null or _cooldown_remaining > 0.0 or direction.is_zero_approx():
 		return false
 	if not heat_component.try_add_heat(data.heat_per_attack):
@@ -59,34 +93,59 @@ func try_attack(origin: Vector2, direction: Vector2, source_node: Node) -> bool:
 	_cooldown_remaining = data.cooldown
 	match data.attack_kind:
 		WeaponComponentData.AttackKind.MELEE:
-			_perform_melee(data, origin, direction.normalized(), source_node)
+			_begin_melee(data, direction.normalized())
 		WeaponComponentData.AttackKind.PROJECTILE, WeaponComponentData.AttackKind.SPREAD:
 			_perform_projectiles(data, origin, direction.normalized(), source_node)
 	attack_performed.emit(data)
 	return true
 
 
-func _perform_melee(data: WeaponComponentData, origin: Vector2, direction: Vector2, source_node: Node) -> void:
+func get_melee_swing_angle_offset() -> float:
+	if _swing_remaining <= 0.0 or _swing_duration <= 0.0 or _current_weapon == null:
+		return 0.0
+	var progress := 1.0 - _swing_remaining / _swing_duration
+	var half_arc := deg_to_rad(_current_weapon.melee_arc_degrees * 0.5)
+	return lerpf(-half_arc, half_arc, progress) * _swing_sign
+
+
+func reset_transient_state() -> void:
+	_cooldown_remaining = 0.0
+	_cancel_swing()
+
+
+func _begin_melee(data: WeaponComponentData, direction: Vector2) -> void:
+	_swing_direction = direction
+	_swing_duration = data.melee_active_seconds
+	_swing_remaining = _swing_duration
+	_swing_sign *= -1.0
+	_swing_hits.clear()
+
+
+func _perform_melee_tick(data: WeaponComponentData, origin: Vector2, direction: Vector2, source_node: Node) -> void:
 	var shape := CircleShape2D.new()
-	shape.radius = 18.0
+	shape.radius = data.melee_hit_radius
 	var query := PhysicsShapeQueryParameters2D.new()
 	query.shape = shape
-	query.transform = Transform2D(0.0, origin + direction * data.attack_range)
+	var sweep_direction := direction.rotated(get_melee_swing_angle_offset())
+	query.transform = Transform2D(0.0, origin + sweep_direction * data.attack_range)
 	query.collision_mask = 24
 	query.collide_with_areas = true
 	query.collide_with_bodies = false
 	var world := get_viewport().world_2d
 	if world == null:
 		return
-	var hits := world.direct_space_state.intersect_shape(query, 16)
-	for hit in hits:
+	for hit in world.direct_space_state.intersect_shape(query, 16):
 		var area: Object = hit.get("collider")
 		if area == null or not area.has_method("receive_hit"):
 			continue
-		var packet := _make_packet(data, origin, direction, source_node)
+		var instance_id := area.get_instance_id()
+		if _swing_hits.has(instance_id):
+			continue
+		_swing_hits[instance_id] = true
+		var packet := _make_packet(data, origin, sweep_direction, source_node)
 		packet.is_melee = true
 		packet.stagger_seconds = 0.75
-		packet.knockback = direction * 120.0
+		packet.knockback = sweep_direction * 120.0
 		area.receive_hit(packet)
 
 
@@ -112,3 +171,16 @@ func _make_packet(data: WeaponComponentData, origin: Vector2, direction: Vector2
 	packet.source_position = origin
 	packet.travel_direction = direction
 	return packet
+
+
+func _cancel_swing() -> void:
+	_swing_remaining = 0.0
+	_swing_duration = 0.0
+	_swing_hits.clear()
+
+
+func _index_for_id(id: StringName) -> int:
+	for index in weapons.size():
+		if weapons[index].id == id:
+			return index
+	return -1

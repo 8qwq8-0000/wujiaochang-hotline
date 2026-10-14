@@ -11,6 +11,9 @@ extends Resource
 @export_range(0.0, 1.0, 0.05) var knockback_multiplier: float = 1.0
 @export var ignores_ground_slow: bool = false
 @export var crosses_low_obstacles: bool = false
+@export_range(0.0, 2.0, 0.01) var ability_active_seconds: float = 0.0
+@export var locks_attack: bool = false
+@export var locks_guard: bool = false
 
 
 func calculate_velocity(input_vector: Vector2, current_velocity: Vector2, _facing: Vector2, delta: float) -> Vector2:

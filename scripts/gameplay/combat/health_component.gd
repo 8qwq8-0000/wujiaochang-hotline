@@ -5,9 +5,11 @@ signal health_changed(current: int, maximum: int, delta: int)
 signal damaged(amount: int, packet: DamagePacket)
 signal repaired(amount: int)
 signal died(packet: DamagePacket)
+signal fatal_damage_prevented(packet: DamagePacket)
 
 @export_range(1, 1000, 1) var max_health: int = 3
 var current_health: int
+var fatal_damage_interceptor: Callable
 
 
 func _ready() -> void:
@@ -28,10 +30,17 @@ func apply_damage(amount: int, packet: DamagePacket) -> int:
 	if amount <= 0 or is_dead():
 		return 0
 	var previous := current_health
-	current_health = maxi(current_health - amount, 0)
+	var would_be_fatal := amount >= current_health
+	var prevented := false
+	if would_be_fatal and fatal_damage_interceptor.is_valid():
+		prevented = bool(fatal_damage_interceptor.call(amount, packet))
+	current_health = 1 if prevented else maxi(current_health - amount, 0)
 	var applied := previous - current_health
-	damaged.emit(applied, packet)
+	if applied > 0:
+		damaged.emit(applied, packet)
 	health_changed.emit(current_health, max_health, -applied)
+	if prevented:
+		fatal_damage_prevented.emit(packet)
 	if current_health == 0:
 		died.emit(packet)
 	return applied
@@ -47,6 +56,11 @@ func repair(amount: int) -> int:
 		repaired.emit(applied)
 		health_changed.emit(current_health, max_health, applied)
 	return applied
+
+
+func set_current_health(value: int) -> void:
+	current_health = clampi(value, 0, max_health)
+	health_changed.emit(current_health, max_health, 0)
 
 
 func is_dead() -> bool:

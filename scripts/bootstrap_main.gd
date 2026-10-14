@@ -39,6 +39,7 @@ func _ensure_input_map() -> void:
 	_add_key_action(&"move_up", KEY_W)
 	_add_key_action(&"move_down", KEY_S)
 	_add_key_action(&"mobility_ability", KEY_SPACE)
+	_add_key_action(&"interact", KEY_E)
 	_add_key_action(&"mobility_1", KEY_1)
 	_add_key_action(&"mobility_2", KEY_2)
 	_add_key_action(&"mobility_3", KEY_3)
