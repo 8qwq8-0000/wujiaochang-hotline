@@ -13,7 +13,7 @@ signal player_died(packet: DamagePacket)
 
 const DEFAULT_CONFIG := preload("res://resources/player/default_player_config.tres")
 
-@export var config: PlayerConfig = DEFAULT_CONFIG
+@export var config: CombatPlayerConfig = DEFAULT_CONFIG
 
 @onready var inventory: ComponentInventory = $ComponentInventory
 @onready var health: HealthComponent = $HealthComponent

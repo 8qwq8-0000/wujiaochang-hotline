@@ -20,7 +20,7 @@ func test_player_scene_has_required_components() -> void:
 
 
 func test_default_player_config_uses_baton_and_walking() -> void:
-	var config: PlayerConfig = load("res://resources/player/default_player_config.tres")
+	var config: CombatPlayerConfig = load("res://resources/player/default_player_config.tres")
 	assert_eq(config.max_health, 3)
 	assert_true(is_equal_approx(config.damage_invulnerability_seconds, 0.18))
 	assert_eq(config.default_weapon.id, &"baton")
@@ -58,3 +58,11 @@ func test_mobility_action_locks_are_data_driven() -> void:
 	assert_true(quadruped.locks_attack)
 	assert_true(quadruped.locks_guard)
 	assert_false(flight.locks_guard)
+
+
+func test_player_config_does_not_shadow_menu_plugin() -> void:
+	var gameplay: Script = load("res://scripts/gameplay/player/player_config.gd")
+	var menu: Script = load("res://addons/maaacks_menus_template/base/nodes/config/player_config.gd")
+	assert_false(gameplay.get_global_name() == menu.get_global_name())
+	var config_resource: Resource = load("res://resources/player/default_player_config.tres")
+	assert_true(config_resource is CombatPlayerConfig)

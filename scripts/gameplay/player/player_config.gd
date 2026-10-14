@@ -1,4 +1,4 @@
-class_name PlayerConfig
+class_name CombatPlayerConfig
 extends Resource
 
 @export_range(1, 20, 1) var max_health: int = 3
