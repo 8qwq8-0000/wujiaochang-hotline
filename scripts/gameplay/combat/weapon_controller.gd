@@ -42,7 +42,11 @@ func _physics_process(delta: float) -> void:
 
 func configure(default_weapon: WeaponComponentData, enable_debug_loadout: bool) -> void:
 	debug_loadout_enabled = enable_debug_loadout
-	equip_weapon(default_weapon if default_weapon != null else BATON)
+	if enable_debug_loadout:
+		weapons.assign(DEBUG_WEAPONS)
+		equip_weapon(default_weapon if default_weapon != null else BATON)
+	else:
+		set_carried_weapons(default_weapon if default_weapon != null else BATON, null)
 
 
 func get_current_weapon() -> WeaponComponentData:
@@ -50,10 +54,11 @@ func get_current_weapon() -> WeaponComponentData:
 
 
 func equip_weapon(data: WeaponComponentData) -> void:
-	if data == null:
-		return
+	if not debug_loadout_enabled:
+		weapons[current_index] = data
 	_current_weapon = data
-	current_index = _index_for_id(data.id)
+	if debug_loadout_enabled and data != null:
+		current_index = _index_for_id(data.id)
 	_cancel_swing()
 	weapon_changed.emit(current_index, _current_weapon)
 
@@ -67,13 +72,16 @@ func equip_weapon_by_id(id: StringName) -> bool:
 
 
 func select_weapon(index: int) -> void:
-	if not debug_loadout_enabled or index < 0 or index >= weapons.size():
+	if index < 0 or index >= weapons.size() or index == current_index or weapons[index] == null:
 		return
-	equip_weapon(weapons[index])
+	current_index = index
+	_current_weapon = weapons[index]
+	_cancel_swing()
+	weapon_changed.emit(current_index, _current_weapon)
 
 
 func cycle_weapon(step: int) -> void:
-	if not debug_loadout_enabled or weapons.is_empty():
+	if weapons.is_empty() or step == 0:
 		return
 	select_weapon(posmod(current_index + step, weapons.size()))
 
@@ -181,6 +189,22 @@ func _cancel_swing() -> void:
 
 func _index_for_id(id: StringName) -> int:
 	for index in weapons.size():
-		if weapons[index].id == id:
+		if weapons[index] != null and weapons[index].id == id:
 			return index
 	return -1
+
+
+func set_equipped_weapon(data: WeaponComponentData) -> void:
+	set_carried_weapons(data, null)
+
+
+func set_carried_weapons(primary: WeaponComponentData, secondary: WeaponComponentData) -> void:
+	weapons.assign([primary, secondary])
+	if current_index >= weapons.size() or weapons[current_index] == null:
+		current_index = 0 if primary != null else (1 if secondary != null else 0)
+	var next_weapon := weapons[current_index]
+	if _current_weapon != next_weapon:
+		_cancel_swing()
+	_current_weapon = next_weapon
+	# A slot change cannot bypass attack cooldown or heat.
+	weapon_changed.emit(current_index, _current_weapon)

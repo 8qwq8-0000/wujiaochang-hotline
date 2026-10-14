@@ -15,6 +15,7 @@ const DEFAULT_CONFIG := preload("res://resources/player/default_player_config.tr
 
 @export var config: PlayerConfig = DEFAULT_CONFIG
 
+@onready var inventory: ComponentInventory = $ComponentInventory
 @onready var health: HealthComponent = $HealthComponent
 @onready var heat: HeatComponent = $HeatComponent
 @onready var guard: GuardComponent = $GuardComponent
@@ -58,11 +59,13 @@ func _ready() -> void:
 	hurt_box.hit_resolved.connect(_on_hit_resolved)
 	interactor.interaction_requested.connect(_on_interaction_requested)
 	core.circuit_breaker_triggered.connect(_on_circuit_breaker_triggered)
+	if not config.debug_loadout_enabled:
+		inventory._apply_equipment()
 	_emit_public_state()
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _dead or not _input_enabled or event.is_echo():
+	if _dead or not _input_enabled or inventory.is_open or event.is_echo():
 		return
 	if event.is_action_pressed("attack"):
 		_attack_pressed = true
@@ -76,11 +79,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		mobility.activate_ability(self, aim_direction)
 	if InputMap.has_action("interact") and event.is_action_pressed("interact"):
 		interactor.request_interaction(self)
+	if event.is_action_pressed("weapon_switch") or event.is_action_pressed("weapon_next"):
+		weapons.cycle_weapon(1)
+	if event.is_action_pressed("weapon_previous"):
+		weapons.cycle_weapon(-1)
 	if config.debug_loadout_enabled:
-		if event.is_action_pressed("weapon_next"):
-			weapons.cycle_weapon(1)
-		if event.is_action_pressed("weapon_previous"):
-			weapons.cycle_weapon(-1)
 		for index in 4:
 			if event.is_action_pressed("mobility_%d" % (index + 1)):
 				mobility.set_mode(index)
@@ -303,7 +306,7 @@ func _on_died(packet: DamagePacket) -> void:
 	combat_feedback_requested.emit(&"death", global_position)
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null:
-		events.publish_message("线路中断", Color(1.0, 0.35, 0.25))
+		events.publish_message("线路中断 · 按 R 重开战斗", Color(1.0, 0.35, 0.25))
 
 
 func _emit_public_state() -> void:

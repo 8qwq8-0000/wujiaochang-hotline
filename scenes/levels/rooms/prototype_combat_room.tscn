@@ -8,6 +8,8 @@
 [ext_resource type="Resource" path="res://resources/enemies/ranged_sightline.tres" id="6"]
 [ext_resource type="Resource" path="res://resources/enemies/heavy_anchor.tres" id="7"]
 
+[ext_resource type="NavigationPolygon" path="res://resources/enemies/prototype_navigation.tres" id="navigation"]
+
 [sub_resource type="RectangleShape2D" id="HorizontalWall"]
 size = Vector2(640, 16)
 
@@ -143,3 +145,6 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 3
 text = "清除必杀目标"
 horizontal_alignment = 1
+
+[node name="NavigationRegion2D" type="NavigationRegion2D" parent="."]
+navigation_polygon = ExtResource("navigation")

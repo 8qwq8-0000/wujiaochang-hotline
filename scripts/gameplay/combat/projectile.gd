@@ -28,7 +28,12 @@ func setup(owner_node: Node, source_faction: CombatFaction.Id, heading: Vector2,
 
 
 func _physics_process(delta: float) -> void:
-	global_position += direction * speed * delta
+	var next_position := global_position + direction * speed * delta
+	var query := PhysicsRayQueryParameters2D.create(global_position, next_position, 1)
+	if not get_world_2d().direct_space_state.intersect_ray(query).is_empty():
+		queue_free()
+		return
+	global_position = next_position
 	lifetime -= delta
 	if lifetime <= 0.0:
 		queue_free()

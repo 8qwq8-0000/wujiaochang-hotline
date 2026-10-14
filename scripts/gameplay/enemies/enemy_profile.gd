@@ -17,3 +17,5 @@ enum Role {
 @export_range(0.1, 5.0, 0.1) var attack_cooldown: float = 0.9
 @export_range(1, 10, 1) var damage: int = 1
 @export var body_color: Color = Color(0.9, 0.2, 0.2)
+
+@export_range(0.15, 1.5, 0.05) var attack_windup: float = 0.4

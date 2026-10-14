@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="WeaponComponentData" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/gameplay/combat/weapon_data.gd" id="1"]
+[resource]
+script = ExtResource("1")
+id = &"initial_baton"
+display_name = "初始警棍（绑定）"
+attack_kind = 0
+damage = 1
+cooldown = 0.55
+heat_per_attack = 12.0
+attack_range = 28.0
+damage_type = &"impact"

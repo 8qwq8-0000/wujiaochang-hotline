@@ -114,3 +114,7 @@ func _index_for_id(id: StringName) -> int:
 		if modes[index].id == id:
 			return index
 	return -1
+
+
+func set_equipped_mode(mode: MobilityMode) -> void:
+	equip_mode(mode)

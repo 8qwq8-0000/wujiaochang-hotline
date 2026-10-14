@@ -1,4 +1,4 @@
-[gd_scene load_steps=31 format=3]
+[gd_scene load_steps=34 format=3]
 
 [ext_resource type="Script" path="res://scripts/gameplay/player_controller.gd" id="1_controller"]
 [ext_resource type="Script" path="res://scripts/gameplay/combat/health_component.gd" id="2_health"]
@@ -16,6 +16,10 @@
 [ext_resource type="Texture2D" path="res://assets/art/characters/player/placeholder/placeholder_player_down.png" id="14_down"]
 [ext_resource type="Texture2D" path="res://assets/art/characters/player/placeholder/placeholder_player_up.png" id="15_up"]
 [ext_resource type="Texture2D" path="res://assets/art/characters/player/placeholder/placeholder_player_side.png" id="16_side"]
+
+[ext_resource type="Script" path="res://scripts/gameplay/inventory/component_inventory.gd" id="17_inventory"]
+[ext_resource type="Script" path="res://scripts/presentation/inventory_audio.gd" id="18_audio"]
+[ext_resource type="Script" path="res://scripts/gameplay/items/enemy_loot.gd" id="19_loot"]
 
 [sub_resource type="AtlasTexture" id="Atlas_down_0"]
 atlas = ExtResource("14_down")
@@ -213,3 +217,12 @@ max_distance = 420.0
 [node name="Camera2D" type="Camera2D" parent="."]
 position_smoothing_enabled = true
 position_smoothing_speed = 7.0
+
+[node name="ComponentInventory" type="Node" parent="."]
+script = ExtResource("17_inventory")
+
+[node name="InventoryAudio" type="Node" parent="ComponentInventory"]
+script = ExtResource("18_audio")
+
+[node name="EnemyLoot" type="Node" parent="ComponentInventory"]
+script = ExtResource("19_loot")

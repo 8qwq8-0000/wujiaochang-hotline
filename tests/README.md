@@ -24,3 +24,21 @@ godot --headless --path . --script res://tests/integration/restart_room_check.gd
 ```
 
 覆盖 R 键输入、忽略按键重复、连续触发合并，以及战斗中、死亡后、清场后的三次重开；检查玩家/敌人/热量/出口重置与旧子弹清理。
+
+组件和敌人检查也可独立运行：
+
+```sh
+godot --headless --path . --script res://tests/integration/inventory_check.gd
+godot --headless --path . --script res://tests/integration/enemy_loot_check.gd
+godot --headless --path . --script res://tests/integration/playthrough_check.gd
+```
+
+队友房间合并并应用接入补丁后，再运行 `tests/integration/week1_room_check.gd`；缺少房间时输出 SKIP。接入方法见 `docs/technical/组件背包与掉落实施说明.md`。
+
+背包全图暂停检查：`godot --headless --path . --script res://tests/integration/inventory_pause_check.gd`，覆盖敌人/子弹/热量/冷却停止，界面操作、Tab/Esc、死亡、暂停中重开和场景退出恢复。
+
+双武器携带与切换：`godot --headless --path . --script res://tests/integration/weapon_switch_check.gd`，覆盖主/副目标槽、Q/滚轮、空槽跳过、冷却/热量保留、满包替换及战斗/暂停/死亡限制。
+
+首次武器自动装副槽：`godot --headless --path . --script res://tests/integration/first_weapon_pickup_check.gd`，覆盖战斗中拾取、满包、副槽占用、仅首次触发、当前武器保留、立即使用和重复拾取保护。
+
+武器占格与开局配置：`godot --headless --path . --script res://tests/integration/backpack_weapon_capacity_check.gd`，覆盖初始 1/6、无地图赠品、主副武器计入六格、满包卸下不释放空间、同物品不重复装备，以及移除物品解除引用。
