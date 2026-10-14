@@ -81,7 +81,7 @@ func run() -> void:
 	press(KEY_Q)
 	await process_frame
 	check(player.weapons.current_index == 0, "cycling still skips empty reserve")
-	player.core.equip_core(&"", false)
+	player.circuit_breaker.set_equipped(false)
 	player.health.apply_damage(player.health.max_health, DamagePacket.new())
 	press(KEY_Q)
 	await process_frame

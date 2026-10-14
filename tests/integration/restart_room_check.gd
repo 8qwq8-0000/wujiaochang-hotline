@@ -61,7 +61,7 @@ func _run_checks() -> void:
 		player.heat.try_add_heat(player.heat.max_heat)
 		run_manager.set_scene_payload({"stale": true})
 		if round_index == 1:
-			player.core.equip_core(&"", false)
+			player.circuit_breaker.set_equipped(false)
 			player.health.apply_damage(player.health.max_health, DamagePacket.new())
 			_check(player.get("_dead"), "Player should be dead before restart")
 		if round_index == 2:

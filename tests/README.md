@@ -13,7 +13,7 @@
 - `test_combat_core.gd`：阵营倍率、整数伤害、120° 完美格挡与背击绕过；
 - `test_mobility.gd`：步行与三种机动套件的能力边界；
 - `test_floor_assembler.gd`：手工房间池的加权抽取边界。
-- `test_player_scene.gd`：玩家场景节点契约、默认装备、跨楼层状态和断路保险。
+- `test_player_scene.gd`：玩家场景节点契约、默认装备、断路保险换装不刷新，以及天赋核心协议/天赋/接管次数持久化。
 
 可从 Godot AI 测试面板运行全部 `test_*.gd`，也可在编辑器中打开主场景后执行测试。
 

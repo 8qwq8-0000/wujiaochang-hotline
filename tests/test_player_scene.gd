@@ -12,7 +12,8 @@ func test_player_scene_has_required_components() -> void:
 	assert_true(player != null)
 	assert_true(player.get_node_or_null("HealthComponent") is HealthComponent)
 	assert_true(player.get_node_or_null("StatusComponent") is StatusComponent)
-	assert_true(player.get_node_or_null("CoreController") is CoreController)
+	assert_true(player.get_node_or_null("TalentCoreController") is TalentCoreController)
+	assert_true(player.get_node_or_null("CircuitBreakerComponent") is CircuitBreakerComponent)
 	assert_true(player.get_node_or_null("InteractionDetector") is InteractorComponent)
 	assert_true(player.get_node_or_null("VisualRoot/BodyVisual") is AnimatedSprite2D)
 	assert_true(player.get_node_or_null("VisualRoot/WeaponPivot/MuzzleSocket") is Marker2D)
@@ -33,21 +34,58 @@ func test_circuit_breaker_prevents_only_first_fatal_hit() -> void:
 	var health := HealthComponent.new()
 	health.max_health = 3
 	health.current_health = 3
-	var core := CoreController.new()
-	core.equipped_core_id = CoreController.CIRCUIT_BREAKER_ID
-	core.circuit_breaker_armed = true
+	var breaker := CircuitBreakerComponent.new()
+	breaker.set_equipped(true)
 	health.fatal_damage_interceptor = func(_amount: int, _packet: DamagePacket) -> bool:
-		return core.try_prevent_fatal_damage()
+		return breaker.try_prevent_fatal_damage()
 	var packet := DamagePacket.new()
 	packet.base_damage = 5
 	packet.source_faction = CombatFaction.Id.ENEMY
 	health.apply_damage(packet.base_damage, packet)
 	assert_eq(health.current_health, 1)
-	assert_true(core.circuit_breaker_used)
+	assert_true(breaker.circuit_breaker_used)
 	health.apply_damage(1, packet)
 	assert_true(health.is_dead())
 	health.free()
-	core.free()
+	breaker.free()
+
+
+func test_circuit_breaker_re_equipping_does_not_refresh_it() -> void:
+	var breaker := CircuitBreakerComponent.new()
+	assert_true(breaker.try_prevent_fatal_damage())
+	breaker.set_equipped(false)
+	breaker.set_equipped(true)
+	assert_false(breaker.try_prevent_fatal_damage())
+	breaker.free()
+
+
+func test_talent_core_state_is_independent_and_persistent() -> void:
+	var talent_core := TalentCoreController.new()
+	talent_core.set_core_level(2)
+	assert_true(talent_core.set_protocol(TalentCoreController.ASSAULT_PROTOCOL))
+	assert_true(talent_core.set_talent_choice(
+		TalentCoreController.ASSAULT_PROTOCOL,
+		1,
+		&"rapid_fire"
+	))
+	assert_true(talent_core.set_talent_choice(
+		TalentCoreController.ASSAULT_PROTOCOL,
+		2,
+		&"switch_strike"
+	))
+	talent_core.refill_takeover_charges()
+	assert_true(talent_core.arm_takeover())
+	assert_true(talent_core.consume_takeover_after_success())
+
+	var restored := TalentCoreController.new()
+	restored.import_state(talent_core.export_state())
+	assert_eq(restored.core_level, 2)
+	assert_eq(restored.current_protocol_id, TalentCoreController.ASSAULT_PROTOCOL)
+	assert_eq(restored.get_talent_choice(TalentCoreController.ASSAULT_PROTOCOL, 1), &"rapid_fire")
+	assert_eq(restored.get_talent_choice(TalentCoreController.ASSAULT_PROTOCOL, 2), &"switch_strike")
+	assert_eq(restored.takeover_charges, 0)
+	talent_core.free()
+	restored.free()
 
 
 func test_mobility_action_locks_are_data_driven() -> void:

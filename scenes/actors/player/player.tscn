@@ -1,4 +1,4 @@
-[gd_scene load_steps=34 format=3]
+[gd_scene load_steps=35 format=3]
 
 [ext_resource type="Script" path="res://scripts/gameplay/player_controller.gd" id="1_controller"]
 [ext_resource type="Script" path="res://scripts/gameplay/combat/health_component.gd" id="2_health"]
@@ -8,11 +8,12 @@
 [ext_resource type="Script" path="res://scripts/gameplay/combat/weapon_controller.gd" id="6_weapon"]
 [ext_resource type="Script" path="res://scripts/gameplay/combat/hurt_box.gd" id="7_hurtbox"]
 [ext_resource type="Script" path="res://scripts/gameplay/player/status_component.gd" id="8_status"]
-[ext_resource type="Script" path="res://scripts/gameplay/player/core_controller.gd" id="9_core"]
+[ext_resource type="Script" path="res://scripts/gameplay/player/circuit_breaker_component.gd" id="9_breaker"]
 [ext_resource type="Script" path="res://scripts/gameplay/player/interactor_component.gd" id="10_interactor"]
 [ext_resource type="Script" path="res://scripts/gameplay/player/player_visual_controller.gd" id="11_visual"]
 [ext_resource type="Script" path="res://scripts/gameplay/player/guard_arc_visual.gd" id="12_guard_visual"]
 [ext_resource type="Resource" path="res://resources/player/default_player_config.tres" id="13_config"]
+[ext_resource type="Script" path="res://scripts/gameplay/player/talent_core_controller.gd" id="20_talent_core"]
 [ext_resource type="Texture2D" path="res://assets/art/characters/player/placeholder/placeholder_player_down.png" id="14_down"]
 [ext_resource type="Texture2D" path="res://assets/art/characters/player/placeholder/placeholder_player_up.png" id="15_up"]
 [ext_resource type="Texture2D" path="res://assets/art/characters/player/placeholder/placeholder_player_side.png" id="16_side"]
@@ -133,8 +134,11 @@ heat_component_path = NodePath("../HeatComponent")
 [node name="StatusComponent" type="Node" parent="."]
 script = ExtResource("8_status")
 
-[node name="CoreController" type="Node" parent="."]
-script = ExtResource("9_core")
+[node name="TalentCoreController" type="Node" parent="."]
+script = ExtResource("20_talent_core")
+
+[node name="CircuitBreakerComponent" type="Node" parent="."]
+script = ExtResource("9_breaker")
 
 [node name="HurtBox" type="Area2D" parent="."]
 collision_layer = 8

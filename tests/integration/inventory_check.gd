@@ -49,7 +49,7 @@ func run() -> void:
 	check(pickup.try_pickup(inv), "free cell permits world pickup")
 	check(not pickup.try_pickup(inv), "same pickup cannot be collected twice")
 	check(inv.backpack.get_item_count() == 6, "later pickup occupies freed cell")
-	player.core.equip_core(&"", false)
+	player.circuit_breaker.set_equipped(false)
 	player.health.apply_damage(player.health.max_health, DamagePacket.new())
 	check(not inv.can_change_equipment(), "dead player cannot change equipment")
 	check(not inv.pickup("baton"), "dead player cannot pick up")

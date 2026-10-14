@@ -66,7 +66,7 @@ func run() -> void:
 	check(paused, "closing does not undo an existing pause")
 	paused = false
 	inventory.set_open(true)
-	player.core.equip_core(&"", false)
+	player.circuit_breaker.set_equipped(false)
 	player.health.apply_damage(player.health.max_health, DamagePacket.new())
 	check(not paused and not inventory.is_open, "death releases inventory pause")
 	# Restart input from a paused panel must reach the normal restart handler.

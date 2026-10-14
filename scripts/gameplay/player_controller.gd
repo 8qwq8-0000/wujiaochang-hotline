@@ -22,7 +22,8 @@ const DEFAULT_CONFIG := preload("res://resources/player/default_player_config.tr
 @onready var mobility: MobilityController = $MobilityController
 @onready var weapons: WeaponController = $WeaponController
 @onready var statuses: StatusComponent = $StatusComponent
-@onready var core: CoreController = $CoreController
+@onready var talent_core: TalentCoreController = $TalentCoreController
+@onready var circuit_breaker: CircuitBreakerComponent = $CircuitBreakerComponent
 @onready var interactor: InteractorComponent = $InteractionDetector
 @onready var hurt_box: HurtBox2DComponent = $HurtBox
 @onready var visuals: PlayerVisualController = $VisualRoot
@@ -58,7 +59,7 @@ func _ready() -> void:
 	mobility.ability_activated.connect(_on_mobility_activated)
 	hurt_box.hit_resolved.connect(_on_hit_resolved)
 	interactor.interaction_requested.connect(_on_interaction_requested)
-	core.circuit_breaker_triggered.connect(_on_circuit_breaker_triggered)
+	circuit_breaker.circuit_breaker_triggered.connect(_on_circuit_breaker_triggered)
 	if not config.debug_loadout_enabled:
 		inventory._apply_equipment()
 	_emit_public_state()
@@ -142,8 +143,24 @@ func unequip_mobility() -> void:
 	mobility.unequip_mode()
 
 
-func equip_core(core_id: StringName, circuit_breaker_armed: bool = false) -> void:
-	core.equip_core(core_id, circuit_breaker_armed)
+func set_circuit_breaker_equipped(equipped: bool) -> void:
+	circuit_breaker.set_equipped(equipped)
+
+
+func set_combat_protocol(protocol_id: StringName) -> bool:
+	return talent_core.set_protocol(protocol_id)
+
+
+func set_protocol_talent(protocol_id: StringName, tier: int, talent_id: StringName) -> bool:
+	return talent_core.set_talent_choice(protocol_id, tier, talent_id)
+
+
+func respec_protocol(protocol_id: StringName) -> bool:
+	return talent_core.respec_protocol(protocol_id)
+
+
+func refill_ai_takeover_charges() -> void:
+	talent_core.refill_takeover_charges()
 
 
 func apply_knockback(force: Vector2) -> void:
@@ -188,7 +205,8 @@ func export_run_state() -> Dictionary:
 		"current_health": health.current_health,
 		"weapon_id": String(weapon.id) if weapon != null else "",
 		"mobility_id": String(mode.id) if mode != null else "walk",
-		"core": core.export_state(),
+		"talent_core": talent_core.export_state(),
+		"circuit_breaker": circuit_breaker.export_state(),
 	}
 
 
@@ -201,9 +219,15 @@ func import_run_state(state: Dictionary) -> void:
 		weapons.equip_weapon_by_id(StringName(state["weapon_id"]))
 	if not state.has("inventory") and state.has("mobility_id"):
 		mobility.equip_mode_by_id(StringName(state["mobility_id"]))
-	if state.has("core") and state["core"] is Dictionary:
-		core.import_state(state["core"])
+	if state.has("talent_core") and state["talent_core"] is Dictionary:
+		talent_core.import_state(state["talent_core"])
+	if state.has("circuit_breaker") and state["circuit_breaker"] is Dictionary:
+		circuit_breaker.import_state(state["circuit_breaker"])
+	elif state.has("core") and state["core"] is Dictionary:
+		# Import snapshots created before the talent core and breaker were split.
+		circuit_breaker.import_state(state["core"])
 	health.set_current_health(int(state.get("current_health", health.max_health)))
+	talent_core.sync_health(health.current_health)
 	reset_transient_state()
 
 
@@ -247,7 +271,7 @@ func _should_attack_this_frame() -> bool:
 
 
 func _try_prevent_fatal_damage(_amount: int, _packet: DamagePacket) -> bool:
-	if not core.try_prevent_fatal_damage():
+	if not circuit_breaker.try_prevent_fatal_damage():
 		return false
 	statuses.clear_all()
 	hurt_box.set_invulnerable(1.2)
@@ -255,6 +279,7 @@ func _try_prevent_fatal_damage(_amount: int, _packet: DamagePacket) -> bool:
 
 
 func _on_health_changed(current: int, maximum: int, delta: int) -> void:
+	talent_core.sync_health(current)
 	health_changed.emit(current, maximum, delta)
 
 
