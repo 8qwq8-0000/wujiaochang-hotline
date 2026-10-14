@@ -11,6 +11,7 @@ enum State {
 	DEAD,
 	WINDUP,
 	PATROL,
+	RETURN_TO_PATROL,
 }
 
 const PROJECTILE_SCENE := preload("res://scenes/combat/projectile.tscn")
@@ -22,7 +23,8 @@ var _alerted := false
 var _memory_remaining := 0.0
 var _last_known_position := Vector2.ZERO
 var _patrol_anchor := Vector2.ZERO
-var _patrol_axis := Vector2.LEFT
+var _patrol_axis := Vector2.RIGHT
+var _patrol_axis_initialized := false
 var _patrol_index := 0
 var _patrol_wait_remaining := 0.0
 var _patrol_blocked_seconds := 0.0
@@ -55,7 +57,6 @@ func _ready() -> void:
 		profile = preload("res://resources/enemies/melee_pressure.tres")
 	apply_profile(profile)
 	_patrol_anchor = global_position
-	_patrol_axis = facing
 	_patrol_wait_remaining = profile.patrol_pause_seconds
 	_warning_audio = AudioStreamPlayer.new()
 	_warning_audio.stream = ATTACK_WARNING
@@ -329,10 +330,14 @@ func _tick_patrol(delta: float) -> void:
 	velocity = Vector2.ZERO
 	if not profile.patrol_enabled:
 		return
+	if not _patrol_axis_initialized:
+		_patrol_axis = _choose_patrol_axis()
+		_patrol_axis_initialized = true
 	if _patrol_wait_remaining > 0.0:
 		_patrol_wait_remaining = maxf(_patrol_wait_remaining - delta, 0.0)
 		return
-	if global_position.distance_to(_patrol_anchor) > profile.patrol_distance + 4.0:
+	var offset := global_position - _patrol_anchor
+	if offset.length() > profile.patrol_distance + 4.0 or absf(offset.cross(_patrol_axis)) > 2.0:
 		_returning_to_patrol = true
 	var sign_value := 1.0 if _patrol_index == 0 else -1.0
 	var destination := _patrol_anchor if _returning_to_patrol else _patrol_anchor + _patrol_axis * profile.patrol_distance * sign_value
@@ -340,14 +345,14 @@ func _tick_patrol(delta: float) -> void:
 		_returning_to_patrol = false
 		_finish_patrol_leg()
 		return
-	var direction := _direction_to_position(destination)
+	var direction := _direction_to_position(destination) if _returning_to_patrol else _patrol_axis * sign_value
 	var speed := profile.move_speed * profile.patrol_speed_ratio
 	var next_position := global_position + direction * speed * delta
-	# A route around cover must not turn a short patrol into a map-wide walk.
+	# Patrol follows one fixed axis; only returning from chase uses navigation.
 	if not _returning_to_patrol and next_position.distance_to(_patrol_anchor) > profile.patrol_distance + 4.0:
 		_finish_patrol_leg()
 		return
-	state = State.PATROL
+	state = State.RETURN_TO_PATROL if _returning_to_patrol else State.PATROL
 	velocity = direction * speed
 	if not direction.is_zero_approx():
 		facing = direction
@@ -365,3 +370,24 @@ func _finish_patrol_leg() -> void:
 	_patrol_blocked_seconds = 0.0
 	state = State.IDLE
 	velocity = Vector2.ZERO
+
+
+func _choose_patrol_axis() -> Vector2:
+	if profile.patrol_axis == EnemyProfile.PatrolAxis.HORIZONTAL:
+		return Vector2.RIGHT
+	if profile.patrol_axis == EnemyProfile.PatrolAxis.VERTICAL:
+		return Vector2.DOWN
+	var nearest_distance := INF
+	var axis := Vector2.RIGHT
+	for direction in [Vector2.LEFT, Vector2.RIGHT, Vector2.UP, Vector2.DOWN]:
+		var ray := PhysicsRayQueryParameters2D.create(_patrol_anchor, _patrol_anchor + direction * 256.0, 1)
+		var hit := get_world_2d().direct_space_state.intersect_ray(ray)
+		if hit.is_empty():
+			continue
+		var distance := _patrol_anchor.distance_to(hit.position)
+		if distance < nearest_distance:
+			nearest_distance = distance
+			# A wall normal points across the wall; patrol is tangent to it.
+			var normal: Vector2 = hit.normal
+			axis = Vector2.RIGHT if absf(normal.y) > absf(normal.x) else Vector2.DOWN
+	return axis

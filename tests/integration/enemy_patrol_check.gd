@@ -9,6 +9,7 @@ func check(value: bool, message: String) -> void:
 func new_enemy(room: Node, location: Vector2) -> EnemyController:
 	var enemy: EnemyController = load("res://scenes/actors/enemies/enemy.tscn").instantiate()
 	enemy.profile = load("res://resources/enemies/melee_pressure.tres").duplicate()
+	enemy.profile.patrol_axis = EnemyProfile.PatrolAxis.HORIZONTAL
 	enemy.profile.patrol_distance = 24
 	enemy.profile.patrol_pause_seconds = 0.1
 	enemy.profile.patrol_speed_ratio = 0.75
@@ -33,13 +34,16 @@ func run() -> void:
 	var minimum_x := anchor.x
 	var maximum_x := anchor.x
 	var largest_distance := 0.0
+	var largest_lane_error := 0.0
 	for frame in 220:
 		enemy._physics_process(1.0 / 60.0)
 		minimum_x = minf(minimum_x, enemy.global_position.x)
 		maximum_x = maxf(maximum_x, enemy.global_position.x)
 		largest_distance = maxf(largest_distance, enemy.global_position.distance_to(anchor))
+		largest_lane_error = maxf(largest_lane_error, absf(enemy.global_position.y - anchor.y))
 		await physics_frame
 	check(minimum_x < anchor.x - 12 and maximum_x > anchor.x + 12, "patrol visits both sides without a player in scene")
+	check(largest_lane_error < 0.1, "horizontal patrol stays on one line without navigation detours")
 	check(largest_distance <= 28, "patrol remains near original spawn")
 	enemy.set_physics_process(true)
 	paused = true
@@ -94,6 +98,46 @@ func run() -> void:
 	blocked.health.apply_damage(blocked.health.max_health, DamagePacket.new())
 	blocked._physics_process(1.0)
 	check(blocked.state == EnemyController.State.DEAD and blocked.global_position == dead_position, "dead enemy does not resume patrol")
+	# Automatic selection reads the nearest wall normal after physics registration.
+	var vertical_wall := StaticBody2D.new()
+	var vertical_shape := CollisionShape2D.new()
+	var vertical_rectangle := RectangleShape2D.new()
+	vertical_rectangle.size = Vector2(8, 160)
+	vertical_shape.shape = vertical_rectangle
+	vertical_wall.add_child(vertical_shape)
+	vertical_wall.position = Vector2(480, 200)
+	room.add_child(vertical_wall)
+	var vertical := new_enemy(room, Vector2(500, 200))
+	vertical.profile.patrol_axis = EnemyProfile.PatrolAxis.AUTO_WALL
+	var horizontal_wall := StaticBody2D.new()
+	var horizontal_shape := CollisionShape2D.new()
+	var horizontal_rectangle := RectangleShape2D.new()
+	horizontal_rectangle.size = Vector2(160, 8)
+	horizontal_shape.shape = horizontal_rectangle
+	horizontal_wall.add_child(horizontal_shape)
+	horizontal_wall.position = Vector2(700, 180)
+	room.add_child(horizontal_wall)
+	var horizontal := new_enemy(room, Vector2(700, 200))
+	horizontal.profile.patrol_axis = EnemyProfile.PatrolAxis.AUTO_WALL
+	await physics_frame
+	await physics_frame
+	var vertical_min := 200.0
+	var vertical_max := 200.0
+	var horizontal_min := 700.0
+	var horizontal_max := 700.0
+	var stable_lanes := true
+	for frame in 150:
+		vertical._physics_process(1.0 / 60.0)
+		horizontal._physics_process(1.0 / 60.0)
+		vertical_min = minf(vertical_min, vertical.global_position.y)
+		vertical_max = maxf(vertical_max, vertical.global_position.y)
+		horizontal_min = minf(horizontal_min, horizontal.global_position.x)
+		horizontal_max = maxf(horizontal_max, horizontal.global_position.x)
+		stable_lanes = stable_lanes and absf(vertical.global_position.x - 500.0) < 0.1 and absf(horizontal.global_position.y - 200.0) < 0.1
+		await physics_frame
+	check(vertical.get("_patrol_axis") == Vector2.DOWN and vertical_min < 188 and vertical_max > 212, "vertical wall selects up/down patrol")
+	check(horizontal.get("_patrol_axis") == Vector2.RIGHT and horizontal_min < 688 and horizontal_max > 712, "horizontal wall selects left/right patrol")
+	check(stable_lanes, "automatic patrol remains parallel to each wall without drifting")
 	room.queue_free()
 	await process_frame
 	print("Enemy patrol failures: ", failures)

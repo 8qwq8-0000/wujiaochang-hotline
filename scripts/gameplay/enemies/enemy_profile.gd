@@ -1,6 +1,8 @@
 class_name EnemyProfile
 extends Resource
 
+enum PatrolAxis { AUTO_WALL, HORIZONTAL, VERTICAL }
+
 enum Role {
 	MELEE_PRESSURE,
 	RANGED_SIGHTLINE,
@@ -27,6 +29,7 @@ enum Role {
 @export_range(0.1, 10.0, 0.1) var alert_memory_seconds: float = 3.0
 
 @export var patrol_enabled: bool = false
+@export var patrol_axis: PatrolAxis = PatrolAxis.AUTO_WALL
 @export_range(8.0, 128.0, 1.0) var patrol_distance: float = 32.0
 @export_range(0.1, 1.0, 0.05) var patrol_speed_ratio: float = 0.45
 @export_range(0.0, 5.0, 0.1) var patrol_pause_seconds: float = 1.2
