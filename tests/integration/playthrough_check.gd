@@ -35,33 +35,48 @@ func run() -> void:
 			quit(1)
 			return
 		var inventory := player.get_node("ComponentInventory") as ComponentInventory
-		check(inventory.backpack.get_item_count() == 0 and inventory.weapon_slot.get_item() == null and inventory.secondary_weapon_slot.get_item() == null, "fresh run has no stale inventory")
+		check(inventory.backpack.get_item_count() == 1 and inventory.weapon_slot.get_item() != null and inventory.secondary_weapon_slot.get_item() == null, "fresh run has no stale inventory")
+		check(get_nodes_in_group("component_pickups").is_empty(), "no free starter pickups")
+		for enemy in get_nodes_in_group("enemies"):
+			if enemy.profile.role == EnemyProfile.Role.RANGED_SIGHTLINE:
+				enemy.health.apply_damage(enemy.health.max_health, DamagePacket.new())
+				break
+		await process_frame
+		await process_frame
+		var drop := get_first_node_in_group("component_pickups") as ComponentPickup
+		check(drop != null, "enemy supplies first weapon")
+		if drop == null:
+			quit(1)
+			return
+		player.global_position = drop.global_position
+		await physics_frame
+		await process_frame
 		press_key(KEY_E)
 		await process_frame
-		check(inventory.backpack.get_item_count() == 0 and inventory.secondary_weapon_slot.get_item() != null, "E puts first weapon into reserve")
+		check(inventory.backpack.get_item_count() == 2 and inventory.secondary_weapon_slot.get_item() != null, "E puts first weapon into reserve")
 		check(inventory.pickup("pistol"), "later weapon enters backpack")
 		press_key(KEY_TAB)
 		await process_frame
 		check(inventory.is_open, "Tab opens actual panel")
-		inventory.panel.get("_buttons")[0].pressed.emit()
-		check(inventory.weapon_slot.get_item() == null, "panel blocks combat equipment change")
+		inventory.panel.get("_buttons")[2].pressed.emit()
+		check(str(inventory.weapon_slot.get_item().get_property("effect")).ends_with("initial_baton.tres"), "panel blocks combat equipment change")
 		press_key(KEY_TAB)
 		for enemy in get_nodes_in_group("enemies"):
 			enemy.health.apply_damage(enemy.health.max_health, DamagePacket.new())
 		await process_frame
 		await process_frame
 		check(root.get_node("RunManager").mandatory_enemies_remaining == 0, "floor is cleared")
-		check(get_nodes_in_group("component_pickups").size() == 4, "remaining starter plus three enemy drops")
+		check(get_nodes_in_group("component_pickups").size() == 2, "only remaining two enemy drops")
 		press_key(KEY_TAB)
 		await process_frame
-		inventory.panel.get("_buttons")[0].pressed.emit()
+		inventory.panel.get("_buttons")[2].pressed.emit()
 		check(player.weapons.get_current_weapon().id == &"service_pistol", "panel equipment changes weapon")
 		# Exercise the second cell's captured index and a real mobility component.
 		inventory.pickup("wheel")
 		inventory.pickup("baton")
-		inventory.panel.get("_buttons")[1].pressed.emit()
+		inventory.panel.get("_buttons")[4].pressed.emit()
 		check(player.weapons.get_current_weapon().id == &"baton", "second cell equips the selected item")
-		inventory.panel.get("_buttons")[0].pressed.emit()
+		inventory.panel.get("_buttons")[3].pressed.emit()
 		check(player.mobility.get_current_mode().id == &"wheel", "first cell equips wheel independently")
 		press_key(KEY_ESCAPE)
 		await process_frame

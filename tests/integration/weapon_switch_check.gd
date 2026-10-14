@@ -32,16 +32,16 @@ func run() -> void:
 	check(inventory.pickup("pistol"), "pickup reserve replacement")
 	inventory.set_open(true)
 	inventory.panel.get("_weapon_target").select(1)
-	inventory.panel.get("_buttons")[0].pressed.emit()
+	inventory.panel.get("_buttons")[2].pressed.emit()
 	check(inventory.secondary_weapon_slot.get_item() != null, "UI equips reserve slot")
-	check(inventory.weapon_slot.get_item() == null, "primary initial weapon is preserved")
+	check(inventory.weapon_slot.get_item() != null, "primary initial weapon is preserved")
 	check(player.weapons.get_current_weapon().id == &"service_pistol", "new reserve is selected")
 	press(KEY_Q)
 	await process_frame
 	check(player.weapons.current_index == 1, "paused inventory blocks weapon cycling")
 	inventory.set_open(false)
-	check(inventory.backpack.get_item_count() == 1, "old reserve returned to bag")
-	inventory.backpack.remove_item(inventory.backpack.get_items()[0])
+	check(inventory.backpack.get_item_count() == 3, "all three weapon items remain in bag")
+	inventory.backpack.remove_item(inventory.backpack.get_items()[1])
 	root.get_node("RunManager").set_mandatory_enemy_count(1)
 	player.weapons.set("_cooldown_remaining", 0.8)
 	player.heat.current_heat = 30
@@ -59,21 +59,20 @@ func run() -> void:
 	await process_frame
 	check(player.weapons.current_index == 1, "scroll switches to carried reserve")
 	check(inventory.pickup("scattergun"), "pickup new weapon")
-	check(not inventory.equip(0, 1), "combat blocks replacing carried weapons")
+	check(not inventory.equip(2, 1), "combat blocks replacing carried weapons")
 	check(not inventory.unequip("weapon_secondary"), "combat blocks unequipping reserve")
 	root.get_node("RunManager").set_mandatory_enemy_count(0)
-	for index in 5:
+	for index in 3:
 		inventory.pickup("baton")
 	check(inventory.backpack.get_item_count() == 6, "fill backpack")
 	var old_id: String = inventory.secondary_weapon_slot.get_item().get_property("instance_id")
-	check(inventory.equip(0, 1), "full backpack swaps reserve safely")
+	check(inventory.equip(2, 1), "full backpack swaps reserve safely")
 	check(inventory.backpack.get_item_count() == 6, "swap retains capacity")
 	var returned := false
 	for item in inventory.backpack.get_items():
 		returned = returned or item.get_property("instance_id") == old_id
 	check(returned, "replaced reserve returns to backpack")
-	inventory.backpack.remove_item(inventory.backpack.get_items()[0])
-	check(inventory.unequip("weapon_secondary"), "clear reserve")
+	check(inventory.unequip("weapon_secondary"), "clear reserve while full without freeing its cell")
 	check(player.weapons.current_index == 0, "removing active reserve falls back to primary")
 	press(KEY_Q)
 	await process_frame

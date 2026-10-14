@@ -32,7 +32,7 @@ func _physics_process(delta: float) -> void:
 
 
 func get_current_weapon() -> WeaponComponentData:
-	if weapons.is_empty():
+	if weapons.is_empty() or current_index >= weapons.size():
 		return null
 	return weapons[current_index]
 
@@ -125,8 +125,8 @@ func set_equipped_weapon(data: WeaponComponentData) -> void:
 
 
 func set_carried_weapons(primary: WeaponComponentData, secondary: WeaponComponentData) -> void:
-	weapons.assign([primary if primary != null else preload("res://resources/weapons/initial_baton.tres"), secondary])
+	weapons.assign([primary, secondary])
 	if current_index >= weapons.size() or weapons[current_index] == null:
-		current_index = 0
+		current_index = 0 if primary != null else (1 if secondary != null else 0)
 	# Switching slots keeps the shared attack cooldown and player heat.
 	weapon_changed.emit(current_index, get_current_weapon())

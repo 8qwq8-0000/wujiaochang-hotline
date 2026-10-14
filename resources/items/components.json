@@ -26,5 +26,13 @@
     "effect": "res://resources/mobility/wheel.tres",
     "image": "res://assets/art/items/wheel.svg",
     "maximum_stack_size": 1
+  },
+  "initial_baton": {
+    "name": "初始警棍（绑定）",
+    "slot": "weapon",
+    "effect": "res://resources/weapons/initial_baton.tres",
+    "image": "res://assets/art/items/baton.svg",
+    "maximum_stack_size": 1,
+    "bound": true
   }
 }

@@ -82,7 +82,7 @@ func run() -> void:
 	check(get_nodes_in_group("component_pickups").size() == before + enemies.size(), "one drop per death, no duplicate")
 	check(root.get_node("RunManager").mandatory_enemies_remaining == 0, "clearing enables equipment")
 	var inventory := player.get_node("ComponentInventory") as ComponentInventory
-	check(inventory.pickup("pistol") and inventory.pickup("pistol") and inventory.equip(0), "loot-compatible weapon can equip after clear")
+	check(inventory.pickup("pistol") and inventory.pickup("pistol") and inventory.equip(2), "loot-compatible weapon can equip after clear")
 	var shot_count := scene.find_children("Projectile", "Area2D", true, false).size()
 	check(player.weapons.try_attack(player.global_position, Vector2.RIGHT, player), "equipped weapon can fire")
 	check(scene.find_children("Projectile*", "Area2D", true, false).size() > shot_count, "equipped pistol creates projectile")

@@ -58,20 +58,20 @@ func run() -> void:
 			await process_frame
 			key(KEY_E)
 			await process_frame
-		check(inventory.backpack.get_item_count() == 0 and inventory.secondary_weapon_slot.get_item() != null, "E auto-equips first weapon")
+		check(inventory.backpack.get_item_count() == 2 and inventory.secondary_weapon_slot.get_item() != null, "E auto-equips first weapon")
 		for enemy in get_nodes_in_group("enemies"):
 			enemy.health.apply_damage(enemy.health.max_health, DamagePacket.new())
 		await process_frame
 		await process_frame
 		check(root.get_node("RunManager").mandatory_enemies_remaining == 0, "room clear updates objective")
 		check(get_nodes_in_group("component_pickups").size() == actual_count, "one drop per enemy in teammate room")
-		check(inventory.pickup("pistol") and inventory.equip(0), "can equip later weapon after teammate room clears")
+		check(inventory.pickup("pistol") and inventory.equip(2), "can equip later weapon after teammate room clears")
 		key(KEY_R)
 		player = await wait_room(scene)
 		check(player != null, "standalone and Main support restart")
 		if player != null:
 			inventory = player.get_node("ComponentInventory") as ComponentInventory
-			check(inventory.backpack.get_item_count() == 0, "restart clears teammate-room inventory")
+			check(inventory.backpack.get_item_count() == 1, "restart restores only the initial weapon")
 		current_scene.queue_free()
 		await process_frame
 		print("Week1 room mode complete: ", "F6" if standalone else "Main")

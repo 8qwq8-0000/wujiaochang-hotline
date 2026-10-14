@@ -39,3 +39,5 @@ godot --headless --path . --script res://tests/integration/playthrough_check.gd
 双武器携带与切换：`godot --headless --path . --script res://tests/integration/weapon_switch_check.gd`，覆盖主/副目标槽、Q/滚轮、空槽跳过、冷却/热量保留、满包替换及战斗/暂停/死亡限制。
 
 首次武器自动装副槽：`godot --headless --path . --script res://tests/integration/first_weapon_pickup_check.gd`，覆盖战斗中拾取、满包、副槽占用、仅首次触发、当前武器保留、立即使用和重复拾取保护。
+
+武器占格与开局配置：`godot --headless --path . --script res://tests/integration/backpack_weapon_capacity_check.gd`，覆盖初始 1/6、无地图赠品、主副武器计入六格、满包卸下不释放空间、同物品不重复装备，以及移除物品解除引用。

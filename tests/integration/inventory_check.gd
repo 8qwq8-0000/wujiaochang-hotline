@@ -24,23 +24,23 @@ func run() -> void:
 	for enemy in get_nodes_in_group("enemies"):
 		enemy.set_physics_process(false)
 	var inventory := player.get_node("ComponentInventory") as ComponentInventory
-	check(inventory.backpack.get_item_count() == 0, "backpack starts empty")
+	check(inventory.backpack.get_item_count() == 1, "initial weapon occupies a backpack cell")
 	check(inventory.pickup("pistol"), "first weapon equips reserve")
 	check(inventory.secondary_weapon_slot.get_item() != null, "reserve filled automatically")
 	check(inventory.pickup("pistol"), "later weapon enters backpack")
-	check(not inventory.equip(0), "cannot equip during combat")
+	check(not inventory.equip(2), "cannot equip during combat")
 	for enemy in get_nodes_in_group("enemies"):
 		enemy.health.apply_damage(enemy.health.max_health, DamagePacket.new())
 	await process_frame
 	check(inventory.can_change_equipment(), "cleared floor allows equipment")
-	check(inventory.equip(0), "equip pistol")
+	check(inventory.equip(2), "equip pistol")
 	check(player.weapons.get_current_weapon().attack_kind == WeaponComponentData.AttackKind.PROJECTILE, "equipped pistol changes attacks")
 	var equipped_id := str(inventory.weapon_slot.get_item().get_property("instance_id"))
-	for index in 6:
+	for index in 3:
 		check(inventory.pickup("wheel" if index == 0 else "baton"), "fill backpack")
 	check(not inventory.pickup("pistol"), "seventh pickup is rejected")
-	check(not inventory.unequip("weapon"), "cannot unequip into full backpack")
-	check(inventory.equip(1), "swap weapon with full backpack")
+	check(inventory.unequip("weapon"), "weapon unequip retains its existing cell even when full")
+	check(inventory.equip(5), "swap weapon with full backpack")
 	check(inventory.backpack.get_item_count() == 6, "full swap keeps six items")
 	check(player.weapons.get_current_weapon().attack_kind == WeaponComponentData.AttackKind.MELEE, "baton changes attacks")
 	var returned := false
@@ -51,7 +51,7 @@ func run() -> void:
 		check(not identifiers.has(instance_id), "each item has a unique instance")
 		identifiers[instance_id] = true
 	check(returned, "old equipped item returns to backpack")
-	check(inventory.equip(0), "equip mobility")
+	check(inventory.equip(3), "equip mobility")
 	check(player.mobility.get_current_mode().id == &"wheel", "wheel changes mobility")
 	check(inventory.unequip("mobility"), "unequip mobility")
 	check(player.mobility.get_current_mode().id == &"walk", "unequip restores walk")
@@ -60,7 +60,7 @@ func run() -> void:
 	pickup.global_position = player.global_position
 	check(not pickup.try_pickup(inventory), "full backpack leaves world pickup")
 	check(not pickup.is_queued_for_deletion(), "failed pickup remains")
-	inventory.backpack.remove_item(inventory.backpack.get_items()[0])
+	inventory.backpack.remove_item(inventory.backpack.get_items()[4])
 	check(pickup.try_pickup(inventory), "world pickup succeeds with space")
 	check(not pickup.try_pickup(inventory), "same world pickup cannot be collected twice")
 	var tab := InputEventKey.new()
@@ -77,7 +77,7 @@ func run() -> void:
 	check(not inventory.is_open, "Esc closes backpack")
 	player.health.apply_damage(player.health.max_health, DamagePacket.new())
 	check(not inventory.pickup("pistol"), "dead player cannot pick up")
-	check(not inventory.equip(0), "dead player cannot change equipment")
+	check(not inventory.equip(2), "dead player cannot change equipment")
 	print("Inventory integration failures: ", failures)
 	scene.queue_free()
 	await process_frame

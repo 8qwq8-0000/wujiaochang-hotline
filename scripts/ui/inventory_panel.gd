@@ -115,14 +115,19 @@ func refresh() -> void:
 	var items := inventory.backpack.get_items()
 	for index in _buttons.size():
 		var item: InventoryItem = items[index] if index < items.size() else null
-		_buttons[index].text = item.get_title() if item != null else "空格"
+		var tag := ""
+		if item != null and inventory.weapon_slot.get_item() == item:
+			tag = " [主]"
+		elif item != null and inventory.secondary_weapon_slot.get_item() == item:
+			tag = " [副]"
+		_buttons[index].text = item.get_title().replace("（绑定）", "") + tag if item != null else "空格"
 		_buttons[index].icon = item.get_texture() if item != null else null
 		_buttons[index].disabled = item == null
 		_buttons[index].tooltip_text = "点击装备：%s" % item.get_title() if item != null else ""
 	var weapon := inventory.weapon_slot.get_item()
 	var secondary := inventory.secondary_weapon_slot.get_item()
 	var mode := inventory.mobility_slot.get_item()
-	_weapon.text = "主：%s · 卸下" % (weapon.get_title() if weapon != null else "初始警棍（绑定）")
+	_weapon.text = "主：%s · 卸下" % (weapon.get_title() if weapon != null else "空")
 	_secondary.text = "副：%s · 卸下" % (secondary.get_title() if secondary != null else "空")
 	_secondary.disabled = secondary == null
 	_mobility.text = "机动：%s · 卸下" % (mode.get_title() if mode != null else "基础步行")
