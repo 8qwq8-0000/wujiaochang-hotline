@@ -232,15 +232,14 @@ func _on_died(_packet: DamagePacket) -> void:
 
 
 func _draw() -> void:
-	draw_line(Vector2.ZERO, facing * 16.0, Color(0.9, 0.95, 1.0), 2.0)
 	if _alerted and state != State.DEAD:
 		draw_circle(Vector2(0, -22), 3.0, Color(1.0, 0.8, 0.2))
 	var color := profile.body_color if profile != null else Color.RED
 	draw_circle(Vector2.ZERO, 11.0, color)
 	draw_arc(Vector2.ZERO, 13.0, 0.0, TAU, 24, color.lightened(0.35), 2.0)
-	if profile != null and profile.role == EnemyProfile.Role.RANGED_SIGHTLINE:
-		draw_line(Vector2.ZERO, Vector2(17.0, 0.0), Color.WHITE, 2.0)
-	elif profile != null and profile.role == EnemyProfile.Role.HEAVY_ANCHOR:
+	# One shared direction line: the ranged weapon also follows this heading.
+	draw_line(Vector2.ZERO, facing * 17.0, Color.WHITE, 2.0)
+	if profile != null and profile.role == EnemyProfile.Role.HEAVY_ANCHOR:
 		draw_rect(Rect2(-8.0, -8.0, 16.0, 16.0), color.darkened(0.25), false, 3.0)
 
 	if state == State.WINDUP:
