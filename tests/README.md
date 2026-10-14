@@ -23,3 +23,13 @@ godot --headless --path . --script res://tests/integration/restart_room_check.gd
 ```
 
 覆盖 R 键输入、忽略按键重复、连续触发合并，以及战斗中、死亡后、清场后的三次重开；检查玩家/敌人/热量/出口重置与旧子弹清理。
+
+组件和敌人检查也可独立运行：
+
+```sh
+godot --headless --path . --script res://tests/integration/inventory_check.gd
+godot --headless --path . --script res://tests/integration/enemy_loot_check.gd
+godot --headless --path . --script res://tests/integration/playthrough_check.gd
+```
+
+队友房间合并并应用接入补丁后，再运行 `tests/integration/week1_room_check.gd`；缺少房间时输出 SKIP。接入方法见 `docs/technical/组件背包与掉落实施说明.md`。

@@ -1,0 +1,80 @@
+--- a/scenes/items/test_component.tscn
++++ b/scenes/items/test_component.tscn
+@@ -1,16 +1,4 @@
+-[gd_scene load_steps=3 format=3 uid="uid://ctestcomponent01"]
+-
+-[ext_resource type="Script" path="res://scripts/gameplay/items/test_component.gd" id="1_script"]
+-
+-[sub_resource type="RectangleShape2D" id="pick_shape"]
+-size = Vector2(16, 16)
+-
+-[node name="TestComponent" type="Area2D"]
+-script = ExtResource("1_script")
+-
+-[node name="Sprite2D" type="Sprite2D" parent="."]
+-modulate = Color(1, 0.8, 0, 1)
+-scale = Vector2(0.5, 0.5)
+-
+-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+-shape = SubResource("pick_shape")
++[gd_scene load_steps=2 format=3]
++[ext_resource type="PackedScene" path="res://scenes/items/component_pickup.tscn" id="1"]
++[node name="TestComponent" instance=ExtResource("1")]
++component_id = "pistol"
+--- a/scripts/levels/week1_combat_room.gd
++++ b/scripts/levels/week1_combat_room.gd
+@@ -20,17 +20,15 @@
+ 	_start_ambience()
+ 	clear_prompt.visible = false
+ 	room_cleared = false
+-	# Count and connect enemies
+-	var enemies := get_tree().get_nodes_in_group("enemy")
+-	if enemies.is_empty():
+-		# Try to find enemy instances directly
+-		var instances := $Instances
+-		for child in instances.get_children():
+-			if child.name.begins_with("Enemy"):
+-				_connect_enemy(child)
+-	# If no enemies found through instances, assume 3
++	# Count actual living enemies in this room; never substitute a guessed count.
++	for enemy in get_tree().get_nodes_in_group("enemies"):
++		if is_ancestor_of(enemy):
++			_connect_enemy(enemy)
++	var run := get_node_or_null("/root/RunManager")
++	if run != null:
++		run.set_mandatory_enemy_count(enemies_alive)
+ 	if enemies_alive == 0:
+-		enemies_alive = 3
++		_on_room_cleared()
+ 
+ func _connect_enemy(enemy: Node) -> void:
+ 	enemies_alive += 1
+@@ -51,15 +49,24 @@
+ 	if not room_cleared and enemies_alive <= 0:
+ 		_on_room_cleared()
+ 
+-func _on_enemy_died() -> void:
++func _on_enemy_died(_packet: DamagePacket) -> void:
+ 	enemies_alive = max(0, enemies_alive - 1)
++	var run := get_node_or_null("/root/RunManager")
++	if run != null:
++		run.set_mandatory_enemy_count(enemies_alive)
+ 
+ func _on_room_cleared() -> void:
+ 	room_cleared = true
+ 	clear_prompt.visible = true
+ 	room_cleared_signal.emit()
++	var events := get_node_or_null("/root/CombatEvents")
++	if events != null:
++		events.publish_floor_cleared()
+ 
+-func _input(event: InputEvent) -> void:
+-	# R to restart room
+-	if event is InputEventKey and event.pressed and event.keycode == KEY_R:
++func _unhandled_input(event: InputEvent) -> void:
++	# Bootstrap owns full-scene restart when loaded through Main.
++	if get_tree().current_scene.get_node_or_null("SceneFlow") != null:
++		return
++	# F6 standalone room restart
++	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_R:
+ 		get_tree().reload_current_scene()
