@@ -6,7 +6,7 @@ extends Node2D
 @export var guard_visual_path: NodePath
 
 @onready var body_sprite: AnimatedSprite2D = get_node(body_sprite_path)
-@onready var weapon_pivot: Node2D = get_node(weapon_pivot_path)
+@onready var weapon_pivot: WeaponMount = get_node(weapon_pivot_path) as WeaponMount
 @onready var guard_visual: GuardArcVisual = get_node(guard_visual_path)
 
 var _last_animation := ""
@@ -27,10 +27,14 @@ func update_visual(
 		body_sprite.play(animation)
 		_last_animation = animation
 	body_sprite.flip_h = direction_name == "side" and aim_direction.x < 0.0
+	update_weapon_aim(aim_direction, weapon_swing_offset)
+	guard_visual.update_guard(guard_state, aim_direction, guard_arc)
+
+
+func update_weapon_aim(aim_direction: Vector2, weapon_swing_offset: float = 0.0) -> void:
 	weapon_pivot.rotation = aim_direction.angle() + weapon_swing_offset
 	weapon_pivot.scale.y = -1.0 if aim_direction.x < 0.0 else 1.0
 	weapon_pivot.z_index = -1 if aim_direction.y < -0.2 else 1
-	guard_visual.update_guard(guard_state, aim_direction, guard_arc)
 
 
 func play_hurt_flash() -> void:
@@ -41,8 +45,25 @@ func play_hurt_flash() -> void:
 	_hurt_tween.tween_property(self, "modulate", Color.WHITE, 0.12)
 
 
+func set_weapon(data: WeaponComponentData) -> void:
+	weapon_pivot.set_weapon(data)
+
+
+func play_weapon_attack() -> void:
+	weapon_pivot.play_attack()
+
+
+func get_weapon_muzzle_global_position() -> Vector2:
+	return weapon_pivot.get_muzzle_global_position()
+
+
+func get_weapon_mount_global_position() -> Vector2:
+	return weapon_pivot.global_position
+
+
 func set_dead(dead: bool) -> void:
 	if dead:
+		weapon_pivot.cancel_feedback()
 		body_sprite.stop()
 		rotation = deg_to_rad(90.0)
 		modulate = Color(0.45, 0.45, 0.45, 0.75)

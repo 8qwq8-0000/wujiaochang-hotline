@@ -122,9 +122,19 @@ func refresh() -> void:
 	var weapon := inventory.weapon_slot.get_item()
 	var secondary := inventory.secondary_weapon_slot.get_item()
 	var mode := inventory.mobility_slot.get_item()
+	_sync_weapon_target(weapon, secondary)
 	_weapon.text = "主：%s · 卸下" % (weapon.get_title() if weapon != null else "空")
 	_secondary.text = "副：%s · 卸下" % (secondary.get_title() if secondary != null else "空")
 	_secondary.disabled = secondary == null
 	_mobility.text = "机动：%s · 卸下" % (mode.get_title() if mode != null else "基础步行")
 	_weapon.disabled = weapon == null
 	_mobility.disabled = mode == null
+
+
+func _sync_weapon_target(primary: InventoryItem, secondary: InventoryItem) -> void:
+	# Prefer the empty weapon slot after each successful equipment change.
+	# When both slots are occupied, preserve the player's explicit selection.
+	if primary == null:
+		_weapon_target.select(0)
+	elif secondary == null:
+		_weapon_target.select(1)

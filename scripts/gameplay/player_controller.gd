@@ -47,6 +47,7 @@ func _ready() -> void:
 	hurt_box.faction = CombatFaction.Id.PLAYER
 	hurt_box.damage_invulnerability_seconds = config.damage_invulnerability_seconds
 	weapons.configure(config.default_weapon, config.debug_loadout_enabled)
+	visuals.set_weapon(weapons.get_current_weapon())
 	mobility.configure(config.default_mobility, config.debug_loadout_enabled)
 	guard.heat_refund_requested.connect(heat.reduce_heat)
 	guard.state_changed.connect(_on_guard_state_changed)
@@ -101,8 +102,11 @@ func _physics_process(delta: float) -> void:
 	mobility.tick(self, input_vector, aim_direction, delta, _external_velocity)
 	_external_velocity = _external_velocity.move_toward(Vector2.ZERO, config.knockback_recovery * delta)
 	weapons.update_attack_pose(global_position, aim_direction, self)
+	# The muzzle must use this frame's aim before an attack is spawned.
+	visuals.update_weapon_aim(aim_direction, weapons.get_melee_swing_angle_offset())
 	if _input_enabled and guard.can_attack() and mobility.can_attack() and _should_attack_this_frame():
-		weapons.try_attack(global_position, aim_direction, self)
+		var attack := _get_attack_transform()
+		weapons.try_attack(attack.origin, attack.x.normalized(), self)
 	_attack_pressed = false
 	_attack_released = false
 	_update_camera(delta)
@@ -257,6 +261,22 @@ func _update_camera(delta: float) -> void:
 	camera.position = camera.position.lerp(target, weight)
 
 
+func _get_attack_transform() -> Transform2D:
+	var data := weapons.get_current_weapon()
+	if data == null or data.attack_kind == WeaponComponentData.AttackKind.MELEE:
+		return Transform2D(aim_direction.angle(), global_position)
+	var muzzle := visuals.get_weapon_muzzle_global_position()
+	muzzle = weapons.clamp_projectile_origin(
+		visuals.get_weapon_mount_global_position(),
+		muzzle
+	)
+	var target := get_global_mouse_position()
+	var direction := target - muzzle
+	if direction.length_squared() <= 16.0:
+		direction = aim_direction
+	return Transform2D(direction.normalized().angle(), muzzle)
+
+
 func _should_attack_this_frame() -> bool:
 	var data := weapons.get_current_weapon()
 	if data == null:
@@ -288,6 +308,7 @@ func _on_heat_changed(current: float, maximum: float) -> void:
 
 
 func _on_weapon_changed(_index: int, data: WeaponComponentData) -> void:
+	visuals.set_weapon(data)
 	weapon_changed.emit(data)
 
 
@@ -300,6 +321,7 @@ func _on_guard_state_changed(state: GuardComponent.State) -> void:
 
 
 func _on_attack_performed(_data: WeaponComponentData) -> void:
+	visuals.play_weapon_attack()
 	combat_feedback_requested.emit(&"attack", global_position)
 
 

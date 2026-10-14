@@ -1,9 +1,11 @@
-[gd_resource type="Resource" script_class="WeaponComponentData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="WeaponComponentData" load_steps=3 format=3]
 [ext_resource type="Script" path="res://scripts/gameplay/combat/weapon_data.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/initial_baton.tscn" id="2_view"]
 [resource]
 script = ExtResource("1")
 id = &"initial_baton"
 display_name = "初始警棍（绑定）"
+view_scene = ExtResource("2_view")
 attack_kind = 0
 damage = 1
 cooldown = 0.55

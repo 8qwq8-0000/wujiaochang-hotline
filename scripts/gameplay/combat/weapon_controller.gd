@@ -111,6 +111,21 @@ func try_attack(origin: Vector2, direction: Vector2, source_node: Node) -> bool:
 	return true
 
 
+func clamp_projectile_origin(actor_origin: Vector2, muzzle_origin: Vector2) -> Vector2:
+	var delta := muzzle_origin - actor_origin
+	if delta.length_squared() <= 1.0:
+		return muzzle_origin
+	var world := get_viewport().world_2d
+	if world == null:
+		return muzzle_origin
+	var query := PhysicsRayQueryParameters2D.create(actor_origin, muzzle_origin, 1)
+	query.hit_from_inside = true
+	var hit := world.direct_space_state.intersect_ray(query)
+	if hit.is_empty():
+		return muzzle_origin
+	return Vector2(hit.position) - delta.normalized() * 1.5
+
+
 func get_melee_swing_angle_offset() -> float:
 	if _swing_remaining <= 0.0 or _swing_duration <= 0.0 or _current_weapon == null:
 		return 0.0
@@ -168,7 +183,7 @@ func _perform_projectiles(data: WeaponComponentData, origin: Vector2, direction:
 			offset = lerpf(-data.spread_degrees * 0.5, data.spread_degrees * 0.5, float(index) / float(count - 1))
 		var projectile: CombatProjectile = PROJECTILE_SCENE.instantiate()
 		CombatProjectile.room_for_actor(source_node).add_child(projectile)
-		projectile.global_position = origin + direction * 18.0
+		projectile.global_position = origin
 		projectile.setup(source_node, faction, direction.rotated(deg_to_rad(offset)), data.damage, data.projectile_speed)
 
 

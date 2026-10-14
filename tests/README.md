@@ -18,6 +18,7 @@
 - `test_mobility.gd`：步行与三种机动套件的能力边界；
 - `test_floor_assembler.gd`：手工房间池的加权抽取边界。
 - `test_player_scene.gd`：玩家场景节点契约、默认装备、断路保险换装不刷新，以及天赋核心协议/天赋/接管次数持久化。
+- `test_weapon_scenes.gd`：四件武器的场景契约、最近邻显示，以及新武器模板不会自动进入掉落池。
 
 可从 Godot AI 测试面板运行全部 `test_*.gd`，也可在编辑器中打开主场景后执行测试。
 
@@ -43,6 +44,8 @@ godot --headless --path . --script res://tests/integration/playthrough_check.gd
 
 双武器携带与切换：`godot --headless --path . --script res://tests/integration/weapon_switch_check.gd`，覆盖主/副目标槽、Q/滚轮、空槽跳过、冷却/热量保留、满包替换及战斗/暂停/死亡限制。
 
+双空槽重新装备：`godot --headless --path . --script res://tests/integration/weapon_slot_refill_check.gd`，覆盖主副武器都卸下后，连续点击背包武器会先填主槽、再自动指向并填入副槽，而不会重复替换主槽。
+
 首次武器自动装副槽：`godot --headless --path . --script res://tests/integration/first_weapon_pickup_check.gd`，覆盖战斗中拾取、满包、副槽占用、仅首次触发、当前武器保留、立即使用和重复拾取保护。
 
 装备不占格与开局配置：`godot --headless --path . --script res://tests/integration/backpack_weapon_capacity_check.gd`，覆盖初始 0/6、独立主副武器与机动槽、满包拒绝卸下、满包安全替换、卸下后占格和实例不重复。
@@ -58,3 +61,5 @@ godot --headless --path . --script res://tests/integration/playthrough_check.gd
 敌人巡逻：`godot --headless --path . --script res://tests/integration/enemy_patrol_check.gd`，覆盖出生点附近往返、端点停留、暂停、警戒中断与返回、墙体阻挡、关闭巡逻和死亡。
 
 正式出生巡逻检查：`godot --headless --path . --script res://tests/integration/spawned_patrol_check.gd`，通过 Main 的真实生成器检查出生坐标、墙体平行轨迹，以及带偏移房间的世界坐标。
+
+武器场景检查：`godot --headless --path . --script res://tests/integration/weapon_scene_check.gd`，覆盖初始挂载、快捷切换、单实例表现、枪口发射、墙面收回、纯表现状态隔离和缺失场景回退。实施与模板见 `docs/technical/武器场景实施说明.md`。

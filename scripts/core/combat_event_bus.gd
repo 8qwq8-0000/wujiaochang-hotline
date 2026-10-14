@@ -9,6 +9,7 @@ signal entity_defeated(entity: Node)
 signal room_cleared(room: Node)
 signal floor_cleared
 signal combat_message_requested(text: String, color: Color)
+signal weapon_cue_requested(weapon_id: StringName, cue: StringName, world_position: Vector2)
 
 
 func publish_damage(result: DamageResult) -> void:
@@ -36,3 +37,7 @@ func publish_message(text: String, color: Color = Color.WHITE) -> void:
 func publish_noise(source: Node, origin: Vector2, radius: float) -> void:
 	if is_instance_valid(source) and source.is_inside_tree() and radius > 0.0:
 		noise_emitted.emit(source, origin, radius)
+
+
+func publish_weapon_cue(weapon_id: StringName, cue: StringName, world_position: Vector2) -> void:
+	weapon_cue_requested.emit(weapon_id, cue, world_position)

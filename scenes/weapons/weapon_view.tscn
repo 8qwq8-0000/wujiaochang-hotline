@@ -1,0 +1,35 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/presentation/weapon_view.gd" id="1_view"]
+[ext_resource type="Texture2D" path="res://assets/art/weapons/placeholder/placeholder_weapon_spear.png" id="2_texture"]
+
+[node name="WeaponView" type="Node2D"]
+texture_filter = 1
+script = ExtResource("1_view")
+
+[node name="BodyRoot" type="Node2D" parent="."]
+
+[node name="BodySprite" type="Sprite2D" parent="BodyRoot"]
+texture_filter = 1
+position = Vector2(13, 0)
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("2_texture")
+flip_h = true
+
+[node name="MuzzleSocket" type="Marker2D" parent="."]
+position = Vector2(27, 0)
+
+[node name="MuzzleFlash" type="Polygon2D" parent="MuzzleSocket"]
+visible = false
+polygon = PackedVector2Array(0, -2, 7, 0, 0, 2, 2, 0)
+color = Color(1, 0.88, 0.4, 1)
+
+[node name="EffectSocket" type="Marker2D" parent="."]
+position = Vector2(2, 0)
+
+[node name="MeleeTrail" type="Line2D" parent="EffectSocket"]
+visible = false
+points = PackedVector2Array(2, -5, 14, -7, 27, 0, 14, 7, 2, 5)
+width = 2.0
+default_color = Color(0.55, 0.9, 1, 0.9)
+antialiased = false

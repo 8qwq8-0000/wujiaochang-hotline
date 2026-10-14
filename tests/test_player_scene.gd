@@ -16,7 +16,7 @@ func test_player_scene_has_required_components() -> void:
 	assert_true(player.get_node_or_null("CircuitBreakerComponent") is CircuitBreakerComponent)
 	assert_true(player.get_node_or_null("InteractionDetector") is InteractorComponent)
 	assert_true(player.get_node_or_null("VisualRoot/BodyVisual") is AnimatedSprite2D)
-	assert_true(player.get_node_or_null("VisualRoot/WeaponPivot/MuzzleSocket") is Marker2D)
+	assert_true(player.get_node_or_null("VisualRoot/WeaponPivot") is WeaponMount)
 	assert_true(player.get_node_or_null("VFXSockets/Foot") is Marker2D)
 
 

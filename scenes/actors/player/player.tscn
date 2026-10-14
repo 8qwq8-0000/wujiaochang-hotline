@@ -1,4 +1,4 @@
-[gd_scene load_steps=35 format=3]
+[gd_scene load_steps=36 format=3]
 
 [ext_resource type="Script" path="res://scripts/gameplay/player_controller.gd" id="1_controller"]
 [ext_resource type="Script" path="res://scripts/gameplay/combat/health_component.gd" id="2_health"]
@@ -14,6 +14,7 @@
 [ext_resource type="Script" path="res://scripts/gameplay/player/guard_arc_visual.gd" id="12_guard_visual"]
 [ext_resource type="Resource" path="res://resources/player/default_player_config.tres" id="13_config"]
 [ext_resource type="Script" path="res://scripts/gameplay/player/talent_core_controller.gd" id="20_talent_core"]
+[ext_resource type="Script" path="res://scripts/presentation/weapon_mount.gd" id="21_weapon_mount"]
 [ext_resource type="Texture2D" path="res://assets/art/characters/player/placeholder/placeholder_player_down.png" id="14_down"]
 [ext_resource type="Texture2D" path="res://assets/art/characters/player/placeholder/placeholder_player_up.png" id="15_up"]
 [ext_resource type="Texture2D" path="res://assets/art/characters/player/placeholder/placeholder_player_side.png" id="16_side"]
@@ -188,15 +189,7 @@ centered = false
 [node name="WeaponPivot" type="Node2D" parent="VisualRoot"]
 position = Vector2(0, -14)
 z_index = 1
-
-[node name="WeaponVisual" type="Line2D" parent="VisualRoot/WeaponPivot"]
-points = PackedVector2Array(3, 0, 18, 0)
-width = 3.0
-default_color = Color(0.55, 0.9, 1, 1)
-antialiased = false
-
-[node name="MuzzleSocket" type="Marker2D" parent="VisualRoot/WeaponPivot"]
-position = Vector2(20, 0)
+script = ExtResource("21_weapon_mount")
 
 [node name="GuardVisual" type="Node2D" parent="VisualRoot"]
 z_index = 3

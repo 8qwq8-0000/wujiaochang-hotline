@@ -15,6 +15,7 @@ enum TriggerMode {
 
 @export var id: StringName = &"weapon"
 @export var display_name: String = "武器"
+@export var view_scene: PackedScene
 @export var attack_kind: AttackKind = AttackKind.PROJECTILE
 @export var trigger_mode: TriggerMode = TriggerMode.SEMI_AUTO
 @export_range(1, 99, 1) var damage: int = 1
