@@ -22,8 +22,12 @@ func wait_floor(flow: SceneContainerManager) -> PlayerController:
 	return null
 
 func clear_floor() -> void:
-	for enemy in get_nodes_in_group("enemies"):
+	var enemies := get_nodes_in_group("enemies")
+	for enemy in enemies:
 		enemy.health.apply_damage(enemy.health.max_health, DamagePacket.new())
+	for enemy in enemies:
+		if is_instance_valid(enemy) and enemy.state == EnemyController.State.SELF_DESTRUCT:
+			enemy._physics_process(enemy.profile.self_destruct_delay + 0.01)
 	await process_frame
 	await process_frame
 

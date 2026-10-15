@@ -41,6 +41,7 @@ func run() -> void:
 	player.set_physics_process(false)
 	var observer := enemy_at(room, Vector2(200, 100))
 	var events := root.get_node("CombatEvents")
+	root.get_node("GameSettings").set_high_pressure_alert(false, false)
 	var alerts := [0]
 	var count_alert := func(_enemy: Node, _world_position: Vector2) -> void: alerts[0] += 1
 	events.enemy_alerted.connect(count_alert)
@@ -69,7 +70,7 @@ func run() -> void:
 	check(not observer.is_alerted(), "wall attenuates distant gun noise")
 	player.position = Vector2(130, 100)
 	events.publish_noise(player, player.global_position, 180.0)
-	check(observer.is_alerted(), "nearby noise can be heard through wall")
+	check(not observer.is_alerted() and observer.state == EnemyController.State.INVESTIGATE, "nearby gunshot starts an investigation through wall")
 	observer._forget_target()
 	paused = true
 	events.publish_noise(player, player.global_position, 180.0)
@@ -100,14 +101,14 @@ func run() -> void:
 	observer.profile.ally_alert_range = 60
 	var nearby := enemy_at(room, Vector2(250, 100))
 	nearby.profile.ally_alert_range = 60
-	var distant := enemy_at(room, Vector2(300, 100))
+	var distant := enemy_at(room, Vector2(550, 100))
 	var other_room := Node2D.new()
 	other_room.add_to_group("combat_rooms")
 	root.add_child(other_room)
 	var foreign := enemy_at(other_room, Vector2(225, 100))
 	observer._alert_to(player.global_position, true)
 	check(nearby.is_alerted(), "alert wakes nearby ally")
-	check(not distant.is_alerted(), "ally does not rebroadcast into a map-wide chain")
+	check(not distant.is_alerted(), "standard alert range stops beyond 320 pixels")
 	check(not foreign.is_alerted(), "alert cannot leak into another combat room")
 	foreign._on_noise(player, player.global_position, 1000)
 	check(not foreign.is_alerted(), "sound cannot leak into another combat room")
@@ -117,7 +118,7 @@ func run() -> void:
 	await physics_frame
 	await physics_frame
 	observer._alert_to(player.global_position, true)
-	check(not nearby.is_alerted(), "wall blocks ally alarm propagation")
+	check(nearby.is_alerted(), "confirmed shared alert is not blocked by a wall")
 	wall.queue_free()
 	await physics_frame
 	observer._forget_target()
@@ -129,7 +130,7 @@ func run() -> void:
 	var count_noise := func(_source: Node, _origin: Vector2, _radius: float) -> void: emitted[0] += 1
 	events.noise_emitted.connect(count_noise)
 	check(player.weapons.try_attack(player.global_position, Vector2.UP, player), "actual pistol fires")
-	check(observer.is_alerted() and emitted[0] == 1, "successful gunshot emits one gameplay sound")
+	check(not observer.is_alerted() and observer.state == EnemyController.State.INVESTIGATE and emitted[0] == 1, "successful gunshot emits one investigation sound")
 	check(not player.weapons.try_attack(player.global_position, Vector2.UP, player), "cooldown rejects next shot")
 	check(emitted[0] == 1, "rejected shot emits no sound")
 	observer._forget_target()

@@ -27,6 +27,13 @@ func wait_battle(previous: Node = null) -> PlayerController:
 		await process_frame
 	check(false, "battle load timeout")
 	return null
+func defeat_all_enemies() -> void:
+	var enemies := get_nodes_in_group("enemies")
+	for enemy in enemies:
+		enemy.health.apply_damage(enemy.health.max_health, DamagePacket.new())
+	for enemy in enemies:
+		if is_instance_valid(enemy) and enemy.state == EnemyController.State.SELF_DESTRUCT:
+			enemy._physics_process(enemy.profile.self_destruct_delay + 0.01)
 func run() -> void:
 	var main: Node = load("res://scenes/bootstrap/main.tscn").instantiate()
 	root.add_child(main)
@@ -63,8 +70,7 @@ func run() -> void:
 		inventory.panel.get("_buttons")[0].pressed.emit()
 		check(str(inventory.weapon_slot.get_item().get_property("effect")).ends_with("initial_baton.tres"), "panel blocks combat equipment change")
 		press_key(KEY_TAB)
-		for enemy in get_nodes_in_group("enemies"):
-			enemy.health.apply_damage(enemy.health.max_health, DamagePacket.new())
+		defeat_all_enemies()
 		await process_frame
 		await process_frame
 		check(root.get_node("RunManager").mandatory_enemies_remaining == 0, "floor is cleared")

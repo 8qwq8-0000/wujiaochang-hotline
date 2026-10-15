@@ -25,6 +25,8 @@
 - `test_combat_notice_queue.gd`：三档优先级、三条预算、同类消息合并与旧消息接口兼容。
 - `test_afterimage_vfx.gd`：机动残影复制当前帧／镜像状态、对象池上限和按来源清理。
 - `test_enemy_navigation.gd`：敌人软避让参数与无导航网格时的安全退避回退。
+- `test_enemy_tactical_brain.gd`：近战协同包抄、远程撤退／横移／射击、重型预测拦截与决策节流。
+- `test_enemy_combat_upgrade.gd`：敌人角色参数、独立 AI 难度开关和暂停设置场景契约。
 
 可从 Godot AI 测试面板运行全部 `test_*.gd`，也可在编辑器中打开主场景后执行测试。
 
@@ -67,6 +69,12 @@ godot --headless --path . --script res://tests/integration/playthrough_check.gd
 敌人巡逻：`godot --headless --path . --script res://tests/integration/enemy_patrol_check.gd`，覆盖出生点附近往返、端点停留、暂停、警戒中断与返回、墙体阻挡、关闭巡逻和死亡。
 
 敌人导航压力检查：`godot --headless --path . --script res://tests/integration/enemy_navigation_check.gd`，在原型房间用 16 名敌人覆盖软避让、绕开墙体／掩体，以及不持续完全重叠。
+
+敌人战术决策：`godot --headless --path . --script res://tests/integration/enemy_tactics_check.gd`，覆盖成对近战选择不同包抄点、远程冷却期横移，以及重型敌人对可见移动目标的有限预测拦截。
+
+敌人战斗升级：`godot --headless --path . --script res://tests/integration/enemy_combat_upgrade_check.gd`，覆盖摄像机尺寸视野、两档警戒共享、预蓄力、狙击手脚步调查和重型延迟自爆。
+
+暂停设置：`godot --headless --path . --script res://tests/integration/settings_menu_check.gd`，覆盖 Esc 暂停、视频/音频控件，以及两项互不绑定的 AI 测试开关。
 
 战斗提示与机动残影：`godot --headless --path . --script res://tests/integration/presentation_systems_check.gd`，覆盖暂停时提示寿命冻结但仍可入队、恢复后的过期，以及步行不出残影、套件能力残影池与按来源清理。
 

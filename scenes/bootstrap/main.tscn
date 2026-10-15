@@ -20,6 +20,7 @@
 [ext_resource type="AudioStream" path="res://assets/audio/ui/hotline_dial_02.wav" id="18"]
 [ext_resource type="AudioStream" path="res://assets/audio/ui/hotline_connect.wav" id="19"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/reinforcement_approach.wav" id="20"]
+[ext_resource type="PackedScene" path="res://scenes/ui/pause_settings_menu.tscn" id="21"]
 
 [node name="Main" type="Node" unique_id=88177702]
 script = ExtResource("1")
@@ -54,6 +55,8 @@ regular_tracks = Array[AudioStream]([ExtResource("8"), ExtResource("9")])
 boss_phase_tracks = Array[AudioStream]([ExtResource("10"), ExtResource("11")])
 
 [node name="CombatHUD" parent="." unique_id=1310232417 instance=ExtResource("3")]
+
+[node name="PauseSettingsMenu" parent="." instance=ExtResource("21")]
 
 [node name="TransitionLayer" type="CanvasLayer" parent="." unique_id=927069868]
 layer = 100

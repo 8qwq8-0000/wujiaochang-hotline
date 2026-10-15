@@ -14,6 +14,8 @@ signal player_died(packet: DamagePacket)
 const DEFAULT_CONFIG := preload("res://resources/player/default_player_config.tres")
 const FLIGHT_LOOP := preload("res://assets/audio/sfx/mobility/flight_loop.wav")
 const AFTERIMAGE_INTERVAL := 0.05
+const MOVEMENT_NOISE_INTERVAL := 0.35
+const MOBILITY_BURST_NOISE_RADIUS := 220.0
 
 @export var config: CombatPlayerConfig = DEFAULT_CONFIG
 
@@ -41,6 +43,7 @@ var _attack_released := false
 var _attack_held := false
 var _afterimage_active_remaining := 0.0
 var _afterimage_emit_remaining := 0.0
+var _movement_noise_remaining := 0.0
 
 
 func _ready() -> void:
@@ -109,6 +112,7 @@ func _physics_process(delta: float) -> void:
 		return
 	var input_vector := Input.get_vector("move_left", "move_right", "move_up", "move_down") if _input_enabled else Vector2.ZERO
 	mobility.tick(self, input_vector, aim_direction, delta, _external_velocity)
+	_tick_movement_noise(delta, input_vector)
 	_external_velocity = _external_velocity.move_toward(Vector2.ZERO, config.knockback_recovery * delta)
 	weapons.update_attack_pose(global_position, aim_direction, self)
 	# The muzzle must use this frame's aim before an attack is spawned.
@@ -260,6 +264,7 @@ func reset_transient_state() -> void:
 	_attack_held = false
 	_afterimage_active_remaining = 0.0
 	_afterimage_emit_remaining = 0.0
+	_movement_noise_remaining = 0.0
 	_clear_afterimages()
 
 
@@ -377,7 +382,41 @@ func _on_mobility_activated(mode: MobilityMode) -> void:
 	if mode != null and mode.id != &"walk" and mode.ability_active_seconds > 0.0:
 		_afterimage_active_remaining = mode.ability_active_seconds
 		_afterimage_emit_remaining = 0.0
+		_publish_movement_noise(MOBILITY_BURST_NOISE_RADIUS)
 	combat_feedback_requested.emit(&"mobility", global_position)
+
+
+func _tick_movement_noise(delta: float, input_vector: Vector2) -> void:
+	var radius := get_movement_noise_radius()
+	if _dead or not _input_enabled or input_vector.is_zero_approx() or velocity.length_squared() <= 64.0 or radius <= 0.0:
+		_movement_noise_remaining = 0.0
+		return
+	_movement_noise_remaining -= delta
+	if _movement_noise_remaining > 0.0:
+		return
+	_movement_noise_remaining = MOVEMENT_NOISE_INTERVAL
+	_publish_movement_noise(radius)
+
+
+func get_movement_noise_radius() -> float:
+	var mode := mobility.get_current_mode()
+	if mode == null:
+		return 90.0
+	match mode.id:
+		&"flight":
+			return 0.0
+		&"quadruped":
+			return 140.0
+		&"wheel":
+			return 180.0
+		_:
+			return 90.0
+
+
+func _publish_movement_noise(radius: float) -> void:
+	var events := get_node_or_null("/root/CombatEvents")
+	if events != null:
+		events.publish_movement_noise(self, global_position, radius)
 
 
 func _tick_afterimages(delta: float) -> void:

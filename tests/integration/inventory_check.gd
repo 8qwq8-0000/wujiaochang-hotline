@@ -28,8 +28,12 @@ func run() -> void:
 	check(inv.pickup("scattergun"), "later weapon enters bag")
 	check(not inv.equip(0), "combat blocks manual equipment")
 	check(not inv.unequip("weapon_secondary"), "combat blocks unequip")
-	for enemy in get_nodes_in_group("enemies"):
+	var enemies := get_nodes_in_group("enemies")
+	for enemy in enemies:
 		enemy.health.apply_damage(enemy.health.max_health, DamagePacket.new())
+	for enemy in enemies:
+		if is_instance_valid(enemy) and enemy.state == EnemyController.State.SELF_DESTRUCT:
+			enemy._physics_process(enemy.profile.self_destruct_delay + 0.01)
 	await process_frame
 	check(inv.can_change_equipment(), "clearing enables manual equipment")
 	inv.set_open(true)

@@ -152,6 +152,7 @@ func _input(event: InputEvent) -> void:
 		return
 	if event.is_action_pressed("pause") and not _settled:
 		close_exit()
+		get_viewport().set_input_as_handled()
 	# Exit choice allows movement; only the completed settlement is modal.
 	if _settled and event is InputEventKey:
 		get_viewport().set_input_as_handled()

@@ -38,7 +38,10 @@ func run() -> void:
 	ranged.global_position = Vector2(235, 115)
 	ranged.set("_target", player)
 	ranged._physics_process(0.016)
-	check(ranged.velocity.x > 0, "ranged moves away from player")
+	check(
+		ranged.velocity.x > 0,
+		"ranged moves away from player; velocity=%s intent=%s retreat=%s" % [ranged.velocity, ranged.get_tactical_intent(), ranged.get("_retreat_target")]
+	)
 	# Cover A lies between these points: no windup or through-wall melee.
 	player.global_position = Vector2(230, 115)
 	melee.global_position = Vector2(310, 115)
@@ -80,6 +83,9 @@ func run() -> void:
 	for enemy in enemies:
 		enemy.health.apply_damage(enemy.health.max_health, DamagePacket.new())
 		enemy._on_died(DamagePacket.new())
+	for enemy in enemies:
+		if is_instance_valid(enemy) and enemy.state == EnemyController.State.SELF_DESTRUCT:
+			enemy._physics_process(enemy.profile.self_destruct_delay + 0.01)
 	await process_frame
 	await process_frame
 	check(get_nodes_in_group("component_pickups").size() == before + enemies.size(), "one drop per death, no duplicate")

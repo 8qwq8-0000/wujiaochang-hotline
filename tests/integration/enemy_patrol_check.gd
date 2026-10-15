@@ -58,7 +58,7 @@ func run() -> void:
 	player.position = enemy.global_position + Vector2(20, 0)
 	room.add_child(player)
 	root.get_node("CombatEvents").publish_noise(player, player.global_position, 100.0)
-	check(enemy.is_alerted() and enemy.state == EnemyController.State.CHASE, "sound immediately interrupts patrol")
+	check(not enemy.is_alerted() and enemy.state == EnemyController.State.INVESTIGATE, "sound interrupts patrol with an investigation")
 	player.position = Vector2(1000, 1000)
 	enemy._physics_process(0.3)
 	check(not enemy.is_alerted(), "lost target returns to non-alerted movement")

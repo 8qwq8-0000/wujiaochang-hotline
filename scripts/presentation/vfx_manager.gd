@@ -30,6 +30,7 @@ func _ready() -> void:
 		events.damage_resolved.connect(_on_damage_resolved)
 		events.afterimage_requested.connect(spawn_afterimage)
 		events.afterimages_clear_requested.connect(clear_afterimages)
+		events.effect_requested.connect(spawn_flash)
 
 
 func spawn_flash(world_position: Vector2, color: Color, radius: float, duration: float = 0.18) -> void:

@@ -31,7 +31,7 @@ func run_checks() -> void:
 	await process_frame
 	# Real GUI dispatch: decorative HUD must not consume firing/guard clicks.
 	var hud: Node = main.get_node("CombatHUD")
-	for path in ["Overlay/TopLeft", "Overlay/Objective", "Overlay/Message"]:
+	for path in ["Overlay/TopLeft", "Overlay/Objective", "Overlay/NoticeQueue"]:
 		var control: Control = hud.get_node(path)
 		var point := control.get_global_rect().get_center()
 		player.set("_attack_pressed", false)

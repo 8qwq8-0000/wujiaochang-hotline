@@ -59,8 +59,12 @@ func run() -> void:
 			key(KEY_E)
 			await process_frame
 		check(inventory.backpack.get_item_count() == 2 and inventory.secondary_weapon_slot.get_item() != null, "E auto-equips first weapon")
-		for enemy in get_nodes_in_group("enemies"):
+		var enemies := get_nodes_in_group("enemies")
+		for enemy in enemies:
 			enemy.health.apply_damage(enemy.health.max_health, DamagePacket.new())
+		for enemy in enemies:
+			if is_instance_valid(enemy) and enemy.state == EnemyController.State.SELF_DESTRUCT:
+				enemy._physics_process(enemy.profile.self_destruct_delay + 0.01)
 		await process_frame
 		await process_frame
 		check(root.get_node("RunManager").mandatory_enemies_remaining == 0, "room clear updates objective")

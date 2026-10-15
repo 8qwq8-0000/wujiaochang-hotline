@@ -1,0 +1,45 @@
+extends SceneTree
+
+var failures := 0
+
+
+func _initialize() -> void:
+	call_deferred("run")
+
+
+func check(value: bool, message: String) -> void:
+	if not value:
+		failures += 1
+		push_error(message)
+
+
+func run() -> void:
+	var menu: PauseSettingsMenu = load("res://scenes/ui/pause_settings_menu.tscn").instantiate()
+	root.add_child(menu)
+	await process_frame
+	check(not menu.visible, "pause menu starts hidden")
+	menu.open_menu()
+	check(menu.visible and paused, "pause menu owns and pauses the scene tree")
+	check(menu.get("_resolution").item_count == 4, "settings expose the four confirmed resolutions")
+	check(menu.find_children("*", "HSlider", true, false).size() == 3, "settings expose Master, Music and SFX sliders")
+	check(menu.get("_mute") != null, "settings expose global mute")
+	check(menu.get("_alert_mode") != null and menu.get("_continuous_precharge") != null, "AI test switches remain independent")
+	check(menu.get("_alert_mode").text == "高压难度", "alert response is presented as an explicit difficulty setting")
+	var difficulty_copy_found := false
+	for label in menu.find_children("*", "Label", true, false):
+		if "标准" in label.text and "320 px" in label.text and "高压" in label.text:
+			difficulty_copy_found = true
+	check(difficulty_copy_found, "difficulty setting explains standard and high-pressure response")
+	var game_settings := root.get_node("GameSettings")
+	menu._on_alert_mode_toggled(true)
+	check(game_settings.high_pressure_alert and not game_settings.continuous_precharge, "high-pressure alert does not enable continuous charge")
+	menu._on_continuous_precharge_toggled(true)
+	check(game_settings.high_pressure_alert and game_settings.continuous_precharge, "continuous charge has its own switch")
+	game_settings.set_high_pressure_alert(false, false)
+	game_settings.set_continuous_precharge(false, false)
+	menu.close_menu()
+	check(not menu.visible and not paused, "continue closes the menu and resumes play")
+	menu.queue_free()
+	await process_frame
+	print("Settings menu failures: ", failures)
+	quit(0 if failures == 0 else 1)
