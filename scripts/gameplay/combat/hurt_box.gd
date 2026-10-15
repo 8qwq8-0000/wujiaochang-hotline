@@ -32,6 +32,9 @@ func receive_hit(packet: DamagePacket) -> DamageResult:
 		set_invulnerable(damage_invulnerability_seconds)
 	if result.final_damage > 0 and actor.has_method("apply_knockback"):
 		actor.apply_knockback(packet.knockback)
+	var statuses := actor.get_node_or_null("StatusComponent")
+	if result.final_damage > 0 and statuses != null:
+		statuses.handle_hit(packet)
 	hit_resolved.emit(result)
 	return result
 

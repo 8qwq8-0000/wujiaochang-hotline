@@ -185,6 +185,8 @@ func _perform_projectiles(data: WeaponComponentData, origin: Vector2, direction:
 		CombatProjectile.room_for_actor(source_node).add_child(projectile)
 		projectile.global_position = origin
 		projectile.setup(source_node, faction, direction.rotated(deg_to_rad(offset)), data.damage, data.projectile_speed)
+		projectile.damage_type = data.damage_type
+		projectile.status_tags = data.status_tags.duplicate()
 
 
 func _make_packet(data: WeaponComponentData, origin: Vector2, direction: Vector2, source_node: Node) -> DamagePacket:

@@ -5,6 +5,10 @@ signal status_added(id: StringName, duration: float, tags: PackedStringArray)
 signal status_refreshed(id: StringName, duration: float)
 signal status_removed(id: StringName)
 signal statuses_cleared
+signal reaction_triggered(id: StringName, secondary_targets: int)
+
+const CONDUCTIVE := &"conductive"
+const CONDUCTIVE_SECONDS := 6.0
 
 var _statuses: Dictionary = {}
 var _immunity_tags: Dictionary = {}
@@ -12,6 +16,8 @@ var _immunity_tags: Dictionary = {}
 
 func _ready() -> void:
 	set_physics_process(false)
+	if get_parent() is Node2D:
+		get_parent().add_to_group("status_actors")
 
 
 func _physics_process(delta: float) -> void:
@@ -70,6 +76,28 @@ func get_active_ids() -> Array[StringName]:
 	for id: StringName in _statuses:
 		result.append(id)
 	return result
+
+
+func has_status(id: StringName) -> bool:
+	return _statuses.has(id) and float(_statuses[id].remaining) > 0.0
+
+
+func remaining_seconds(id: StringName) -> float:
+	return float(_statuses[id].remaining) if _statuses.has(id) else 0.0
+
+
+func handle_hit(packet: DamagePacket) -> void:
+	var actor := get_parent() as Node2D
+	if actor == null:
+		return
+	# Consume existing conductivity before applying this hit's new status tags.
+	if packet.allow_status_reactions and packet.damage_type == &"electric" and has_status(CONDUCTIVE):
+		remove_status(CONDUCTIVE)
+		var count := ElectricReaction.discharge(actor, packet)
+		reaction_triggered.emit(&"electric_arc", count)
+	var health := actor.get_node_or_null("HealthComponent") as HealthComponent
+	if health != null and not health.is_dead() and packet.status_tags.has("conductive"):
+		add_status(CONDUCTIVE, CONDUCTIVE_SECONDS, ["negative", "electric"])
 
 
 func _is_immune(tags: PackedStringArray) -> bool:

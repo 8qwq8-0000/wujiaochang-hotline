@@ -10,6 +10,8 @@ extends Area2D
 
 var direction := Vector2.RIGHT
 var source: Node
+var damage_type: StringName = &"kinetic"
+var status_tags: PackedStringArray = []
 
 
 func _ready() -> void:
@@ -66,6 +68,8 @@ func _on_area_entered(area: Area2D) -> void:
 func _make_damage_packet() -> DamagePacket:
 	var packet := DamagePacket.new()
 	packet.base_damage = damage
+	packet.damage_type = damage_type
+	packet.status_tags = status_tags.duplicate()
 	packet.source = source if is_instance_valid(source) else null
 	packet.source_faction = faction
 	packet.source_position = global_position - direction * 8.0

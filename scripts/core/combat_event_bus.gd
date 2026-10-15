@@ -3,6 +3,8 @@ extends Node
 ## 战斗表现层只监听这里，不直接依赖武器、敌人或玩家实现。
 signal noise_emitted(source: Node, origin: Vector2, radius: float)
 
+signal electric_arc_requested(from: Vector2, to: Vector2, room: Node)
+
 signal damage_resolved(result: DamageResult)
 signal perfect_guarded(result: DamageResult)
 signal entity_defeated(entity: Node)
