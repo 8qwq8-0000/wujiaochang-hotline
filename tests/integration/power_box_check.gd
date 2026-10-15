@@ -135,6 +135,25 @@ func run_checks() -> void:
 		if shot_box.state == PowerBox.State.BROKEN:
 			break
 	check(shot_box.state == PowerBox.State.BROKEN, "real projectile breaks the box")
+	# The bound melee weapon can also hit the environment Area2D.
+	player.weapons.set_equipped_weapon(load("res://resources/weapons/initial_baton.tres"))
+	player.weapons.reset_transient_state()
+	player.heat.current_heat = 0
+	player.position = Vector2(100,100)
+	var melee_box := box_at(room,Vector2(130,100))
+	await physics_frame
+	await physics_frame
+	check(player.weapons.try_attack(player.position,Vector2.RIGHT,player), "melee attack begins")
+	for frame in 12:
+		player.weapons.update_attack_pose(player.position,Vector2.RIGHT,player)
+		await physics_frame
+	check(melee_box.state == PowerBox.State.BROKEN, "real melee sweep breaks power box")
+	buffs.apply_buff(&"cooling",other_room)
+	other_room.queue_free()
+	await process_frame
+	check(buffs.active_buff.is_empty() and player.heat.cooling_multiplier == 1, "source scene exit removes buff")
+	other_room = TestRoom.new()
+	root.add_child(other_room)
 	# Source-room ownership prevents an unrelated room from clearing the buff.
 	check(buffs.apply_buff(&"cooling",room), "apply replacement buff without stacking")
 	other_room.room_cleared.emit()

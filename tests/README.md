@@ -69,3 +69,13 @@ godot --headless --path . --script res://tests/integration/playthrough_check.gd
 正式出生巡逻检查：`godot --headless --path . --script res://tests/integration/spawned_patrol_check.gd`，通过 Main 的真实生成器检查出生坐标、墙体平行轨迹，以及带偏移房间的世界坐标。
 
 武器场景检查：`godot --headless --path . --script res://tests/integration/weapon_scene_check.gd`，覆盖初始挂载、快捷切换、单实例表现、枪口发射、墙面收回、纯表现状态隔离和缺失场景回退。实施与模板见 `docs/technical/武器场景实施说明.md`。
+
+导电、配电箱与试玩场景：
+
+```sh
+godot --headless --path . --script res://tests/integration/status_reaction_check.gd
+godot --headless --path . --script res://tests/integration/power_box_check.gd
+godot --headless --path . --script res://tests/integration/electric_sandbox_check.gd
+```
+
+覆盖真实子弹状态传递、伤害与反应限制、墙体/阵营/范围/容器隔离、E 领取与攻击互斥、房间增益、倒计时与电弧暂停/回收，以及标靶清场。

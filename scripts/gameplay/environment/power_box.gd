@@ -76,6 +76,7 @@ func _discharge() -> void:
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null:
 		events.publish_noise(self, global_position, 200.0)
+		events.environment_discharge_requested.emit(global_position, discharge_radius)
 		events.publish_message("配电箱放电 · 导电目标可触发电弧", Color("7bdcea"))
 	for actor in get_tree().get_nodes_in_group("status_actors"):
 		if not actor is Node2D or actor.is_queued_for_deletion() or CombatProjectile.room_for_actor(actor) != room:
