@@ -22,8 +22,21 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	var expired: Array[StringName] = []
-	for id: StringName in _statuses:
+	for id: StringName in _statuses.keys():
+		if not _statuses.has(id):
+			continue
 		var entry: Dictionary = _statuses[id]
+		if id == &"burning" and entry.has("packet"):
+			entry["tick_elapsed"] = float(entry.get("tick_elapsed", 0.0)) + minf(delta, float(entry.remaining))
+			_statuses[id] = entry
+			while float(entry.tick_elapsed) >= 1.0 - 0.000001 and _statuses.has(id):
+				entry.tick_elapsed = maxf(0,float(entry.tick_elapsed)-1.0)
+				_statuses[id] = entry
+				var packet: DamagePacket = entry.packet.duplicate_packet()
+				get_parent().get_node("HurtBox").receive_hit(packet)
+			# Insurance can clear all negative statuses from inside damage resolution.
+			if not _statuses.has(id):
+				continue
 		entry["remaining"] = maxf(float(entry.get("remaining", 0.0)) - delta, 0.0)
 		_statuses[id] = entry
 		if float(entry["remaining"]) <= 0.0:
@@ -96,6 +109,12 @@ func handle_hit(packet: DamagePacket) -> void:
 		var count := ElectricReaction.discharge(actor, packet)
 		reaction_triggered.emit(&"electric_arc", count)
 	var health := actor.get_node_or_null("HealthComponent") as HealthComponent
+	if health == null or health.is_dead():
+		return
+	if packet.allow_status_reactions and packet.damage_type == &"fire" and has_status(&"oiled"):
+		ignite(packet)
+	if packet.status_tags.has("oiled"):
+		add_status(&"oiled", 6.0, ["negative", "oil"])
 	if health != null and not health.is_dead() and packet.status_tags.has("conductive"):
 		add_status(CONDUCTIVE, CONDUCTIVE_SECONDS, ["negative", "electric"])
 
@@ -105,3 +124,26 @@ func _is_immune(tags: PackedStringArray) -> bool:
 		if _immunity_tags.has(StringName(tag)):
 			return true
 	return false
+
+func ignite(incoming: DamagePacket) -> bool:
+	if not has_status(&"oiled") or not add_status(&"burning", 3.0, ["negative", "fire"]):
+		return false
+	remove_status(&"oiled")
+	var tick := incoming.duplicate_packet()
+	tick.base_damage = 1
+	tick.damage_type = &"fire"
+	tick.status_tags = []
+	tick.allow_status_reactions = false
+	tick.is_area_damage = true
+	tick.is_projectile = false
+	tick.is_melee = false
+	tick.blockable = false
+	tick.reflectable = false
+	tick.knockback = Vector2.ZERO
+	tick.stagger_seconds = 0
+	var entry: Dictionary = _statuses[&"burning"]
+	entry["packet"] = tick
+	entry["tick_elapsed"] = float(entry.get("tick_elapsed", 0.0))
+	_statuses[&"burning"] = entry
+	reaction_triggered.emit(&"oil_ignite", 0)
+	return true
