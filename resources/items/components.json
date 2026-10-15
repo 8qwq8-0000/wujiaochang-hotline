@@ -57,21 +57,5 @@
     "image": "res://assets/art/items/pistol.svg",
     "maximum_stack_size": 1,
     "debug_only": true
-  },
-  "test_oil_pistol": {
-    "name": "试验·油枪",
-    "slot": "weapon",
-    "effect": "res://resources/debug/oil_pistol.tres",
-    "image": "res://assets/art/items/pistol.svg",
-    "maximum_stack_size": 1,
-    "debug_only": true
-  },
-  "test_fire_pistol": {
-    "name": "试验·火焰枪",
-    "slot": "weapon",
-    "effect": "res://resources/debug/fire_pistol.tres",
-    "image": "res://assets/art/items/pistol.svg",
-    "maximum_stack_size": 1,
-    "debug_only": true
   }
 }

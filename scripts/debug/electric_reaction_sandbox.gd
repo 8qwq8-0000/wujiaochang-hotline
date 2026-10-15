@@ -1,5 +1,6 @@
 extends Node2D
 
+@export var equip_test_weapons := true
 @export var primary_id := "test_conductive_pistol"
 @export var secondary_id := "test_electric_pistol"
 
@@ -9,17 +10,29 @@ var remaining_targets := 3
 @onready var player: PlayerController = $Player
 
 func _ready() -> void:
+	get_node("/root/RunManager").begin_run()
+	get_node("/root/RunManager").set_scene_payload({})
+	var back := Button.new()
+	back.name = "ReturnWarehouse"
+	back.position = Vector2(498,333)
+	back.size = Vector2(122,23)
+	back.text = "返回仓库"
+	back.add_theme_font_size_override("font_size",13)
+	back.process_mode = Node.PROCESS_MODE_ALWAYS
+	back.pressed.connect(_return_warehouse)
+	$UI.add_child(back)
 	player.get_node("Camera2D").enabled = false
 	_fit_viewport()
 	get_viewport().size_changed.connect(_fit_viewport)
-	var inventory := player.inventory
-	inventory.backpack.add_item(inventory.weapon_slot.get_item())
-	for entry in [{"slot":inventory.weapon_slot,"id":primary_id},{"slot":inventory.secondary_weapon_slot,"id":secondary_id}]:
-		var item := InventoryItem.new(ComponentInventory.PROTOTYPES,entry.id)
-		inventory._assign_instance_id(item)
-		entry.slot.equip(item)
-	inventory._apply_equipment()
-	inventory.changed.emit()
+	if equip_test_weapons:
+		var inventory := player.inventory
+		inventory.backpack.add_item(inventory.weapon_slot.get_item())
+		for entry in [{"slot":inventory.weapon_slot,"id":primary_id},{"slot":inventory.secondary_weapon_slot,"id":secondary_id}]:
+			var item := InventoryItem.new(ComponentInventory.PROTOTYPES,entry.id)
+			inventory._assign_instance_id(item)
+			entry.slot.equip(item)
+		inventory._apply_equipment()
+		inventory.changed.emit()
 	for index in 3:
 		var enemy: EnemyController = load("res://scenes/actors/enemies/enemy.tscn").instantiate()
 		enemy.profile = load("res://resources/enemies/melee_pressure.tres").duplicate()
@@ -62,3 +75,10 @@ func _fit_viewport() -> void:
 	var factor := minf(viewport_size.x/640.0,viewport_size.y/360.0)
 	$Camera2D.zoom = Vector2.ONE*factor
 	$UI.transform = Transform2D(0,Vector2.ONE*factor,0,(viewport_size-Vector2(640,360)*factor)/2)
+
+func _return_warehouse() -> void:
+	get_tree().paused = false
+	player.set_input_enabled(false)
+	get_node("/root/RunManager").begin_run()
+	get_node("/root/RunManager").set_scene_payload({})
+	get_tree().call_deferred("change_scene_to_file", "res://scenes/bootstrap/warehouse_main.tscn")
