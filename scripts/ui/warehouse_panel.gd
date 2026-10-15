@@ -1,5 +1,7 @@
 extends CanvasLayer
 
+var heading_text := "仓库 / 储物箱"
+var open_message := "点击装备存取 · 取出进入背包 · 自动保存"
 var room: Node2D
 var is_open := false
 var _owns_pause := false
@@ -27,7 +29,7 @@ func _ready() -> void:
 	var heading := HBoxContainer.new()
 	column.add_child(heading)
 	var title := Label.new()
-	title.text = "仓库 / 储物箱"
+	title.text = heading_text
 	title.add_theme_font_size_override("font_size", 20)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	heading.add_child(title)
@@ -74,7 +76,7 @@ func open() -> void:
 	get_tree().paused = true
 	room.player.set_input_enabled(false)
 	_overlay.show()
-	show_message("点击装备存取 · 取出进入背包 · 自动保存")
+	show_message(open_message)
 	refresh()
 
 func close() -> void:

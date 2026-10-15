@@ -77,7 +77,12 @@ func run_checks() -> void:
 	check(not root.get_node("RunManager").persistent_run,"trial is isolated from persistent action")
 	check(trial.player.inventory.secondary_weapon_slot.get_item() == null,"trial does not import stored weapon")
 	check(trial.get_node("PowerBox") != null and trial.get_node("FuelBarrel") != null,"both environment props available")
-	trial.player.inventory.pickup("pistol")
+	trial.panel.open()
+	for item in trial.chest.get_items():
+		if item.get_prototype().get_prototype_id() == "pistol":
+			check(trial.transfer(item,false),"trial supply chest withdraws test gear")
+			break
+	trial.panel.close()
 	trial.player.statuses.add_status(&"oiled",6,["negative","oil"])
 	check(store.get_profile() == before,"trial equipment and status do not mutate saved profile")
 	await press_key(KEY_R)

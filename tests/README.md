@@ -91,3 +91,5 @@ godot --headless --path . --script res://tests/integration/fuel_sandbox_check.gd
 覆盖实际计时伤害、刷新不叠加、暂停与保险清状态、桶破坏互斥、油区/爆炸/火区、墙体/范围/容器隔离、伤害接口引燃、试验场鼠标点击点燃、普通近战打桶、R 重置和区域过期。
 
 仓库与试验场往返：`godot --headless --path . --script res://tests/integration/trial_entry_check.gd`，使用独立存档验证保存失败留在仓库、真实 E 进入、普通初始装备、配电箱与桶、R 重置、死亡后鼠标点击返回及存档隔离。
+
+试验场储物箱：`godot --headless --path . --script res://tests/integration/trial_chest_check.gd`，覆盖正式原型清单、真实 E 和鼠标取用、自动补货与实例编号、容量/绑定/保险唯一、配装和存回、暂停恢复、R 重置与存档隔离；往返检查另验证取物后返回正式仓库。
