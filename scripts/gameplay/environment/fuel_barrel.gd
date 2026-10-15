@@ -15,20 +15,19 @@ func receive_hit(packet: DamagePacket) -> DamageResult:
 	result.outcome = DamageResult.Outcome.DAMAGED
 	result.final_damage = 1
 	result.target_defeated = true
-	call_deferred("_spill",packet.damage_type == &"fire")
+	call_deferred("_spill")
 	queue_redraw()
 	return result
 
-func _spill(ignite: bool) -> void:
+func _spill() -> void:
 	if not is_inside_tree() or is_queued_for_deletion():
 		return
 	patch = FuelPatch.new()
-	CombatProjectile.room_for_actor(self).add_child(patch)
+	EnvironmentArea.for_actor(self).add_child(patch)
 	patch.global_position = global_position
-	if ignite:
-		var fire := DamagePacket.new()
-		fire.damage_type = &"fire"
-		patch.receive_hit(fire)
+	var fire := DamagePacket.new()
+	fire.damage_type = &"fire"
+	patch.receive_hit(fire)
 
 func _draw() -> void:
 	draw_rect(Rect2(-13,-17,26,34),Color("57504a") if broken else Color("b16e32"))

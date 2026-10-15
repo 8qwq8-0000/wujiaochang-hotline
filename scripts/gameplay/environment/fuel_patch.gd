@@ -35,7 +35,7 @@ func receive_hit(packet: DamagePacket) -> DamageResult:
 	var result := DamageResult.new()
 	result.packet = packet
 	result.target = self
-	if packet.base_damage > 0 and packet.damage_type == &"fire" and not burning and not get_tree().paused:
+	if packet.base_damage > 0 and packet.damage_type in [&"fire", &"thermal"] and not burning and not get_tree().paused:
 		# Reserve the transition before callbacks, including overlapping projectiles.
 		burning = true
 		remaining = 4.0
@@ -56,16 +56,8 @@ func _explode() -> void:
 		events.fuel_explosion_requested.emit(global_position,96.0)
 
 func _affect_actors(reach: float, deal_damage: bool) -> void:
-	var room := CombatProjectile.room_for_actor(self)
-	for actor in get_tree().get_nodes_in_group("status_actors"):
-		if not actor is Node2D or actor.is_queued_for_deletion() or CombatProjectile.room_for_actor(actor) != room:
-			continue
-		var hurt := actor.get_node_or_null("HurtBox") as HurtBox2DComponent
-		if hurt == null or hurt.health.is_dead() or global_position.distance_to(actor.global_position) > reach:
-			continue
-		var ray := PhysicsRayQueryParameters2D.create(global_position,actor.global_position,1)
-		if not get_world_2d().direct_space_state.intersect_ray(ray).is_empty():
-			continue
+	for actor in EnvironmentArea.visible_actors(self,reach):
+		var hurt := actor.get_node("HurtBox") as HurtBox2DComponent
 		if deal_damage:
 			var packet := DamagePacket.new()
 			packet.source = self

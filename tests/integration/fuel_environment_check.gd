@@ -72,9 +72,19 @@ func run_checks() -> void:
 	barrel.receive_hit(DamagePacket.new())
 	barrel.receive_hit(DamagePacket.new())
 	await process_frame
-	check(barrel.broken and is_instance_valid(barrel.patch),"breaking barrel spills oil once")
+	check(barrel.broken and is_instance_valid(barrel.patch),"melee hit triggers one bomb explosion")
 	check(get_nodes_in_group("fuel_patches").size() == 1,"repeated hits cannot duplicate oil")
-	var patch := barrel.patch
+	check(barrel.patch.burning and barrel.patch.explosion_count == 1,"any valid attack immediately explodes bomb")
+	check(target.get_node("HealthComponent").current_health == 9 and player_target.get_node("HealthComponent").current_health == 9,"bomb blast damages both factions once")
+	barrel.patch.queue_free()
+	await process_frame
+	for actor in [target,player_target,covered,far,isolated]:
+		actor.get_node("HealthComponent").set_current_health(10)
+		actor.get_node("StatusComponent").clear_all()
+	# Oil status remains independently testable without requiring a weapon or a two-step bomb.
+	var patch := FuelPatch.new()
+	patch.position = Vector2(300,180)
+	room.add_child(patch)
 	await create_timer(0.25).timeout
 	check(target.get_node("StatusComponent").has_status(&"oiled") and player_target.get_node("StatusComponent").has_status(&"oiled"),"oil affects player and enemy")
 	check(target.get_node("HealthComponent").current_health == 10,"oil alone does no damage")
@@ -125,13 +135,13 @@ func run_checks() -> void:
 	player.weapons.set_equipped_weapon(load("res://resources/weapons/service_pistol.tres"))
 	player.weapons.try_attack(Vector2(100,300),Vector2.RIGHT,player)
 	await create_timer(0.35).timeout
-	check(second.broken and is_instance_valid(second.patch) and not second.patch.burning,"real kinetic shot spills oil without ignition")
+	check(second.broken and is_instance_valid(second.patch) and second.patch.burning,"real kinetic shot directly explodes bomb")
 	var fire_weapon: WeaponComponentData = load("res://resources/weapons/service_pistol.tres").duplicate()
 	fire_weapon.damage_type = &"fire"
 	player.weapons.set_equipped_weapon(fire_weapon)
 	player.weapons.try_attack(Vector2(100,300),Vector2.RIGHT,player)
 	await create_timer(0.3).timeout
-	check(second.patch.burning and second.patch.explosion_count == 1,"real fire shot ignites spilled oil")
+	check(second.patch.burning and second.patch.explosion_count == 1,"further fire shot cannot explode spent bomb twice")
 	room.queue_free()
 	other_room.queue_free()
 	await process_frame
