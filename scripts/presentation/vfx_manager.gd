@@ -11,6 +11,8 @@ var _available: Array[EffectFlash] = []
 var _active: Array[EffectFlash] = []
 var _available_numbers: Array[DamageNumber] = []
 var _active_numbers: Array[DamageNumber] = []
+var _active_arcs: Array[Node2D] = []
+const ARC_EFFECT := preload("res://scripts/presentation/electric_arc_effect.gd")
 
 
 func _ready() -> void:
@@ -20,6 +22,21 @@ func _ready() -> void:
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null:
 		events.damage_resolved.connect(_on_damage_resolved)
+		events.electric_arc_requested.connect(_spawn_arc)
+		events.fuel_explosion_requested.connect(func(point: Vector2, radius: float) -> void: spawn_flash(point, Color("ff9446"), radius, 0.3))
+		events.environment_discharge_requested.connect(func(point: Vector2, radius: float) -> void: spawn_flash(point, Color("69d6ec"), radius, 0.3))
+
+
+func _spawn_arc(from: Vector2, to: Vector2, room: Node) -> void:
+	if not is_instance_valid(room) or room.is_queued_for_deletion():
+		return
+	if _active_arcs.size() >= total_effect_budget:
+		_active_arcs.pop_front().queue_free()
+	var effect: Node2D = ARC_EFFECT.new()
+	effect.setup(from, to)
+	room.add_child(effect)
+	_active_arcs.append(effect)
+	effect.tree_exiting.connect(func() -> void: _active_arcs.erase(effect))
 
 
 func spawn_flash(world_position: Vector2, color: Color, radius: float, duration: float = 0.18) -> void:

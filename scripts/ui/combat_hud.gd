@@ -5,6 +5,7 @@ extends CanvasLayer
 @onready var mobility_label: Label = $Overlay/TopLeft/Mobility
 @onready var weapon_label: Label = $Overlay/TopLeft/Weapon
 @onready var guard_label: Label = $Overlay/TopLeft/Guard
+@onready var buff_label: Label = $Overlay/TopLeft/RoomBuff
 @onready var objective_label: Label = $Overlay/Objective
 @onready var message_label: Label = $Overlay/Message
 
@@ -41,7 +42,22 @@ func _process(_delta: float) -> void:
 
 
 func _bind_player(player: PlayerController) -> void:
-	player.tree_exiting.connect(func() -> void: _player = null)
+	player.tree_exiting.connect(func() -> void:
+		_player = null
+		buff_label.hide()
+	)
+	player.get_node("RoomBuffComponent").changed.connect(_update_room_buff)
+	_update_room_buff()
+
+
+func _update_room_buff(_id: StringName = &"") -> void:
+	if not is_instance_valid(_player):
+		buff_label.hide()
+		return
+	var buffs: RoomBuffComponent = _player.get_node("RoomBuffComponent")
+	buff_label.visible = not buffs.active_buff.is_empty()
+	buff_label.text = "增益  %s" % RoomBuffComponent.TITLES.get(buffs.active_buff, "")
+
 
 
 func _on_enemy_count_changed(remaining: int) -> void:

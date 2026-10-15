@@ -1,5 +1,8 @@
 extends CanvasLayer
 
+var heading_text := "仓库 / 储物箱"
+var open_message := "点击装备存取 · 取出进入背包 · 自动保存"
+var fixed_chest_catalog := false
 var room: Node2D
 var is_open := false
 var _owns_pause := false
@@ -27,7 +30,7 @@ func _ready() -> void:
 	var heading := HBoxContainer.new()
 	column.add_child(heading)
 	var title := Label.new()
-	title.text = "仓库 / 储物箱"
+	title.text = heading_text
 	title.add_theme_font_size_override("font_size", 20)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	heading.add_child(title)
@@ -74,7 +77,7 @@ func open() -> void:
 	get_tree().paused = true
 	room.player.set_input_enabled(false)
 	_overlay.show()
-	show_message("点击装备存取 · 取出进入背包 · 自动保存")
+	show_message(open_message)
 	refresh()
 
 func close() -> void:
@@ -110,13 +113,30 @@ func refresh() -> void:
 			_add_item(_bag_list, item, entry.name + " · ", true)
 	for item in inventory.backpack.get_items():
 		_add_item(_bag_list, item, "背包 · ", true)
-	for item in room.chest.get_items():
+	for item in _chest_display_items():
 		_add_item(_chest_list, item, "", false)
 	if room.chest.get_item_count() == 0:
 		var empty := Label.new()
 		empty.text = "箱子是空的\n从左侧存入战利品"
 		empty.add_theme_font_size_override("font_size", 14)
 		_chest_list.add_child(empty)
+
+func _chest_display_items() -> Array:
+	var items: Array = room.chest.get_items()
+	if not fixed_chest_catalog:
+		return items
+	# Supply rows represent item types, so replenishment and returned copies
+	# never move other types or add rows in the middle of the catalog.
+	var by_id := {}
+	for item in items:
+		var id: String = item.get_prototype().get_prototype_id()
+		if not by_id.has(id):
+			by_id[id] = item
+	var ordered: Array = []
+	for id in ComponentInventory.PROTOTYPES.data:
+		if by_id.has(id):
+			ordered.append(by_id[id])
+	return ordered
 
 func _add_item(parent: Control, item: InventoryItem, prefix: String, deposit: bool) -> void:
 	var button := Button.new()

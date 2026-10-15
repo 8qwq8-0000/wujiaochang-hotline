@@ -118,3 +118,7 @@ func _index_for_id(id: StringName) -> int:
 
 func set_equipped_mode(mode: MobilityMode) -> void:
 	equip_mode(mode)
+
+
+func is_ability_active() -> bool:
+	return _ability_active_remaining > 0.0

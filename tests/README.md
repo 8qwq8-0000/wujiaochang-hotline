@@ -69,3 +69,36 @@ godot --headless --path . --script res://tests/integration/playthrough_check.gd
 正式出生巡逻检查：`godot --headless --path . --script res://tests/integration/spawned_patrol_check.gd`，通过 Main 的真实生成器检查出生坐标、墙体平行轨迹，以及带偏移房间的世界坐标。
 
 武器场景检查：`godot --headless --path . --script res://tests/integration/weapon_scene_check.gd`，覆盖初始挂载、快捷切换、单实例表现、枪口发射、墙面收回、纯表现状态隔离和缺失场景回退。实施与模板见 `docs/technical/武器场景实施说明.md`。
+
+导电、配电箱与试玩场景：
+
+```sh
+godot --headless --path . --script res://tests/integration/status_reaction_check.gd
+godot --headless --path . --script res://tests/integration/power_box_check.gd
+godot --headless --path . --script res://tests/integration/electric_sandbox_check.gd
+```
+
+覆盖真实子弹状态传递、伤害与反应限制、墙体/阵营/范围/容器隔离、E 领取与攻击互斥、房间增益、倒计时与电弧暂停/回收，以及标靶清场。
+
+浸油、燃烧与燃料桶：
+
+```sh
+godot --headless --path . --script res://tests/integration/oil_status_check.gd
+godot --headless --path . --script res://tests/integration/fuel_environment_check.gd
+godot --headless --path . --script res://tests/integration/fuel_sandbox_check.gd
+```
+
+覆盖实际计时伤害、刷新不叠加、暂停与保险清状态、桶破坏互斥、油区/爆炸/火区、墙体/范围/容器隔离、伤害接口引燃、试验场鼠标点击点燃、普通近战打桶、R 重置和区域过期。
+
+仓库与试验场往返：`godot --headless --path . --script res://tests/integration/trial_entry_check.gd`，使用独立存档验证保存失败留在仓库、真实 E 进入、普通初始装备、配电箱与桶、R 重置、死亡后鼠标点击返回及存档隔离。
+
+试验场储物箱：`godot --headless --path . --script res://tests/integration/trial_chest_check.gd`，覆盖正式原型清单、真实 E 和鼠标取用、自动补货与实例编号、容量/绑定/保险唯一、配装和存回、暂停恢复、R 重置与存档隔离；往返检查另验证取物后返回正式仓库。
+
+环境结算完善与自动门：
+
+```sh
+godot --headless --path . --script res://tests/integration/environment_electric_check.gd
+godot --headless --path . --script res://tests/integration/automatic_door_check.gd
+```
+
+覆盖同次放电共享预算/去重、新导电不自触发、实际区域玩家归属、每区域配电箱数量、增益回调互斥；实际接触开门、挡弹/放行、双侧冲刺、门后击倒范围与遮挡、暂停及恢复。fuel_environment_check/fuel_sandbox_check 已改为验证警棍和枪击直接引爆，原浸油反应另由 oil_status_check 保留验证。

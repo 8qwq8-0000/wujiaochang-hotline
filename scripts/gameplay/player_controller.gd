@@ -255,6 +255,9 @@ func export_recovery_state() -> Dictionary:
 
 
 func reset_transient_state() -> void:
+	var room_buff := get_node_or_null("RoomBuffComponent")
+	if room_buff != null:
+		room_buff.clear()
 	heat.set_heat(0.0)
 	heat.is_overheated = false
 	statuses.clear_all()

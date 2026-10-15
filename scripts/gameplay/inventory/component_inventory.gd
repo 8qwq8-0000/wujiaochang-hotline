@@ -14,6 +14,7 @@ var secondary_weapon_slot: ItemSlot
 var mobility_slot: ItemSlot
 var blackbox_slot: ItemSlot
 var panel: CanvasLayer
+var allow_trial_equipment_changes := false
 var is_open := false
 var _owns_pause := false
 static var _active_users := 0
@@ -109,6 +110,8 @@ func _on_player_died(_packet: DamagePacket) -> void:
 func can_change_equipment() -> bool:
 	if player.health.is_dead():
 		return false
+	if allow_trial_equipment_changes:
+		return true
 	var run := get_node_or_null("/root/RunManager")
 	if run != null and run.mandatory_enemies_remaining > 0:
 		return false
