@@ -119,10 +119,17 @@ func run_checks() -> void:
 	check(generated.size() == 2,"actual floor generated two areas")
 	for generated_area in generated:
 		var boxes := 0
+		var bombs := 0
+		var doors := 0
 		for child in generated_area.get_children():
 			if child is PowerBox:
 				boxes += 1
+			elif child is FuelBarrel:
+				bombs += 1
+			elif child is AutomaticDoor:
+				doors += 1
 		check(boxes == 1,"actual generation has exactly one power box per area")
+		check(bombs == 1 and doors == 0,"actual level has one bomb and no doors per area")
 	actual.queue_free()
 	await process_frame
 	print("Environment electric checks: ",checks,"; failures: ",failures)
