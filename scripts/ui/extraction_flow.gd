@@ -9,6 +9,7 @@ var _overlay: ColorRect
 var _title: Label
 var _details: Label
 var _buttons: HBoxContainer
+var _death_pending := false
 @onready var flow: SceneContainerManager = get_parent().get_node("SceneFlow")
 @onready var run: Node = get_node("/root/RunManager")
 
@@ -65,10 +66,45 @@ func _bind_floor(scene: Node, _payload: Dictionary) -> void:
 	close_exit()
 	_active_exit = null
 	_player = scene.get_node_or_null("Player") as PlayerController
+	if _player != null and not scene.is_in_group("warehouse"):
+		_player.player_died.connect(_on_player_died)
 	for exit in scene.find_children("*", "Area2D", true, false):
 		if exit is ExitElevator:
 			exit.entered.connect(open_exit.bind(exit))
 			exit.exited.connect(_leave_exit.bind(exit))
+
+
+func _on_player_died(_packet: DamagePacket) -> void:
+	if not run.persistent_run or run.run_finished:
+		return
+	_death_pending = true
+	call_deferred("settle_death")
+
+
+func settle_death() -> void:
+	if not _death_pending or not is_instance_valid(_player):
+		return
+	var store := get_node("/root/WarehouseStore")
+	var profile: Dictionary = store.get_profile()
+	var recovery := _player.export_recovery_state()
+	_set_layout(true)
+	_owns_pause = _owns_pause or not get_tree().paused
+	get_tree().paused = true
+	_overlay.show()
+	_clear_buttons()
+	if not store.commit(profile.chest, recovery):
+		_title.text = "死亡结算保存失败"
+		_details.text = store.error_message + "。请重试，尚未返回仓库。"
+		_add_button("重试保存", settle_death)
+		return
+	_death_pending = false
+	run.run_finished = true
+	run.set_player_state(recovery)
+	_settled = true
+	_title.text = "线路中断 · 行动结束"
+	var protected := _player.inventory.blackbox_slot.get_item()
+	_details.text = "黑匣保留：%s\n未保护的普通装备和背包物品已丢失。\n初始绑定装备保留，仓库箱内物品不受影响。" % (protected.get_title() if protected != null else "无")
+	_add_button("返回仓库", return_to_warehouse)
 
 
 func open_exit(exit: ExitElevator = null) -> void:
@@ -145,7 +181,7 @@ func continue_floor() -> void:
 
 
 func close_exit() -> void:
-	if _settled:
+	if _settled or _death_pending:
 		return
 	_overlay.hide()
 	_active_exit = null
@@ -155,10 +191,10 @@ func close_exit() -> void:
 func _input(event: InputEvent) -> void:
 	if not _overlay.visible:
 		return
-	if event.is_action_pressed("pause") and not _settled:
+	if event.is_action_pressed("pause") and not _settled and not _death_pending:
 		close_exit()
 	# Exit choice allows movement; only the completed settlement is modal.
-	if _settled and event is InputEventKey:
+	if (_settled or _death_pending) and event is InputEventKey:
 		get_viewport().set_input_as_handled()
 
 

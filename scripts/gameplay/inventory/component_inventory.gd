@@ -12,6 +12,7 @@ var backpack: Inventory
 var weapon_slot: ItemSlot
 var secondary_weapon_slot: ItemSlot
 var mobility_slot: ItemSlot
+var blackbox_slot: ItemSlot
 var panel: CanvasLayer
 var is_open := false
 var _owns_pause := false
@@ -45,12 +46,17 @@ func _ready() -> void:
 	weapon_slot = _create_slot("WeaponSlot")
 	secondary_weapon_slot = _create_slot("SecondaryWeaponSlot")
 	mobility_slot = _create_slot("MobilitySlot")
+	blackbox_slot = _create_slot("BlackboxSlot")
 	panel = PANEL_SCENE.instantiate()
 	panel.inventory = self
 	add_child(panel)
 	var initial := InventoryItem.new(PROTOTYPES, "initial_baton")
 	_assign_instance_id(initial)
 	weapon_slot.equip(initial)
+	var insurance := InventoryItem.new(PROTOTYPES, "circuit_breaker")
+	_assign_instance_id(insurance)
+	blackbox_slot.equip(insurance)
+	player.get_node("CircuitBreakerComponent").circuit_breaker_triggered.connect(_on_insurance_triggered)
 	_apply_equipment()
 	backpack.item_removed.connect(_on_backpack_item_removed)
 	changed.emit()
@@ -118,6 +124,14 @@ func _assign_instance_id(item: InventoryItem) -> void:
 func pickup(component_id: String) -> bool:
 	if player.health.is_dead() or not PROTOTYPES.data.has(component_id):
 		return false
+	if component_id == "circuit_breaker" and get_insurance_item() != null:
+		return false
+	if component_id == "circuit_breaker":
+		var store := get_node_or_null("/root/WarehouseStore")
+		if store != null:
+			for stored_item in store.get_profile().chest:
+				if stored_item.get("prototype_id") == "circuit_breaker":
+					return false
 	var is_weapon := str(PROTOTYPES.data[component_id].get("slot", "")) == "weapon"
 	var auto_secondary := is_weapon and not _has_picked_up_weapon and secondary_weapon_slot.get_item() == null
 	var item := InventoryItem.new(PROTOTYPES, component_id)
@@ -204,7 +218,10 @@ func _slot_for(slot_name: String) -> Object:
 			return secondary_weapon_slot
 		"mobility":
 			return mobility_slot
+		"blackbox":
+			return blackbox_slot
 	return null
+
 
 func _on_backpack_item_removed(_item: InventoryItem) -> void:
 	changed.emit()
@@ -217,13 +234,107 @@ func _apply_equipment() -> void:
 		load(str(secondary.get_property("effect"))) if secondary != null else null)
 	var mode := mobility_slot.get_item()
 	player.get_node("MobilityController").set_equipped_mode(load(str(mode.get_property("effect"))) if mode != null else null)
+	sync_insurance()
+
+
+func get_insurance_item() -> InventoryItem:
+	var protected := blackbox_slot.get_item()
+	if protected != null and protected.get_property("slot", "") == "insurance":
+		return protected
+	for item in backpack.get_items():
+		if item.get_property("slot", "") == "insurance":
+			return item
+	return null
+
+
+func sync_insurance() -> void:
+	var breaker: CircuitBreakerComponent = player.get_node("CircuitBreakerComponent")
+	var item := blackbox_slot.get_item()
+	var insured: bool = item != null and item.get_property("slot", "") == "insurance"
+	breaker.circuit_breaker_used = bool(item.get_property("circuit_breaker_used", false)) if insured else false
+	breaker.set_equipped(insured)
+
+
+func _on_insurance_triggered() -> void:
+	var item := get_insurance_item()
+	if item != null:
+		item.set_property("circuit_breaker_used", true)
+	_persist_protection()
+	changed.emit()
+
+
+func can_change_blackbox() -> bool:
+	return not player.health.is_dead() and not player.health.resolving_damage and (can_change_equipment() or (is_open and get_tree().paused))
+
+
+func put_in_blackbox(index: int) -> bool:
+	var items := backpack.get_items()
+	if not can_change_blackbox() or index < 0 or index >= items.size():
+		return false
+	var item := items[index]
+	if bool(item.get_property("bound", false)):
+		_notify("绑定初始装备无需黑匣保护", &"full")
+		return false
+	var old := blackbox_slot.get_item()
+	var before := player.export_run_state()
+	var moved := InventoryItem.swap(item, old) if old != null else blackbox_slot.equip(item)
+	if not moved:
+		return false
+	sync_insurance()
+	if not _persist_protection():
+		player.import_run_state(before)
+		return false
+	changed.emit()
+	_notify("黑匣保护：%s" % item.get_title(), &"equip")
+	return true
+
+
+func take_from_blackbox() -> bool:
+	if not can_change_blackbox() or blackbox_slot.get_item() == null:
+		return false
+	var before := player.export_run_state()
+	if not backpack.add_item(blackbox_slot.get_item()):
+		_notify("背包已满，无法取出；可选一件背包物品与黑匣交换", &"full")
+		return false
+	sync_insurance()
+	if not _persist_protection():
+		player.import_run_state(before)
+		return false
+	changed.emit()
+	return true
+
+
+func _persist_protection() -> bool:
+	var run := get_node_or_null("/root/RunManager")
+	var warehouse := not get_tree().get_nodes_in_group("warehouse").is_empty()
+	if run == null or (not run.persistent_run and not warehouse):
+		return true
+	var store := get_node("/root/WarehouseStore")
+	var profile: Dictionary = store.get_profile()
+	var saved: bool = store.commit(profile.chest, player.export_run_state() if warehouse else player.export_recovery_state())
+	if not saved:
+		_notify(store.error_message, &"full")
+	return saved
+
+
+func prepare_for_departure() -> void:
+	var insurance := get_insurance_item()
+	if insurance != null:
+		insurance.set_property("circuit_breaker_used", false)
+		if backpack.has_item(insurance):
+			var old := blackbox_slot.get_item()
+			if old == null:
+				blackbox_slot.equip(insurance)
+			else:
+				InventoryItem.swap(insurance, old)
+	sync_insurance()
 
 
 func move_to_storage(item: InventoryItem, storage: Inventory) -> bool:
 	if item == null or bool(item.get_property("bound", false)):
 		return false
 	var owned := backpack.has_item(item)
-	for slot in [weapon_slot, secondary_weapon_slot, mobility_slot]:
+	for slot in [weapon_slot, secondary_weapon_slot, mobility_slot, blackbox_slot]:
 		owned = owned or slot.get_item() == item
 	if not owned or not storage.add_item(item):
 		return false
@@ -233,6 +344,8 @@ func move_to_storage(item: InventoryItem, storage: Inventory) -> bool:
 
 
 func take_from_storage(item: InventoryItem, storage: Inventory) -> bool:
+	if item != null and item.get_property("slot", "") == "insurance" and get_insurance_item() != null:
+		return false
 	if item == null or not storage.has_item(item) or not backpack.add_item(item):
 		return false
 	changed.emit()
@@ -259,6 +372,7 @@ func export_run_state() -> Dictionary:
 		"primary": weapon_slot.serialize(),
 		"secondary": secondary_weapon_slot.serialize(),
 		"mobility": mobility_slot.serialize(),
+		"blackbox": blackbox_slot.serialize(),
 		"active_weapon": player.weapons.current_index,
 		"has_picked_up_weapon": _has_picked_up_weapon,
 	}
@@ -268,7 +382,7 @@ func get_extraction_items() -> Array[Dictionary]:
 	# Copy each instance, including properties/quality added by future item systems.
 	var result: Array[Dictionary] = []
 	var seen: Dictionary = {}
-	var locations := {"主武器": weapon_slot, "副武器": secondary_weapon_slot, "机动装备": mobility_slot}
+	var locations := {"主武器": weapon_slot, "副武器": secondary_weapon_slot, "机动装备": mobility_slot, "黑匣": blackbox_slot}
 	for location in locations:
 		var item: InventoryItem = locations[location].get_item()
 		if item != null:
@@ -292,7 +406,29 @@ func import_run_state(state: Dictionary) -> void:
 	weapon_slot.deserialize(state["primary"])
 	secondary_weapon_slot.deserialize(state["secondary"])
 	mobility_slot.deserialize(state["mobility"])
+	if state.has("blackbox"):
+		blackbox_slot.deserialize(state["blackbox"])
 	_has_picked_up_weapon = bool(state.get("has_picked_up_weapon", false))
 	player.weapons.current_index = clampi(int(state.get("active_weapon", 0)), 0, 1)
 	_apply_equipment()
 	changed.emit()
+
+
+func export_recovery_inventory() -> Dictionary:
+	var snapshot := export_run_state()
+	var bound: InventoryItem
+	for entry in get_extraction_items():
+		if entry.item.get("prototype_id") == "initial_baton":
+			bound = InventoryItem.new()
+			bound.deserialize(entry.item)
+			break
+	if bound == null:
+		bound = InventoryItem.new(PROTOTYPES, "initial_baton")
+		_assign_instance_id(bound)
+	snapshot.backpack.erase("items")
+	snapshot.primary = {"item": bound.serialize()}
+	snapshot.secondary = {}
+	snapshot.mobility = {}
+	snapshot.active_weapon = 0
+	snapshot.has_picked_up_weapon = false
+	return snapshot

@@ -88,7 +88,7 @@ func run_checks() -> void:
 	if not run.run_finished:
 		quit(1)
 		return
-	check(run.extraction_result.items.size() == 4, "both weapons, mobility and spare bag extracted once")
+	check(run.extraction_result.items.size() == 5, "both weapons, mobility and spare bag extracted once")
 	check(run.extraction_result.player_state == before, "extraction retains full serialized state")
 	var result: Dictionary = run.extraction_result.duplicate(true)
 	ui.extract()
@@ -100,11 +100,11 @@ func run_checks() -> void:
 	player = await wait_floor(flow)
 	var warehouse: Node = main.get_node("SceneContainer").get_child(0)
 	check(warehouse.is_in_group("warehouse"), "settlement returns to warehouse")
-	check(player.inventory.get_extraction_items().size() == 4, "warehouse retains extracted equipment")
+	check(player.inventory.get_extraction_items().size() == 5, "warehouse retains extracted equipment")
 	check(warehouse.depart(), "warehouse can start the next run")
 	player = await wait_floor(flow)
 	check(not paused and not run.run_finished and run.floor_index == 0, "new run resumes fresh floor")
-	check(player.inventory.get_extraction_items().size() == 4, "new run carries chosen equipment")
+	check(player.inventory.get_extraction_items().size() == 5, "new run carries chosen equipment")
 	await clear_floor()
 	player.set_circuit_breaker_equipped(false)
 	player.health.apply_damage(100, DamagePacket.new())

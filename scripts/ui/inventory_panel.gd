@@ -9,6 +9,7 @@ var _weapon: Button
 var _secondary: Button
 var _weapon_target: OptionButton
 var _mobility: Button
+var _blackbox: Button
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -35,18 +36,29 @@ func _ready() -> void:
 	for side in ["left", "right", "top", "bottom"]:
 		margin.add_theme_constant_override("margin_" + side, 10)
 	panel.add_child(margin)
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(460, 300)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	margin.add_child(scroll)
 	var column := VBoxContainer.new()
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	column.add_theme_constant_override("separation", 6)
-	margin.add_child(column)
+	scroll.add_child(column)
 	var title := Label.new()
 	title.text = "组件背包    Tab / Esc 关闭"
 	title.add_theme_font_size_override("font_size", 18)
 	column.add_child(title)
 	_status = Label.new()
 	column.add_child(_status)
+	_blackbox = Button.new()
+	_blackbox.custom_minimum_size.y = 34
+	_blackbox.add_theme_font_size_override("font_size", 13)
+	_blackbox.pressed.connect(func() -> void: inventory.take_from_blackbox())
+	column.add_child(_blackbox)
 	_weapon_target = OptionButton.new()
 	_weapon_target.add_item("新武装放入：主武装槽", 0)
 	_weapon_target.add_item("新武装放入：副武装槽", 1)
+	_weapon_target.add_item("操作：把背包物品放入黑匣 / 交换", 2)
 	column.add_child(_weapon_target)
 	var grid := GridContainer.new()
 	grid.columns = 3
@@ -66,7 +78,11 @@ func _ready() -> void:
 		empty.bg_color = Color("1b2b3d")
 		button.add_theme_stylebox_override("disabled", empty)
 		button.add_theme_constant_override("icon_max_width", 28)
-		button.pressed.connect(func() -> void: inventory.equip(index, _weapon_target.selected))
+		button.pressed.connect(func() -> void:
+			if _weapon_target.selected == 2:
+				inventory.put_in_blackbox(index)
+			else:
+				inventory.equip(index, _weapon_target.selected))
 		grid.add_child(button)
 		_buttons.append(button)
 	var weapon_row := HBoxContainer.new()
@@ -102,6 +118,7 @@ func set_open(value: bool) -> void:
 		_secondary.release_focus()
 		_weapon.release_focus()
 		_mobility.release_focus()
+		_blackbox.release_focus()
 
 func _process(_delta: float) -> void:
 	if not _overlay.visible:
@@ -122,6 +139,17 @@ func refresh() -> void:
 	var weapon := inventory.weapon_slot.get_item()
 	var secondary := inventory.secondary_weapon_slot.get_item()
 	var mode := inventory.mobility_slot.get_item()
+	var protected := inventory.blackbox_slot.get_item()
+	var protection := "空 · 可选择背包物品放入"
+	if protected != null:
+		protection = protected.get_title()
+		if protected.get_property("slot", "") == "insurance":
+			protection += " · 已触发" if bool(protected.get_property("circuit_breaker_used", false)) else " · 保险就绪"
+		else:
+			protection += " · 死亡保留"
+	_blackbox.text = "黑匣：%s%s" % [protection, " · 点击取出" if protected != null else ""]
+	_blackbox.disabled = protected == null
+	_blackbox.tooltip_text = "只保护其中一件物品。保险核心在黑匣中才生效；取出和交换不会刷新保险次数。"
 	_sync_weapon_target(weapon, secondary)
 	_weapon.text = "主：%s · 卸下" % (weapon.get_title() if weapon != null else "空")
 	_secondary.text = "副：%s · 卸下" % (secondary.get_title() if secondary != null else "空")
@@ -134,6 +162,8 @@ func refresh() -> void:
 func _sync_weapon_target(primary: InventoryItem, secondary: InventoryItem) -> void:
 	# Prefer the empty weapon slot after each successful equipment change.
 	# When both slots are occupied, preserve the player's explicit selection.
+	if _weapon_target.selected == 2:
+		return
 	if primary == null:
 		_weapon_target.select(0)
 	elif secondary == null:

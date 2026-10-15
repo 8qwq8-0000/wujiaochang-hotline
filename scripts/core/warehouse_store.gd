@@ -84,12 +84,23 @@ func _valid_profile(value: Variant) -> bool:
 				return false
 			if inv[key].has("item"):
 				items.append(inv[key].item)
+		# Old warehouse saves have no blackbox; PlayerController migrates them on load.
+		if inv.has("blackbox"):
+			if not inv.blackbox is Dictionary:
+				return false
+			if inv.blackbox.has("item"):
+				items.append(inv.blackbox.item)
 	var ids := {}
+	var insurance_count := 0
 	for item in items:
 		if not item is Dictionary or item.get("protoset") != "res://resources/items/components.json":
 			return false
 		if not ComponentInventory.PROTOTYPES.data.has(item.get("prototype_id", "")):
 			return false
+		if item.get("prototype_id") == "circuit_breaker":
+			insurance_count += 1
+			if insurance_count > 1:
+				return false
 		if not item.get("properties", {}) is Dictionary:
 			return false
 		for property in item.get("properties", {}).values():

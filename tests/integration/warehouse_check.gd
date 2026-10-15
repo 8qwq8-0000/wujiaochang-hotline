@@ -99,7 +99,11 @@ func run_checks() -> void:
 	room.panel.open()
 	await process_frame
 	await process_frame
-	var item_button: Button = room.panel.get("_bag_list").get_child(1)
+	var item_button: Button
+	for button in room.panel.get("_bag_list").get_children():
+		if button.text.begins_with("背包"):
+			item_button = button
+			break
 	var point := item_button.get_global_rect().get_center()
 	for pressed in [true, false]:
 		var click := InputEventMouseButton.new()
@@ -126,7 +130,7 @@ func run_checks() -> void:
 	player.circuit_breaker.circuit_breaker_used = true
 	player.talent_core.takeover_charges = 0
 	check(room.depart(), "warehouse departure accepted")
-	check(store.get_profile().loadout.is_empty(), "deployed items have no duplicate safe loadout")
+	check(store.get_profile().loadout.inventory.backpack.get("items", []).is_empty() and store.get_profile().loadout.inventory.secondary.is_empty(), "only protected and bound items retain safe recovery copies")
 	var battle := await wait_scene(main)
 	check(not battle.is_in_group("warehouse") and get_nodes_in_group("enemies").size() > 0, "departure loads real combat floor")
 	player = battle.get_node("Player")

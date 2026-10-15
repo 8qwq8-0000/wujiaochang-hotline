@@ -103,6 +103,8 @@ func depart() -> bool:
 	if flow == null:
 		$Instructions.text = "请从项目主入口运行，再从此处出击"
 		return false
+	var before := player.export_run_state()
+	player.inventory.prepare_for_departure()
 	var snapshot := player.export_run_state()
 	# New actions refresh per-run resources; moving items inside the warehouse does not.
 	snapshot.circuit_breaker.circuit_breaker_used = false
@@ -110,7 +112,8 @@ func depart() -> bool:
 	snapshot.talent_core.takeover_charges = player.talent_core.takeover_charge_max
 	snapshot.inventory.has_picked_up_weapon = false
 	# The deployed items now belong only to this run, never a second safe copy.
-	if not store.commit(chest_data(), {}):
+	if not store.commit(chest_data(), player.export_recovery_state()):
+		player.import_run_state(before)
 		$Instructions.text = store.error_message
 		return false
 	if not flow.request_scene(COMBAT_PATH, {"player_state": snapshot}):
@@ -127,6 +130,7 @@ func depart() -> bool:
 	, CONNECT_ONE_SHOT)
 	var run: Node = get_node("/root/RunManager")
 	run.begin_run()
+	run.persistent_run = true
 	run.set_player_state(snapshot)
 	return true
 

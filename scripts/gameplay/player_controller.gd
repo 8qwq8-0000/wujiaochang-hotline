@@ -230,9 +230,28 @@ func import_run_state(state: Dictionary) -> void:
 	elif state.has("core") and state["core"] is Dictionary:
 		# Import snapshots created before the talent core and breaker were split.
 		circuit_breaker.import_state(state["core"])
+	if state.get("inventory", {}).has("blackbox"):
+		inventory.sync_insurance()
+	elif state.has("circuit_breaker") or state.has("core"):
+		# Migrate pre-item insurance state without granting an extra core.
+		if not circuit_breaker.equipped:
+			inventory.blackbox_slot.clear()
+		else:
+			var insurance := inventory.get_insurance_item()
+			if insurance != null:
+				insurance.set_property("circuit_breaker_used", circuit_breaker.circuit_breaker_used)
+		inventory.sync_insurance()
 	health.set_current_health(int(state.get("current_health", health.max_health)))
 	talent_core.sync_health(health.current_health)
 	reset_transient_state()
+
+
+func export_recovery_state() -> Dictionary:
+	var state := export_run_state()
+	state.inventory = inventory.export_recovery_inventory()
+	state.current_health = config.max_health
+	state.circuit_breaker.equipped = inventory.blackbox_slot.get_item() != null and inventory.blackbox_slot.get_item().get_property("slot", "") == "insurance"
+	return state
 
 
 func reset_transient_state() -> void:

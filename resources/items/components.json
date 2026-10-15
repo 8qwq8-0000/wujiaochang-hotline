@@ -27,6 +27,13 @@
     "image": "res://assets/art/items/wheel.svg",
     "maximum_stack_size": 1
   },
+  "circuit_breaker": {
+    "name": "断路保险核心",
+    "slot": "insurance",
+    "image": "res://assets/art/items/circuit_breaker.svg",
+    "maximum_stack_size": 1,
+    "circuit_breaker_used": false
+  },
   "initial_baton": {
     "name": "初始警棍（绑定）",
     "slot": "weapon",
