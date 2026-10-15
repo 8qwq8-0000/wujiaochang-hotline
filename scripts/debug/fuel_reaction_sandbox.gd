@@ -16,6 +16,7 @@ func _ready() -> void:
 	panel = CanvasLayer.new()
 	panel.set_script(CHEST_PANEL)
 	panel.room = self
+	panel.fixed_chest_catalog = true
 	panel.heading_text = "试验场 / 测试储物箱"
 	panel.open_message = "点击取用正式道具 · 自动补货 · 关闭后 Tab 拖动配装 · 不写入正式存档"
 	add_child(panel)

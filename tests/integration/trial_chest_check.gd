@@ -21,6 +21,11 @@ func stock(scene: Node,id: String) -> InventoryItem:
 		if item.get_prototype().get_prototype_id() == id:
 			return item
 	return null
+func right_titles(scene: Node) -> Array:
+	var titles := []
+	for button in scene.panel.get("_chest_list").get_children():
+		titles.append(button.text)
+	return titles
 func run_checks() -> void:
 	var before: Dictionary = root.get_node("WarehouseStore").get_profile()
 	var scene = load("res://scenes/debug/fuel_reaction_sandbox.tscn").instantiate()
@@ -42,6 +47,7 @@ func run_checks() -> void:
 		await physics_frame
 	await press_key(KEY_E)
 	check(scene.panel.is_open and paused and not player.is_input_enabled(),"real E opens chest and pauses")
+	var initial_order := right_titles(scene)
 	var pistol := stock(scene,"pistol")
 	var original_id: String = pistol.get_property("instance_id")
 	var list: VBoxContainer = scene.panel.get("_chest_list")
@@ -59,9 +65,11 @@ func run_checks() -> void:
 			clicked = true
 			break
 	check(clicked and player.inventory.backpack.has_item(pistol),"real mouse click withdraws item")
+	check(right_titles(scene) == initial_order,"restocked item keeps original row")
 	check(stock(scene,"pistol") != pistol and stock(scene,"pistol").get_property("instance_id") != original_id,"restock creates a distinct instance")
 	for index in 5:
 		scene.transfer(stock(scene,"pistol"),false)
+	check(right_titles(scene) == initial_order,"repeated withdrawals preserve catalog order")
 	check(player.inventory.backpack.get_item_count() == 6,"bag capacity remains six")
 	var count: int = scene.chest.get_item_count()
 	check(not scene.transfer(stock(scene,"pistol"),false) and scene.chest.get_item_count() == count,"full bag refuses without losing stock")
@@ -73,9 +81,11 @@ func run_checks() -> void:
 	await press_key(KEY_TAB)
 	await press_key(KEY_E)
 	check(scene.transfer(pistol,true) and player.inventory.secondary_weapon_slot.get_item() == null,"equipped item can be stored back")
+	check(right_titles(scene) == initial_order,"returned duplicate does not insert extra row")
 	check(not scene.transfer(stock(scene,"circuit_breaker"),false),"insurance uniqueness still enforced")
 	var core := player.inventory.blackbox_slot.get_item()
 	check(scene.transfer(core,true),"current insurance can be deposited")
+	check(right_titles(scene) == initial_order,"returned insurance preserves every catalog row")
 	# Make bag space before taking a replacement insurance instance.
 	scene.transfer(player.inventory.backpack.get_items()[0],true)
 	check(scene.transfer(stock(scene,"circuit_breaker"),false),"insurance can be withdrawn once existing one is stored")
