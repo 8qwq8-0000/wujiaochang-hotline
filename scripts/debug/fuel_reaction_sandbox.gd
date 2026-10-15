@@ -7,7 +7,7 @@ var panel: CanvasLayer
 func _ready() -> void:
 	super._ready()
 	player.inventory.allow_trial_equipment_changes = true
-	$UI/Ignite.pressed.connect(_ignite_patches)
+	$UI/Ignite.pressed.connect(_shock_targets)
 	chest = Inventory.new()
 	chest.name = "TestItems"
 	chest.protoset = ComponentInventory.PROTOTYPES
@@ -21,16 +21,20 @@ func _ready() -> void:
 	panel.open_message = "点击取用正式道具 · 自动补货 · 关闭后 Tab 拖动配装 · 不写入正式存档"
 	add_child(panel)
 
-func _ignite_patches() -> void:
+func _shock_targets() -> void:
 	if get_tree().paused or player.health.is_dead():
 		return
-	for patch in get_tree().get_nodes_in_group("fuel_patches"):
-		if CombatProjectile.room_for_actor(patch) != self:
+	var event := ElectricReaction.begin_event(self)
+	for target in $Targets.get_children():
+		if not target is EnemyController or target.health.is_dead():
 			continue
 		var packet := DamagePacket.new()
-		packet.damage_type = &"fire"
+		packet.damage_type = &"electric"
 		packet.source_faction = CombatFaction.Id.ENVIRONMENT
-		patch.receive_hit(packet)
+		packet.status_tags = ["conductive"]
+		packet.electric_event = event
+		packet.blockable = false
+		target.hurt_box.receive_hit(packet)
 
 func _restock() -> void:
 	for id: String in ComponentInventory.PROTOTYPES.data:

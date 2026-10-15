@@ -93,3 +93,12 @@ godot --headless --path . --script res://tests/integration/fuel_sandbox_check.gd
 仓库与试验场往返：`godot --headless --path . --script res://tests/integration/trial_entry_check.gd`，使用独立存档验证保存失败留在仓库、真实 E 进入、普通初始装备、配电箱与桶、R 重置、死亡后鼠标点击返回及存档隔离。
 
 试验场储物箱：`godot --headless --path . --script res://tests/integration/trial_chest_check.gd`，覆盖正式原型清单、真实 E 和鼠标取用、自动补货与实例编号、容量/绑定/保险唯一、配装和存回、暂停恢复、R 重置与存档隔离；往返检查另验证取物后返回正式仓库。
+
+环境结算完善与自动门：
+
+```sh
+godot --headless --path . --script res://tests/integration/environment_electric_check.gd
+godot --headless --path . --script res://tests/integration/automatic_door_check.gd
+```
+
+覆盖同次放电共享预算/去重、新导电不自触发、实际区域玩家归属、每区域配电箱数量、增益回调互斥；实际接触开门、挡弹/放行、双侧冲刺、门后击倒范围与遮挡、暂停及恢复。fuel_environment_check/fuel_sandbox_check 已改为验证警棍和枪击直接引爆，原浸油反应另由 oil_status_check 保留验证。

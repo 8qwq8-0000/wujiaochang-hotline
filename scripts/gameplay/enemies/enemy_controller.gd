@@ -32,6 +32,7 @@ var _returning_to_patrol := false
 var mandatory: bool = true
 var state: State = State.IDLE
 var _attack_cooldown_remaining: float = 0.0
+var stationary_test_target := false
 var _stagger_remaining: float = 0.0
 var _target: Node2D
 var _windup_remaining := 0.0
@@ -80,6 +81,12 @@ func _physics_process(delta: float) -> void:
 		_stagger_remaining -= delta
 		velocity = velocity.move_toward(Vector2.ZERO, 900.0 * delta)
 		move_and_slide()
+		return
+	if stationary_test_target:
+		if state == State.STAGGERED:
+			state = State.IDLE
+		velocity = Vector2.ZERO
+		queue_redraw()
 		return
 	if not is_instance_valid(_target) or not _same_room(_target):
 		_target = null
@@ -208,6 +215,7 @@ func apply_stagger(seconds: float) -> void:
 	_attack_cooldown_remaining = profile.attack_cooldown
 	_stagger_remaining = maxf(_stagger_remaining, seconds)
 	velocity = Vector2.ZERO
+	queue_redraw()
 
 
 func apply_knockback(force: Vector2) -> void:

@@ -17,7 +17,7 @@ func _ready() -> void:
 	visible = false
 func _process(_delta: float) -> void:
 	var lines: PackedStringArray = []
-	for entry in [[&"conductive","导电"],[&"oiled","浸油"],[&"burning","燃烧"]]:
+	for entry in [[&"conductive","导电"],[&"oiled","浸油"],[&"burning","燃烧"],[&"knocked_down","击倒"]]:
 		if statuses.has_status(entry[0]):
 			lines.append("%s %.1fs" % [entry[1],statuses.remaining_seconds(entry[0])])
 	visible = not lines.is_empty()
@@ -32,3 +32,5 @@ func _draw() -> void:
 	if statuses.has_status(&"burning"):
 		draw_arc(Vector2.ZERO,21,0,TAU,24,Color("ff873a"),3)
 		draw_colored_polygon(PackedVector2Array([Vector2(-5,-8),Vector2(0,-25),Vector2(7,-8)]),Color("ffcf69"))
+	if statuses.has_status(&"knocked_down"):
+		draw_arc(Vector2(0,-16),10,0,TAU,18,Color("f4d779"),2)

@@ -39,8 +39,8 @@ func _ready() -> void:
 		enemy.profile.max_health = 8
 		enemy.profile.patrol_enabled = false
 		enemy.position = Vector2(350+index*75,165)
+		enemy.stationary_test_target = true
 		$Targets.add_child(enemy)
-		enemy.set_physics_process(false)
 		enemy.defeated.connect(_on_target_defeated)
 		var label := Label.new()
 		label.position = Vector2(-30,22)
