@@ -33,14 +33,13 @@ func run_checks() -> void:
 
 	inventory.set_open(true)
 	var panel := inventory.panel
-	var target := panel.get("_weapon_target") as OptionButton
 	var buttons: Array = panel.get("_buttons")
-	check(target.selected == 0, "empty loadout starts with primary target")
-	buttons[0].pressed.emit()
+	check(panel.find_children("*", "OptionButton", true, false).is_empty(), "inventory has no target dropdown")
+	panel.get("_weapon").call("_drop_data", Vector2.ZERO, {"inventory": inventory, "item": inventory.backpack.get_items()[0]})
 	check(inventory.weapon_slot.get_item() != null, "first weapon fills primary")
 	check(inventory.secondary_weapon_slot.get_item() == null, "reserve remains empty after first equip")
-	check(target.selected == 1, "target advances to the empty reserve slot")
-	buttons[0].pressed.emit()
+	check(not panel.get("_secondary").disabled, "empty reserve accepts drag drops")
+	panel.get("_secondary").call("_drop_data", Vector2.ZERO, {"inventory": inventory, "item": inventory.backpack.get_items()[0]})
 	check(inventory.weapon_slot.get_item() != null, "second equip preserves primary")
 	check(inventory.secondary_weapon_slot.get_item() != null, "second weapon fills reserve")
 	check(inventory.backpack.get_item_count() == 0, "both equipped weapons leave the backpack")
@@ -51,9 +50,8 @@ func run_checks() -> void:
 			primary.get_property("instance_id") != secondary.get_property("instance_id"),
 			"weapon instances remain distinct"
 		)
-	target.select(0)
 	panel.refresh()
-	check(target.selected == 0, "full loadout preserves the manually selected target slot")
+	check(panel.get("_weapon").location == "weapon" and panel.get("_secondary").location == "weapon_secondary", "each drop target retains its explicit slot")
 
 	inventory.set_open(false)
 	scene.queue_free()

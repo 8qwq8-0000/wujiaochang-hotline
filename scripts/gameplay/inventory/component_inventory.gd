@@ -223,6 +223,108 @@ func _slot_for(slot_name: String) -> Object:
 	return null
 
 
+func item_at(location: String, index: int = -1) -> InventoryItem:
+	if location == "backpack":
+		var items := backpack.get_items()
+		return items[index] if index >= 0 and index < items.size() else null
+	var slot := _slot_for(location)
+	return slot.get_item() if slot != null else null
+
+
+func item_location(item: InventoryItem) -> String:
+	if item == null:
+		return ""
+	if backpack.has_item(item):
+		return "backpack"
+	for location in ["weapon", "weapon_secondary", "mobility", "blackbox"]:
+		if item_at(location) == item:
+			return location
+	return ""
+
+
+func _fits_location(item: InventoryItem, location: String) -> bool:
+	if item == null or location == "backpack":
+		return true
+	if location == "blackbox":
+		return not bool(item.get_property("bound", false))
+	var kind := str(item.get_property("slot", ""))
+	return kind == ("weapon" if location in ["weapon", "weapon_secondary"] else location)
+
+
+func can_drop_item(item: InventoryItem, destination: String, index: int = -1) -> bool:
+	if not is_open or player.health.is_dead() or player.health.resolving_damage:
+		return false
+	var source := item_location(item)
+	if source.is_empty() or (destination != "backpack" and _slot_for(destination) == null):
+		return false
+	if destination == "backpack" and (index < 0 or index >= CAPACITY):
+		return false
+	var other := item_at(destination, index)
+	if other == item or (source == destination and source != "backpack"):
+		return false
+	if source in ["weapon", "weapon_secondary", "mobility"] or destination in ["weapon", "weapon_secondary", "mobility"]:
+		if not can_change_equipment():
+			return false
+	elif "blackbox" in [source, destination] and not can_change_blackbox():
+		return false
+	if destination == "backpack" and source != "backpack" and other == null and backpack.get_item_count() >= CAPACITY:
+		return false
+	return _fits_location(item, destination) and _fits_location(other, source)
+
+
+func drop_item(item: InventoryItem, destination: String, index: int = -1) -> bool:
+	if not can_drop_item(item, destination, index):
+		return false
+	var source := item_location(item)
+	var source_index := backpack.get_item_index(item) if source == "backpack" else -1
+	var active_weapon := player.weapons.current_index
+	var ability_cooldown := player.mobility.ability_cooldown_remaining
+	var ability_active: float = player.mobility.get("_ability_active_remaining")
+	var other := item_at(destination, index)
+	var moved := false
+	if source == "backpack" and destination == "backpack" and other != null:
+		var original_index := backpack.get_item_index(item)
+		backpack.move_item(original_index, backpack.get_item_index(other))
+		backpack.move_item(backpack.get_item_index(other), original_index)
+		moved = true
+	elif other != null:
+		moved = InventoryItem.swap(item, other)
+	elif destination == "backpack":
+		if source == "backpack":
+			backpack.move_item(backpack.get_item_index(item), backpack.get_item_count() - 1)
+			moved = true
+		else:
+			moved = backpack.add_item(item)
+	else:
+		moved = _slot_for(destination).equip(item)
+	if not moved:
+		return false
+	# Reordering bag items never changes weapon heat, cooldown or active weapon.
+	if source in ["weapon", "weapon_secondary", "mobility"] or destination in ["weapon", "weapon_secondary", "mobility"]:
+		_apply_equipment()
+	elif "blackbox" in [source, destination]:
+		sync_insurance()
+	if destination in ["weapon", "weapon_secondary"]:
+		player.weapons.select_weapon(1 if destination == "weapon_secondary" else 0)
+	if "blackbox" in [source, destination] and not _persist_protection():
+		# Undo with the same instances, preserving both ordering and live combat state.
+		if other != null:
+			InventoryItem.swap(item, other)
+		elif source == "backpack":
+			backpack.add_item(item)
+			backpack.move_item(backpack.get_item_index(item), source_index)
+		else:
+			_slot_for(source).equip(item)
+		player.weapons.current_index = active_weapon
+		_apply_equipment()
+		player.mobility.ability_cooldown_remaining = ability_cooldown
+		player.mobility.set("_ability_active_remaining", ability_active)
+		changed.emit()
+		return false
+	changed.emit()
+	_notify("已移动：%s" % item.get_title(), &"equip")
+	return true
+
 func _on_backpack_item_removed(_item: InventoryItem) -> void:
 	changed.emit()
 

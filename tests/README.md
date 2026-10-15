@@ -8,6 +8,8 @@
 
 黑匣与死亡保护：`godot --headless --path . --script res://tests/integration/blackbox_check.gd`，覆盖独立格、保险核心实例与唯一性、背包入口、暂停换装、满包交换、伤害结算期间禁止切换、旧状态迁移、保存失败回滚、死亡重试、回仓、核心丢失、已触发核心保护及 R 放弃行动。使用独立测试存档。
 
+背包拖放：`godot --headless --path . --script res://tests/integration/inventory_drag_check.gd`，用真实鼠标事件触发原生 drag/drop，验证主副武器、机动与黑匣交换、空位、满包、背包排序、无效目标、拖出取消、关闭时取消、异物/过期实例拒绝，以及写入失败时保留实例与冷却。
+
 放置 `test_*.gd` 测试脚本。优先覆盖：
 
 - 组件词条继承与最高值合并
@@ -48,7 +50,7 @@ godot --headless --path . --script res://tests/integration/playthrough_check.gd
 
 双武器携带与切换：`godot --headless --path . --script res://tests/integration/weapon_switch_check.gd`，覆盖主/副目标槽、Q/滚轮、空槽跳过、冷却/热量保留、满包替换及战斗/暂停/死亡限制。
 
-双空槽重新装备：`godot --headless --path . --script res://tests/integration/weapon_slot_refill_check.gd`，覆盖主副武器都卸下后，连续点击背包武器会先填主槽、再自动指向并填入副槽，而不会重复替换主槽。
+双空槽重新装备：`godot --headless --path . --script res://tests/integration/weapon_slot_refill_check.gd`，覆盖主副武器都卸下后，把两件武器分别拖到主、副槽，目标槽不会相互覆盖。
 
 首次武器自动装副槽：`godot --headless --path . --script res://tests/integration/first_weapon_pickup_check.gd`，覆盖战斗中拾取、满包、副槽占用、仅首次触发、当前武器保留、立即使用和重复拾取保护。
 
