@@ -2,6 +2,7 @@ extends Node
 
 ## 战斗表现层只监听这里，不直接依赖武器、敌人或玩家实现。
 signal noise_emitted(source: Node, origin: Vector2, radius: float)
+signal enemy_alerted(enemy: Node, world_position: Vector2)
 
 signal damage_resolved(result: DamageResult)
 signal perfect_guarded(result: DamageResult)
@@ -37,6 +38,11 @@ func publish_message(text: String, color: Color = Color.WHITE) -> void:
 func publish_noise(source: Node, origin: Vector2, radius: float) -> void:
 	if is_instance_valid(source) and source.is_inside_tree() and radius > 0.0:
 		noise_emitted.emit(source, origin, radius)
+
+
+func publish_enemy_alert(enemy: Node, world_position: Vector2) -> void:
+	if is_instance_valid(enemy) and enemy.is_inside_tree():
+		enemy_alerted.emit(enemy, world_position)
 
 
 func publish_weapon_cue(weapon_id: StringName, cue: StringName, world_position: Vector2) -> void:

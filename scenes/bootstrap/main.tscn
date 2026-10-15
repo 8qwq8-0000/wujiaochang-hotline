@@ -6,6 +6,20 @@
 [ext_resource type="Script" uid="uid://crjqaa3hl31n4" path="res://scripts/presentation/vfx_manager.gd" id="4"]
 [ext_resource type="Script" uid="uid://dgr8enssrrkm3" path="res://scripts/presentation/audio_cue_manager.gd" id="5"]
 [ext_resource type="Script" uid="uid://by7puspusmvfs" path="res://scripts/ui/extraction_flow.gd" id="6"]
+[ext_resource type="Script" path="res://scripts/presentation/combat_music_controller.gd" id="7"]
+[ext_resource type="AudioStream" path="res://assets/audio/music/combat/combat_regular_01.ogg" id="8"]
+[ext_resource type="AudioStream" path="res://assets/audio/music/combat/combat_regular_02.ogg" id="9"]
+[ext_resource type="AudioStream" path="res://assets/audio/music/combat/combat_boss_phase_01.ogg" id="10"]
+[ext_resource type="AudioStream" path="res://assets/audio/music/combat/combat_boss_phase_02.ogg" id="11"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/guard_block.wav" id="12"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/player_hit.wav" id="13"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/enemy_death.wav" id="14"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/pistol_fire.wav" id="15"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/melee_swing.wav" id="16"]
+[ext_resource type="AudioStream" path="res://assets/audio/ui/hotline_dial_01.wav" id="17"]
+[ext_resource type="AudioStream" path="res://assets/audio/ui/hotline_dial_02.wav" id="18"]
+[ext_resource type="AudioStream" path="res://assets/audio/ui/hotline_connect.wav" id="19"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/reinforcement_approach.wav" id="20"]
 
 [node name="Main" type="Node" unique_id=88177702]
 script = ExtResource("1")
@@ -21,6 +35,23 @@ script = ExtResource("4")
 
 [node name="AudioCueManager" type="Node" parent="." unique_id=1278085769]
 script = ExtResource("5")
+perfect_guard_sound = ExtResource("12")
+block_sound = ExtResource("12")
+hit_sound = ExtResource("13")
+enemy_death_sound = ExtResource("14")
+reinforcement_approach_sound = ExtResource("20")
+weapon_cues = {
+&"baton:swing": ExtResource("16"),
+&"initial_baton:swing": ExtResource("16"),
+&"service_pistol:fire": ExtResource("15")
+}
+hotline_dial_sounds = Array[AudioStream]([ExtResource("17"), ExtResource("18")])
+hotline_connect_sound = ExtResource("19")
+
+[node name="CombatMusic" type="Node" parent="."]
+script = ExtResource("7")
+regular_tracks = Array[AudioStream]([ExtResource("8"), ExtResource("9")])
+boss_phase_tracks = Array[AudioStream]([ExtResource("10"), ExtResource("11")])
 
 [node name="CombatHUD" parent="." unique_id=1310232417 instance=ExtResource("3")]
 

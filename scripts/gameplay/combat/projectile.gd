@@ -14,7 +14,7 @@ var source: Node
 
 func _ready() -> void:
 	area_entered.connect(_on_area_entered)
-	queue_redraw()
+	_sync_visual()
 
 
 func setup(owner_node: Node, source_faction: CombatFaction.Id, heading: Vector2, projectile_damage: int, projectile_speed: float) -> void:
@@ -24,7 +24,7 @@ func setup(owner_node: Node, source_faction: CombatFaction.Id, heading: Vector2,
 	damage = projectile_damage
 	speed = projectile_speed
 	tint = Color(0.3, 0.9, 1.0) if faction == CombatFaction.Id.PLAYER else Color(1.0, 0.25, 0.2)
-	queue_redraw()
+	_sync_visual()
 
 
 func _physics_process(delta: float) -> void:
@@ -40,8 +40,15 @@ func _physics_process(delta: float) -> void:
 
 
 func _draw() -> void:
-	draw_circle(Vector2.ZERO, 3.0, tint)
-	draw_line(-direction * 7.0, Vector2.ZERO, tint.darkened(0.25), 2.0)
+	draw_line(Vector2.LEFT * 7.0, Vector2.ZERO, tint.darkened(0.25), 2.0)
+
+
+func _sync_visual() -> void:
+	rotation = direction.angle()
+	var visual := get_node_or_null("Visual") as Sprite2D
+	if visual != null:
+		visual.modulate = tint
+	queue_redraw()
 
 
 func _on_area_entered(area: Area2D) -> void:
@@ -58,7 +65,7 @@ func _on_area_entered(area: Area2D) -> void:
 		source = result.packet.source if is_instance_valid(result.packet.source) else null
 		direction = result.packet.travel_direction.normalized()
 		tint = Color(0.95, 0.75, 0.15)
-		queue_redraw()
+		_sync_visual()
 		return
 	queue_free()
 

@@ -1,7 +1,7 @@
 extends Node
 
 const CUES := {
-	&"pickup": preload("res://assets/audio/sfx/enemy_ui/pickup.wav"),
+	&"pickup": preload("res://assets/audio/sfx/items/loot_pickup.wav"),
 	&"equip": preload("res://assets/audio/sfx/enemy_ui/equip.wav"),
 	&"full": preload("res://assets/audio/sfx/enemy_ui/full.wav"),
 }

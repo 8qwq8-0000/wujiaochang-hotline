@@ -12,6 +12,7 @@ signal combat_feedback_requested(cue: StringName, world_position: Vector2)
 signal player_died(packet: DamagePacket)
 
 const DEFAULT_CONFIG := preload("res://resources/player/default_player_config.tres")
+const FLIGHT_LOOP := preload("res://assets/audio/sfx/mobility/flight_loop.wav")
 
 @export var config: CombatPlayerConfig = DEFAULT_CONFIG
 
@@ -28,6 +29,7 @@ const DEFAULT_CONFIG := preload("res://resources/player/default_player_config.tr
 @onready var hurt_box: HurtBox2DComponent = $HurtBox
 @onready var visuals: PlayerVisualController = $VisualRoot
 @onready var camera: Camera2D = $Camera2D
+@onready var movement_loop: AudioStreamPlayer2D = $AudioSockets/MovementLoop
 
 var aim_direction := Vector2.RIGHT
 var _external_velocity := Vector2.ZERO
@@ -42,6 +44,7 @@ func _ready() -> void:
 	add_to_group("player")
 	if config == null:
 		config = DEFAULT_CONFIG
+	_configure_movement_audio()
 	health.configure_max_health(config.max_health)
 	health.fatal_damage_interceptor = Callable(self, "_try_prevent_fatal_damage")
 	hurt_box.faction = CombatFaction.Id.PLAYER
@@ -96,6 +99,7 @@ func _physics_process(delta: float) -> void:
 	guard.update_direction(aim_direction)
 	if _dead:
 		velocity = Vector2.ZERO
+		_update_movement_audio()
 		visuals.update_visual(aim_direction, Vector2.ZERO, guard.state, guard.guard_arc_degrees)
 		return
 	var input_vector := Input.get_vector("move_left", "move_right", "move_up", "move_down") if _input_enabled else Vector2.ZERO
@@ -117,6 +121,7 @@ func _physics_process(delta: float) -> void:
 		guard.guard_arc_degrees,
 		weapons.get_melee_swing_angle_offset()
 	)
+	_update_movement_audio()
 
 
 func set_input_enabled(enabled: bool) -> void:
@@ -259,6 +264,26 @@ func _update_camera(delta: float) -> void:
 	var target := aim_direction * config.camera_look_ahead
 	var weight := clampf(config.camera_look_ahead_response * delta, 0.0, 1.0)
 	camera.position = camera.position.lerp(target, weight)
+
+
+func _configure_movement_audio() -> void:
+	movement_loop.bus = &"SFX"
+
+
+func _update_movement_audio() -> void:
+	var mode := mobility.get_current_mode()
+	var desired_stream: AudioStream
+	if mode != null and mode.id == &"flight":
+		desired_stream = FLIGHT_LOOP
+	if movement_loop.stream != desired_stream:
+		movement_loop.stop()
+		movement_loop.stream = desired_stream
+	var should_play := not _dead and _input_enabled and velocity.length_squared() > 64.0
+	if desired_stream != null and should_play:
+		if not movement_loop.playing:
+			movement_loop.play()
+	elif movement_loop.playing:
+		movement_loop.stop()
 
 
 func _get_attack_transform() -> Transform2D:

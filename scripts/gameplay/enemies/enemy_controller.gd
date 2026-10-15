@@ -287,6 +287,9 @@ func _alert_to(location: Vector2, broadcast: bool) -> void:
 	if state not in [State.WINDUP, State.STAGGERED]:
 		state = State.CHASE
 	if newly_alerted and broadcast:
+		var events := get_node_or_null("/root/CombatEvents")
+		if events != null:
+			events.publish_enemy_alert(self, global_position)
 		for ally in get_tree().get_nodes_in_group("enemies"):
 			if ally != self and ally is EnemyController and _same_room(ally):
 				if global_position.distance_to(ally.global_position) <= profile.ally_alert_range and _clear_path_to(ally.global_position):

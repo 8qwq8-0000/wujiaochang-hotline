@@ -40,12 +40,19 @@ func run() -> void:
 	room.add_child(player)
 	player.set_physics_process(false)
 	var observer := enemy_at(room, Vector2(200, 100))
+	var events := root.get_node("CombatEvents")
+	var alerts := [0]
+	var count_alert := func(_enemy: Node, _world_position: Vector2) -> void: alerts[0] += 1
+	events.enemy_alerted.connect(count_alert)
 	await physics_frame
 	observer._physics_process(0)
 	check(not observer.is_alerted() and observer.state == EnemyController.State.IDLE, "player behind facing does not automatically alert enemy")
 	observer.facing = Vector2.LEFT
 	observer._physics_process(0)
 	check(observer.is_alerted(), "player inside clear vision cone triggers alert")
+	check(alerts[0] == 1, "first alert publishes one reinforcement cue event")
+	observer._alert_to(player.global_position, true)
+	check(alerts[0] == 1, "already-alerted enemy does not repeat reinforcement cue")
 	observer._forget_target()
 	player.position = Vector2(-100, 100)
 	observer._physics_process(0)
@@ -58,7 +65,6 @@ func run() -> void:
 	observer.facing = Vector2.LEFT
 	observer._physics_process(0)
 	check(not observer.is_alerted(), "wall blocks sight even inside cone")
-	var events := root.get_node("CombatEvents")
 	events.publish_noise(player, player.global_position, 180.0)
 	check(not observer.is_alerted(), "wall attenuates distant gun noise")
 	player.position = Vector2(130, 100)
@@ -132,6 +138,7 @@ func run() -> void:
 	check(player.weapons.try_attack(player.global_position, Vector2.UP, player), "initial baton attacks")
 	check(not observer.is_alerted() and emitted[0] == 1, "quiet melee does not emit gunshot sound")
 	events.noise_emitted.disconnect(count_noise)
+	events.enemy_alerted.disconnect(count_alert)
 	room.queue_free()
 	other_room.queue_free()
 	await process_frame
