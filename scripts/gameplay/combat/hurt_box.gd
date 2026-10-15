@@ -27,7 +27,18 @@ func receive_hit(packet: DamagePacket) -> DamageResult:
 		ignored.target = actor
 		hit_resolved.emit(ignored)
 		return ignored
+	if packet.damage_type == &"electric":
+		if packet.electric_event.is_empty():
+			packet.electric_event = ElectricReaction.begin_event(actor)
+		if packet.electric_event.hit_ids.has(actor.get_instance_id()):
+			var duplicate_hit := DamageResult.new()
+			duplicate_hit.packet = packet
+			duplicate_hit.target = actor
+			return duplicate_hit
+		packet.electric_event.hit_ids[actor.get_instance_id()] = true
 	var result := DamageResolver.resolve(packet, actor, faction, health, guard)
+	if result.final_damage == 0 and packet.damage_type == &"electric":
+		packet.electric_event.hit_ids.erase(actor.get_instance_id())
 	if result.final_damage > 0 and damage_invulnerability_seconds > 0.0:
 		set_invulnerable(damage_invulnerability_seconds)
 	if result.final_damage > 0 and actor.has_method("apply_knockback"):

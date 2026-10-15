@@ -8,6 +8,12 @@ var cleared := false
 @onready var exit_elevator: Area2D = $ExitElevator
 
 
+func _enter_tree() -> void:
+	add_to_group("environment_areas")
+
+func contains_world_point(point: Vector2) -> bool:
+	return Rect2(0,0,640,360).has_point(to_local(point))
+
 func _ready() -> void:
 	spawner.all_required_defeated.connect(_on_all_required_defeated)
 	exit_elevator.set_enabled(false)

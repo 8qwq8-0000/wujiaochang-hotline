@@ -104,18 +104,20 @@ func handle_hit(packet: DamagePacket) -> void:
 	if actor == null:
 		return
 	# Consume existing conductivity before applying this hit's new status tags.
-	if packet.allow_status_reactions and packet.damage_type == &"electric" and has_status(CONDUCTIVE):
+	var consumed_conductive := false
+	if packet.allow_status_reactions and packet.damage_type == &"electric" and has_status(CONDUCTIVE) and packet.electric_event.get("conductive_ids", {}).has(actor.get_instance_id()):
+		consumed_conductive = true
 		remove_status(CONDUCTIVE)
 		var count := ElectricReaction.discharge(actor, packet)
 		reaction_triggered.emit(&"electric_arc", count)
 	var health := actor.get_node_or_null("HealthComponent") as HealthComponent
 	if health == null or health.is_dead():
 		return
-	if packet.allow_status_reactions and packet.damage_type == &"fire" and has_status(&"oiled"):
+	if packet.allow_status_reactions and packet.damage_type in [&"fire", &"thermal"] and has_status(&"oiled"):
 		ignite(packet)
 	if packet.status_tags.has("oiled"):
 		add_status(&"oiled", 6.0, ["negative", "oil"])
-	if health != null and not health.is_dead() and packet.status_tags.has("conductive"):
+	if health != null and not health.is_dead() and packet.status_tags.has("conductive") and not consumed_conductive:
 		add_status(CONDUCTIVE, CONDUCTIVE_SECONDS, ["negative", "electric"])
 
 

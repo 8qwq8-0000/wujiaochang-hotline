@@ -13,7 +13,7 @@ func _ready() -> void:
 func apply_buff(id: StringName, room: Node) -> bool:
 	if id not in BUFFS or not is_instance_valid(room) or room.is_queued_for_deletion():
 		return false
-	if get_parent().get_node("HealthComponent").is_dead():
+	if room.get("cleared") == true or get_parent().get_node("HealthComponent").is_dead():
 		return false
 	clear()
 	active_buff = id

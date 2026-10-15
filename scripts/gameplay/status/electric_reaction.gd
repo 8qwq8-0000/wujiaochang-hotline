@@ -5,17 +5,30 @@ const HOP_RADIUS := 96.0
 const MAX_HOPS := 3
 const ARC_DAMAGE := 1
 
+static func begin_event(source: Node2D) -> Dictionary:
+	var conductive_ids := {}
+	for actor in source.get_tree().get_nodes_in_group("status_actors"):
+		if actor.is_queued_for_deletion():
+			continue
+		var status: Node = actor.get_node_or_null("StatusComponent")
+		if status != null and status.has_status(&"conductive"):
+			conductive_ids[actor.get_instance_id()] = true
+	return {"hit_ids": {}, "conductive_ids": conductive_ids, "remaining_hops": MAX_HOPS}
+
 static func discharge(origin: Node2D, incoming: DamagePacket) -> int:
 	if not is_instance_valid(origin) or not origin.is_inside_tree():
 		return 0
-	var room := CombatProjectile.room_for_actor(origin)
+	var room := EnvironmentArea.for_actor(origin)
 	var current := origin.global_position
 	var visited := {origin.get_instance_id(): true}
 	var hits := 0
 	for hop in MAX_HOPS:
+		if int(incoming.electric_event.remaining_hops) <= 0:
+			break
 		var target := _nearest(origin, room, current, incoming, visited)
 		if target == null:
 			break
+		incoming.electric_event.remaining_hops -= 1
 		visited[target.get_instance_id()] = true
 		var statuses: Node = target.get_node("StatusComponent")
 		statuses.remove_status(&"conductive")
@@ -48,7 +61,9 @@ static func _nearest(origin: Node2D, room: Node, point: Vector2, packet: DamageP
 	for actor in origin.get_tree().get_nodes_in_group("status_actors"):
 		if not actor is Node2D or visited.has(actor.get_instance_id()) or actor == packet.source:
 			continue
-		if actor.is_queued_for_deletion() or CombatProjectile.room_for_actor(actor) != room:
+		if actor.is_queued_for_deletion() or EnvironmentArea.for_actor(actor) != room:
+			continue
+		if packet.electric_event.hit_ids.has(actor.get_instance_id()) or not packet.electric_event.conductive_ids.has(actor.get_instance_id()):
 			continue
 		var health := actor.get_node_or_null("HealthComponent") as HealthComponent
 		var hurt := actor.get_node_or_null("HurtBox") as HurtBox2DComponent

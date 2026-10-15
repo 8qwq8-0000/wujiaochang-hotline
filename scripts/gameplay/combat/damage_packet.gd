@@ -7,6 +7,8 @@ var source_faction: CombatFaction.Id = CombatFaction.Id.NEUTRAL
 var damage_type: StringName = &"kinetic"
 var status_tags: PackedStringArray = []
 var allow_status_reactions := true
+# Shared only by hits belonging to one electric event; duplicate_packet preserves it.
+var electric_event: Dictionary = {}
 var source_position: Vector2 = Vector2.ZERO
 var travel_direction: Vector2 = Vector2.ZERO
 var knockback: Vector2 = Vector2.ZERO
@@ -27,6 +29,7 @@ func duplicate_packet() -> DamagePacket:
 	copy.damage_type = damage_type
 	copy.status_tags = status_tags.duplicate()
 	copy.allow_status_reactions = allow_status_reactions
+	copy.electric_event = electric_event
 	copy.source_position = source_position
 	copy.travel_direction = travel_direction
 	copy.knockback = knockback
