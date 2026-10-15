@@ -18,6 +18,7 @@ const DEBUG_WEAPONS := [
 var weapons: Array[WeaponComponentData] = []
 var current_index: int = 0
 var debug_loadout_enabled: bool = false
+var attack_speed_multiplier := 1.0
 var _current_weapon: WeaponComponentData = BATON
 var _cooldown_remaining: float = 0.0
 var _swing_remaining: float = 0.0
@@ -98,7 +99,7 @@ func try_attack(origin: Vector2, direction: Vector2, source_node: Node) -> bool:
 		return false
 	if not heat_component.try_add_heat(data.heat_per_attack):
 		return false
-	_cooldown_remaining = data.cooldown
+	_cooldown_remaining = data.cooldown / maxf(attack_speed_multiplier, 0.01)
 	match data.attack_kind:
 		WeaponComponentData.AttackKind.MELEE:
 			_begin_melee(data, direction.normalized())

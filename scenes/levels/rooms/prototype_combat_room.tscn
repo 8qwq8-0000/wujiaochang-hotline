@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://scripts/gameplay/rooms/combat_room.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/gameplay/enemies/enemy_spawner.gd" id="2"]
@@ -9,6 +9,8 @@
 [ext_resource type="Resource" path="res://resources/enemies/heavy_anchor.tres" id="7"]
 
 [ext_resource type="NavigationPolygon" path="res://resources/enemies/prototype_navigation.tres" id="navigation"]
+
+[ext_resource type="PackedScene" path="res://scenes/environment/power_box.tscn" id="power_box"]
 
 [sub_resource type="RectangleShape2D" id="HorizontalWall"]
 size = Vector2(640, 16)
@@ -148,3 +150,6 @@ horizontal_alignment = 1
 
 [node name="NavigationRegion2D" type="NavigationRegion2D" parent="."]
 navigation_polygon = ExtResource("navigation")
+
+[node name="PowerBox" parent="." instance=ExtResource("power_box")]
+position = Vector2(180,280)

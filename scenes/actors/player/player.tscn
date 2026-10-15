@@ -1,4 +1,4 @@
-[gd_scene load_steps=36 format=3]
+[gd_scene load_steps=37 format=3]
 
 [ext_resource type="Script" path="res://scripts/gameplay/player_controller.gd" id="1_controller"]
 [ext_resource type="Script" path="res://scripts/gameplay/combat/health_component.gd" id="2_health"]
@@ -22,6 +22,8 @@
 [ext_resource type="Script" path="res://scripts/gameplay/inventory/component_inventory.gd" id="17_inventory"]
 [ext_resource type="Script" path="res://scripts/presentation/inventory_audio.gd" id="18_audio"]
 [ext_resource type="Script" path="res://scripts/gameplay/items/enemy_loot.gd" id="19_loot"]
+
+[ext_resource type="Script" path="res://scripts/gameplay/player/room_buff_component.gd" id="22_room_buff"]
 
 [sub_resource type="AtlasTexture" id="Atlas_down_0"]
 atlas = ExtResource("14_down")
@@ -223,3 +225,6 @@ script = ExtResource("18_audio")
 
 [node name="EnemyLoot" type="Node" parent="ComponentInventory"]
 script = ExtResource("19_loot")
+
+[node name="RoomBuffComponent" type="Node" parent="."]
+script = ExtResource("22_room_buff")

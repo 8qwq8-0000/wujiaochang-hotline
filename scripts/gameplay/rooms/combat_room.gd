@@ -2,6 +2,7 @@ class_name CombatRoom
 extends Node2D
 
 signal room_cleared
+var cleared := false
 
 @onready var spawner: EnemySpawner = $EnemySpawner
 @onready var exit_elevator: Area2D = $ExitElevator
@@ -13,6 +14,7 @@ func _ready() -> void:
 
 
 func _on_all_required_defeated() -> void:
+	cleared = true
 	exit_elevator.set_enabled(true)
 	room_cleared.emit()
 	var events := get_node_or_null("/root/CombatEvents")
