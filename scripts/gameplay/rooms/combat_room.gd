@@ -18,4 +18,4 @@ func _on_all_required_defeated() -> void:
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null:
 		events.publish_room_cleared(self)
-		events.publish_message("区域清理完成，出口电梯已启用", Color(0.35, 1.0, 0.55))
+		events.publish_notice(&"room_cleared", "区域清理完成，出口电梯已启用", Color(0.35, 1.0, 0.55), CombatNotice.Priority.NORMAL, 0.0, 2.0)

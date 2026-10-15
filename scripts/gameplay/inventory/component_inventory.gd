@@ -222,7 +222,9 @@ func _notify(text: String, cue: StringName) -> void:
 	feedback.emit(text, cue)
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null:
-		events.publish_message(text)
+		var priority := CombatNotice.Priority.LOW if cue == &"pickup" else CombatNotice.Priority.NORMAL
+		var merge_window := 0.75 if cue in [&"pickup", &"full"] else 0.0
+		events.publish_notice(cue, text, Color.WHITE, priority, merge_window)
 
 
 func _exit_tree() -> void:

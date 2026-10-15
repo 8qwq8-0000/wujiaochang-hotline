@@ -22,6 +22,9 @@
 - `test_projectile_scene.gd`：射弹占位贴图、最近邻缩放、碰撞半径，以及方向和阵营色同步。
 - `test_combat_music.gd`：主场景的两首普通战斗曲、两首 BOSS 阶段曲及阶段切换接口。
 - `test_combat_audio.gd`：战斗、武器、机动和热线音效资源映射，以及玩家空间移动音频挂点。
+- `test_combat_notice_queue.gd`：三档优先级、三条预算、同类消息合并与旧消息接口兼容。
+- `test_afterimage_vfx.gd`：机动残影复制当前帧／镜像状态、对象池上限和按来源清理。
+- `test_enemy_navigation.gd`：敌人软避让参数与无导航网格时的安全退避回退。
 
 可从 Godot AI 测试面板运行全部 `test_*.gd`，也可在编辑器中打开主场景后执行测试。
 
@@ -62,6 +65,10 @@ godot --headless --path . --script res://tests/integration/playthrough_check.gd
 敌人警戒：`godot --headless --path . --script res://tests/integration/enemy_alert_check.gd`，覆盖视野角度/距离/墙体、声音半径/遮挡/暂停、受击、目标记忆、附近同伴传播与防止递归、场景隔离和真实枪击事件。实施与参数见 `docs/technical/敌人警戒实施说明.md`。
 
 敌人巡逻：`godot --headless --path . --script res://tests/integration/enemy_patrol_check.gd`，覆盖出生点附近往返、端点停留、暂停、警戒中断与返回、墙体阻挡、关闭巡逻和死亡。
+
+敌人导航压力检查：`godot --headless --path . --script res://tests/integration/enemy_navigation_check.gd`，在原型房间用 16 名敌人覆盖软避让、绕开墙体／掩体，以及不持续完全重叠。
+
+战斗提示与机动残影：`godot --headless --path . --script res://tests/integration/presentation_systems_check.gd`，覆盖暂停时提示寿命冻结但仍可入队、恢复后的过期，以及步行不出残影、套件能力残影池与按来源清理。
 
 正式出生巡逻检查：`godot --headless --path . --script res://tests/integration/spawned_patrol_check.gd`，通过 Main 的真实生成器检查出生坐标、墙体平行轨迹，以及带偏移房间的世界坐标。
 

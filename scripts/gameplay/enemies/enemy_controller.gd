@@ -15,6 +15,13 @@ enum State {
 }
 
 const PROJECTILE_SCENE := preload("res://scenes/combat/projectile.tscn")
+const NAVIGATION_REFRESH_SECONDS := 0.1
+const NAVIGATION_REFRESH_DISTANCE := 8.0
+const NAVIGATION_STUCK_SECONDS := 0.75
+const NAVIGATION_RECOVERY_SECONDS := 0.55
+const NAVIGATION_RETRY_PAUSE_SECONDS := 0.35
+const RETREAT_REFRESH_SECONDS := 0.2
+const RETREAT_SIDE_DISTANCE := 36.0
 
 @export var profile: EnemyProfile
 @export var initial_facing := Vector2.LEFT
@@ -37,6 +44,21 @@ var _target: Node2D
 var _windup_remaining := 0.0
 var _attack_direction := Vector2.RIGHT
 var _warning_audio: AudioStreamPlayer
+var _navigation_refresh_remaining := 0.0
+var _last_navigation_target := Vector2(INF, INF)
+var _last_requested_destination := Vector2(INF, INF)
+var _motion_sample_position := Vector2.ZERO
+var _expected_navigation_motion := false
+var _navigation_stuck_seconds := 0.0
+var _navigation_retry_pause := 0.0
+var _recovery_target := Vector2(INF, INF)
+var _recovery_remaining := 0.0
+var _recovery_side := 1.0
+var _avoidance_move_pending := false
+var _last_frame_movement := 0.0
+var _retreat_target := Vector2(INF, INF)
+var _retreat_player_position := Vector2(INF, INF)
+var _retreat_refresh_remaining := 0.0
 const ATTACK_WARNING := preload("res://assets/audio/sfx/enemy_ui/enemy_attack.wav")
 
 @onready var navigation_agent: NavigationAgent2D = $NavigationAgent2D
@@ -56,7 +78,9 @@ func _ready() -> void:
 	if profile == null:
 		profile = preload("res://resources/enemies/melee_pressure.tres")
 	apply_profile(profile)
+	navigation_agent.velocity_computed.connect(_on_navigation_velocity_computed)
 	_patrol_anchor = global_position
+	_motion_sample_position = global_position
 	_patrol_wait_remaining = profile.patrol_pause_seconds
 	_warning_audio = AudioStreamPlayer.new()
 	_warning_audio.stream = ATTACK_WARNING
@@ -75,9 +99,11 @@ func apply_profile(value: EnemyProfile) -> void:
 func _physics_process(delta: float) -> void:
 	if state == State.DEAD:
 		return
+	_tick_navigation_state(delta)
 	_attack_cooldown_remaining = maxf(_attack_cooldown_remaining - delta, 0.0)
 	if _stagger_remaining > 0.0:
 		_stagger_remaining -= delta
+		_cancel_avoidance_move()
 		velocity = velocity.move_toward(Vector2.ZERO, 900.0 * delta)
 		move_and_slide()
 		return
@@ -96,7 +122,7 @@ func _physics_process(delta: float) -> void:
 	if _target is PlayerController and _target.health.is_dead():
 		_forget_target()
 		_windup_remaining = 0.0
-		velocity = Vector2.ZERO
+		_stop_navigation_motion()
 		queue_redraw()
 		return
 	var sees_target := can_see_target()
@@ -113,7 +139,7 @@ func _physics_process(delta: float) -> void:
 		return
 	if state == State.WINDUP:
 		_windup_remaining -= delta
-		velocity = Vector2.ZERO
+		_stop_navigation_motion()
 		if _windup_remaining <= 0.0:
 			state = State.ATTACK
 			if _has_line_of_sight():
@@ -123,15 +149,16 @@ func _physics_process(delta: float) -> void:
 		queue_redraw()
 		return
 	var distance := global_position.distance_to(_target.global_position)
+	var desired_velocity := Vector2.ZERO
 	if not sees_target:
 		state = State.CHASE
-		velocity = _direction_to_position(_last_known_position) * profile.move_speed if global_position.distance_to(_last_known_position) > 12.0 else Vector2.ZERO
+		desired_velocity = _direction_to_position(_last_known_position) * profile.move_speed if global_position.distance_to(_last_known_position) > 12.0 else Vector2.ZERO
 	elif should_retreat(distance):
 		state = State.CHASE
-		velocity = -global_position.direction_to(_target.global_position) * profile.move_speed
+		desired_velocity = _direction_to_retreat_position() * profile.move_speed
 	elif distance <= profile.attack_range:
 		state = State.ATTACK
-		velocity = velocity.move_toward(Vector2.ZERO, 1000.0 * delta)
+		desired_velocity = velocity.move_toward(Vector2.ZERO, 1000.0 * delta)
 		if _attack_cooldown_remaining <= 0.0:
 			state = State.WINDUP
 			_windup_remaining = profile.attack_windup
@@ -140,12 +167,15 @@ func _physics_process(delta: float) -> void:
 				_warning_audio.play()
 	else:
 		state = State.CHASE
-		velocity = _direction_to_target() * profile.move_speed
+		desired_velocity = _direction_to_target() * profile.move_speed
 	if sees_target:
 		facing = global_position.direction_to(_target.global_position)
-	elif not velocity.is_zero_approx():
-		facing = velocity.normalized()
-	move_and_slide()
+	elif not desired_velocity.is_zero_approx():
+		facing = desired_velocity.normalized()
+	if state == State.WINDUP:
+		_stop_navigation_motion()
+	else:
+		_submit_navigation_velocity(desired_velocity)
 	queue_redraw()
 
 
@@ -165,14 +195,200 @@ func _direction_to_target() -> Vector2:
 
 
 func _direction_to_position(destination: Vector2) -> Vector2:
+	_last_requested_destination = destination
+	if _navigation_retry_pause > 0.0:
+		return Vector2.ZERO
+	var effective_destination := destination
+	if _recovery_target.x != INF:
+		if global_position.distance_to(_recovery_target) <= 6.0:
+			_clear_navigation_recovery()
+		else:
+			effective_destination = _recovery_target
 	var navigation_map := navigation_agent.get_navigation_map()
 	if navigation_map.is_valid() and NavigationServer2D.map_get_iteration_id(navigation_map) > 0:
-		# Set the destination before checking completion; the initial path is empty.
-		navigation_agent.target_position = destination
+		if (
+			_last_navigation_target.x == INF
+			or _last_navigation_target.distance_to(effective_destination) > NAVIGATION_REFRESH_DISTANCE
+			or _navigation_refresh_remaining <= 0.0
+		):
+			navigation_agent.target_position = effective_destination
+			_last_navigation_target = effective_destination
+			_navigation_refresh_remaining = NAVIGATION_REFRESH_SECONDS
 		var next_position := navigation_agent.get_next_path_position()
 		if not navigation_agent.is_navigation_finished() and not next_position.is_equal_approx(global_position):
 			return global_position.direction_to(next_position)
-	return global_position.direction_to(destination) if _clear_path_to(destination) else Vector2.ZERO
+	return global_position.direction_to(effective_destination) if _clear_path_to(effective_destination) else Vector2.ZERO
+
+
+func _direction_to_retreat_position() -> Vector2:
+	if not is_instance_valid(_target):
+		return Vector2.ZERO
+	if (
+		_retreat_target.x == INF
+		or _retreat_refresh_remaining <= 0.0
+		or _retreat_player_position.distance_to(_target.global_position) > NAVIGATION_REFRESH_DISTANCE
+		or global_position.distance_to(_retreat_target) <= 6.0
+	):
+		_retreat_target = _select_retreat_destination(_target.global_position)
+		_retreat_player_position = _target.global_position
+		_retreat_refresh_remaining = RETREAT_REFRESH_SECONDS
+	if _retreat_target.x == INF:
+		return Vector2.ZERO
+	return _direction_to_position(_retreat_target)
+
+
+func _select_retreat_destination(threat_position: Vector2) -> Vector2:
+	var navigation_map := navigation_agent.get_navigation_map()
+	if not navigation_map.is_valid() or NavigationServer2D.map_get_iteration_id(navigation_map) <= 0:
+		var direct := threat_position.direction_to(global_position)
+		return global_position + direct * RETREAT_SIDE_DISTANCE if _clear_path_to(global_position + direct * RETREAT_SIDE_DISTANCE) else Vector2(INF, INF)
+	var away := threat_position.direction_to(global_position)
+	if away.is_zero_approx():
+		away = facing if not facing.is_zero_approx() else Vector2.RIGHT
+	var best_with_sight := Vector2(INF, INF)
+	var best_with_sight_score := -INF
+	var best_fallback := Vector2(INF, INF)
+	var best_fallback_score := -INF
+	for degrees in [0.0, -30.0, 30.0, -60.0, 60.0]:
+		var desired := global_position + away.rotated(deg_to_rad(degrees)) * RETREAT_SIDE_DISTANCE
+		var candidate := NavigationServer2D.map_get_closest_point(navigation_map, desired)
+		# A large snap means the desired point was too close to, or beyond, a wall.
+		if candidate.distance_to(desired) > navigation_agent.radius:
+			continue
+		var path := NavigationServer2D.map_get_path(navigation_map, global_position, candidate, true)
+		if path.size() < 2 or candidate.distance_to(global_position) <= 8.0:
+			continue
+		var score := candidate.distance_to(threat_position) - _path_length(path) * 0.1
+		if score > best_fallback_score:
+			best_fallback = candidate
+			best_fallback_score = score
+		if _clear_segment(candidate, threat_position) and score > best_with_sight_score:
+			best_with_sight = candidate
+			best_with_sight_score = score
+	return best_with_sight if best_with_sight.x != INF else best_fallback
+
+
+func _path_length(path: PackedVector2Array) -> float:
+	var total := 0.0
+	for index in range(1, path.size()):
+		total += path[index - 1].distance_to(path[index])
+	return total
+
+
+func _clear_segment(from: Vector2, to: Vector2) -> bool:
+	var query := PhysicsRayQueryParameters2D.create(from, to, 1)
+	return get_world_2d().direct_space_state.intersect_ray(query).is_empty()
+
+
+func _tick_navigation_state(delta: float) -> void:
+	_navigation_refresh_remaining = maxf(_navigation_refresh_remaining - delta, 0.0)
+	_retreat_refresh_remaining = maxf(_retreat_refresh_remaining - delta, 0.0)
+	_navigation_retry_pause = maxf(_navigation_retry_pause - delta, 0.0)
+	_recovery_remaining = maxf(_recovery_remaining - delta, 0.0)
+	if _recovery_target.x != INF and _recovery_remaining <= 0.0:
+		_clear_navigation_recovery()
+	_last_frame_movement = global_position.distance_to(_motion_sample_position)
+	if _expected_navigation_motion:
+		if _last_frame_movement < 0.15:
+			_navigation_stuck_seconds += delta
+		else:
+			_navigation_stuck_seconds = 0.0
+	elif _navigation_retry_pause <= 0.0:
+		_navigation_stuck_seconds = 0.0
+	_motion_sample_position = global_position
+	_expected_navigation_motion = false
+	if (
+		_navigation_stuck_seconds >= NAVIGATION_STUCK_SECONDS
+		and _navigation_retry_pause <= 0.0
+		and _last_requested_destination.x != INF
+		and state in [State.CHASE, State.RETURN_TO_PATROL]
+	):
+		_begin_navigation_recovery(_last_requested_destination)
+
+
+func _begin_navigation_recovery(destination: Vector2) -> void:
+	_navigation_stuck_seconds = 0.0
+	var navigation_map := navigation_agent.get_navigation_map()
+	if not navigation_map.is_valid() or NavigationServer2D.map_get_iteration_id(navigation_map) <= 0:
+		_navigation_retry_pause = NAVIGATION_RETRY_PAUSE_SECONDS
+		return
+	var forward := global_position.direction_to(destination)
+	if forward.is_zero_approx():
+		forward = facing if not facing.is_zero_approx() else Vector2.RIGHT
+	var side := Vector2(-forward.y, forward.x)
+	for sign_value: float in [_recovery_side, -_recovery_side]:
+		var desired: Vector2 = global_position + forward * 12.0 + side * 28.0 * sign_value
+		var candidate := NavigationServer2D.map_get_closest_point(navigation_map, desired)
+		if candidate.distance_to(desired) > navigation_agent.radius:
+			continue
+		var path := NavigationServer2D.map_get_path(navigation_map, global_position, candidate, true)
+		if path.size() < 2 or candidate.distance_to(global_position) <= 6.0:
+			continue
+		_recovery_target = candidate
+		_recovery_remaining = NAVIGATION_RECOVERY_SECONDS
+		_recovery_side = -sign_value
+		_invalidate_navigation_path()
+		return
+	_navigation_retry_pause = NAVIGATION_RETRY_PAUSE_SECONDS
+	_recovery_side *= -1.0
+
+
+func _clear_navigation_recovery() -> void:
+	_recovery_target = Vector2(INF, INF)
+	_recovery_remaining = 0.0
+	_invalidate_navigation_path()
+
+
+func _invalidate_navigation_path() -> void:
+	_last_navigation_target = Vector2(INF, INF)
+	_navigation_refresh_remaining = 0.0
+
+
+func _submit_navigation_velocity(desired_velocity: Vector2) -> void:
+	velocity = desired_velocity
+	_expected_navigation_motion = not desired_velocity.is_zero_approx()
+	if desired_velocity.is_zero_approx():
+		_stop_navigation_motion()
+		return
+	var navigation_map := navigation_agent.get_navigation_map()
+	if (
+		navigation_agent.avoidance_enabled
+		and _is_on_navigation_map(navigation_map)
+	):
+		_avoidance_move_pending = true
+		navigation_agent.velocity = desired_velocity
+		return
+	_avoidance_move_pending = false
+	move_and_slide()
+
+
+func _is_on_navigation_map(navigation_map: RID) -> bool:
+	if not navigation_map.is_valid() or NavigationServer2D.map_get_iteration_id(navigation_map) <= 0:
+		return false
+	var closest := NavigationServer2D.map_get_closest_point(navigation_map, global_position)
+	return closest.distance_to(global_position) <= navigation_agent.radius * 2.0
+
+
+func _on_navigation_velocity_computed(safe_velocity: Vector2) -> void:
+	if not _avoidance_move_pending:
+		return
+	_avoidance_move_pending = false
+	if state in [State.DEAD, State.WINDUP, State.STAGGERED]:
+		return
+	velocity = safe_velocity
+	move_and_slide()
+
+
+func _cancel_avoidance_move() -> void:
+	_avoidance_move_pending = false
+	_expected_navigation_motion = false
+	if navigation_agent.avoidance_enabled:
+		navigation_agent.velocity = Vector2.ZERO
+
+
+func _stop_navigation_motion() -> void:
+	_cancel_avoidance_move()
+	velocity = Vector2.ZERO
 
 
 func perform_attack() -> void:
@@ -213,6 +429,7 @@ func apply_stagger(seconds: float) -> void:
 	_windup_remaining = 0.0
 	_attack_cooldown_remaining = profile.attack_cooldown
 	_stagger_remaining = maxf(_stagger_remaining, seconds)
+	_cancel_avoidance_move()
 	velocity = Vector2.ZERO
 
 
@@ -224,6 +441,7 @@ func _on_died(_packet: DamagePacket) -> void:
 	if state == State.DEAD:
 		return
 	state = State.DEAD
+	_stop_navigation_motion()
 	defeated.emit(self, mandatory)
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null:
@@ -249,6 +467,7 @@ func _draw() -> void:
 
 
 func _exit_tree() -> void:
+	_cancel_avoidance_move()
 	if is_instance_valid(_warning_audio):
 		_warning_audio.stop()
 
@@ -281,6 +500,9 @@ func _alert_to(location: Vector2, broadcast: bool) -> void:
 	if state == State.DEAD or health.is_dead():
 		return
 	var newly_alerted := not _alerted
+	if newly_alerted:
+		_clear_navigation_recovery()
+		_retreat_target = Vector2(INF, INF)
 	_alerted = true
 	_last_known_position = location
 	_memory_remaining = profile.alert_memory_seconds
@@ -324,19 +546,22 @@ func _forget_target() -> void:
 		_patrol_blocked_seconds = 0.0
 	_alerted = false
 	_memory_remaining = 0.0
+	_clear_navigation_recovery()
+	_retreat_target = Vector2(INF, INF)
 	state = State.IDLE
 
 
 func _tick_patrol(delta: float) -> void:
 	state = State.IDLE
-	velocity = Vector2.ZERO
 	if not profile.patrol_enabled:
+		_stop_navigation_motion()
 		return
 	if not _patrol_axis_initialized:
 		_patrol_axis = _choose_patrol_axis()
 		_patrol_axis_initialized = true
 	if _patrol_wait_remaining > 0.0:
 		_patrol_wait_remaining = maxf(_patrol_wait_remaining - delta, 0.0)
+		_stop_navigation_motion()
 		return
 	var offset := global_position - _patrol_anchor
 	if offset.length() > profile.patrol_distance + 4.0 or absf(offset.cross(_patrol_axis)) > 2.0:
@@ -355,9 +580,14 @@ func _tick_patrol(delta: float) -> void:
 		_finish_patrol_leg()
 		return
 	state = State.RETURN_TO_PATROL if _returning_to_patrol else State.PATROL
-	velocity = direction * speed
+	var desired_velocity := direction * speed
 	if not direction.is_zero_approx():
 		facing = direction
+	# Patrol already has authored endpoint and wall-block recovery. Keeping it on
+	# direct movement avoids RVO suppressing low-speed motion near navmesh edges;
+	# combat chase and retreat still use soft avoidance.
+	_cancel_avoidance_move()
+	velocity = desired_velocity
 	var previous := global_position
 	move_and_slide()
 	_patrol_blocked_seconds = _patrol_blocked_seconds + delta if global_position.distance_to(previous) < 0.05 else 0.0
@@ -371,7 +601,7 @@ func _finish_patrol_leg() -> void:
 	_patrol_wait_remaining = profile.patrol_pause_seconds
 	_patrol_blocked_seconds = 0.0
 	state = State.IDLE
-	velocity = Vector2.ZERO
+	_stop_navigation_motion()
 
 
 func _choose_patrol_axis() -> Vector2:

@@ -13,6 +13,7 @@ signal player_died(packet: DamagePacket)
 
 const DEFAULT_CONFIG := preload("res://resources/player/default_player_config.tres")
 const FLIGHT_LOOP := preload("res://assets/audio/sfx/mobility/flight_loop.wav")
+const AFTERIMAGE_INTERVAL := 0.05
 
 @export var config: CombatPlayerConfig = DEFAULT_CONFIG
 
@@ -38,6 +39,8 @@ var _input_enabled := true
 var _attack_pressed := false
 var _attack_released := false
 var _attack_held := false
+var _afterimage_active_remaining := 0.0
+var _afterimage_emit_remaining := 0.0
 
 
 func _ready() -> void:
@@ -57,6 +60,8 @@ func _ready() -> void:
 	health.health_changed.connect(_on_health_changed)
 	health.died.connect(_on_died)
 	heat.heat_changed.connect(_on_heat_changed)
+	heat.overheated.connect(_on_overheated)
+	heat.recovered.connect(_on_heat_recovered)
 	weapons.weapon_changed.connect(_on_weapon_changed)
 	weapons.attack_performed.connect(_on_attack_performed)
 	mobility.mode_changed.connect(_on_mobility_changed)
@@ -121,6 +126,7 @@ func _physics_process(delta: float) -> void:
 		guard.guard_arc_degrees,
 		weapons.get_melee_swing_angle_offset()
 	)
+	_tick_afterimages(delta)
 	_update_movement_audio()
 
 
@@ -252,6 +258,9 @@ func reset_transient_state() -> void:
 	_attack_pressed = false
 	_attack_released = false
 	_attack_held = false
+	_afterimage_active_remaining = 0.0
+	_afterimage_emit_remaining = 0.0
+	_clear_afterimages()
 
 
 func _update_aim_direction() -> void:
@@ -332,12 +341,26 @@ func _on_heat_changed(current: float, maximum: float) -> void:
 	heat_changed.emit(current, maximum)
 
 
+func _on_overheated() -> void:
+	var events := get_node_or_null("/root/CombatEvents")
+	if events != null:
+		events.publish_notice(&"weapon_overheated", "武器过热", Color(1.0, 0.35, 0.2), CombatNotice.Priority.HIGH, 0.0, 1.8)
+
+
+func _on_heat_recovered() -> void:
+	var events := get_node_or_null("/root/CombatEvents")
+	if events != null:
+		events.publish_notice(&"weapon_recovered", "武器冷却完成", Color(0.35, 0.9, 1.0), CombatNotice.Priority.NORMAL)
+
+
 func _on_weapon_changed(_index: int, data: WeaponComponentData) -> void:
 	visuals.set_weapon(data)
 	weapon_changed.emit(data)
 
 
 func _on_mobility_changed(_index: int, mode: MobilityMode) -> void:
+	_afterimage_active_remaining = 0.0
+	_afterimage_emit_remaining = 0.0
 	mobility_changed.emit(mode)
 
 
@@ -350,8 +373,30 @@ func _on_attack_performed(_data: WeaponComponentData) -> void:
 	combat_feedback_requested.emit(&"attack", global_position)
 
 
-func _on_mobility_activated(_mode: MobilityMode) -> void:
+func _on_mobility_activated(mode: MobilityMode) -> void:
+	if mode != null and mode.id != &"walk" and mode.ability_active_seconds > 0.0:
+		_afterimage_active_remaining = mode.ability_active_seconds
+		_afterimage_emit_remaining = 0.0
 	combat_feedback_requested.emit(&"mobility", global_position)
+
+
+func _tick_afterimages(delta: float) -> void:
+	if _afterimage_active_remaining <= 0.0 or _dead:
+		return
+	_afterimage_active_remaining = maxf(_afterimage_active_remaining - delta, 0.0)
+	_afterimage_emit_remaining -= delta
+	if _afterimage_emit_remaining > 0.0:
+		return
+	_afterimage_emit_remaining += AFTERIMAGE_INTERVAL
+	var events := get_node_or_null("/root/CombatEvents")
+	if events != null:
+		events.request_afterimage(self, visuals.body_sprite)
+
+
+func _clear_afterimages() -> void:
+	var events := get_node_or_null("/root/CombatEvents")
+	if events != null:
+		events.clear_afterimages(self)
 
 
 func _on_hit_resolved(result: DamageResult) -> void:
@@ -369,7 +414,7 @@ func _on_circuit_breaker_triggered() -> void:
 	combat_feedback_requested.emit(&"circuit_breaker", global_position)
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null:
-		events.publish_message("断路保险触发", Color(1.0, 0.8, 0.2))
+		events.publish_notice(&"circuit_breaker", "断路保险触发", Color(1.0, 0.8, 0.2), CombatNotice.Priority.HIGH, 0.0, 2.0)
 
 
 func _on_died(packet: DamagePacket) -> void:
@@ -377,11 +422,13 @@ func _on_died(packet: DamagePacket) -> void:
 	set_input_enabled(false)
 	hurt_box.set_deferred("monitorable", false)
 	visuals.set_dead(true)
+	_afterimage_active_remaining = 0.0
+	_clear_afterimages()
 	player_died.emit(packet)
 	combat_feedback_requested.emit(&"death", global_position)
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null:
-		events.publish_message("线路中断 · 按 R 重开战斗", Color(1.0, 0.35, 0.25))
+		events.publish_notice(&"player_defeated", "线路中断 · 按 R 重开战斗", Color(1.0, 0.35, 0.25), CombatNotice.Priority.HIGH, 0.0, 4.0)
 
 
 func _emit_public_state() -> void:
@@ -390,3 +437,7 @@ func _emit_public_state() -> void:
 	weapon_changed.emit(weapons.get_current_weapon())
 	mobility_changed.emit(mobility.get_current_mode())
 	guard_state_changed.emit(guard.state)
+
+
+func _exit_tree() -> void:
+	_clear_afterimages()

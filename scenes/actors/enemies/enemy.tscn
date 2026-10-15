@@ -20,6 +20,10 @@ path_desired_distance = 8.0
 target_desired_distance = 22.0
 avoidance_enabled = true
 radius = 11.0
+neighbor_distance = 48.0
+max_neighbors = 6
+time_horizon_agents = 0.5
+time_horizon_obstacles = 0.35
 
 [node name="HealthComponent" type="Node" parent="."]
 script = ExtResource("2")

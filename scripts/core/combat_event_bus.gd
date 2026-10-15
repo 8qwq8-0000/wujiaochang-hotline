@@ -10,7 +10,10 @@ signal entity_defeated(entity: Node)
 signal room_cleared(room: Node)
 signal floor_cleared
 signal combat_message_requested(text: String, color: Color)
+signal combat_notice_requested(notice: CombatNotice)
 signal weapon_cue_requested(weapon_id: StringName, cue: StringName, world_position: Vector2)
+signal afterimage_requested(source: Node, sprite: AnimatedSprite2D)
+signal afterimages_clear_requested(source: Node)
 
 
 func publish_damage(result: DamageResult) -> void:
@@ -35,6 +38,17 @@ func publish_message(text: String, color: Color = Color.WHITE) -> void:
 	combat_message_requested.emit(text, color)
 
 
+func publish_notice(
+	id: StringName,
+	text: String,
+	color: Color = Color.WHITE,
+	priority: CombatNotice.Priority = CombatNotice.Priority.NORMAL,
+	merge_window: float = 0.0,
+	display_seconds: float = 1.5
+) -> void:
+	combat_notice_requested.emit(CombatNotice.new(id, text, color, priority, merge_window, display_seconds))
+
+
 func publish_noise(source: Node, origin: Vector2, radius: float) -> void:
 	if is_instance_valid(source) and source.is_inside_tree() and radius > 0.0:
 		noise_emitted.emit(source, origin, radius)
@@ -47,3 +61,13 @@ func publish_enemy_alert(enemy: Node, world_position: Vector2) -> void:
 
 func publish_weapon_cue(weapon_id: StringName, cue: StringName, world_position: Vector2) -> void:
 	weapon_cue_requested.emit(weapon_id, cue, world_position)
+
+
+func request_afterimage(source: Node, sprite: AnimatedSprite2D) -> void:
+	if is_instance_valid(source) and is_instance_valid(sprite):
+		afterimage_requested.emit(source, sprite)
+
+
+func clear_afterimages(source: Node) -> void:
+	if is_instance_valid(source):
+		afterimages_clear_requested.emit(source)
