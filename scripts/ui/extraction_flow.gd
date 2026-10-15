@@ -101,6 +101,13 @@ func extract() -> void:
 		return
 	if not run.finish_extraction(_player):
 		return
+	var store := get_node("/root/WarehouseStore")
+	var profile: Dictionary = store.get_profile()
+	if not store.commit(profile.chest, run.extraction_result.player_state):
+		run.run_finished = false
+		run.extraction_result.clear()
+		_details.text = store.error_message + "，请重试撤离。"
+		return
 	_settled = true
 	_set_layout(true)
 	_owns_pause = not get_tree().paused
@@ -110,9 +117,19 @@ func extract() -> void:
 	var lines := PackedStringArray()
 	for entry in run.extraction_result.items:
 		lines.append("%s：%s" % [entry.location, entry.name])
-	_details.text = "带出物品（%d 件）\n\n%s\n\n本局结算已保留在当前运行中。仓库与永久存档尚未接入，关闭游戏后不会保存。" % [lines.size(), "\n".join(lines)]
+	_details.text = "带出物品（%d 件）\n\n%s\n\n装备已保存，回到仓库后可存入箱子。" % [lines.size(), "\n".join(lines)]
 	_clear_buttons()
-	_add_button("开始新一局", start_new_run)
+	_add_button("返回仓库", return_to_warehouse)
+
+
+func return_to_warehouse() -> void:
+	if not _settled:
+		return
+	if not flow.request_scene("res://scenes/levels/base/warehouse.tscn"):
+		_details.text += "\n仓库加载失败，请重试。"
+		return
+	_settled = false
+	close_exit()
 
 
 func continue_floor() -> void:
@@ -124,18 +141,6 @@ func continue_floor() -> void:
 		return
 	run.set_player_state(snapshot)
 	run.floor_index += 1
-	close_exit()
-
-
-func start_new_run() -> void:
-	if not _settled:
-		return
-	# Confirm the scene can load before clearing the previous result.
-	if not flow.request_scene(FLOOR_PATH):
-		_details.text += "\n新一局加载请求失败，请重试。"
-		return
-	run.begin_run()
-	_settled = false
 	close_exit()
 
 

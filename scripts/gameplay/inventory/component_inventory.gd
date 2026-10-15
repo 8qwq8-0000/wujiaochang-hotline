@@ -218,6 +218,26 @@ func _apply_equipment() -> void:
 	var mode := mobility_slot.get_item()
 	player.get_node("MobilityController").set_equipped_mode(load(str(mode.get_property("effect"))) if mode != null else null)
 
+
+func move_to_storage(item: InventoryItem, storage: Inventory) -> bool:
+	if item == null or bool(item.get_property("bound", false)):
+		return false
+	var owned := backpack.has_item(item)
+	for slot in [weapon_slot, secondary_weapon_slot, mobility_slot]:
+		owned = owned or slot.get_item() == item
+	if not owned or not storage.add_item(item):
+		return false
+	_apply_equipment()
+	changed.emit()
+	return true
+
+
+func take_from_storage(item: InventoryItem, storage: Inventory) -> bool:
+	if item == null or not storage.has_item(item) or not backpack.add_item(item):
+		return false
+	changed.emit()
+	return true
+
 func _notify(text: String, cue: StringName) -> void:
 	feedback.emit(text, cue)
 	var events := get_node_or_null("/root/CombatEvents")
