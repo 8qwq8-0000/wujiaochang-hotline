@@ -1,5 +1,8 @@
 extends Node2D
 
+@export var primary_id := "test_conductive_pistol"
+@export var secondary_id := "test_electric_pistol"
+
 signal room_cleared
 var cleared := false
 var remaining_targets := 3
@@ -11,7 +14,7 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_fit_viewport)
 	var inventory := player.inventory
 	inventory.backpack.add_item(inventory.weapon_slot.get_item())
-	for entry in [{"slot":inventory.weapon_slot,"id":"test_conductive_pistol"},{"slot":inventory.secondary_weapon_slot,"id":"test_electric_pistol"}]:
+	for entry in [{"slot":inventory.weapon_slot,"id":primary_id},{"slot":inventory.secondary_weapon_slot,"id":secondary_id}]:
 		var item := InventoryItem.new(ComponentInventory.PROTOTYPES,entry.id)
 		inventory._assign_instance_id(item)
 		entry.slot.equip(item)

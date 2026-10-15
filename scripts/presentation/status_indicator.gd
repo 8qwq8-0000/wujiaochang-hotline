@@ -16,11 +16,19 @@ func _ready() -> void:
 	add_child(label)
 	visible = false
 func _process(_delta: float) -> void:
-	visible = statuses.has_status(&"conductive")
-	if visible:
-		label.text = "导电 %.1fs" % statuses.remaining_seconds(&"conductive")
-		queue_redraw()
+	var lines: PackedStringArray = []
+	for entry in [[&"conductive","导电"],[&"oiled","浸油"],[&"burning","燃烧"]]:
+		if statuses.has_status(entry[0]):
+			lines.append("%s %.1fs" % [entry[1],statuses.remaining_seconds(entry[0])])
+	visible = not lines.is_empty()
+	label.text = "\n".join(lines)
+	label.position.y = -37 - maxi(lines.size()-1,0)*14
+	queue_redraw()
 func _draw() -> void:
-	draw_arc(Vector2.ZERO,16,0,TAU,24,Color("62d8ef"),2)
-	draw_line(Vector2(-3,-12),Vector2(2,-3),Color("fff2a2"),2)
-	draw_line(Vector2(2,-3),Vector2(-2,5),Color("fff2a2"),2)
+	if statuses.has_status(&"conductive"):
+		draw_arc(Vector2.ZERO,16,0,TAU,24,Color("62d8ef"),2)
+	if statuses.has_status(&"oiled"):
+		draw_arc(Vector2.ZERO,19,0,TAU,24,Color("c4a550"),3)
+	if statuses.has_status(&"burning"):
+		draw_arc(Vector2.ZERO,21,0,TAU,24,Color("ff873a"),3)
+		draw_colored_polygon(PackedVector2Array([Vector2(-5,-8),Vector2(0,-25),Vector2(7,-8)]),Color("ffcf69"))

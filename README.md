@@ -49,3 +49,5 @@ Godot 4.7 俯视角肉鸽动作课程项目。三人团队开发，Windows 键�
 ## 导电与环境交互试验
 
 打开 `scenes/debug/electric_reaction_sandbox.tscn` 按 F6：导电枪命中标靶，Q 切电击枪触发连锁；配电箱靠近 E 领取房间增益，或攻击破坏放电。R 重置。规则与边界见 [实施说明](docs/technical/导电与配电箱实施说明.md)。
+
+第二批试验场：`scenes/debug/fuel_reaction_sandbox.tscn`，F6 运行。油枪 → Q 切火焰枪引燃；打破燃料桶再用火焰点燃油区，玩家也会受伤。规则见 [浸油引燃与燃料桶](docs/technical/浸油引燃与燃料桶实施说明.md)。

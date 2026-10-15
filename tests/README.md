@@ -79,3 +79,13 @@ godot --headless --path . --script res://tests/integration/electric_sandbox_chec
 ```
 
 覆盖真实子弹状态传递、伤害与反应限制、墙体/阵营/范围/容器隔离、E 领取与攻击互斥、房间增益、倒计时与电弧暂停/回收，以及标靶清场。
+
+浸油、燃烧与燃料桶：
+
+```sh
+godot --headless --path . --script res://tests/integration/oil_status_check.gd
+godot --headless --path . --script res://tests/integration/fuel_environment_check.gd
+godot --headless --path . --script res://tests/integration/fuel_sandbox_check.gd
+```
+
+覆盖实际计时伤害、刷新不叠加、暂停与保险清状态、桶破坏互斥、油区/爆炸/火区、墙体/范围/容器隔离、真实子弹引燃、Q 切枪、R 重置和区域过期。

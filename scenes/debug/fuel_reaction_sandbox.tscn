@@ -1,0 +1,39 @@
+[gd_scene load_steps=6 format=3]
+[ext_resource type="Script" path="res://scripts/debug/electric_reaction_sandbox.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/actors/player/player.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/environment/fuel_barrel.tscn" id="3"]
+[ext_resource type="Script" path="res://scripts/presentation/vfx_manager.gd" id="4"]
+[ext_resource type="Script" path="res://scripts/bootstrap_main.gd" id="5"]
+[node name="FuelReactionSandbox" type="Node2D" groups=["combat_rooms"]]
+script = ExtResource("1")
+primary_id = "test_oil_pistol"
+secondary_id = "test_fire_pistol"
+[node name="Bootstrap" type="Node" parent="."]
+script = ExtResource("5")
+[node name="Player" parent="." instance=ExtResource("2")]
+position = Vector2(140,215)
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(320,180)
+[node name="Targets" type="Node2D" parent="."]
+[node name="FuelBarrel" parent="." instance=ExtResource("3")]
+position = Vector2(420,250)
+[node name="VFXManager" type="Node2D" parent="."]
+script = ExtResource("4")
+[node name="UI" type="CanvasLayer" parent="."]
+[node name="Title" type="Label" parent="UI"]
+offset_left = 20.0
+offset_top = 8.0
+text = "浸油与燃烧 · 试验场"
+theme_override_font_sizes/font_size = 20
+mouse_filter = 2
+[node name="Instructions" type="Label" parent="UI"]
+offset_left = 20.0
+offset_top = 38.0
+text = "先用油枪命中标靶 → Q 切火焰枪 → 点燃目标\n燃料桶：攻击打破 → 火焰引爆油区 · Tab 背包 · R 重置"
+theme_override_font_sizes/font_size = 12
+mouse_filter = 2
+[node name="Status" type="Label" parent="UI"]
+offset_left = 20.0
+offset_top = 333.0
+theme_override_font_sizes/font_size = 12
+mouse_filter = 2

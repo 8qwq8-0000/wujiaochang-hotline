@@ -23,6 +23,7 @@ func _ready() -> void:
 	if events != null:
 		events.damage_resolved.connect(_on_damage_resolved)
 		events.electric_arc_requested.connect(_spawn_arc)
+		events.fuel_explosion_requested.connect(func(point: Vector2, radius: float) -> void: spawn_flash(point, Color("ff9446"), radius, 0.3))
 		events.environment_discharge_requested.connect(func(point: Vector2, radius: float) -> void: spawn_flash(point, Color("69d6ec"), radius, 0.3))
 
 

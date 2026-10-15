@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="WeaponComponentData" load_steps=3 format=3]
+[ext_resource type="Script" path="res://scripts/gameplay/combat/weapon_data.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/service_pistol.tscn" id="2"]
+[resource]
+script = ExtResource("1")
+id = &"test_fire_pistol"
+display_name = "试验·火焰枪"
+view_scene = ExtResource("2")
+attack_kind = 1
+damage = 1
+cooldown = 0.25
+heat_per_attack = 6.0
+projectile_speed = 520.0
+damage_type = &"fire"
+noise_radius = 180.0
