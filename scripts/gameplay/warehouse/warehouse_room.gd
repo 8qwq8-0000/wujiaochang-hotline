@@ -149,3 +149,22 @@ func _draw() -> void:
 		draw_line(Vector2(42, y + 28), Vector2(104, y + 28), Color("71848b"), 2)
 	draw_rect(Rect2(490, 134, 100, 120), Color("253c42"))
 	draw_rect(Rect2(490, 134, 100, 120), Color("c2b275"), false, 2)
+
+func enter_trial() -> bool:
+	if _departing or get_tree().paused:
+		return false
+	if not save_loadout():
+		$Instructions.text = store.error_message
+		return false
+	_departing = true
+	player.set_input_enabled(false)
+	call_deferred("_open_trial")
+	return true
+
+func _open_trial() -> void:
+	var error := get_tree().change_scene_to_file("res://scenes/debug/fuel_reaction_sandbox.tscn")
+	if error != OK:
+		_departing = false
+		player.set_input_enabled(true)
+		$Instructions.text = "试验场加载失败，请重试"
+		return
