@@ -51,6 +51,9 @@ func _on_area_entered(area: Area2D) -> void:
 	# Ignore only the shooter, preserving friendly-fire hits on other actors.
 	if area is HurtBox2DComponent and is_instance_valid(source) and area.actor == source:
 		return
+	# Oil receives only ignition shots; spent fire fields never absorb projectiles.
+	if area is FuelPatch and (damage_type != &"fire" or area.burning):
+		return
 	if not area.has_method("receive_hit"):
 		return
 	var packet := _make_damage_packet()

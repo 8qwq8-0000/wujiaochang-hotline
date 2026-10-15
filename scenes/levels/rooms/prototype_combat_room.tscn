@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://scripts/gameplay/rooms/combat_room.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/gameplay/enemies/enemy_spawner.gd" id="2"]
@@ -11,6 +11,7 @@
 [ext_resource type="NavigationPolygon" path="res://resources/enemies/prototype_navigation.tres" id="navigation"]
 
 [ext_resource type="PackedScene" path="res://scenes/environment/power_box.tscn" id="power_box"]
+[ext_resource type="PackedScene" path="res://scenes/environment/fuel_barrel.tscn" id="fuel_barrel"]
 
 [sub_resource type="RectangleShape2D" id="HorizontalWall"]
 size = Vector2(640, 16)
@@ -153,3 +154,6 @@ navigation_polygon = ExtResource("navigation")
 
 [node name="PowerBox" parent="." instance=ExtResource("power_box")]
 position = Vector2(180,280)
+
+[node name="FuelBarrel" parent="." instance=ExtResource("fuel_barrel")]
+position = Vector2(420,280)
