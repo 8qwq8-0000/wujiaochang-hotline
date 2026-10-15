@@ -126,12 +126,10 @@ func _physics_process(delta: float) -> void:
 	if not sees_target:
 		state = State.CHASE
 		velocity = _direction_to_position(_last_known_position) * profile.move_speed if global_position.distance_to(_last_known_position) > 12.0 else Vector2.ZERO
-	elif should_retreat(distance):
-		state = State.CHASE
-		velocity = -global_position.direction_to(_target.global_position) * profile.move_speed
 	elif distance <= profile.attack_range:
 		state = State.ATTACK
-		velocity = velocity.move_toward(Vector2.ZERO, 1000.0 * delta)
+		# Shooters hold their position and fire even when the player closes in.
+		velocity = Vector2.ZERO if profile.role == EnemyProfile.Role.RANGED_SIGHTLINE else velocity.move_toward(Vector2.ZERO, 1000.0 * delta)
 		if _attack_cooldown_remaining <= 0.0:
 			state = State.WINDUP
 			_windup_remaining = profile.attack_windup
@@ -147,10 +145,6 @@ func _physics_process(delta: float) -> void:
 		facing = velocity.normalized()
 	move_and_slide()
 	queue_redraw()
-
-
-func should_retreat(distance: float) -> bool:
-	return profile.role == EnemyProfile.Role.RANGED_SIGHTLINE and distance < profile.attack_range * 0.65
 
 
 func _has_line_of_sight() -> bool:

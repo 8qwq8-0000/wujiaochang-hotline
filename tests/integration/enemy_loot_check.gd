@@ -24,7 +24,7 @@ func run() -> void:
 	player.set_physics_process(false)
 	for enemy in get_nodes_in_group("enemies"):
 		enemy.set_physics_process(false)
-	# A ranged enemy must retreat before the in-range attack branch.
+	# Closing in must not suppress the shooter's attack or make it back away.
 	var ranged: EnemyController
 	var melee: EnemyController
 	for enemy in get_nodes_in_group("enemies"):
@@ -32,13 +32,24 @@ func run() -> void:
 			ranged = enemy
 		if enemy.profile.role == EnemyProfile.Role.MELEE_PRESSURE:
 			melee = enemy
-	check(ranged.should_retreat(20.0), "ranged retreats when close")
-	check(not ranged.should_retreat(ranged.profile.attack_range), "ranged holds attack distance")
 	player.global_position = Vector2(210, 115)
 	ranged.global_position = Vector2(235, 115)
 	ranged.set("_target", player)
+	ranged.velocity = Vector2(ranged.profile.move_speed, 0)
+	var ranged_anchor := ranged.global_position
 	ranged._physics_process(0.016)
-	check(ranged.velocity.x > 0, "ranged moves away from player")
+	check(ranged.velocity.is_zero_approx() and ranged.global_position == ranged_anchor, "close ranged enemy stops immediately instead of retreating")
+	check(ranged.state == EnemyController.State.WINDUP, "close ranged enemy begins attack warning")
+	ranged._physics_process(ranged.profile.attack_windup + 0.01)
+	var shots := 0
+	for node in scene.find_children("*", "Area2D", true, false):
+		if node is CombatProjectile and node.source == ranged:
+			shots += 1
+			check(node.direction.is_equal_approx(Vector2.LEFT), "close shot aims toward player")
+			node.queue_free()
+	check(shots == 1 and ranged.state == EnemyController.State.ATTACK, "close ranged enemy emits one real projectile after warning")
+	ranged._physics_process(0.016)
+	check(ranged.state == EnemyController.State.ATTACK and ranged.velocity.is_zero_approx(), "close ranged enemy holds position during attack cooldown")
 	# Cover A lies between these points: no windup or through-wall melee.
 	player.global_position = Vector2(230, 115)
 	melee.global_position = Vector2(310, 115)
