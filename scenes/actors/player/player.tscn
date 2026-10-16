@@ -1,30 +1,45 @@
-[gd_scene load_steps=36 format=3]
+[gd_scene format=3 uid="uid://ciqhwcfj4cd4n"]
 
-[ext_resource type="Script" path="res://scripts/gameplay/player_controller.gd" id="1_controller"]
-[ext_resource type="Script" path="res://scripts/gameplay/combat/health_component.gd" id="2_health"]
-[ext_resource type="Script" path="res://scripts/gameplay/combat/heat_component.gd" id="3_heat"]
-[ext_resource type="Script" path="res://scripts/gameplay/combat/guard_component.gd" id="4_guard"]
-[ext_resource type="Script" path="res://scripts/gameplay/mobility/mobility_controller.gd" id="5_mobility"]
-[ext_resource type="Script" path="res://scripts/gameplay/combat/weapon_controller.gd" id="6_weapon"]
-[ext_resource type="Script" path="res://scripts/gameplay/combat/hurt_box.gd" id="7_hurtbox"]
-[ext_resource type="Script" path="res://scripts/gameplay/player/status_component.gd" id="8_status"]
-[ext_resource type="Script" path="res://scripts/gameplay/player/circuit_breaker_component.gd" id="9_breaker"]
-[ext_resource type="Script" path="res://scripts/gameplay/player/interactor_component.gd" id="10_interactor"]
-[ext_resource type="Script" path="res://scripts/gameplay/player/player_visual_controller.gd" id="11_visual"]
-[ext_resource type="Script" path="res://scripts/gameplay/player/guard_arc_visual.gd" id="12_guard_visual"]
-[ext_resource type="Resource" path="res://resources/player/default_player_config.tres" id="13_config"]
-[ext_resource type="Script" path="res://scripts/gameplay/player/talent_core_controller.gd" id="20_talent_core"]
-[ext_resource type="Script" path="res://scripts/presentation/weapon_mount.gd" id="21_weapon_mount"]
-[ext_resource type="Texture2D" path="res://assets/art/characters/player/placeholder/placeholder_player_down.png" id="14_down"]
-[ext_resource type="Texture2D" path="res://assets/art/characters/player/placeholder/placeholder_player_up.png" id="15_up"]
-[ext_resource type="Texture2D" path="res://assets/art/characters/player/placeholder/placeholder_player_side.png" id="16_side"]
+[ext_resource type="Script" uid="uid://ipmmaj23v3wj" path="res://scripts/gameplay/player_controller.gd" id="1_controller"]
+[ext_resource type="Script" uid="uid://dvf0vif2eetq2" path="res://scripts/gameplay/combat/health_component.gd" id="2_health"]
+[ext_resource type="Script" uid="uid://bldhoiaqae7xm" path="res://scripts/gameplay/combat/heat_component.gd" id="3_heat"]
+[ext_resource type="Script" uid="uid://bs42r0pq1ruky" path="res://scripts/gameplay/combat/guard_component.gd" id="4_guard"]
+[ext_resource type="Script" uid="uid://dmsp3odubylvl" path="res://scripts/gameplay/mobility/mobility_controller.gd" id="5_mobility"]
+[ext_resource type="Script" uid="uid://34o6mljv4o2p" path="res://scripts/gameplay/combat/weapon_controller.gd" id="6_weapon"]
+[ext_resource type="Script" uid="uid://bsn70jo45ko2r" path="res://scripts/gameplay/combat/hurt_box.gd" id="7_hurtbox"]
+[ext_resource type="Script" uid="uid://iekd5ex3oxsj" path="res://scripts/gameplay/player/status_component.gd" id="8_status"]
+[ext_resource type="Script" uid="uid://d2pojgemrsbul" path="res://scripts/gameplay/player/circuit_breaker_component.gd" id="9_breaker"]
+[ext_resource type="Script" uid="uid://d2wlyhdxvpwyk" path="res://scripts/gameplay/player/interactor_component.gd" id="10_interactor"]
+[ext_resource type="Script" uid="uid://q3ie3x35hsl2" path="res://scripts/gameplay/player/player_visual_controller.gd" id="11_visual"]
+[ext_resource type="Script" uid="uid://rert4v8xymee" path="res://scripts/gameplay/player/guard_arc_visual.gd" id="12_guard_visual"]
+[ext_resource type="Texture2D" uid="uid://btl5cp7ap7enu" path="res://assets/art/characters/player/placeholder/placeholder_player_down.png" id="14_down"]
+[ext_resource type="Texture2D" uid="uid://dewxqip8f4gmy" path="res://assets/art/characters/player/placeholder/placeholder_player_up.png" id="15_up"]
+[ext_resource type="Texture2D" uid="uid://beuuqg8ycf1pu" path="res://assets/art/characters/player/placeholder/placeholder_player_side.png" id="16_side"]
+[ext_resource type="Script" uid="uid://l2456yvqb5ax" path="res://scripts/gameplay/inventory/component_inventory.gd" id="17_inventory"]
+[ext_resource type="Script" uid="uid://0m60b3165g4q" path="res://scripts/presentation/inventory_audio.gd" id="18_audio"]
+[ext_resource type="Script" uid="uid://d0rksn64yvcev" path="res://scripts/gameplay/items/enemy_loot.gd" id="19_loot"]
+[ext_resource type="Script" uid="uid://co1drnaptmoj4" path="res://scripts/gameplay/player/talent_core_controller.gd" id="20_talent_core"]
+[ext_resource type="Script" uid="uid://b35xuobakrv1" path="res://scripts/presentation/weapon_mount.gd" id="21_weapon_mount"]
 
-[ext_resource type="Script" path="res://scripts/gameplay/inventory/component_inventory.gd" id="17_inventory"]
-[ext_resource type="Script" path="res://scripts/presentation/inventory_audio.gd" id="18_audio"]
-[ext_resource type="Script" path="res://scripts/gameplay/items/enemy_loot.gd" id="19_loot"]
+[sub_resource type="RectangleShape2D" id="WorldCollisionShape"]
+size = Vector2(14, 10)
+
+[sub_resource type="RectangleShape2D" id="HurtBoxShape"]
+size = Vector2(18, 24)
+
+[sub_resource type="CircleShape2D" id="InteractionShape"]
+radius = 28.0
 
 [sub_resource type="AtlasTexture" id="Atlas_down_0"]
 atlas = ExtResource("14_down")
+region = Rect2(0, 0, 20, 30)
+
+[sub_resource type="AtlasTexture" id="Atlas_side_0"]
+atlas = ExtResource("16_side")
+region = Rect2(0, 0, 20, 30)
+
+[sub_resource type="AtlasTexture" id="Atlas_up_0"]
+atlas = ExtResource("15_up")
 region = Rect2(0, 0, 20, 30)
 
 [sub_resource type="AtlasTexture" id="Atlas_down_1"]
@@ -39,9 +54,9 @@ region = Rect2(42, 0, 20, 30)
 atlas = ExtResource("14_down")
 region = Rect2(63, 0, 20, 30)
 
-[sub_resource type="AtlasTexture" id="Atlas_up_0"]
-atlas = ExtResource("15_up")
-region = Rect2(0, 0, 20, 30)
+[sub_resource type="AtlasTexture" id="Atlas_side_1"]
+atlas = ExtResource("16_side")
+region = Rect2(21, 0, 20, 30)
 
 [sub_resource type="AtlasTexture" id="Atlas_up_1"]
 atlas = ExtResource("15_up")
@@ -55,171 +70,187 @@ region = Rect2(42, 0, 20, 30)
 atlas = ExtResource("15_up")
 region = Rect2(63, 0, 20, 30)
 
-[sub_resource type="AtlasTexture" id="Atlas_side_0"]
-atlas = ExtResource("16_side")
-region = Rect2(0, 0, 20, 30)
-
-[sub_resource type="AtlasTexture" id="Atlas_side_1"]
-atlas = ExtResource("16_side")
-region = Rect2(21, 0, 20, 30)
-
 [sub_resource type="SpriteFrames" id="PlayerSpriteFrames"]
 animations = [{
-"frames": [{"duration": 1.0, "texture": SubResource("Atlas_down_0")}],
-"loop": true,
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("Atlas_down_0")
+}],
+"loop": 1,
 "name": &"idle_down",
 "speed": 4.0
 }, {
-"frames": [{"duration": 1.0, "texture": SubResource("Atlas_side_0")}],
-"loop": true,
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("Atlas_side_0")
+}],
+"loop": 1,
 "name": &"idle_side",
 "speed": 4.0
 }, {
-"frames": [{"duration": 1.0, "texture": SubResource("Atlas_up_0")}],
-"loop": true,
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("Atlas_up_0")
+}],
+"loop": 1,
 "name": &"idle_up",
 "speed": 4.0
 }, {
-"frames": [{"duration": 1.0, "texture": SubResource("Atlas_down_0")}, {"duration": 1.0, "texture": SubResource("Atlas_down_1")}, {"duration": 1.0, "texture": SubResource("Atlas_down_2")}, {"duration": 1.0, "texture": SubResource("Atlas_down_3")}],
-"loop": true,
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("Atlas_down_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("Atlas_down_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("Atlas_down_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("Atlas_down_3")
+}],
+"loop": 1,
 "name": &"walk_down",
 "speed": 8.0
 }, {
-"frames": [{"duration": 1.0, "texture": SubResource("Atlas_side_0")}, {"duration": 1.0, "texture": SubResource("Atlas_side_1")}],
-"loop": true,
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("Atlas_side_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("Atlas_side_1")
+}],
+"loop": 1,
 "name": &"walk_side",
 "speed": 8.0
 }, {
-"frames": [{"duration": 1.0, "texture": SubResource("Atlas_up_0")}, {"duration": 1.0, "texture": SubResource("Atlas_up_1")}, {"duration": 1.0, "texture": SubResource("Atlas_up_2")}, {"duration": 1.0, "texture": SubResource("Atlas_up_3")}],
-"loop": true,
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("Atlas_up_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("Atlas_up_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("Atlas_up_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("Atlas_up_3")
+}],
+"loop": 1,
 "name": &"walk_up",
 "speed": 8.0
 }]
 
-[sub_resource type="RectangleShape2D" id="WorldCollisionShape"]
-size = Vector2(14, 10)
-
-[sub_resource type="RectangleShape2D" id="HurtBoxShape"]
-size = Vector2(18, 24)
-
-[sub_resource type="CircleShape2D" id="InteractionShape"]
-radius = 28.0
-
-[node name="Player" type="CharacterBody2D"]
+[node name="Player" type="CharacterBody2D" unique_id=70569988]
 collision_layer = 2
-collision_mask = 1
 script = ExtResource("1_controller")
-config = ExtResource("13_config")
 
-[node name="WorldCollision" type="CollisionShape2D" parent="."]
+[node name="WorldCollision" type="CollisionShape2D" parent="." unique_id=440660713]
 position = Vector2(0, -5)
 shape = SubResource("WorldCollisionShape")
 
-[node name="HealthComponent" type="Node" parent="."]
+[node name="HealthComponent" type="Node" parent="." unique_id=2053365552]
 script = ExtResource("2_health")
-max_health = 3
 
-[node name="HeatComponent" type="Node" parent="."]
+[node name="HeatComponent" type="Node" parent="." unique_id=2024730653]
 script = ExtResource("3_heat")
 
-[node name="GuardComponent" type="Node" parent="."]
+[node name="GuardComponent" type="Node" parent="." unique_id=1952862416]
 script = ExtResource("4_guard")
 
-[node name="MobilityController" type="Node" parent="."]
+[node name="MobilityController" type="Node" parent="." unique_id=1080810218]
 script = ExtResource("5_mobility")
 
-[node name="WeaponController" type="Node2D" parent="."]
+[node name="WeaponController" type="Node2D" parent="." unique_id=1883589819]
 script = ExtResource("6_weapon")
 heat_component_path = NodePath("../HeatComponent")
 
-[node name="StatusComponent" type="Node" parent="."]
+[node name="StatusComponent" type="Node" parent="." unique_id=4327465]
 script = ExtResource("8_status")
 
-[node name="TalentCoreController" type="Node" parent="."]
+[node name="TalentCoreController" type="Node" parent="." unique_id=83680898]
 script = ExtResource("20_talent_core")
 
-[node name="CircuitBreakerComponent" type="Node" parent="."]
+[node name="CircuitBreakerComponent" type="Node" parent="." unique_id=1034048397]
 script = ExtResource("9_breaker")
 
-[node name="HurtBox" type="Area2D" parent="."]
+[node name="HurtBox" type="Area2D" parent="." unique_id=55852169]
 collision_layer = 8
 collision_mask = 0
 monitoring = false
-monitorable = true
 script = ExtResource("7_hurtbox")
 faction = 1
 health_path = NodePath("../HealthComponent")
 guard_path = NodePath("../GuardComponent")
-actor_path = NodePath("..")
 damage_invulnerability_seconds = 0.18
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="HurtBox"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HurtBox" unique_id=439711721]
 position = Vector2(0, -12)
 shape = SubResource("HurtBoxShape")
 
-[node name="InteractionDetector" type="Area2D" parent="."]
+[node name="InteractionDetector" type="Area2D" parent="." unique_id=992953762]
 position = Vector2(0, -10)
 collision_layer = 0
 collision_mask = 32
-monitoring = true
 monitorable = false
 script = ExtResource("10_interactor")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="InteractionDetector"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="InteractionDetector" unique_id=524655862]
 shape = SubResource("InteractionShape")
 
-[node name="VisualRoot" type="Node2D" parent="."]
+[node name="VisualRoot" type="Node2D" parent="." unique_id=1023585692]
 texture_filter = 1
 script = ExtResource("11_visual")
 body_sprite_path = NodePath("BodyVisual")
 weapon_pivot_path = NodePath("WeaponPivot")
 guard_visual_path = NodePath("GuardVisual")
 
-[node name="MobilityVisual" type="Node2D" parent="VisualRoot"]
-position = Vector2(0, -4)
+[node name="MobilityVisual" type="Node2D" parent="VisualRoot" unique_id=888786697]
 z_index = -2
+position = Vector2(0, -4)
 
-[node name="BodyVisual" type="AnimatedSprite2D" parent="VisualRoot"]
+[node name="BodyVisual" type="AnimatedSprite2D" parent="VisualRoot" unique_id=1272194828]
 position = Vector2(-10, -28)
 sprite_frames = SubResource("PlayerSpriteFrames")
 animation = &"idle_down"
 autoplay = "idle_down"
 centered = false
 
-[node name="WeaponPivot" type="Node2D" parent="VisualRoot"]
-position = Vector2(0, -14)
+[node name="WeaponPivot" type="Node2D" parent="VisualRoot" unique_id=1990713956]
 z_index = 1
+position = Vector2(0, -14)
 script = ExtResource("21_weapon_mount")
 
-[node name="GuardVisual" type="Node2D" parent="VisualRoot"]
+[node name="GuardVisual" type="Node2D" parent="VisualRoot" unique_id=1954154200]
 z_index = 3
 script = ExtResource("12_guard_visual")
 
-[node name="VFXSockets" type="Node2D" parent="."]
+[node name="VFXSockets" type="Node2D" parent="." unique_id=1806305747]
 
-[node name="Body" type="Marker2D" parent="VFXSockets"]
+[node name="Body" type="Marker2D" parent="VFXSockets" unique_id=1147370289]
 position = Vector2(0, -14)
 
-[node name="Foot" type="Marker2D" parent="VFXSockets"]
+[node name="Foot" type="Marker2D" parent="VFXSockets" unique_id=1067202446]
 
-[node name="Overhead" type="Marker2D" parent="VFXSockets"]
+[node name="Overhead" type="Marker2D" parent="VFXSockets" unique_id=1507521374]
 position = Vector2(0, -32)
 
-[node name="AudioSockets" type="Node2D" parent="."]
+[node name="AudioSockets" type="Node2D" parent="." unique_id=2087098835]
 
-[node name="MovementLoop" type="AudioStreamPlayer2D" parent="AudioSockets"]
+[node name="MovementLoop" type="AudioStreamPlayer2D" parent="AudioSockets" unique_id=2080027400]
 position = Vector2(0, -8)
 max_distance = 420.0
 
-[node name="Camera2D" type="Camera2D" parent="."]
+[node name="Camera2D" type="Camera2D" parent="." unique_id=357196260]
 position_smoothing_enabled = true
 position_smoothing_speed = 7.0
 
-[node name="ComponentInventory" type="Node" parent="."]
+[node name="ComponentInventory" type="Node" parent="." unique_id=1901354137]
 script = ExtResource("17_inventory")
 
-[node name="InventoryAudio" type="Node" parent="ComponentInventory"]
+[node name="InventoryAudio" type="Node" parent="ComponentInventory" unique_id=1775175198]
 script = ExtResource("18_audio")
 
-[node name="EnemyLoot" type="Node" parent="ComponentInventory"]
+[node name="EnemyLoot" type="Node" parent="ComponentInventory" unique_id=642322446]
 script = ExtResource("19_loot")
