@@ -23,6 +23,7 @@ enum State {
 var state: State = State.IDLE
 var guard_direction: Vector2 = Vector2.RIGHT
 var _time_remaining: float = 0.0
+var recovery_multiplier := 1.0
 
 
 func _physics_process(delta: float) -> void:
@@ -114,7 +115,7 @@ func _advance_state() -> void:
 		State.PERFECT:
 			_enter_state(State.NORMAL, normal_seconds)
 		State.NORMAL:
-			_enter_state(State.RECOVERY, recovery_seconds)
+			_enter_state(State.RECOVERY, recovery_seconds * recovery_multiplier)
 		State.RECOVERY:
 			_enter_state(State.IDLE, 0.0)
 

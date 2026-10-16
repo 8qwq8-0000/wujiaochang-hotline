@@ -32,6 +32,9 @@ func clear_floor() -> void:
 	await process_frame
 
 func run_checks() -> void:
+	var store: Node = root.get_node("WarehouseStore")
+	store.save_path = "user://warehouse-extraction-test.json"
+	DirAccess.remove_absolute(store.save_path)
 	var main: Node = load("res://scenes/bootstrap/main.tscn").instantiate()
 	root.add_child(main)
 	current_scene = main
@@ -89,7 +92,7 @@ func run_checks() -> void:
 	if not run.run_finished:
 		quit(1)
 		return
-	check(run.extraction_result.items.size() == 4, "both weapons, mobility and spare bag extracted once")
+	check(run.extraction_result.items.size() == 5, "both weapons, mobility and spare bag extracted once")
 	check(run.extraction_result.player_state == before, "extraction retains full serialized state")
 	var result: Dictionary = run.extraction_result.duplicate(true)
 	ui.extract()
@@ -97,10 +100,15 @@ func run_checks() -> void:
 	check(not run.finish_extraction(player), "manager rejects duplicate settlement")
 	ui.close_exit()
 	check(paused, "settled run cannot return to combat")
-	ui.start_new_run()
+	ui.return_to_warehouse()
+	player = await wait_floor(flow)
+	var warehouse: Node = main.get_node("SceneContainer").get_child(0)
+	check(warehouse.is_in_group("warehouse"), "settlement returns to warehouse")
+	check(player.inventory.get_extraction_items().size() == 5, "warehouse retains extracted equipment")
+	check(warehouse.depart(), "warehouse can start the next run")
 	player = await wait_floor(flow)
 	check(not paused and not run.run_finished and run.floor_index == 0, "new run resumes fresh floor")
-	check(player.inventory.backpack.get_items().is_empty(), "new run has no old loot")
+	check(player.inventory.get_extraction_items().size() == 5, "new run carries chosen equipment")
 	await clear_floor()
 	player.set_circuit_breaker_equipped(false)
 	player.health.apply_damage(100, DamagePacket.new())
@@ -108,5 +116,6 @@ func run_checks() -> void:
 	check(not run.finish_extraction(player), "dead player cannot extract")
 	main.queue_free()
 	await process_frame
+	DirAccess.remove_absolute(store.save_path)
 	print("Extraction failures: ", failures)
 	quit(0 if failures == 0 else 1)

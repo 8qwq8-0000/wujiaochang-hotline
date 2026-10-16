@@ -4,6 +4,7 @@ extends Node2D
 const EFFECT_SCENE := preload("res://scenes/presentation/effect_flash.tscn")
 const DAMAGE_NUMBER_SCENE := preload("res://scenes/presentation/damage_number.tscn")
 const AFTERIMAGE_SCENE := preload("res://scenes/presentation/afterimage_effect.tscn")
+const ARC_EFFECT := preload("res://scripts/presentation/electric_arc_effect.gd")
 const AFTERIMAGE_COLOR := Color(0.25, 0.85, 1.0, 0.55)
 const AFTERIMAGE_DURATION := 0.25
 
@@ -17,6 +18,7 @@ var _available_numbers: Array[DamageNumber] = []
 var _active_numbers: Array[DamageNumber] = []
 var _available_afterimages: Array[AfterimageEffect] = []
 var _active_afterimages: Array[AfterimageEffect] = []
+var _active_arcs: Array[Node2D] = []
 
 
 func _ready() -> void:
@@ -31,6 +33,21 @@ func _ready() -> void:
 		events.afterimage_requested.connect(spawn_afterimage)
 		events.afterimages_clear_requested.connect(clear_afterimages)
 		events.effect_requested.connect(spawn_flash)
+		events.electric_arc_requested.connect(_spawn_arc)
+		events.fuel_explosion_requested.connect(func(point: Vector2, radius: float) -> void: spawn_flash(point, Color("ff9446"), radius, 0.3))
+		events.environment_discharge_requested.connect(func(point: Vector2, radius: float) -> void: spawn_flash(point, Color("69d6ec"), radius, 0.3))
+
+
+func _spawn_arc(from: Vector2, to: Vector2, room: Node) -> void:
+	if not is_instance_valid(room) or room.is_queued_for_deletion():
+		return
+	if _active_arcs.size() >= total_effect_budget:
+		_active_arcs.pop_front().queue_free()
+	var effect: Node2D = ARC_EFFECT.new()
+	effect.setup(from, to)
+	room.add_child(effect)
+	_active_arcs.append(effect)
+	effect.tree_exiting.connect(func() -> void: _active_arcs.erase(effect))
 
 
 func spawn_flash(world_position: Vector2, color: Color, radius: float, duration: float = 0.18) -> void:

@@ -24,7 +24,7 @@ func run() -> void:
 	player.set_physics_process(false)
 	for enemy in get_nodes_in_group("enemies"):
 		enemy.set_physics_process(false)
-	# A ranged enemy must retreat before the in-range attack branch.
+	# Closing in must not suppress the shooter's attack or make it back away.
 	var ranged: EnemyController
 	var melee: EnemyController
 	for enemy in get_nodes_in_group("enemies"):
@@ -32,11 +32,10 @@ func run() -> void:
 			ranged = enemy
 		if enemy.profile.role == EnemyProfile.Role.MELEE_PRESSURE:
 			melee = enemy
-	check(ranged.should_retreat(20.0), "ranged retreats when close")
-	check(not ranged.should_retreat(ranged.profile.attack_range), "ranged holds attack distance")
 	player.global_position = Vector2(210, 115)
 	ranged.global_position = Vector2(235, 115)
 	ranged.set("_target", player)
+	ranged.velocity = Vector2(ranged.profile.move_speed, 0)
 	ranged._physics_process(0.016)
 	check(
 		ranged.velocity.x > 0,

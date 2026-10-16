@@ -6,6 +6,11 @@ signal movement_noise_emitted(source: Node, origin: Vector2, radius: float)
 signal enemy_alerted(enemy: Node, world_position: Vector2)
 signal effect_requested(world_position: Vector2, color: Color, radius: float, duration: float)
 
+signal electric_arc_requested(from: Vector2, to: Vector2, room: Node)
+signal environment_discharge_requested(position: Vector2, radius: float)
+
+signal fuel_explosion_requested(position: Vector2, radius: float)
+
 signal damage_resolved(result: DamageResult)
 signal perfect_guarded(result: DamageResult)
 signal entity_defeated(entity: Node)

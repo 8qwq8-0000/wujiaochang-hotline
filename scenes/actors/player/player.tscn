@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://ciqhwcfj4cd4n"]
+[gd_scene load_steps=37 format=3 uid="uid://ciqhwcfj4cd4n"]
 
 [ext_resource type="Script" uid="uid://ipmmaj23v3wj" path="res://scripts/gameplay/player_controller.gd" id="1_controller"]
 [ext_resource type="Script" uid="uid://dvf0vif2eetq2" path="res://scripts/gameplay/combat/health_component.gd" id="2_health"]
@@ -20,6 +20,8 @@
 [ext_resource type="Script" uid="uid://d0rksn64yvcev" path="res://scripts/gameplay/items/enemy_loot.gd" id="19_loot"]
 [ext_resource type="Script" uid="uid://co1drnaptmoj4" path="res://scripts/gameplay/player/talent_core_controller.gd" id="20_talent_core"]
 [ext_resource type="Script" uid="uid://b35xuobakrv1" path="res://scripts/presentation/weapon_mount.gd" id="21_weapon_mount"]
+[ext_resource type="Script" path="res://scripts/gameplay/player/room_buff_component.gd" id="22_room_buff"]
+[ext_resource type="Script" path="res://scripts/presentation/status_indicator.gd" id="status_indicator"]
 
 [sub_resource type="RectangleShape2D" id="WorldCollisionShape"]
 size = Vector2(14, 10)
@@ -254,3 +256,10 @@ script = ExtResource("18_audio")
 
 [node name="EnemyLoot" type="Node" parent="ComponentInventory" unique_id=642322446]
 script = ExtResource("19_loot")
+
+[node name="RoomBuffComponent" type="Node" parent="."]
+script = ExtResource("22_room_buff")
+
+[node name="StatusIndicator" type="Node2D" parent="."]
+script = ExtResource("status_indicator")
+position = Vector2(0,-12)

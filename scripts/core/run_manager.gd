@@ -12,6 +12,7 @@ var mandatory_enemies_remaining: int = 0
 var player_state: Dictionary = {}
 var extraction_result: Dictionary = {}
 var run_finished := false
+var persistent_run := false
 
 
 func begin_run(seed_value: int = 0) -> void:
@@ -21,6 +22,7 @@ func begin_run(seed_value: int = 0) -> void:
 	player_state.clear()
 	extraction_result.clear()
 	run_finished = false
+	persistent_run = false
 	run_started.emit(run_seed)
 
 

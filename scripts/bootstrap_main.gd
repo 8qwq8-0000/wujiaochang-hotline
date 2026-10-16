@@ -14,6 +14,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _restart_requested or event.is_echo():
 		return
 	if event.is_action_pressed("restart_room"):
+		if not get_tree().get_nodes_in_group("warehouse").is_empty():
+			return
 		_restart_requested = true
 		get_viewport().set_input_as_handled()
 		call_deferred("_restart_combat")
@@ -22,7 +24,28 @@ func _unhandled_input(event: InputEvent) -> void:
 func _restart_combat() -> void:
 	# Reload Main as well: projectiles and feedback can live outside SceneContainer.
 	var run_manager := get_node_or_null("/root/RunManager")
-	var error := get_tree().reload_current_scene()
+	if run_manager != null and run_manager.persistent_run:
+		var player := get_tree().get_first_node_in_group("player") as PlayerController
+		var store := get_node("/root/WarehouseStore")
+		var profile: Dictionary = store.get_profile()
+		if player == null or not store.commit(profile.chest, player.export_recovery_state()):
+			_restart_requested = false
+			get_node("/root/CombatEvents").publish_message("放弃行动失败：" + store.error_message)
+			return
+		var flow: SceneContainerManager = get_node("SceneFlow")
+		if not flow.request_scene("res://scenes/levels/base/warehouse.tscn"):
+			_restart_requested = false
+			return
+		flow.scene_swapped.connect(func(_scene: Node, _payload: Dictionary) -> void: _restart_requested = false, CONNECT_ONE_SHOT)
+		run_manager.run_finished = true
+		player.set_input_enabled(false)
+		return
+	# Restart the combat harness even when the project originally entered via the warehouse.
+	var error: Error
+	if get_tree().current_scene.scene_file_path == "res://scenes/bootstrap/warehouse_main.tscn":
+		error = get_tree().change_scene_to_file("res://scenes/bootstrap/main.tscn")
+	else:
+		error = get_tree().reload_current_scene()
 	if error != OK:
 		_restart_requested = false
 		push_error("重开战斗失败：%s" % error_string(error))

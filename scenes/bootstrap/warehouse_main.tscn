@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/bootstrap/main.tscn" id="1"]
+
+[node name="Main" instance=ExtResource("1")]
+
+[node name="SceneFlow" parent="." index="6"]
+initial_scene = "res://scenes/levels/base/warehouse.tscn"

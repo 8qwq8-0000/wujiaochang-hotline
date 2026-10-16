@@ -6,6 +6,7 @@ extends CanvasLayer
 @onready var mobility_label: Label = $Overlay/TopLeft/Mobility
 @onready var weapon_label: Label = $Overlay/TopLeft/Weapon
 @onready var guard_label: Label = $Overlay/TopLeft/Guard
+@onready var buff_label: Label = $Overlay/TopLeft/RoomBuff
 @onready var objective_label: Label = $Overlay/Objective
 @onready var notice_queue: CombatNoticeQueue = $Overlay/NoticeQueue
 
@@ -16,6 +17,7 @@ var _heat_meter: SegmentMeter
 var _mobility_value: Label
 var _weapon_value: Label
 var _guard_value: Label
+var _buff_value: Label
 var _objective_value: Label
 var _crt_overlay: CRTOverlay
 
@@ -34,6 +36,7 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
+	$Overlay.visible = get_tree().get_nodes_in_group("warehouse").is_empty()
 	if not is_instance_valid(_player):
 		_player = get_tree().get_first_node_in_group("player") as PlayerController
 		if is_instance_valid(_player):
@@ -58,7 +61,33 @@ func _process(_delta: float) -> void:
 
 
 func _bind_player(player: PlayerController) -> void:
-	player.tree_exiting.connect(func() -> void: _player = null)
+	player.tree_exiting.connect(func() -> void:
+		_player = null
+		buff_label.hide()
+		if is_instance_valid(_buff_value):
+			_buff_value.hide()
+	)
+	var room_buffs := player.get_node_or_null("RoomBuffComponent") as RoomBuffComponent
+	if room_buffs != null and not room_buffs.changed.is_connected(_update_room_buff):
+		room_buffs.changed.connect(_update_room_buff)
+	_update_room_buff()
+
+
+func _update_room_buff(_id: StringName = &"") -> void:
+	if not is_instance_valid(_player):
+		buff_label.hide()
+		if is_instance_valid(_buff_value):
+			_buff_value.hide()
+		return
+	var buffs := _player.get_node_or_null("RoomBuffComponent") as RoomBuffComponent
+	var has_buff := buffs != null and not buffs.active_buff.is_empty()
+	var buff_text := "增益  %s" % RoomBuffComponent.TITLES.get(buffs.active_buff, "") if has_buff else ""
+	buff_label.visible = has_buff
+	buff_label.text = buff_text
+	if is_instance_valid(_buff_value):
+		_buff_value.visible = has_buff
+		_buff_value.text = "房间%s" % buff_text
+
 
 
 func _on_enemy_count_changed(remaining: int) -> void:
@@ -92,7 +121,7 @@ func _build_cyber_hud() -> void:
 	health_label.get_parent().hide()
 	objective_label.hide()
 
-	var status := _make_panel("机体状态 / UNIT", Rect2(8, 31, 175, 82))
+	var status := _make_panel("机体状态 / UNIT", Rect2(8, 31, 175, 100))
 	var status_stack := VBoxContainer.new()
 	status_stack.add_theme_constant_override("separation", 2)
 	status.add_child(status_stack)
@@ -103,6 +132,9 @@ func _build_cyber_hud() -> void:
 	var circuit := Label.new()
 	circuit.text = "断路保险  STANDBY"
 	status_stack.add_child(circuit)
+	_buff_value = Label.new()
+	_buff_value.hide()
+	status_stack.add_child(_buff_value)
 
 	var objective := _make_panel("任务 / OBJECTIVE", Rect2(457, 31, 175, 66))
 	_objective_value = Label.new()

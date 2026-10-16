@@ -11,12 +11,13 @@ signal recovered
 
 var current_heat: float = 0.0
 var is_overheated: bool = false
+var cooling_multiplier := 1.0
 
 
 func _physics_process(delta: float) -> void:
 	if current_heat <= 0.0:
 		return
-	set_heat(current_heat - dissipation_per_second * delta)
+	set_heat(current_heat - dissipation_per_second * cooling_multiplier * delta)
 	if is_overheated and current_heat <= max_heat * recovery_ratio:
 		is_overheated = false
 		recovered.emit()

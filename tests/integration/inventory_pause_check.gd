@@ -53,7 +53,7 @@ func run() -> void:
 	await process_frame
 	check(not paused and not inventory.is_open, "Esc resumes")
 	await create_timer(0.1, true).timeout
-	check(projectile.global_position != bullet_position, "world resumes movement")
+	check(not is_instance_valid(projectile) or projectile.global_position != bullet_position, "world resumes movement")
 	key(KEY_TAB)
 	await process_frame
 	key(KEY_TAB)

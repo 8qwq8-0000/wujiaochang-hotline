@@ -2,7 +2,13 @@
 
 射击输入与方向：`godot --headless --path . --script res://tests/integration/shooting_input_check.gd`，覆盖 HUD 点击透传、上下左右子弹方向与实际物理帧移动，防止向上子弹碰到发射者自身而消失。
 
-撤离结算：`godot --headless --path . --script res://tests/integration/extraction_check.gd`，覆盖真实出口选择、未清场/死亡拒绝、继续层状态保留、暂停恢复、装备与背包带出、重复结算和新一局重置。当前结算保存在运行内，永久仓库和存档尚未接入。
+撤离结算：`godot --headless --path . --script res://tests/integration/extraction_check.gd`，覆盖真实出口选择、未清场/死亡拒绝、继续层状态保留、暂停恢复、装备与背包带出、重复结算、返回仓库及带装备再次出击。使用独立测试存档，不修改玩家存档。
+
+仓库储物箱：`godot --headless --path . --script res://tests/integration/warehouse_check.gd`，覆盖项目仓库入口、真实 E 键与鼠标存取、暂停恢复、装备槽物品同步、满包/绑定拒绝、实例属性保留、保存失败回滚、全新实例读档、场景重建、出击与撤离返回，以及损坏存档保护。使用独立测试存档。
+
+黑匣与死亡保护：`godot --headless --path . --script res://tests/integration/blackbox_check.gd`，覆盖独立格、保险核心实例与唯一性、背包入口、暂停换装、满包交换、伤害结算期间禁止切换、旧状态迁移、保存失败回滚、死亡重试、回仓、核心丢失、已触发核心保护及 R 放弃行动。使用独立测试存档。
+
+背包拖放：`godot --headless --path . --script res://tests/integration/inventory_drag_check.gd`，用真实鼠标事件触发原生 drag/drop，验证主副武器、机动与黑匣交换、空位、满包、背包排序、无效目标、拖出取消、关闭时取消、异物/过期实例拒绝，以及写入失败时保留实例与冷却。
 
 放置 `test_*.gd` 测试脚本。优先覆盖：
 
@@ -52,7 +58,7 @@ godot --headless --path . --script res://tests/integration/playthrough_check.gd
 
 双武器携带与切换：`godot --headless --path . --script res://tests/integration/weapon_switch_check.gd`，覆盖主/副目标槽、Q/滚轮、空槽跳过、冷却/热量保留、满包替换及战斗/暂停/死亡限制。
 
-双空槽重新装备：`godot --headless --path . --script res://tests/integration/weapon_slot_refill_check.gd`，覆盖主副武器都卸下后，连续点击背包武器会先填主槽、再自动指向并填入副槽，而不会重复替换主槽。
+双空槽重新装备：`godot --headless --path . --script res://tests/integration/weapon_slot_refill_check.gd`，覆盖主副武器都卸下后，把两件武器分别拖到主、副槽，目标槽不会相互覆盖。
 
 首次武器自动装副槽：`godot --headless --path . --script res://tests/integration/first_weapon_pickup_check.gd`，覆盖战斗中拾取、满包、副槽占用、仅首次触发、当前武器保留、立即使用和重复拾取保护。
 
@@ -87,3 +93,36 @@ godot --headless --path . --script res://tests/integration/playthrough_check.gd
 战斗音乐检查：`godot --headless --path . --script res://tests/integration/combat_music_check.gd`，覆盖强制敌人触发普通战斗轮播、BOSS 两阶段切换、BOSS 音乐不被普通清场信号打断，以及战斗结束停播。
 
 战斗音效检查：`godot --headless --path . --script res://tests/integration/combat_audio_check.gd`，覆盖飞行套件移动循环，以及基础步行不会误用“增援接近”音效。
+
+导电、配电箱与试玩场景：
+
+```sh
+godot --headless --path . --script res://tests/integration/status_reaction_check.gd
+godot --headless --path . --script res://tests/integration/power_box_check.gd
+godot --headless --path . --script res://tests/integration/electric_sandbox_check.gd
+```
+
+覆盖真实子弹状态传递、伤害与反应限制、墙体/阵营/范围/容器隔离、E 领取与攻击互斥、房间增益、倒计时与电弧暂停/回收，以及标靶清场。
+
+浸油、燃烧与燃料桶：
+
+```sh
+godot --headless --path . --script res://tests/integration/oil_status_check.gd
+godot --headless --path . --script res://tests/integration/fuel_environment_check.gd
+godot --headless --path . --script res://tests/integration/fuel_sandbox_check.gd
+```
+
+覆盖实际计时伤害、刷新不叠加、暂停与保险清状态、桶破坏互斥、油区/爆炸/火区、墙体/范围/容器隔离、伤害接口引燃、试验场鼠标点击点燃、普通近战打桶、R 重置和区域过期。
+
+仓库与试验场往返：`godot --headless --path . --script res://tests/integration/trial_entry_check.gd`，使用独立存档验证保存失败留在仓库、真实 E 进入、普通初始装备、配电箱与桶、R 重置、死亡后鼠标点击返回及存档隔离。
+
+试验场储物箱：`godot --headless --path . --script res://tests/integration/trial_chest_check.gd`，覆盖正式原型清单、真实 E 和鼠标取用、自动补货与实例编号、容量/绑定/保险唯一、配装和存回、暂停恢复、R 重置与存档隔离；往返检查另验证取物后返回正式仓库。
+
+环境结算完善与自动门：
+
+```sh
+godot --headless --path . --script res://tests/integration/environment_electric_check.gd
+godot --headless --path . --script res://tests/integration/automatic_door_check.gd
+```
+
+覆盖同次放电共享预算/去重、新导电不自触发、实际区域玩家归属、每区域配电箱数量、增益回调互斥；实际接触开门、挡弹/放行、双侧冲刺、门后击倒范围与遮挡、暂停及恢复。fuel_environment_check/fuel_sandbox_check 已改为验证警棍和枪击直接引爆，原浸油反应另由 oil_status_check 保留验证。
