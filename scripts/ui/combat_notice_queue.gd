@@ -5,7 +5,7 @@ const TUTORIAL_ID := &"controls_tutorial"
 
 @export_range(1, 6, 1) var max_visible: int = 3
 @export_range(0.05, 1.0, 0.05) var fade_seconds: float = 0.35
-@export_multiline var tutorial_text := "WASD 移动 · 左键攻击 · 右键格挡 · Space 机动 · E 拾取 · Tab 背包 · R 重开"
+@export_multiline var tutorial_text := "WASD 移动 · 鼠标战斗 · Space 机动 · Tab 背包"
 
 var _entries: Array[Dictionary] = []
 var _sequence := 0
@@ -14,7 +14,7 @@ var _logical_time := 0.0
 
 func _ready() -> void:
 	if not tutorial_text.is_empty():
-		_add_entry(CombatNotice.new(TUTORIAL_ID, tutorial_text, Color.WHITE, CombatNotice.Priority.LOW, 0.0, 3600.0), true)
+		_add_entry(CombatNotice.new(TUTORIAL_ID, tutorial_text, CyberUITheme.PHOSPHOR, CombatNotice.Priority.LOW, 0.0, 3600.0), true)
 	set_process(true)
 
 
@@ -91,11 +91,17 @@ func get_visible_notices() -> Array[Dictionary]:
 func _add_entry(notice: CombatNotice, persistent: bool) -> void:
 	_sequence += 1
 	var label := Label.new()
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.custom_minimum_size.y = 32.0
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	label.clip_text = true
+	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	label.add_theme_color_override("font_color", notice.color)
-	label.add_theme_color_override("font_outline_color", Color.BLACK)
-	label.add_theme_constant_override("outline_size", 4)
-	label.add_theme_font_size_override("font_size", 17)
+	label.add_theme_color_override("font_outline_color", CyberUITheme.BACKGROUND)
+	label.add_theme_constant_override("outline_size", 1)
+	label.add_theme_font_size_override("font_size", 12)
+	label.add_theme_stylebox_override("normal", CyberUITheme.create_box(Color(CyberUITheme.PANEL, 0.68), notice.color))
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(label)
 	var entry := {
@@ -157,6 +163,7 @@ func _update_entry_label(entry: Dictionary) -> void:
 		return
 	label.text = _entry_text(entry)
 	label.add_theme_color_override("font_color", notice.color)
+	label.add_theme_stylebox_override("normal", CyberUITheme.create_box(Color(CyberUITheme.PANEL, 0.68), notice.color))
 	label.modulate.a = 1.0
 
 

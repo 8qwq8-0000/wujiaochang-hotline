@@ -8,6 +8,8 @@ const RESOLUTIONS: Array[Vector2i] = [
 	Vector2i(2560, 1440),
 ]
 const DISPLAY_CONFIRM_SECONDS := 10.0
+const UI_SECTION := &"UISettings"
+const CRT_STRENGTH_SETTING := &"CRTStrength"
 
 var _owns_pause := false
 var _settings_visible := false
@@ -15,6 +17,7 @@ var _overlay: ColorRect
 var _menu_page: VBoxContainer
 var _settings_page: VBoxContainer
 var _resolution: OptionButton
+var _crt_strength: OptionButton
 var _fullscreen: CheckButton
 var _mute: CheckButton
 var _alert_mode: CheckButton
@@ -28,6 +31,7 @@ var _previous_window_mode := Window.MODE_WINDOWED
 var _previous_saved_resolution := Vector2i(1280, 720)
 var _previous_saved_fullscreen := false
 var _selected_resolution := Vector2i(1280, 720)
+var _crt_overlay: CRTOverlay
 
 
 func _ready() -> void:
@@ -82,33 +86,37 @@ func close_menu() -> void:
 func _build_ui() -> void:
 	_overlay = ColorRect.new()
 	_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_overlay.color = Color(0.02, 0.03, 0.055, 0.94)
+	_overlay.color = Color(CyberUITheme.BACKGROUND, 0.96)
+	_overlay.theme = CyberUITheme.create_theme()
 	add_child(_overlay)
 	var center := CenterContainer.new()
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_overlay.add_child(center)
-	var panel := PanelContainer.new()
+	var panel := TerminalPanel.new()
+	panel.title = "WJC COMBAT TERMINAL // SYSTEM"
 	panel.custom_minimum_size = Vector2(520, 330)
 	center.add_child(panel)
-	var margin := MarginContainer.new()
-	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 22)
-	panel.add_child(margin)
 	var pages := VBoxContainer.new()
-	margin.add_child(pages)
+	pages.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.add_child(pages)
 	_menu_page = _build_main_page()
 	pages.add_child(_menu_page)
 	_settings_page = _build_settings_page()
 	pages.add_child(_settings_page)
+	_crt_overlay = CRTOverlay.new()
+	_crt_overlay.name = "CRTOverlay"
+	_crt_overlay.strength = _get_saved_crt_strength()
+	add_child(_crt_overlay)
 
 
 func _build_main_page() -> VBoxContainer:
 	var page := VBoxContainer.new()
+	page.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	page.add_theme_constant_override("separation", 16)
 	var title := Label.new()
 	title.text = "暂停"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 28)
+	title.add_theme_font_size_override("font_size", 16)
 	page.add_child(title)
 	var spacer := Control.new()
 	spacer.custom_minimum_size.y = 42
@@ -127,11 +135,12 @@ func _build_main_page() -> VBoxContainer:
 
 func _build_settings_page() -> VBoxContainer:
 	var page := VBoxContainer.new()
+	page.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	page.add_theme_constant_override("separation", 8)
 	var title := Label.new()
 	title.text = "设置"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 24)
+	title.add_theme_font_size_override("font_size", 16)
 	page.add_child(title)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -150,6 +159,11 @@ func _build_settings_page() -> VBoxContainer:
 	_fullscreen.text = "全屏"
 	_fullscreen.toggled.connect(_on_fullscreen_toggled)
 	content.add_child(_fullscreen)
+	_crt_strength = OptionButton.new()
+	for label in ["关闭", "低", "标准"]:
+		_crt_strength.add_item(label)
+	_crt_strength.item_selected.connect(_on_crt_strength_selected)
+	_add_labeled_control(content, "显像管效果", _crt_strength)
 	_confirm_row = HBoxContainer.new()
 	_confirm_row.add_theme_constant_override("separation", 10)
 	_confirm_label = Label.new()
@@ -248,6 +262,7 @@ func _sync_settings_controls() -> void:
 	_fullscreen.set_pressed_no_signal(AppSettings.is_fullscreen(get_window()))
 	_resolution.disabled = _fullscreen.button_pressed
 	_mute.set_pressed_no_signal(AppSettings.is_muted())
+	_crt_strength.select(int(_get_saved_crt_strength()))
 	var settings := get_node_or_null("/root/GameSettings")
 	if settings != null:
 		_alert_mode.set_pressed_no_signal(bool(settings.high_pressure_alert))
@@ -321,6 +336,14 @@ func _on_mute_toggled(enabled: bool) -> void:
 	PlayerConfig.set_config(AppSettings.AUDIO_SECTION, AppSettings.MUTE_SETTING, enabled)
 
 
+func _on_crt_strength_selected(index: int) -> void:
+	var next_strength := clampi(index, CRTOverlay.Strength.OFF, CRTOverlay.Strength.STANDARD) as CRTOverlay.Strength
+	PlayerConfig.set_config(UI_SECTION, CRT_STRENGTH_SETTING, int(next_strength))
+	for overlay_node in get_tree().get_nodes_in_group(&"crt_overlay"):
+		if overlay_node is CRTOverlay:
+			(overlay_node as CRTOverlay).set_strength(next_strength)
+
+
 func _on_alert_mode_toggled(enabled: bool) -> void:
 	var settings := get_node_or_null("/root/GameSettings")
 	if settings != null:
@@ -338,3 +361,8 @@ func _exit_tree() -> void:
 		_revert_display_change()
 	if _owns_pause:
 		get_tree().paused = false
+
+
+func _get_saved_crt_strength() -> CRTOverlay.Strength:
+	var saved := int(PlayerConfig.get_config(UI_SECTION, CRT_STRENGTH_SETTING, CRTOverlay.Strength.LOW))
+	return clampi(saved, CRTOverlay.Strength.OFF, CRTOverlay.Strength.STANDARD) as CRTOverlay.Strength

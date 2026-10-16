@@ -1,5 +1,6 @@
 extends CanvasLayer
 
+@onready var overlay: Control = $Overlay
 @onready var health_label: Label = $Overlay/TopLeft/Health
 @onready var heat_label: Label = $Overlay/TopLeft/Heat
 @onready var mobility_label: Label = $Overlay/TopLeft/Mobility
@@ -9,14 +10,23 @@ extends CanvasLayer
 @onready var notice_queue: CombatNoticeQueue = $Overlay/NoticeQueue
 
 var _player: PlayerController
+var _health_meter: SegmentMeter
+var _takeover_meter: SegmentMeter
+var _heat_meter: SegmentMeter
+var _mobility_value: Label
+var _weapon_value: Label
+var _guard_value: Label
+var _objective_value: Label
+var _crt_overlay: CRTOverlay
 
 
 func _ready() -> void:
+	_build_cyber_hud()
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null:
 		events.combat_message_requested.connect(show_message)
 		events.combat_notice_requested.connect(_on_notice_requested)
-		events.floor_cleared.connect(func() -> void: objective_label.text = "本层已清理：前往出口")
+		events.floor_cleared.connect(func() -> void: _set_objective_text("本层已清理：前往出口"))
 	var run_manager := get_node_or_null("/root/RunManager")
 	if run_manager != null:
 		run_manager.mandatory_enemy_count_changed.connect(_on_enemy_count_changed)
@@ -37,6 +47,14 @@ func _process(_delta: float) -> void:
 	mobility_label.text = "机动  %s" % _player.get_mobility_display_name()
 	weapon_label.text = "武装 %d/2  %s [Q/滚轮]" % [_player.weapons.current_index + 1, _player.get_weapon_display_name()]
 	guard_label.text = "格挡  %s" % _guard_state_name(_player.get_guard_state())
+	_health_meter.set_meter(float(health_state.current), float(health_state.maximum))
+	_heat_meter.meter_color = CyberUITheme.DANGER if heat_state.overheated else CyberUITheme.WARNING
+	_heat_meter.set_meter(float(heat_state.current), float(heat_state.maximum))
+	_mobility_value.text = "%s  // SPACE" % _player.get_mobility_display_name()
+	_weapon_value.text = "> %s  %s\n  Q/滚轮 切换" % ["A" if _player.weapons.current_index == 0 else "B", _player.get_weapon_display_name()]
+	_guard_value.text = "格挡协议  %s" % _guard_state_name(_player.get_guard_state())
+	if is_instance_valid(_player.talent_core):
+		_takeover_meter.set_meter(float(_player.talent_core.takeover_charges), float(_player.talent_core.takeover_charge_max))
 
 
 func _bind_player(player: PlayerController) -> void:
@@ -44,7 +62,7 @@ func _bind_player(player: PlayerController) -> void:
 
 
 func _on_enemy_count_changed(remaining: int) -> void:
-	objective_label.text = "必杀目标剩余：%d" % remaining if remaining > 0 else "区域清理完成"
+	_set_objective_text("必杀目标剩余：%d" % remaining if remaining > 0 else "区域清理完成")
 
 
 func show_message(text: String, color: Color = Color.WHITE) -> void:
@@ -67,3 +85,91 @@ func _guard_state_name(state: GuardComponent.State) -> String:
 			return "后摇"
 		_:
 			return "就绪"
+
+
+func _build_cyber_hud() -> void:
+	overlay.theme = CyberUITheme.create_theme()
+	health_label.get_parent().hide()
+	objective_label.hide()
+
+	var status := _make_panel("机体状态 / UNIT", Rect2(8, 31, 175, 82))
+	var status_stack := VBoxContainer.new()
+	status_stack.add_theme_constant_override("separation", 2)
+	status.add_child(status_stack)
+	_health_meter = _make_meter("耐久", 3.0, 3.0, 4, CyberUITheme.PHOSPHOR)
+	_takeover_meter = _make_meter("接管", 1.0, 1.0, 3, CyberUITheme.HIGHLIGHT)
+	status_stack.add_child(_health_meter)
+	status_stack.add_child(_takeover_meter)
+	var circuit := Label.new()
+	circuit.text = "断路保险  STANDBY"
+	status_stack.add_child(circuit)
+
+	var objective := _make_panel("任务 / OBJECTIVE", Rect2(457, 31, 175, 66))
+	_objective_value = Label.new()
+	_objective_value.text = objective_label.text
+	_objective_value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	objective.add_child(_objective_value)
+
+	var mobility := _make_panel("机动 / MOBILITY", Rect2(8, 286, 175, 66))
+	_mobility_value = Label.new()
+	_mobility_value.text = "步行（无套件）"
+	_mobility_value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	mobility.add_child(_mobility_value)
+
+	var weapons := _make_panel("火控 / WEAPON", Rect2(457, 256, 175, 96))
+	var weapon_stack := VBoxContainer.new()
+	weapon_stack.add_theme_constant_override("separation", 2)
+	weapons.add_child(weapon_stack)
+	_weapon_value = Label.new()
+	_weapon_value.text = "> SLOT-A  武装链路"
+	_weapon_value.custom_minimum_size.y = 28.0
+	_weapon_value.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_weapon_value.clip_text = true
+	_weapon_value.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	weapon_stack.add_child(_weapon_value)
+	_heat_meter = _make_meter("热量", 0.0, 100.0, 10, CyberUITheme.WARNING)
+	weapon_stack.add_child(_heat_meter)
+	_guard_value = Label.new()
+	_guard_value.text = "格挡协议  就绪"
+	weapon_stack.add_child(_guard_value)
+
+	notice_queue.position = Vector2(225, 244)
+	notice_queue.size = Vector2(190, 108)
+	notice_queue.add_theme_constant_override("separation", 3)
+
+	_crt_overlay = CRTOverlay.new()
+	_crt_overlay.name = "CRTOverlay"
+	_crt_overlay.strength = _saved_crt_strength()
+	overlay.add_child(_crt_overlay)
+
+
+func _make_panel(title_text: String, rect: Rect2) -> TerminalPanel:
+	var panel := TerminalPanel.new()
+	panel.title = title_text
+	panel.panel_color = Color(CyberUITheme.PANEL, 0.68)
+	panel.position = rect.position
+	panel.size = rect.size
+	overlay.add_child(panel)
+	return panel
+
+
+func _make_meter(caption: String, value: float, maximum: float, segments: int, color: Color) -> SegmentMeter:
+	var meter := SegmentMeter.new()
+	meter.custom_minimum_size = Vector2(145.0, 16.0)
+	meter.caption = caption
+	meter.value = value
+	meter.maximum = maximum
+	meter.segments = segments
+	meter.meter_color = color
+	return meter
+
+
+func _set_objective_text(text: String) -> void:
+	objective_label.text = text
+	if is_instance_valid(_objective_value):
+		_objective_value.text = text
+
+
+func _saved_crt_strength() -> CRTOverlay.Strength:
+	var saved := int(PlayerConfig.get_config(&"UISettings", &"CRTStrength", CRTOverlay.Strength.LOW))
+	return clampi(saved, CRTOverlay.Strength.OFF, CRTOverlay.Strength.STANDARD) as CRTOverlay.Strength

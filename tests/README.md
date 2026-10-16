@@ -76,6 +76,8 @@ godot --headless --path . --script res://tests/integration/playthrough_check.gd
 
 暂停设置：`godot --headless --path . --script res://tests/integration/settings_menu_check.gd`，覆盖 Esc 暂停、视频/音频控件，以及两项互不绑定的 AI 测试开关。
 
+赛博终端 UI 样板：`godot --headless --path . --script res://tests/integration/cyber_ui_showcase_check.gd`，覆盖统一主题、切角面板、分段仪表、三条消息、设置工作区和三级 CRT 效果。
+
 战斗提示与机动残影：`godot --headless --path . --script res://tests/integration/presentation_systems_check.gd`，覆盖暂停时提示寿命冻结但仍可入队、恢复后的过期，以及步行不出残影、套件能力残影池与按来源清理。
 
 正式出生巡逻检查：`godot --headless --path . --script res://tests/integration/spawned_patrol_check.gd`，通过 Main 的真实生成器检查出生坐标、墙体平行轨迹，以及带偏移房间的世界坐标。

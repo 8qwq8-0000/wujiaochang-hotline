@@ -14,6 +14,7 @@
 | GLoot | 3.0.2 | MIT | 背包、容量、装备槽 | `addons/gloot` |
 | Godot Sound Manager | 2.6.2 | MIT | 音乐、音效与播放器池 | `addons/sound_manager` |
 | SaveMadeEasy | 1.3 | MIT | 基地、仓库和解锁进度存档 | `addons/save_system` |
+| Godot CRT Shader | `165809c5c4e321786e2481bddc739f072476df62` | MIT | UI 扫描线与事件故障着色器（裁剪改写） | `shaders/ui/crt_ui.gdshader` |
 
 ## 集成约束
 

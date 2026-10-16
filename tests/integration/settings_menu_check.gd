@@ -25,6 +25,14 @@ func run() -> void:
 	check(menu.get("_mute") != null, "settings expose global mute")
 	check(menu.get("_alert_mode") != null and menu.get("_continuous_precharge") != null, "AI test switches remain independent")
 	check(menu.get("_alert_mode").text == "高压难度", "alert response is presented as an explicit difficulty setting")
+	menu._show_settings_page()
+	await process_frame
+	var settings_page := menu.get("_settings_page") as VBoxContainer
+	var scroll_nodes := settings_page.find_children("*", "ScrollContainer", true, false)
+	var settings_scroll := scroll_nodes[0] as ScrollContainer if not scroll_nodes.is_empty() else null
+	check(settings_page.size.y > 200.0 and settings_scroll != null and settings_scroll.size.y > 100.0, "settings page receives usable height instead of clipping its options")
+	check(menu.get("_resolution").is_visible_in_tree(), "resolution control is actually visible after opening settings")
+	check((menu.get("_crt_strength") as OptionButton).item_count == 3, "settings expose Off, Low and Standard CRT levels")
 	var difficulty_copy_found := false
 	for label in menu.find_children("*", "Label", true, false):
 		if "标准" in label.text and "320 px" in label.text and "高压" in label.text:

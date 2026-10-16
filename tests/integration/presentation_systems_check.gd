@@ -28,6 +28,15 @@ func run() -> void:
 	if player == null or vfx == null or queue == null:
 		quit(1)
 		return
+	var hud := scene.get_node("CombatHUD")
+	check(hud.find_children("*", "TerminalPanel", true, false).size() >= 4, "main game uses the cyber terminal HUD panels")
+	check(hud.find_children("*", "SegmentMeter", true, false).size() >= 3, "main game uses live segmented instruments")
+	check(hud.find_children("CRTOverlay", "CRTOverlay", true, false).size() == 1, "main game applies one shared CRT overlay")
+	var queue_rect := queue.get_global_rect()
+	check(queue_rect.end.y <= 360.0, "combat notices remain inside the 640 by 360 viewport")
+	check(queue_rect.size.x <= 190.0 and queue_rect.size.y <= 108.0, "combat notices use the compact non-obstructive layout")
+	var terminal_panels := hud.find_children("*", "TerminalPanel", true, false)
+	check(terminal_panels.all(func(panel: TerminalPanel) -> bool: return panel.size.x <= 175.0 and panel.panel_color.a <= 0.681), "combat panels stay compact and translucent")
 
 	# New notices can arrive while paused, while their lifetime remains frozen.
 	root.get_node("CombatEvents").publish_notice(&"pause_a", "暂停前", Color.WHITE, CombatNotice.Priority.NORMAL, 0.0, 0.15)
