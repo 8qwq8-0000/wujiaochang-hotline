@@ -28,6 +28,7 @@ func _ready() -> void:
 	if events != null:
 		events.combat_message_requested.connect(show_message)
 		events.combat_notice_requested.connect(_on_notice_requested)
+		events.combat_area_progress.connect(_on_area_progress)
 		events.floor_cleared.connect(func() -> void: _set_objective_text("本层已清理：前往出口"))
 	var run_manager := get_node_or_null("/root/RunManager")
 	if run_manager != null:
@@ -205,3 +206,10 @@ func _set_objective_text(text: String) -> void:
 func _saved_crt_strength() -> CRTOverlay.Strength:
 	var saved := int(PlayerConfig.get_config(&"UISettings", &"CRTStrength", CRTOverlay.Strength.LOW))
 	return clampi(saved, CRTOverlay.Strength.OFF, CRTOverlay.Strength.STANDARD) as CRTOverlay.Strength
+
+
+func _on_area_progress(index: int, total: int, remaining: int, cleared: bool) -> void:
+	if cleared and index < total:
+		_set_objective_text("区域 %d/%d 已清场\n前往下一区 →" % [index, total])
+	else:
+		_set_objective_text("区域 %d/%d\n必杀目标剩余：%d" % [index, total, remaining])

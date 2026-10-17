@@ -112,6 +112,9 @@ func can_change_equipment() -> bool:
 		return false
 	if allow_trial_equipment_changes:
 		return true
+	var area := EnvironmentArea.for_actor(player)
+	if area is CombatRoom and area.sequence_managed:
+		return area.cleared
 	var run := get_node_or_null("/root/RunManager")
 	if run != null and run.mandatory_enemies_remaining > 0:
 		return false
