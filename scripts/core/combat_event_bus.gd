@@ -15,6 +15,7 @@ signal damage_resolved(result: DamageResult)
 signal perfect_guarded(result: DamageResult)
 signal entity_defeated(entity: Node)
 signal room_cleared(room: Node)
+signal combat_area_progress(index: int, total: int, remaining: int, cleared: bool)
 signal floor_cleared
 signal combat_message_requested(text: String, color: Color)
 signal combat_notice_requested(notice: CombatNotice)

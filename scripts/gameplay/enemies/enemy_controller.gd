@@ -802,7 +802,12 @@ func _clear_path_to(location: Vector2) -> bool:
 
 
 func _same_room(actor: Node) -> bool:
-	return is_instance_valid(actor) and actor.is_inside_tree() and CombatProjectile.room_for_actor(self) == CombatProjectile.room_for_actor(actor)
+	if not is_instance_valid(actor) or not actor.is_inside_tree() or CombatProjectile.room_for_actor(self) != CombatProjectile.room_for_actor(actor):
+		return false
+	var area := EnvironmentArea.for_actor(self)
+	if area is CombatRoom and area.sequence_managed:
+		return EnvironmentArea.for_actor(actor) == area
+	return true
 
 
 func _alert_to(location: Vector2, broadcast: bool) -> void:
