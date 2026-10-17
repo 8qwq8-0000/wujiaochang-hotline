@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://beuuqg8ycf1pu"
-path="res://.godot/imported/placeholder_player_side.png-e3a7942d8f6768529e75c6ae88e5913d.ctex"
+uid="uid://c262q3xdq6bih"
+path="res://.godot/imported/player_idle_side.png-d6a6f84afa52b6e92237da94f86f239d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/art/characters/player/placeholder/placeholder_player_side.png"
-dest_files=["res://.godot/imported/placeholder_player_side.png-e3a7942d8f6768529e75c6ae88e5913d.ctex"]
+source_file="res://assets/art/characters/player/placeholder/gemini_motion_v1/player_idle_side.png"
+dest_files=["res://.godot/imported/player_idle_side.png-d6a6f84afa52b6e92237da94f86f239d.ctex"]
 
 [params]
 

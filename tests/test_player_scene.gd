@@ -18,6 +18,23 @@ func test_player_scene_has_required_components() -> void:
 	assert_true(player.get_node_or_null("VisualRoot/BodyVisual") is AnimatedSprite2D)
 	assert_true(player.get_node_or_null("VisualRoot/WeaponPivot") is WeaponMount)
 	assert_true(player.get_node_or_null("VFXSockets/Foot") is Marker2D)
+	var sprite := player.get_node("VisualRoot/BodyVisual") as AnimatedSprite2D
+	for animation in [&"idle_left", &"idle_right", &"walk_left", &"walk_right"]:
+		assert_true(sprite.sprite_frames.has_animation(animation))
+	assert_eq(sprite.sprite_frames.get_frame_count(&"walk_down"), 6)
+	assert_eq(sprite.sprite_frames.get_frame_count(&"walk_up"), 6)
+	assert_eq(sprite.sprite_frames.get_frame_count(&"walk_left"), 6)
+	assert_eq(sprite.sprite_frames.get_frame_count(&"walk_right"), 6)
+	assert_eq(sprite.sprite_frames.get_frame_count(&"idle_left"), 6)
+	assert_eq(sprite.sprite_frames.get_frame_count(&"idle_right"), 6)
+	assert_true(
+		sprite.sprite_frames.get_frame_texture(&"walk_left", 0)
+		== sprite.sprite_frames.get_frame_texture(&"walk_right", 0)
+	)
+	assert_true(sprite.scale.is_equal_approx(Vector2(0.25, 0.25)))
+	var visuals := player.get_node("VisualRoot") as PlayerVisualController
+	assert_eq(visuals._direction_name(Vector2.LEFT), "left")
+	assert_eq(visuals._direction_name(Vector2.RIGHT), "right")
 
 
 func test_default_player_config_uses_baton_and_walking() -> void:
