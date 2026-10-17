@@ -39,7 +39,11 @@ func run() -> void:
 			enemy._physics_process(enemy.profile.self_destruct_delay + 0.01)
 	await process_frame
 	await process_frame
-	var drop := get_first_node_in_group("component_pickups") as ComponentPickup
+	var drop: ComponentPickup
+	for pickup in get_nodes_in_group("component_pickups"):
+		if not pickup.has_meta("clear_reward"):
+			drop = pickup
+			break
 	check(drop != null and drop.get_parent().is_in_group("combat_rooms"), "drop is owned by combat room")
 	player.weapons.set("_cooldown_remaining", 0)
 	check(player.weapons.try_attack(player.global_position, Vector2.RIGHT, player), "carried reserve can fire")

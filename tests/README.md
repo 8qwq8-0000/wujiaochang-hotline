@@ -1,5 +1,7 @@
 # Tests
 
+双战斗区域：`godot --headless --path . --script res://tests/integration/dual_area_check.gd`，覆盖真实通道碰撞、清场解锁、按进入激活第二区、全层目标累计、生命/热量/装备保留、各区增益失效、一次性补给和最终出口限制。
+
 射击输入与方向：`godot --headless --path . --script res://tests/integration/shooting_input_check.gd`，覆盖 HUD 点击透传、上下左右子弹方向与实际物理帧移动，防止向上子弹碰到发射者自身而消失。
 
 撤离结算：`godot --headless --path . --script res://tests/integration/extraction_check.gd`，覆盖真实出口选择、未清场/死亡拒绝、继续层状态保留、暂停恢复、装备与背包带出、重复结算、返回仓库及带装备再次出击。使用独立测试存档，不修改玩家存档。

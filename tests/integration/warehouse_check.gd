@@ -136,13 +136,7 @@ func run_checks() -> void:
 	player = battle.get_node("Player")
 	check(player.inventory.backpack.get_item_count() == 5, "departure preserves chosen backpack")
 	check(not player.circuit_breaker.circuit_breaker_used and player.talent_core.takeover_charges == player.talent_core.takeover_charge_max, "new run refreshes per-run insurance and takeover resources")
-	for enemy in get_nodes_in_group("enemies"):
-		enemy.set_physics_process(false)
-		enemy.health.apply_damage(enemy.health.max_health, DamagePacket.new())
-		if enemy.state == EnemyController.State.SELF_DESTRUCT:
-			enemy._physics_process(enemy.profile.self_destruct_delay + 0.01)
-	await process_frame
-	await process_frame
+	await preload("res://tests/integration/combat_test_flow.gd").clear_floor(self)
 	var settlement: Node = main.get_node("ExtractionFlow")
 	settlement.open_exit()
 	settlement.extract()
