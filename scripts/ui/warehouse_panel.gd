@@ -6,6 +6,7 @@ var fixed_chest_catalog := false
 var room: Node2D
 var is_open := false
 var _owns_pause := false
+var _title: Label
 var _overlay: ColorRect
 var _bag_list: VBoxContainer
 var _chest_list: VBoxContainer
@@ -34,6 +35,7 @@ func _ready() -> void:
 	var heading := HBoxContainer.new()
 	column.add_child(heading)
 	var title := Label.new()
+	_title = title
 	title.text = heading_text
 	title.add_theme_font_size_override("font_size", 20)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -90,7 +92,7 @@ func _make_list(parent: Control, title: String) -> VBoxContainer:
 	scroll.add_child(list)
 	return list
 
-func open() -> void:
+func open(upgrading: bool = false) -> void:
 	if is_open or room.player.inventory.is_open or room.player.health.is_dead():
 		return
 	is_open = true
@@ -98,7 +100,8 @@ func open() -> void:
 	get_tree().paused = true
 	room.player.set_input_enabled(false)
 	_overlay.show()
-	show_message(open_message)
+	_title.text = "合成师 · 武器升级" if upgrading else heading_text
+	show_message("先将随身材料存入右侧，再拖入主体 / 材料升级；初始警棍按制式计算" if upgrading else open_message)
 	refresh()
 
 func close() -> void:
@@ -174,8 +177,8 @@ func _add_item(parent: Control, item: InventoryItem, prefix: String, deposit: bo
 	button.custom_minimum_size = Vector2(270, 30)
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	button.disabled = deposit and bool(item.get_property("bound", false))
-	button.tooltip_text = ComponentRolls.describe(item) + "\n" + "绑定初始装备不能存入" if button.disabled else ("点击存入箱子" if deposit else "点击取出到背包")
+	button.disabled = deposit and bool(item.get_property("bound", false)) and not ComponentRolls.starter(item)
+	button.tooltip_text = ComponentRolls.describe(item) + "\n" + ("点击存入箱子" if deposit else "点击取出到背包")
 	button.pressed.connect(func() -> void: room.transfer(item, deposit))
 	parent.add_child(button)
 

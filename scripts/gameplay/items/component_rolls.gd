@@ -12,6 +12,15 @@ const AFFIXES := {
 static func ordinary(item: InventoryItem) -> bool:
 	return item != null and not bool(item.get_property("bound", false)) and not bool(item.get_property("debug_only", false)) and str(item.get_property("slot", "")) in ["weapon", "mobility"]
 
+static func starter(item: InventoryItem) -> bool:
+	return item != null and item.get_prototype().get_prototype_id() == "initial_baton"
+
+static func synthesizable(item: InventoryItem) -> bool:
+	return ordinary(item) or starter(item)
+
+static func synthesis_quality(item: InventoryItem) -> int:
+	return 1 if starter(item) else quality(item)
+
 static func quality(item: InventoryItem) -> int:
 	return clampi(int(item.get_property("quality", 1)), 1, 3) if ordinary(item) else 0
 
@@ -48,6 +57,8 @@ static func title(item: InventoryItem) -> String:
 
 static func describe(item: InventoryItem) -> String:
 	var lines: Array[String] = [title(item)]
+	if starter(item):
+		lines.append("可存仓、可合成 · 合成按制式武器计算")
 	for key in affixes(item):
 		if AFFIXES.has(key):
 			lines.append("%s +%s%s" % [AFFIXES[key][0], affixes(item)[key], "毫秒" if key == "guard" else "%"])
@@ -68,13 +79,13 @@ static func weapon(item: InventoryItem) -> WeaponComponentData:
 	return data
 
 static func compatible(a: InventoryItem, b: InventoryItem) -> bool:
-	return ordinary(a) and ordinary(b) and a != b and a.get_property("instance_id", "") != b.get_property("instance_id", "") and a.get_property("slot") == b.get_property("slot") and quality(a) == quality(b)
+	return synthesizable(a) and synthesizable(b) and a != b and a.get_property("instance_id", "") != b.get_property("instance_id", "") and a.get_property("slot") == b.get_property("slot") and synthesis_quality(a) == synthesis_quality(b)
 
 static func fuse(a: InventoryItem, b: InventoryItem, rng: RandomNumberGenerator) -> InventoryItem:
 	if not compatible(a, b):
 		return null
-	var tier := mini(quality(a) + 1, 3)
-	var result := create(a.get_prototype().get_prototype_id(), tier, rng)
+	var tier := mini(synthesis_quality(a) + 1, 3)
+	var result := create("baton" if starter(a) else a.get_prototype().get_prototype_id(), tier, rng)
 	var merged := affixes(a).duplicate(true)
 	for key in affixes(b):
 		merged[key] = maxf(float(merged.get(key, 0)), float(affixes(b)[key]))
@@ -89,7 +100,8 @@ static func fuse(a: InventoryItem, b: InventoryItem, rng: RandomNumberGenerator)
 	while not pool.is_empty() and selected.size() < tier:
 		var key: String = pool.pop_at(rng.randi_range(0, pool.size() - 1))
 		selected[key] = merged[key]
-	result.set_property("affixes", selected)
+	if not selected.is_empty():
+		result.set_property("affixes", selected)
 	return result
 
 static func floor_weights(floor_number: int) -> Array:

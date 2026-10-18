@@ -74,7 +74,7 @@ func run() -> void:
 	var b := ComponentRolls.create("scattergun", 1, rng)
 	a.set_property("affixes", {"attack": 20})
 	b.set_property("affixes", {"attack": 40})
-	check(not ComponentRolls.compatible(a, a) and not ComponentRolls.compatible(a, legacy) and not ComponentRolls.compatible(a, inv.weapon_slot.get_item()), "same item, wrong slot and bound starter rejected")
+	check(not ComponentRolls.compatible(a, a) and not ComponentRolls.compatible(a, legacy) and ComponentRolls.compatible(a, inv.weapon_slot.get_item()), "same item and wrong slot rejected; starter accepts standard weapon")
 	check(not ComponentRolls.compatible(a, inv.blackbox_slot.get_item()), "insurance cannot synthesize")
 	check(inv.pickup("pistol", a), "rolled item pickup equips free reserve")
 	check(inv.secondary_weapon_slot.get_item() == a, "pickup retains same instance")

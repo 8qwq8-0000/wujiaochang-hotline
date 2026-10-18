@@ -61,6 +61,6 @@ func transfer(item: InventoryItem, deposit: bool) -> bool:
 	elif not deposit and item.get_property("slot", "") == "insurance" and player.inventory.get_insurance_item() != null:
 		panel.show_message("保险核心只能持有一个，请先把当前核心存回箱子")
 	else:
-		panel.show_message("绑定初始装备不能存入" if deposit else "背包已满，请先存回物品或关闭箱子后配装")
+		panel.show_message("该物品无法存入" if deposit else "背包已满，请先存回物品或关闭箱子后配装")
 	panel.refresh()
 	return moved

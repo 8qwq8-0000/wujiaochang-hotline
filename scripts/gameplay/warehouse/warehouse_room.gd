@@ -29,6 +29,7 @@ func _ready() -> void:
 			ComponentRolls.ensure(item)
 			chest.add_item(item)
 	player.import_run_state(profile.loadout)
+	_ensure_fallback_weapon()
 	player.health.set_current_health(player.config.max_health)
 	player.inventory.changed.connect(_queue_save)
 	_mutating = false
@@ -90,7 +91,7 @@ func transfer(item: InventoryItem, deposit: bool) -> bool:
 	elif not store.error_message.is_empty():
 		panel.show_message(store.error_message)
 	elif deposit:
-		panel.show_message("绑定初始装备不能存入箱子")
+		panel.show_message("该物品无法存入箱子")
 	else:
 		panel.show_message("背包已满，请先存入装备或关闭箱子后换装")
 	panel.refresh()
@@ -192,3 +193,18 @@ func synthesize(subject: InventoryItem, material: InventoryItem) -> bool:
 	panel.show_message("合成完成 · " + ComponentRolls.describe(result) if saved else store.error_message)
 	panel.refresh()
 	return saved
+
+
+func _ensure_fallback_weapon() -> void:
+	# Only rescue a profile with no available weapon anywhere. Stored starters and
+	# synthesis results must never cause an extra starter to be created on load.
+	var inv: ComponentInventory = player.inventory
+	var owned: Array = chest.get_items() + inv.backpack.get_items()
+	owned.append_array([inv.weapon_slot.get_item(), inv.secondary_weapon_slot.get_item(), inv.blackbox_slot.get_item()])
+	for item in owned:
+		if item != null and item.get_property("slot", "") == "weapon":
+			return
+	var fallback := InventoryItem.new(ComponentInventory.PROTOTYPES, "initial_baton")
+	inv._assign_instance_id(fallback)
+	inv.weapon_slot.equip(fallback)
+	inv._apply_equipment()

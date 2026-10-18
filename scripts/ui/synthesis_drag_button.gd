@@ -13,7 +13,7 @@ func _get_drag_data(_position: Vector2) -> Variant:
 	return {"synthesis_panel": panel, "item": item}
 
 func _can_drop_data(_position: Vector2, data: Variant) -> bool:
-	return target_index >= 0 and data is Dictionary and data.get("synthesis_panel") == panel and ComponentRolls.ordinary(data.get("item")) and panel.room.chest.has_item(data.item)
+	return target_index >= 0 and data is Dictionary and data.get("synthesis_panel") == panel and ComponentRolls.synthesizable(data.get("item")) and panel.room.chest.has_item(data.item)
 
 func _drop_data(_position: Vector2, data: Variant) -> void:
 	if _can_drop_data(_position, data):

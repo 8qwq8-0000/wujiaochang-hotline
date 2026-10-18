@@ -454,7 +454,7 @@ func prepare_for_departure() -> void:
 
 
 func move_to_storage(item: InventoryItem, storage: Inventory) -> bool:
-	if item == null or bool(item.get_property("bound", false)):
+	if item == null or (bool(item.get_property("bound", false)) and not ComponentRolls.starter(item)):
 		return false
 	var owned := backpack.has_item(item)
 	for slot in [weapon_slot, secondary_weapon_slot, mobility_slot, blackbox_slot]:
@@ -550,11 +550,8 @@ func export_recovery_inventory() -> Dictionary:
 			bound = InventoryItem.new()
 			bound.deserialize(entry.item)
 			break
-	if bound == null:
-		bound = InventoryItem.new(PROTOTYPES, "initial_baton")
-		_assign_instance_id(bound)
 	snapshot.backpack.erase("items")
-	snapshot.primary = {"item": bound.serialize()}
+	snapshot.primary = {"item": bound.serialize()} if bound != null else {}
 	snapshot.secondary = {}
 	snapshot.mobility = {}
 	snapshot.active_weapon = 0
