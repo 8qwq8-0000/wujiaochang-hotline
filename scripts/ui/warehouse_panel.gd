@@ -6,6 +6,7 @@ var fixed_chest_catalog := false
 var room: Node2D
 var is_open := false
 var _owns_pause := false
+var _title: Label
 var _overlay: ColorRect
 var _bag_list: VBoxContainer
 var _chest_list: VBoxContainer
@@ -30,6 +31,7 @@ func _ready() -> void:
 	var heading := HBoxContainer.new()
 	column.add_child(heading)
 	var title := Label.new()
+	_title = title
 	title.text = heading_text
 	title.add_theme_font_size_override("font_size", 20)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -70,13 +72,14 @@ func _make_list(parent: Control, title: String) -> VBoxContainer:
 	return list
 
 func open() -> void:
-	if is_open or room.player.inventory.is_open or room.player.health.is_dead():
+	if is_open or (room.get("upgrade_panel") != null and room.upgrade_panel.is_open) or room.player.inventory.is_open or room.player.health.is_dead():
 		return
 	is_open = true
 	_owns_pause = not get_tree().paused
 	get_tree().paused = true
 	room.player.set_input_enabled(false)
 	_overlay.show()
+	_title.text = heading_text
 	show_message(open_message)
 	refresh()
 
@@ -107,7 +110,7 @@ func refresh() -> void:
 			child.queue_free()
 	var inventory: ComponentInventory = room.player.inventory
 	_count.text = "背包 %d / 6    储物箱 %d 件    已装备物品不占背包格" % [inventory.backpack.get_item_count(), room.chest.get_item_count()]
-	for entry in [{"slot": inventory.weapon_slot, "name": "主武器"}, {"slot": inventory.secondary_weapon_slot, "name": "副武器"}, {"slot": inventory.mobility_slot, "name": "机动"}, {"slot": inventory.blackbox_slot, "name": "黑匣"}]:
+	for entry in [{"slot": inventory.weapon_slot, "name": "主武器"}, {"slot": inventory.secondary_weapon_slot, "name": "副武器"}, {"slot": inventory.mobility_slot, "name": "机动"}, {"slot": inventory.defense_slot, "name": "防御"}, {"slot": inventory.blackbox_slot, "name": "黑匣"}]:
 		var item: InventoryItem = entry.slot.get_item()
 		if item != null:
 			_add_item(_bag_list, item, entry.name + " · ", true)
@@ -140,7 +143,8 @@ func _chest_display_items() -> Array:
 
 func _add_item(parent: Control, item: InventoryItem, prefix: String, deposit: bool) -> void:
 	var button := Button.new()
-	button.text = prefix + item.get_title()
+	ComponentRolls.apply_quality_color(button, item)
+	button.text = prefix + ComponentRolls.title(item)
 	button.icon = item.get_texture()
 	button.expand_icon = true
 	button.add_theme_constant_override("icon_max_width", 20)
@@ -149,7 +153,7 @@ func _add_item(parent: Control, item: InventoryItem, prefix: String, deposit: bo
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	button.disabled = deposit and bool(item.get_property("bound", false))
-	button.tooltip_text = "绑定初始装备不能存入" if button.disabled else ("点击存入箱子" if deposit else "点击取出到背包")
+	button.tooltip_text = ComponentRolls.describe(item) + "\n" + ("点击存入箱子" if deposit else "点击取出到背包")
 	button.pressed.connect(func() -> void: room.transfer(item, deposit))
 	parent.add_child(button)
 

@@ -103,7 +103,7 @@ func settle_death() -> void:
 	_settled = true
 	_title.text = "线路中断 · 行动结束"
 	var protected := _player.inventory.blackbox_slot.get_item()
-	_details.text = "黑匣保留：%s\n未保护的普通装备和背包物品已丢失。\n初始绑定装备保留，仓库箱内物品不受影响。" % (protected.get_title() if protected != null else "无")
+	_details.text = "黑匣保留：%s\n未保护的普通装备和背包物品已丢失。\n仓库箱内物品不受影响；回仓时保证有武器可用。" % (protected.get_title() if protected != null else "无")
 	_add_button("返回仓库", return_to_warehouse)
 
 

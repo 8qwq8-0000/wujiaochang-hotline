@@ -28,12 +28,8 @@ func wait_battle(previous: Node = null) -> PlayerController:
 	check(false, "battle load timeout")
 	return null
 func defeat_all_enemies() -> void:
-	var enemies := get_nodes_in_group("enemies")
-	for enemy in enemies:
-		enemy.health.apply_damage(enemy.health.max_health, DamagePacket.new())
-	for enemy in enemies:
-		if is_instance_valid(enemy) and enemy.state == EnemyController.State.SELF_DESTRUCT:
-			enemy._physics_process(enemy.profile.self_destruct_delay + 0.01)
+	await preload("res://tests/integration/combat_test_flow.gd").clear_floor(self)
+
 func run() -> void:
 	var main: Node = load("res://scenes/bootstrap/main.tscn").instantiate()
 	root.add_child(main)
@@ -46,14 +42,17 @@ func run() -> void:
 		var inventory := player.get_node("ComponentInventory") as ComponentInventory
 		check(inventory.backpack.get_item_count() == 0 and inventory.weapon_slot.get_item() != null and inventory.secondary_weapon_slot.get_item() == null, "fresh run has no stale inventory")
 		check(get_nodes_in_group("component_pickups").is_empty(), "no free starter pickups")
+		(current_scene.find_child("FloorAssembler", true, false) as FloorAssembler).enemy_drop_chance = 0.0
+		# Isolate the first-area fallback while preserving three restart cycles.
 		for enemy in get_nodes_in_group("enemies"):
-			if enemy.profile.role == EnemyProfile.Role.RANGED_SIGHTLINE:
-				enemy.health.apply_damage(enemy.health.max_health, DamagePacket.new())
-				break
+			enemy.health.apply_damage(enemy.health.max_health, DamagePacket.new())
+		for enemy in get_nodes_in_group("enemies"):
+			if enemy.state == EnemyController.State.SELF_DESTRUCT:
+				enemy._physics_process(enemy.profile.self_destruct_delay + 0.01)
 		await process_frame
 		await process_frame
 		var drop := get_first_node_in_group("component_pickups") as ComponentPickup
-		check(drop != null, "enemy supplies first weapon")
+		check(drop != null, "first clear supplies floor guarantee")
 		if drop == null:
 			quit(1)
 			return
@@ -62,19 +61,28 @@ func run() -> void:
 		await process_frame
 		press_key(KEY_E)
 		await process_frame
-		check(inventory.backpack.get_item_count() == 0 and inventory.secondary_weapon_slot.get_item() != null, "E puts first weapon into reserve")
+		check(not is_instance_valid(drop) or drop.is_queued_for_deletion(), "E collects the rolled floor guarantee")
+		# Continue the existing UI and combat-lock regression with a known weapon.
+		inventory.backpack.clear()
+		inventory.secondary_weapon_slot.clear()
+		inventory._has_picked_up_weapon = false
+		inventory.pickup("pistol")
 		check(inventory.pickup("pistol"), "later weapon enters backpack")
 		press_key(KEY_TAB)
 		await process_frame
 		check(inventory.is_open, "Tab opens actual panel")
+		player.global_position = Vector2(754, 180)
+		await physics_frame
+		await physics_frame
 		inventory.panel.get("_buttons")[0].pressed.emit()
-		check(str(inventory.weapon_slot.get_item().get_property("effect")).ends_with("initial_baton.tres"), "panel blocks combat equipment change")
+		check(str(inventory.weapon_slot.get_item().get_property("effect")).ends_with("/baton.tres"), "panel blocks combat equipment change")
 		press_key(KEY_TAB)
-		defeat_all_enemies()
+		await defeat_all_enemies()
 		await process_frame
 		await process_frame
 		check(root.get_node("RunManager").mandatory_enemies_remaining == 0, "floor is cleared")
-		check(get_nodes_in_group("component_pickups").size() == 2, "only remaining two enemy drops")
+		check(get_nodes_in_group("component_pickups").size() == 1, "second area supplies its own guarantee after first-area loot was collected")
+		check(get_first_node_in_group("component_pickups").get_parent().area_index == 1, "final clear loot belongs to second area rather than repeating first-area guarantee")
 		press_key(KEY_TAB)
 		await process_frame
 		inventory.panel.get("_buttons")[0].pressed.emit()

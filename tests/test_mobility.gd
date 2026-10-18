@@ -26,6 +26,8 @@ func test_wheel_has_higher_top_speed_than_quadruped() -> void:
 	var quadruped: MobilityMode = load("res://resources/mobility/quadruped.tres")
 	assert_gt(wheel.max_speed, quadruped.max_speed)
 	assert_gt(wheel.ability_cooldown, 0.0)
+	var walk: MobilityMode = load("res://resources/mobility/walk.tres")
+	assert_true(wheel.max_speed >= walk.max_speed * 1.5)
 
 
 func test_flight_ignores_ground_slow() -> void:

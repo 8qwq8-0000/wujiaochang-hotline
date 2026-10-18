@@ -31,6 +31,7 @@ func run() -> void:
 	player.inventory.pickup("scattergun")
 	player.weapons.cycle_weapon(1)
 	var before := player.inventory.export_run_state()
+	(main.find_child("FloorAssembler", true, false) as FloorAssembler).enemy_drop_chance = 0.0
 	var enemies := get_nodes_in_group("enemies")
 	for enemy in enemies:
 		enemy.health.apply_damage(enemy.health.max_health, DamagePacket.new())
@@ -39,8 +40,12 @@ func run() -> void:
 			enemy._physics_process(enemy.profile.self_destruct_delay + 0.01)
 	await process_frame
 	await process_frame
-	var drop := get_first_node_in_group("component_pickups") as ComponentPickup
-	check(drop != null and drop.get_parent().is_in_group("combat_rooms"), "drop is owned by combat room")
+	var drop: ComponentPickup
+	for pickup in get_nodes_in_group("component_pickups"):
+		if not pickup.has_meta("clear_reward"):
+			drop = pickup
+			break
+	check(drop != null and drop.get_parent() is CombatRoom and drop.get_parent().get_parent().get_parent().is_in_group("combat_rooms"), "drop is owned by combat room")
 	player.weapons.set("_cooldown_remaining", 0)
 	check(player.weapons.try_attack(player.global_position, Vector2.RIGHT, player), "carried reserve can fire")
 	var bullet := main.find_child("Projectile*", true, false)

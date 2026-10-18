@@ -26,6 +26,8 @@
 [ext_resource type="Script" uid="uid://dg53xird04joq" path="res://scripts/presentation/player_wrist_socket.gd" id="23_wrist_socket"]
 [ext_resource type="Script" uid="uid://l0hycqi8fyxu" path="res://scripts/presentation/status_indicator.gd" id="status_indicator"]
 
+[ext_resource type="Script" path="res://scripts/gameplay/combat/defense_component.gd" id="defense"]
+
 [sub_resource type="RectangleShape2D" id="WorldCollisionShape"]
 size = Vector2(14, 10)
 
@@ -394,3 +396,6 @@ script = ExtResource("22_room_buff")
 [node name="StatusIndicator" type="Node2D" parent="." unique_id=1625292131]
 position = Vector2(0, -12)
 script = ExtResource("status_indicator")
+
+[node name="DefenseComponent" type="Node" parent="."]
+script = ExtResource("defense")

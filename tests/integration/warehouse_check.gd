@@ -55,11 +55,14 @@ func run_checks() -> void:
 	await press_key(KEY_E)
 	check(room.panel.is_open and paused, "real E interaction opens chest and pauses world")
 	check(not player.is_input_enabled(), "open chest disables player attacks and movement")
-	check(not room.transfer(inventory.weapon_slot.get_item(), true), "bound starter cannot be stored")
+	var starter := inventory.weapon_slot.get_item()
+	check(room.transfer(starter, true), "starter can be stored")
+	check(player.export_recovery_state().inventory.primary.is_empty(), "stored starter is not copied into recovery loadout")
+	check(room.transfer(starter, false) and inventory.equip(0), "starter withdraws to bag and re-equips")
 	check(inventory.pickup("pistol"), "fixture picks up reserve weapon")
 	var pistol := inventory.secondary_weapon_slot.get_item()
 	var id: String = pistol.get_property("instance_id")
-	pistol.set_property("quality", "prototype")
+	pistol.set_property("quality", 3)
 	pistol.set_property("heat", 37.5)
 	check(room.transfer(pistol, true), "equipped reserve can be stored directly")
 	check(inventory.secondary_weapon_slot.get_item() == null, "deposit clears equipment slot")
@@ -70,7 +73,7 @@ func run_checks() -> void:
 	check(not room.transfer(foreign, false), "cannot withdraw an item absent from chest")
 	check(room.transfer(pistol, false), "withdrawal goes into backpack")
 	check(inventory.backpack.has_item(pistol), "withdraw does not auto-equip or replace weapons")
-	check(pistol.get_property("instance_id") == id and pistol.get_property("quality") == "prototype" and pistol.get_property("heat") == 37.5, "instance id and custom properties survive transfer")
+	check(pistol.get_property("instance_id") == id and pistol.get_property("quality") == 3 and pistol.get_property("heat") == 37.5, "instance id and custom properties survive transfer")
 	check(room.transfer(pistol, true), "backpack item can be deposited")
 	for index in 6:
 		check(inventory.pickup("wheel"), "fill all six bag cells")
@@ -137,13 +140,7 @@ func run_checks() -> void:
 	player = battle.get_node("Player")
 	check(player.inventory.backpack.get_item_count() == 5, "departure preserves chosen backpack")
 	check(not player.circuit_breaker.circuit_breaker_used and player.talent_core.takeover_charges == player.talent_core.takeover_charge_max, "new run refreshes per-run insurance and takeover resources")
-	for enemy in get_nodes_in_group("enemies"):
-		enemy.set_physics_process(false)
-		enemy.health.apply_damage(enemy.health.max_health, DamagePacket.new())
-		if enemy.state == EnemyController.State.SELF_DESTRUCT:
-			enemy._physics_process(enemy.profile.self_destruct_delay + 0.01)
-	await process_frame
-	await process_frame
+	await preload("res://tests/integration/combat_test_flow.gd").clear_floor(self)
 	var settlement: Node = main.get_node("ExtractionFlow")
 	settlement.open_exit()
 	settlement.extract()

@@ -53,7 +53,7 @@ func run_checks() -> void:
 	var list: VBoxContainer = scene.panel.get("_chest_list")
 	var clicked := false
 	for button in list.get_children():
-		if button is Button and button.text == pistol.get_title():
+		if button is Button and button.text == ComponentRolls.title(pistol):
 			var point: Vector2 = button.get_global_transform_with_canvas()*(button.size/2)
 			for pressed in [true,false]:
 				var event := InputEventMouseButton.new()
@@ -89,7 +89,7 @@ func run_checks() -> void:
 	# Make bag space before taking a replacement insurance instance.
 	scene.transfer(player.inventory.backpack.get_items()[0],true)
 	check(scene.transfer(stock(scene,"circuit_breaker"),false),"insurance can be withdrawn once existing one is stored")
-	check(not scene.transfer(player.inventory.weapon_slot.get_item(),true),"bound initial weapon cannot be stored")
+	check(scene.transfer(player.inventory.weapon_slot.get_item(),true),"initial weapon can be stored in trial too")
 	await press_key(KEY_ESCAPE)
 	check(not paused and not scene.panel.is_open,"Esc closes chest")
 	check(root.get_node("WarehouseStore").get_profile() == before,"test stock never writes profile")

@@ -9,6 +9,7 @@ var _buttons: Array[Button] = []
 var _weapon: Button
 var _secondary: Button
 var _mobility: Button
+var _defense: Button
 var _blackbox: Button
 
 func _ready() -> void:
@@ -54,10 +55,12 @@ func _ready() -> void:
 	_weapon = _make_slot(equipment, "weapon")
 	_secondary = _make_slot(equipment, "weapon_secondary")
 	_mobility = _make_slot(equipment, "mobility")
+	_defense = _make_slot(equipment, "defense")
 	_blackbox = _make_slot(equipment, "blackbox")
 	# Click shortcuts remain available; dragging explicitly chooses the target slot.
 	_weapon.pressed.connect(func() -> void: inventory.unequip("weapon"))
 	_secondary.pressed.connect(func() -> void: inventory.unequip("weapon_secondary"))
+	_defense.pressed.connect(func() -> void: inventory.unequip("defense"))
 	_mobility.pressed.connect(func() -> void: inventory.unequip("mobility"))
 	_blackbox.pressed.connect(func() -> void: inventory.take_from_blackbox())
 	var separator := HSeparator.new()
@@ -110,10 +113,10 @@ func _make_slot(parent: Control, location: String, index: int = -1) -> Button:
 func set_open(value: bool) -> void:
 	_overlay.visible = value
 	if value:
-		_message.text = "拖动物品到主 / 副武器、机动槽或黑匣；拖回背包取出。可放位置变绿。"
+		_message.text = "拖动物品到主 / 副武器、机动、防御槽或黑匣；拖回背包取出。可放位置变绿。"
 		refresh()
 	else:
-		for button in _buttons + [_weapon, _secondary, _mobility, _blackbox]:
+		for button in _buttons + [_weapon, _secondary, _mobility, _defense, _blackbox]:
 			button.release_focus()
 
 func _process(_delta: float) -> void:
@@ -127,15 +130,17 @@ func _process(_delta: float) -> void:
 func refresh() -> void:
 	for index in _buttons.size():
 		var item := inventory.item_at("backpack", index)
-		_buttons[index].text = item.get_title().replace("（绑定）", "") if item != null else "空位 · 拖入"
+		_buttons[index].text = ComponentRolls.title(item).replace("（绑定）", "") if item != null else "空位 · 拖入"
+		ComponentRolls.apply_quality_color(_buttons[index], item)
 		_buttons[index].icon = item.get_texture() if item != null else null
-		_buttons[index].tooltip_text = "拖到装备槽或黑匣，也可拖到其它背包物品上交换位置" if item != null else "把槽内物品拖回背包"
+		_buttons[index].tooltip_text = (ComponentRolls.describe(item) + "\n" if item != null else "") + "拖到装备槽或黑匣，也可拖到其它背包物品上交换位置" if item != null else "把槽内物品拖回背包"
 		# Empty cells stay enabled so Godot can deliver drops to them.
-	for entry in [{"button": _weapon, "location": "weapon", "title": "主武器"}, {"button": _secondary, "location": "weapon_secondary", "title": "副武器"}, {"button": _mobility, "location": "mobility", "title": "机动槽"}, {"button": _blackbox, "location": "blackbox", "title": "黑匣"}]:
+	for entry in [{"button": _weapon, "location": "weapon", "title": "主武器"}, {"button": _secondary, "location": "weapon_secondary", "title": "副武器"}, {"button": _mobility, "location": "mobility", "title": "机动槽"}, {"button": _defense, "location": "defense", "title": "防御槽"}, {"button": _blackbox, "location": "blackbox", "title": "黑匣"}]:
 		var item := inventory.item_at(entry.location)
-		var name := item.get_title().replace("（绑定）", "") if item != null else "空位 · 拖入"
+		var name := ComponentRolls.title(item).replace("（绑定）", "") if item != null else "空位 · 拖入"
 		if entry.location == "blackbox" and item != null:
 			name += " · 已触发" if bool(item.get_property("circuit_breaker_used", false)) else (" · 保险就绪" if item.get_property("slot", "") == "insurance" else " · 死亡保留")
 		entry.button.text = "%s · %s" % [entry.title, name]
+		ComponentRolls.apply_quality_color(entry.button, item)
 		entry.button.icon = item.get_texture() if item != null else null
-		entry.button.tooltip_text = "%s：%s\n拖入物品装备或交换；拖回背包取出。不兼容的交换会保留原状。" % [entry.title, name]
+		entry.button.tooltip_text = (ComponentRolls.describe(item) + "\n" if item != null else "") + "%s：%s\n拖入物品装备或交换；拖回背包取出。不兼容的交换会保留原状。" % [entry.title, name]
