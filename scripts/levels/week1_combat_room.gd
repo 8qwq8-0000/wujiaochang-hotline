@@ -20,17 +20,15 @@ func _ready() -> void:
 	_start_ambience()
 	clear_prompt.visible = false
 	room_cleared = false
-	# Count and connect enemies
-	var enemies := get_tree().get_nodes_in_group("enemy")
-	if enemies.is_empty():
-		# Try to find enemy instances directly
-		var instances := $Instances
-		for child in instances.get_children():
-			if child.name.begins_with("Enemy"):
-				_connect_enemy(child)
-	# If no enemies found through instances, assume 3
+	# Count the actual living enemies in this room; never substitute a guessed count.
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if is_ancestor_of(enemy):
+			_connect_enemy(enemy)
+	var run := get_node_or_null("/root/RunManager")
+	if run != null:
+		run.set_mandatory_enemy_count(enemies_alive)
 	if enemies_alive == 0:
-		enemies_alive = 3
+		_on_room_cleared()
 
 func _connect_enemy(enemy: Node) -> void:
 	enemies_alive += 1
@@ -51,15 +49,24 @@ func _process(_delta: float) -> void:
 	if not room_cleared and enemies_alive <= 0:
 		_on_room_cleared()
 
-func _on_enemy_died() -> void:
+func _on_enemy_died(_packet: DamagePacket) -> void:
 	enemies_alive = max(0, enemies_alive - 1)
+	var run := get_node_or_null("/root/RunManager")
+	if run != null:
+		run.set_mandatory_enemy_count(enemies_alive)
 
 func _on_room_cleared() -> void:
 	room_cleared = true
 	clear_prompt.visible = true
 	room_cleared_signal.emit()
+	var events := get_node_or_null("/root/CombatEvents")
+	if events != null:
+		events.publish_floor_cleared()
 
-func _input(event: InputEvent) -> void:
-	# R to restart room
-	if event is InputEventKey and event.pressed and event.keycode == KEY_R:
+func _unhandled_input(event: InputEvent) -> void:
+	# Bootstrap owns full-scene restart when loaded through Main.
+	if get_tree().current_scene.get_node_or_null("SceneFlow") != null:
+		return
+	# F6 standalone room restart.
+	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_R:
 		get_tree().reload_current_scene()
