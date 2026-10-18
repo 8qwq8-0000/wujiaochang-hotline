@@ -240,19 +240,19 @@ func _refresh_preview() -> void:
 		_preview.text = "[color=#e6bc73][b]升级结果预览[/b][/color]\n\n先选一件主体组件\n武器 / 机动 / 防御类型由主体决定"
 		return
 	var tier := mini(ComponentRolls.synthesis_quality(a) + 1, 3)
-	var id := "baton" if ComponentRolls.starter(a) else a.get_prototype().get_prototype_id()
+	var id := a.get_prototype().get_prototype_id()
 	var name: String = ComponentInventory.PROTOTYPES.data[id].name
 	var heading := "[color=#%s][b]%s · %s[/b][/color]" % [ComponentRolls.QUALITY_COLORS[tier].to_html(false), ComponentRolls.QUALITIES[tier], name]
 	if a.get_property("slot") == "defense":
 		heading += "\n护甲恢复 %.0f 秒 → %.0f 秒" % [ComponentRolls.ARMOR_RECOVERY_SECONDS[ComponentRolls.quality(a) - 1], ComponentRolls.ARMOR_RECOVERY_SECONDS[tier - 1]]
 	if b == null:
-		_preview.text = heading + "\n\n选择另一件同槽位、同品质组件\n初始警棍按制式武器配对"
+		_preview.text = heading + "\n\n选择另一件同槽位、同品质组件"
 		return
 	if a.get_property("slot") != b.get_property("slot"):
 		_preview.text = "[color=#efad8c]槽位不匹配[/color]\n\n武器、机动、防御分别合成\n请选择与主体同槽位的材料"
 		return
 	if ComponentRolls.synthesis_quality(a) != ComponentRolls.synthesis_quality(b):
-		_preview.text = "[color=#efad8c]品质不匹配[/color]\n\n请选择同品质材料\n初始警棍按制式计算"
+		_preview.text = "[color=#efad8c]品质不匹配[/color]\n\n请选择同品质材料"
 		return
 	var lines: Array[String] = [heading, "保留主体形态 · " + ("原型封顶，调整词条" if tier == ComponentRolls.synthesis_quality(a) else "品质提升一阶")]
 	var merged := ComponentRolls.affixes(a).duplicate(true)

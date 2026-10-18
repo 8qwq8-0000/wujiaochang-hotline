@@ -112,6 +112,8 @@ func depart() -> bool:
 		$Instructions.text = "请从项目主入口运行，再从此处出击"
 		return false
 	var before := player.export_run_state()
+	var chest_before := chest.serialize()
+	_ensure_fallback_weapon()
 	player.inventory.prepare_for_departure()
 	var snapshot := player.export_run_state()
 	# New actions refresh per-run resources; moving items inside the warehouse does not.
@@ -122,6 +124,7 @@ func depart() -> bool:
 	# The deployed items now belong only to this run, never a second safe copy.
 	if not store.commit(chest_data(), player.export_recovery_state()):
 		player.import_run_state(before)
+		chest.deserialize(chest_before)
 		$Instructions.text = store.error_message
 		return false
 	if not flow.request_scene(COMBAT_PATH, {"player_state": snapshot}):
@@ -186,7 +189,7 @@ func _synthesis_feedback(message: String) -> void:
 
 func synthesize(subject: InventoryItem, material: InventoryItem) -> bool:
 	if _mutating or _departing or not owns_synthesis_item(subject) or not owns_synthesis_item(material) or not ComponentRolls.compatible(subject, material):
-		_synthesis_feedback("请选择两件同槽位、同品质的组件；初始警棍按制式计算")
+		_synthesis_feedback("请选择两件同槽位、同品质的组件")
 		return false
 	var result := ComponentRolls.fuse(subject, material, RandomNumberGenerator.new())
 	var inv: ComponentInventory = player.inventory
@@ -242,15 +245,16 @@ func synthesize(subject: InventoryItem, material: InventoryItem) -> bool:
 
 
 func _ensure_fallback_weapon() -> void:
-	# Only rescue a profile with no available weapon anywhere. Stored starters and
-	# synthesis results must never cause an extra starter to be created on load.
+	# A save always offers an equipped weapon on entry/departure, preferring an
+	# existing instance over minting another baton. Blackbox choices stay protected.
 	var inv: ComponentInventory = player.inventory
-	var owned: Array = chest.get_items() + inv.backpack.get_items()
-	owned.append_array([inv.weapon_slot.get_item(), inv.secondary_weapon_slot.get_item(), inv.blackbox_slot.get_item()])
-	for item in owned:
-		if item != null and item.get_property("slot", "") == "weapon":
+	if inv.weapon_slot.get_item() != null or inv.secondary_weapon_slot.get_item() != null:
+		return
+	for item in inv.backpack.get_items() + chest.get_items():
+		if item.get_property("slot", "") == "weapon":
+			inv.weapon_slot.equip(item)
+			inv._apply_equipment()
 			return
-	var fallback := InventoryItem.new(ComponentInventory.PROTOTYPES, "initial_baton")
-	inv._assign_instance_id(fallback)
+	var fallback := ComponentRolls.create("baton", 1, RandomNumberGenerator.new())
 	inv.weapon_slot.equip(fallback)
 	inv._apply_equipment()

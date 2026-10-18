@@ -53,8 +53,7 @@ func _ready() -> void:
 	panel = PANEL_SCENE.instantiate()
 	panel.inventory = self
 	add_child(panel)
-	var initial := InventoryItem.new(PROTOTYPES, "initial_baton")
-	_assign_instance_id(initial)
+	var initial := ComponentRolls.create("baton", 1, RandomNumberGenerator.new())
 	weapon_slot.equip(initial)
 	var insurance := InventoryItem.new(PROTOTYPES, "circuit_breaker")
 	_assign_instance_id(insurance)
@@ -400,7 +399,7 @@ func put_in_blackbox(index: int) -> bool:
 		return false
 	var item := items[index]
 	if bool(item.get_property("bound", false)):
-		_notify("绑定初始装备无需黑匣保护", &"full")
+		_notify("绑定物品不能放入黑匣", &"full")
 		return false
 	var old := blackbox_slot.get_item()
 	var before := player.export_run_state()
@@ -458,7 +457,7 @@ func prepare_for_departure() -> void:
 
 
 func move_to_storage(item: InventoryItem, storage: Inventory) -> bool:
-	if item == null or (bool(item.get_property("bound", false)) and not ComponentRolls.starter(item)):
+	if item == null or bool(item.get_property("bound", false)):
 		return false
 	var owned := backpack.has_item(item)
 	for slot in [weapon_slot, secondary_weapon_slot, mobility_slot, defense_slot, blackbox_slot]:
@@ -531,7 +530,8 @@ func _append_extraction_item(result: Array[Dictionary], seen: Dictionary, item: 
 
 
 func import_run_state(state: Dictionary) -> void:
-	# RunManager passes an in-memory snapshot from export_run_state, not a save file.
+	state = ComponentRolls.migrate_snapshot(state)
+	# RunManager may still hold snapshots from an older build.
 	backpack.deserialize(state["backpack"])
 	weapon_slot.deserialize(state["primary"])
 	secondary_weapon_slot.deserialize(state["secondary"])
@@ -550,14 +550,8 @@ func import_run_state(state: Dictionary) -> void:
 
 func export_recovery_inventory() -> Dictionary:
 	var snapshot := export_run_state()
-	var bound: InventoryItem
-	for entry in get_extraction_items():
-		if entry.item.get("prototype_id") == "initial_baton":
-			bound = InventoryItem.new()
-			bound.deserialize(entry.item)
-			break
 	snapshot.backpack.erase("items")
-	snapshot.primary = {"item": bound.serialize()} if bound != null else {}
+	snapshot.primary = {}
 	snapshot.secondary = {}
 	snapshot.mobility = {}
 	snapshot.defense = {}

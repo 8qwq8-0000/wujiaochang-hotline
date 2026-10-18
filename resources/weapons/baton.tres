@@ -6,7 +6,7 @@
 [resource]
 script = ExtResource("1")
 id = &"baton"
-display_name = "破门警棍"
+display_name = "警棍"
 view_scene = ExtResource("2_view")
 attack_kind = 0
 damage = 1

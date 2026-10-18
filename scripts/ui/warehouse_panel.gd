@@ -152,7 +152,7 @@ func _add_item(parent: Control, item: InventoryItem, prefix: String, deposit: bo
 	button.custom_minimum_size = Vector2(270, 30)
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	button.disabled = deposit and bool(item.get_property("bound", false)) and not ComponentRolls.starter(item)
+	button.disabled = deposit and bool(item.get_property("bound", false))
 	button.tooltip_text = ComponentRolls.describe(item) + "\n" + ("点击存入箱子" if deposit else "点击取出到背包")
 	button.pressed.connect(func() -> void: room.transfer(item, deposit))
 	parent.add_child(button)

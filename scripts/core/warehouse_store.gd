@@ -19,9 +19,12 @@ func load_profile() -> bool:
 	if file == null:
 		return _reject("无法读取仓库存档，原文件已保留")
 	var json := JSON.new()
-	if json.parse(file.get_as_text()) != OK or not _valid_profile(json.data):
+	if json.parse(file.get_as_text()) != OK:
 		return _reject("仓库存档格式异常或版本不兼容，原文件已保留")
-	_profile = json.data.duplicate(true)
+	var migrated: Variant = ComponentRolls.migrate_snapshot(json.data)
+	if not _valid_profile(migrated):
+		return _reject("仓库存档格式异常或版本不兼容，原文件已保留")
+	_profile = migrated.duplicate(true)
 	return true
 
 
@@ -34,6 +37,7 @@ func commit(chest: Array, loadout: Dictionary) -> bool:
 	if not load_profile():
 		return false
 	var next := {"version": SAVE_VERSION, "chest": chest.duplicate(true), "loadout": loadout.duplicate(true)}
+	next = ComponentRolls.migrate_snapshot(next)
 	if not _valid_profile(next):
 		error_message = "装备数据异常，未保存"
 		return false

@@ -1,12 +1,12 @@
 class_name ComponentRolls
 extends RefCounted
 
-const QUALITIES := ["绑定", "制式", "改良", "原型"]
+const QUALITIES := ["无品质", "制式", "改良", "原型"]
 const ARMOR_RECOVERY_SECONDS := [12.0, 10.0, 8.0]
 const QUALITY_COLORS := [Color("a8b1bd"), Color("e7edf3"), Color("70b7ff"), Color("cf99ff")]
 
 static func quality_color(item: InventoryItem) -> Color:
-	return QUALITY_COLORS[quality(item)] if ordinary(item) or starter(item) else Color.WHITE
+	return QUALITY_COLORS[quality(item)] if ordinary(item) else Color.WHITE
 
 static func apply_quality_color(control: Control, item: InventoryItem) -> void:
 	var color := quality_color(item)
@@ -23,14 +23,34 @@ const AFFIXES := {
 static func ordinary(item: InventoryItem) -> bool:
 	return item != null and not bool(item.get_property("bound", false)) and not bool(item.get_property("debug_only", false)) and str(item.get_property("slot", "")) in ["weapon", "mobility", "defense"]
 
-static func starter(item: InventoryItem) -> bool:
-	return item != null and item.get_prototype().get_prototype_id() == "initial_baton"
-
 static func synthesizable(item: InventoryItem) -> bool:
-	return ordinary(item) or starter(item)
+	return ordinary(item)
 
 static func synthesis_quality(item: InventoryItem) -> int:
-	return 1 if starter(item) else quality(item)
+	return quality(item)
+
+# Migrate serialized items before GLoot resolves their prototype. Preserve ID,
+# quality, affixes and cooldowns, while discarding the old bound-only overrides.
+static func migrate_snapshot(value: Variant) -> Variant:
+	if value is Array:
+		var items := []
+		for item in value:
+			items.append(migrate_snapshot(item))
+		return items
+	if not value is Dictionary:
+		return value
+	var data := {}
+	for key in value:
+		data[key] = migrate_snapshot(value[key])
+	if data.get("prototype_id", "") == "initial_baton" and data.get("protoset", "") == "res://resources/items/components.json":
+		data.prototype_id = "baton"
+		var properties: Variant = data.get("properties", {})
+		if properties is Dictionary:
+			properties.erase("bound")
+			properties.erase("name")
+			properties.erase("effect")
+			data.properties = properties
+	return data
 
 static func quality(item: InventoryItem) -> int:
 	return clampi(int(item.get_property("quality", 1)), 1, 3) if ordinary(item) else 0
@@ -49,7 +69,7 @@ static func ensure(item: InventoryItem) -> void:
 		item.set_property("affixes", {"attack" if item.get_property("slot") == "weapon" else "mobility": 20})
 
 static func create(id: String, tier: int, rng: RandomNumberGenerator) -> InventoryItem:
-	var item := InventoryItem.new(ComponentInventory.PROTOTYPES, id)
+	var item := InventoryItem.new(ComponentInventory.PROTOTYPES, "baton" if id == "initial_baton" else id)
 	item.set_property("instance_id", "%d-%d-%d" % [Time.get_ticks_usec(), item.get_instance_id(), rng.randi()])
 	if ordinary(item):
 		item.set_property("quality", clampi(tier, 1, 3))
@@ -70,8 +90,6 @@ static func describe(item: InventoryItem) -> String:
 	var lines: Array[String] = [title(item)]
 	if item.get_property("slot", "") == "defense":
 		lines.append("就绪时吸收1点伤害 · 恢复 %.0f 秒" % ARMOR_RECOVERY_SECONDS[quality(item) - 1])
-	if starter(item):
-		lines.append("可存仓、可合成 · 合成按制式武器计算")
 	for key in affixes(item):
 		if AFFIXES.has(key):
 			lines.append("%s +%s%s" % [AFFIXES[key][0], affixes(item)[key], "毫秒" if key == "guard" else "%"])
@@ -98,7 +116,7 @@ static func fuse(a: InventoryItem, b: InventoryItem, rng: RandomNumberGenerator)
 	if not compatible(a, b):
 		return null
 	var tier := mini(synthesis_quality(a) + 1, 3)
-	var result := create("baton" if starter(a) else a.get_prototype().get_prototype_id(), tier, rng)
+	var result := create(a.get_prototype().get_prototype_id(), tier, rng)
 	var merged := affixes(a).duplicate(true)
 	for key in affixes(b):
 		merged[key] = maxf(float(merged.get(key, 0)), float(affixes(b)[key]))
