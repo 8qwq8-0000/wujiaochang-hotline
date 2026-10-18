@@ -57,5 +57,11 @@
     "image": "res://assets/art/items/pistol.svg",
     "maximum_stack_size": 1,
     "debug_only": true
+  },
+  "armor": {
+    "name": "缓冲装甲",
+    "slot": "defense",
+    "image": "res://assets/art/items/armor.svg",
+    "maximum_stack_size": 1
   }
 }

@@ -2,6 +2,7 @@ class_name ComponentRolls
 extends RefCounted
 
 const QUALITIES := ["绑定", "制式", "改良", "原型"]
+const ARMOR_RECOVERY_SECONDS := [12.0, 10.0, 8.0]
 const QUALITY_COLORS := [Color("a8b1bd"), Color("e7edf3"), Color("70b7ff"), Color("cf99ff")]
 
 static func quality_color(item: InventoryItem) -> Color:
@@ -20,7 +21,7 @@ const AFFIXES := {
 }
 
 static func ordinary(item: InventoryItem) -> bool:
-	return item != null and not bool(item.get_property("bound", false)) and not bool(item.get_property("debug_only", false)) and str(item.get_property("slot", "")) in ["weapon", "mobility"]
+	return item != null and not bool(item.get_property("bound", false)) and not bool(item.get_property("debug_only", false)) and str(item.get_property("slot", "")) in ["weapon", "mobility", "defense"]
 
 static func starter(item: InventoryItem) -> bool:
 	return item != null and item.get_prototype().get_prototype_id() == "initial_baton"
@@ -53,7 +54,7 @@ static func create(id: String, tier: int, rng: RandomNumberGenerator) -> Invento
 	if ordinary(item):
 		item.set_property("quality", clampi(tier, 1, 3))
 		var pool: Array = AFFIXES.keys()
-		if item.get_property("slot") == "mobility":
+		if item.get_property("slot") != "weapon":
 			pool.erase("attack")
 		var rolled := {}
 		for index in rng.randi_range(1, clampi(tier, 1, 3)):
@@ -67,6 +68,8 @@ static func title(item: InventoryItem) -> String:
 
 static func describe(item: InventoryItem) -> String:
 	var lines: Array[String] = [title(item)]
+	if item.get_property("slot", "") == "defense":
+		lines.append("就绪时吸收1点伤害 · 恢复 %.0f 秒" % ARMOR_RECOVERY_SECONDS[quality(item) - 1])
 	if starter(item):
 		lines.append("可存仓、可合成 · 合成按制式武器计算")
 	for key in affixes(item):
@@ -121,5 +124,5 @@ static func floor_drop(floor_number: int, rng: RandomNumberGenerator) -> Invento
 	var weights := floor_weights(floor_number)
 	var roll := rng.randi_range(1, 100)
 	var tier := 1 if roll <= weights[0] else (2 if roll <= weights[0] + weights[1] else 3)
-	var pool := ["baton", "pistol", "scattergun", "wheel"]
+	var pool := ["baton", "pistol", "scattergun", "wheel", "armor"]
 	return create(pool[rng.randi_range(0, pool.size() - 1)], tier, rng)

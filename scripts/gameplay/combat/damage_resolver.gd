@@ -24,6 +24,15 @@ static func resolve(
 	if requested_damage <= 0:
 		_publish(result)
 		return result
+	var defense := target.get_node_or_null("DefenseComponent") as DefenseComponent
+	if defense != null:
+		result.absorbed_damage = defense.absorb(requested_damage)
+		requested_damage -= result.absorbed_damage
+		if requested_damage == 0:
+			result.blocked = true
+			result.outcome = DamageResult.Outcome.BLOCKED
+			_publish(result)
+			return result
 	result.outcome = DamageResult.Outcome.DAMAGED
 	result.final_damage = health.apply_damage(requested_damage, packet)
 	result.target_defeated = health.is_dead()

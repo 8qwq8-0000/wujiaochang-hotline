@@ -204,7 +204,7 @@ func synthesize(subject: InventoryItem, material: InventoryItem) -> bool:
 		if item != subject and item != material:
 			bag.append(item.serialize())
 	state.backpack["items"] = bag
-	var slots := {"weapon": "primary", "weapon_secondary": "secondary", "mobility": "mobility", "blackbox": "blackbox"}
+	var slots := {"weapon": "primary", "weapon_secondary": "secondary", "mobility": "mobility", "defense": "defense", "blackbox": "blackbox"}
 	for slot_key in slots.values():
 		var entry: Dictionary = state[slot_key]
 		if entry.has("item") and entry.item.get("properties", {}).get("instance_id", {}).get("value", "") in ids:

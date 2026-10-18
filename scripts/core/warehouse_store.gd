@@ -84,12 +84,13 @@ func _valid_profile(value: Variant) -> bool:
 				return false
 			if inv[key].has("item"):
 				items.append(inv[key].item)
-		# Old warehouse saves have no blackbox; PlayerController migrates them on load.
-		if inv.has("blackbox"):
-			if not inv.blackbox is Dictionary:
-				return false
-			if inv.blackbox.has("item"):
-				items.append(inv.blackbox.item)
+		# Optional slots keep old v1 saves compatible and join the same ID validation.
+		for optional_slot in ["blackbox", "defense"]:
+			if inv.has(optional_slot):
+				if not inv[optional_slot] is Dictionary:
+					return false
+				if inv[optional_slot].has("item"):
+					items.append(inv[optional_slot].item)
 	var ids := {}
 	var insurance_count := 0
 	for item in items:

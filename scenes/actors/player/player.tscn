@@ -1,4 +1,4 @@
-[gd_scene load_steps=37 format=3 uid="uid://ciqhwcfj4cd4n"]
+[gd_scene load_steps=38 format=3 uid="uid://ciqhwcfj4cd4n"]
 
 [ext_resource type="Script" uid="uid://ipmmaj23v3wj" path="res://scripts/gameplay/player_controller.gd" id="1_controller"]
 [ext_resource type="Script" uid="uid://dvf0vif2eetq2" path="res://scripts/gameplay/combat/health_component.gd" id="2_health"]
@@ -22,6 +22,8 @@
 [ext_resource type="Script" uid="uid://b35xuobakrv1" path="res://scripts/presentation/weapon_mount.gd" id="21_weapon_mount"]
 [ext_resource type="Script" path="res://scripts/gameplay/player/room_buff_component.gd" id="22_room_buff"]
 [ext_resource type="Script" path="res://scripts/presentation/status_indicator.gd" id="status_indicator"]
+
+[ext_resource type="Script" path="res://scripts/gameplay/combat/defense_component.gd" id="defense"]
 
 [sub_resource type="RectangleShape2D" id="WorldCollisionShape"]
 size = Vector2(14, 10)
@@ -263,3 +265,6 @@ script = ExtResource("22_room_buff")
 [node name="StatusIndicator" type="Node2D" parent="."]
 script = ExtResource("status_indicator")
 position = Vector2(0,-12)
+
+[node name="DefenseComponent" type="Node" parent="."]
+script = ExtResource("defense")
