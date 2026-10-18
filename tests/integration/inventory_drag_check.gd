@@ -98,7 +98,7 @@ func run_checks() -> void:
 	check(inv.blackbox_slot.get_item() == insurance and player.circuit_breaker.equipped, "dragging insurance back to blackbox re-enables it")
 	var before := player.export_run_state()
 	await drag(primary, blackbox.get_global_rect().get_center())
-	check(player.export_run_state() == before, "bound starter rejected by blackbox without moving either item")
+	check(player.export_run_state() == before, "occupied insurance cannot swap into weapon slot; both items unchanged")
 	await drag(blackbox, primary.get_global_rect().get_center())
 	check(player.export_run_state() == before, "insurance cannot be dropped into weapon slot")
 	await drag(mobility, cells[5].get_global_rect().get_center())

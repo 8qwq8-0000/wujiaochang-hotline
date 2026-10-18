@@ -44,18 +44,19 @@ func test_different_quality_cannot_fuse() -> void:
 	assert_false(ComponentRolls.compatible(a, b))
 	assert_true(ComponentRolls.fuse(a, b, rng) == null)
 
-func test_starter_can_upgrade_with_standard_weapon() -> void:
+func test_starting_baton_uses_normal_synthesis_rules() -> void:
 	var rng := RandomNumberGenerator.new()
-	var starter := ComponentRolls.create("initial_baton", 1, rng)
+	var starter := ComponentRolls.create("baton", 1, rng)
 	var material := ComponentRolls.create("pistol", 1, rng)
 	material.set_property("affixes", {"guard": 40})
+	starter.set_property("affixes", {"guard": 20})
 	assert_true(ComponentRolls.compatible(starter, material))
-	assert_true(ComponentRolls.affixes(starter).is_empty())
+	assert_true(ComponentRolls.affixes(starter).size() == 1)
 	var result := ComponentRolls.fuse(starter, material, rng)
 	assert_eq(result.get_prototype().get_prototype_id(), "baton")
 	assert_eq(ComponentRolls.quality(result), 2)
 	assert_eq(ComponentRolls.affixes(result), {"guard": 40.0})
 	assert_false(bool(result.get_property("bound", false)))
-	var another_starter := ComponentRolls.create("initial_baton", 1, rng)
+	var another_starter := ComponentRolls.create("baton", 1, rng)
 	var from_starters := ComponentRolls.fuse(starter, another_starter, rng)
 	assert_true(ComponentRolls.affixes(from_starters).size() >= 1)

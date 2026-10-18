@@ -53,6 +53,7 @@ func run() -> void:
 	root.add_child(main)
 	current_scene = main
 	var warehouse := await wait_room(main)
+	var starting_id: String = warehouse.player.inventory.weapon_slot.get_item().get_property("instance_id")
 	check(warehouse.depart(), "warehouse action enters formal run")
 	root.get_node("RunManager").run_seed = pair_seed()
 	var collected: Array[Dictionary] = []
@@ -98,19 +99,22 @@ func run() -> void:
 	for item in inv.backpack.get_items() + [inv.weapon_slot.get_item(), inv.secondary_weapon_slot.get_item(), inv.mobility_slot.get_item(), inv.defense_slot.get_item()]:
 		if ComponentRolls.ordinary(item):
 			check(warehouse.transfer(item, true), "extracted rolled gear deposits into chest")
-	check(warehouse.chest.get_item_count() == 2, "two floor guarantees arrive in warehouse without duplication")
-	if warehouse.chest.get_item_count() != 2:
+	check(warehouse.chest.get_item_count() == 3, "two collected guarantees plus ordinary starting baton arrive without duplication")
+	if warehouse.chest.get_item_count() != 3:
 		quit(1)
 		return
-	var materials: Array = warehouse.chest.get_items()
-	for item in materials:
-		check(item.serialize() in collected, "warehouse retains exact floor instance data")
+	var materials := []
+	for item in warehouse.chest.get_items():
+		if item.get_property("instance_id") != starting_id:
+			check(item.serialize() in collected, "warehouse retains exact floor instance data")
+			materials.append(item)
+	check(materials.size() == 2, "starting ordinary baton is kept separate from the two collected upgrade materials")
 	var subject: InventoryItem = materials[0]
 	var subject_id: String = subject.get_prototype().get_prototype_id()
 	var next_tier := mini(ComponentRolls.quality(subject) + 1, 3)
 	check(warehouse.synthesize(subject, materials[1]), "two actually looted guarantees synthesize")
-	var result: InventoryItem = warehouse.chest.get_items()[0]
-	check(warehouse.chest.get_item_count() == 1 and ComponentRolls.quality(result) == next_tier and result.get_prototype().get_prototype_id() == subject_id, "complete loot pickup loadout extraction warehouse synthesis loop")
+	var result: InventoryItem = warehouse.chest.get_items().back()
+	check(warehouse.chest.get_item_count() == 2 and ComponentRolls.quality(result) == next_tier and result.get_prototype().get_prototype_id() == subject_id, "complete loot pickup loadout extraction warehouse synthesis loop")
 	main.queue_free()
 	await settle()
 	DirAccess.remove_absolute(TEST_PATH)

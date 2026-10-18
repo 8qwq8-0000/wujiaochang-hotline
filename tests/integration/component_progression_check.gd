@@ -60,7 +60,10 @@ func run() -> void:
 	player.set_physics_process(false)
 	player.heat.set_physics_process(false)
 	var inv := player.inventory
-	check(ComponentRolls.affixes(inv.weapon_slot.get_item()).is_empty(), "bound starter has no affixes")
+	check(ComponentRolls.quality(inv.weapon_slot.get_item()) == 1 and ComponentRolls.affixes(inv.weapon_slot.get_item()).size() == 1, "new save starts with an ordinary standard baton")
+	# Keep later isolated bonus checks independent of the random starting roll.
+	inv.weapon_slot.get_item().set_property("affixes", {"attack": 20})
+	inv._apply_equipment()
 	for tier in range(1, 4):
 		for index in 30:
 			var item := ComponentRolls.create("pistol", tier, rng)
