@@ -69,11 +69,11 @@ func run() -> void:
 	check(not player.mobility.activate_ability(player, Vector2.LEFT), "cannot spam during cooldown")
 	await ticks(6, Vector2.LEFT)
 	check(player.position.x > 35 and absf(player.position.y) < 0.1, "ram holds direction against opposite input")
-	check(enemy.health.current_health == 19, "ram inflicts exactly one damage")
+	check(enemy.health.current_health == 20 - mode.ram_damage, "ram inflicts configured damage once")
 	check(enemy.state == EnemyController.State.STAGGERED and enemy.get("_stagger_remaining") >= 0.6, "ram interrupts enemy windup")
 	check(enemy.get("_windup_remaining") == 0.0, "interrupted attack cannot complete")
 	await ticks(8)
-	check(enemy.health.current_health == 19, "same ram never hits enemy twice")
+	check(enemy.health.current_health == 20 - mode.ram_damage, "same ram never hits enemy twice")
 	check(distant.health.current_health == 20, "enemy outside path receives no damage")
 	check(not player.mobility.is_ability_active() and player.position.x >= 80 and player.position.x < 100, "ram lasts about 84 pixels then ends")
 	check(player.velocity.length() <= mode.max_speed, "no leftover burst speed after ram")
@@ -93,7 +93,7 @@ func run() -> void:
 	await physics_frame
 	player.mobility.tick(player, Vector2.ZERO, Vector2.UP, 0.20)
 	Engine.physics_ticks_per_second = 60
-	check(enemy.health.current_health == 18, "swept charge detects enemy even when one frame spans entire path")
+	check(enemy.health.current_health == 20 - mode.ram_damage * 2, "swept charge detects enemy even when one frame spans entire path")
 	check(is_equal_approx(player.position.x, 84.0), "charge distance is stable across long physics steps")
 	check(not player.mobility.is_ability_active(), "long step ends charge at correct time")
 	# Follow the charge with the ordinary equipped baton.
@@ -103,7 +103,7 @@ func run() -> void:
 	await settle()
 	check(player.weapons.try_attack(player.position, Vector2.RIGHT, player), "baton can immediately follow charge")
 	player.weapons.update_attack_pose(player.position, Vector2.RIGHT, player)
-	check(enemy.health.current_health == 17, "follow-up baton lands real additional damage")
+	check(enemy.health.current_health == 19 - mode.ram_damage * 2, "follow-up baton lands real additional damage")
 	enemy.queue_free()
 	distant.queue_free()
 	player.equip_mobility(mode)
@@ -124,7 +124,7 @@ func run() -> void:
 	check(not player.mobility.is_ability_active(), "wall cancels charge early")
 	check(player.position.x < 32 and player.velocity.is_zero_approx(), "wall prevents penetration and leftover slide")
 	check(behind_wall.health.current_health == 20, "contact radius cannot damage through wall")
-	check(player.mobility.ability_cooldown_remaining > 1.0, "wall impact retains cooldown")
+	check(player.mobility.ability_cooldown_remaining > 0.9, "wall impact retains cooldown")
 	room.queue_free()
 	await process_frame
 	print("Wheel ram checks: ", checks, ", failures: ", failures)

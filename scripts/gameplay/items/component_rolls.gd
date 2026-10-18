@@ -2,6 +2,8 @@ class_name ComponentRolls
 extends RefCounted
 
 const QUALITIES := ["无品质", "制式", "改良", "原型"]
+const WHEEL_RAM_DAMAGE := [2, 3, 4]
+const WHEEL_RAM_COOLDOWNS := [1.2, 1.0, 0.8]
 const ARMOR_RECOVERY_SECONDS := [12.0, 10.0, 8.0]
 const QUALITY_COLORS := [Color("a8b1bd"), Color("e7edf3"), Color("70b7ff"), Color("cf99ff")]
 
@@ -90,6 +92,8 @@ static func describe(item: InventoryItem) -> String:
 	var lines: Array[String] = [title(item)]
 	if item.get_property("slot", "") == "defense":
 		lines.append("就绪时吸收1点伤害 · 恢复 %.0f 秒" % ARMOR_RECOVERY_SECONDS[quality(item) - 1])
+	if item.get_prototype().get_prototype_id() == "wheel":
+		lines.append("冲撞 %d 点伤害 · 冷却 %.1f 秒" % [WHEEL_RAM_DAMAGE[quality(item) - 1], WHEEL_RAM_COOLDOWNS[quality(item) - 1]])
 	for key in affixes(item):
 		if AFFIXES.has(key):
 			lines.append("%s +%s%s" % [AFFIXES[key][0], affixes(item)[key], "毫秒" if key == "guard" else "%"])
@@ -107,6 +111,14 @@ static func weapon(item: InventoryItem) -> WeaponComponentData:
 		return null
 	var data: WeaponComponentData = load(str(item.get_property("effect"))).duplicate(true)
 	data.damage = maxi(1, ceili(data.damage * (1.0 + bonus([item], "attack") / 100.0)))
+	return data
+
+static func mobility_mode(item: InventoryItem, equipped: Array) -> MobilityMode:
+	var data: MobilityMode = (load(str(item.get_property("effect"))) if item != null else MobilityController.WALK_MODE).duplicate(true)
+	data.max_speed *= 1.0 + bonus(equipped, "mobility") / 100.0
+	if data is WheelMobilityMode:
+		data.ram_damage = WHEEL_RAM_DAMAGE[quality(item) - 1]
+		data.ability_cooldown = WHEEL_RAM_COOLDOWNS[quality(item) - 1]
 	return data
 
 static func compatible(a: InventoryItem, b: InventoryItem) -> bool:

@@ -108,6 +108,18 @@ func run_checks() -> void:
 	check(player.get_instance_id() == identity and player.export_run_state() == state and run.floor_index == 0, "area traversal preserves player, inventory and floor")
 	check(player.health.current_health == health and is_equal_approx(player.heat.current_heat,heat), "area traversal preserves health and heat")
 	check(EnvironmentArea.for_actor(player) == second and not player.inventory.can_change_equipment(), "area scope and combat equipment lock switch on entry")
+	check(assembler.passages[0].return_sealed, "entering second area permanently seals return route")
+	player.global_position = second.to_global(Vector2(20, 180))
+	await settle()
+	for frame in 50:
+		await physics_frame
+		player.velocity = Vector2(-180, 0)
+		player.move_and_slide()
+	player.velocity = Vector2.ZERO
+	check(player.global_position.x > first.global_position.x + 640, "real collision prevents walking back into first area")
+	assembler.passages[0].unlock()
+	await settle()
+	check(not assembler.passages[0].get("_barrier").disabled, "later unlock cannot reopen sealed return gate")
 	var enemy := get_first_node_in_group("enemies") as EnemyController
 	player.global_position = first.to_global(Vector2(600,180))
 	check(not enemy._same_room(player), "second-area AI does not pursue into cleared first area")
@@ -119,6 +131,7 @@ func run_checks() -> void:
 	check(not buffs.active_buff.is_empty() and buffs.source_room == second, "second power box grants an independent area buff")
 	await clear_active()
 	check(second.cleared and run.mandatory_enemies_remaining == 0 and assembler._rooms_remaining == 0, "both cleared areas complete the floor")
+	check(assembler.passages[0].return_sealed and not assembler.passages[0].get("_barrier").disabled, "clearing second room never reopens return route")
 	check(buffs.active_buff.is_empty() and second.reward_count == 1, "second clear expires its buff and issues independent area guarantee")
 	check(str(hud.objective_label.text).contains("本层已清理"), "HUD shows floor completion only after both clears")
 	check(not first.exit_elevator.enabled and second.exit_elevator.enabled, "only final exit becomes enabled")

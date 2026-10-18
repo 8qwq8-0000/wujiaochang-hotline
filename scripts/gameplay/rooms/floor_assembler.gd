@@ -141,7 +141,9 @@ func _physics_process(_delta: float) -> void:
 		return
 	var next: CombatRoom = generated_rooms[active_area_index + 1]
 	if next.contains_world_point(player.global_position):
+		passages[active_area_index].seal_return()
 		active_area_index += 1
+		get_node("/root/CombatEvents").publish_notice(&"return_path_closed", "后方通道已封闭", Color("e6bc73"))
 		next.activate()
 		_refresh_objectives()
 

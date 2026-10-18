@@ -353,11 +353,8 @@ func _apply_equipment() -> void:
 	player.get_node("WeaponController").set_carried_weapons(
 		ComponentRolls.weapon(weapon), ComponentRolls.weapon(secondary))
 	var mode := mobility_slot.get_item()
-	var mode_data: MobilityMode = (load(str(mode.get_property("effect"))) if mode != null else MobilityController.WALK_MODE).duplicate(true)
 	var equipped := [weapon, secondary, mode, defense_slot.get_item()]
-	if mode_data != null:
-		mode_data.max_speed *= 1.0 + ComponentRolls.bonus(equipped, "mobility") / 100.0
-	player.get_node("MobilityController").set_equipped_mode(mode_data)
+	player.get_node("MobilityController").set_equipped_mode(ComponentRolls.mobility_mode(mode, equipped))
 	player.get_node("HeatComponent").equipment_capacity_bonus = ComponentRolls.bonus(equipped, "capacity") / 100.0
 	player.get_node("HeatComponent").equipment_cooling_bonus = ComponentRolls.bonus(equipped, "cooling") / 100.0
 	player.get_node("GuardComponent").equipment_window_bonus = ComponentRolls.bonus(equipped, "guard") / 1000.0
@@ -562,3 +559,34 @@ func export_recovery_inventory() -> Dictionary:
 	snapshot.active_weapon = 0
 	snapshot.has_picked_up_weapon = false
 	return snapshot
+
+
+func can_discard(item: InventoryItem) -> bool:
+	return is_open and not player.health.is_dead() and not player.health.resolving_damage and item != null and backpack.has_item(item)
+
+
+func discard_backpack_item(item: InventoryItem) -> bool:
+	if not can_discard(item):
+		return false
+	var destination := CombatProjectile.room_for_actor(player)
+	if destination == null:
+		return false
+	var original_index := backpack.get_item_index(item)
+	backpack.remove_item(item)
+	sync_insurance()
+	# Persist the ownership change before spawning a collectible. Failure restores
+	# the same instance and ordering, so no duplicate ground item can be created.
+	if not _persist_protection():
+		backpack.add_item(item)
+		backpack.move_item(backpack.get_item_index(item), original_index)
+		sync_insurance()
+		changed.emit()
+		return false
+	var pickup_node: ComponentPickup = load("res://scenes/items/component_pickup.tscn").instantiate()
+	pickup_node.component_id = item.get_prototype().get_prototype_id()
+	pickup_node.rolled_item = item
+	destination.add_child(pickup_node)
+	pickup_node.global_position = player.global_position
+	changed.emit()
+	_notify("已丢到脚边：%s · 关闭背包后按 E 拾回" % ComponentRolls.title(item), &"equip")
+	return true
