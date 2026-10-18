@@ -77,6 +77,7 @@ func run() -> void:
 	projectile.set_physics_process(false)
 	projectile._physics_process(0.2)
 	check(projectile.is_queued_for_deletion(), "projectile stops at cover")
+	(scene.find_child("FloorAssembler", true, false) as FloorAssembler).enemy_drop_chance = 0.0
 	var before := get_nodes_in_group("component_pickups").size()
 	var enemies := get_nodes_in_group("enemies")
 	for enemy in enemies:

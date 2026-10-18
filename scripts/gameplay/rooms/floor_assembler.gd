@@ -8,6 +8,7 @@ const DEFAULT_ROOM := preload("res://scenes/levels/rooms/prototype_combat_room.t
 
 @export_range(1, 8, 1) var room_count: int = 1
 @export var sequential_progression := false
+@export_range(0.0, 1.0, 0.01) var enemy_drop_chance := 0.20
 @export var room_spacing: Vector2 = Vector2(680.0, 0.0)
 @export var room_pool: Array[RoomTemplateData] = []
 
@@ -18,6 +19,7 @@ var passages: Array[CombatPassage] = []
 var _cleared_ids := {}
 var _guarantee_granted := false
 var _loot_rng := RandomNumberGenerator.new()
+var _drop_chance_rng := RandomNumberGenerator.new()
 
 
 func _ready() -> void:
@@ -40,6 +42,7 @@ func assemble() -> void:
 	var seed_value: int = run_manager.run_seed if run_manager != null and run_manager.run_seed != 0 else 1
 	random.seed = seed_value
 	_loot_rng.seed = seed_value + 7919 * (run_manager.floor_index + 1 if run_manager != null else 1)
+	_drop_chance_rng.seed = _loot_rng.seed + 104729
 	var floor_number: int = run_manager.floor_index + 1 if run_manager != null else 1
 	for index in room_count:
 		var packed := _choose_room(random, floor_number)
@@ -91,10 +94,6 @@ func _on_room_cleared(_room: Node) -> void:
 	if _cleared_ids.has(_room.get_instance_id()):
 		return
 	_cleared_ids[_room.get_instance_id()] = true
-	if not _guarantee_granted and _room is CombatRoom:
-		_guarantee_granted = true
-		var run := get_node_or_null("/root/RunManager")
-		_room.spawn_floor_guarantee(ComponentRolls.floor_drop(run.floor_index + 1 if run != null else 1, _loot_rng))
 	_rooms_remaining = maxi(_rooms_remaining - 1, 0)
 	if sequential_progression:
 		var index := generated_rooms.find(_room)
@@ -156,3 +155,34 @@ func _refresh_objectives() -> void:
 	get_node("/root/RunManager").set_mandatory_enemy_count(remaining)
 	var current: CombatRoom = generated_rooms[active_area_index]
 	get_node("/root/CombatEvents").combat_area_progress.emit(active_area_index + 1, generated_rooms.size(), current.spawner.remaining_objectives(), current.cleared)
+
+
+func try_enemy_drop(enemy: EnemyController, room: CombatRoom, death_position: Vector2) -> void:
+	if room not in generated_rooms or enemy.state != EnemyController.State.DEAD or enemy.has_meta("floor_loot_processed"):
+		return
+	enemy.set_meta("floor_loot_processed", true)
+	# First local clear fulfils the floor minimum if all previous death rolls missed.
+	# EnemySpawner resolves objectives before CombatEvents publishes the death.
+	var forced := not _guarantee_granted and room.cleared
+	if not forced and _drop_chance_rng.randf() >= enemy_drop_chance:
+		return
+	var first_drop := not _guarantee_granted
+	_guarantee_granted = true
+	if first_drop:
+		room.reward_count += 1
+	var run := get_node_or_null("/root/RunManager")
+	var item := ComponentRolls.floor_drop(run.floor_index + 1 if run != null else 1, _loot_rng)
+	_spawn_enemy_drop.call_deferred(room, death_position, item, first_drop, enemy.get_instance_id())
+
+
+func _spawn_enemy_drop(room: CombatRoom, death_position: Vector2, item: InventoryItem, first_drop: bool, enemy_id: int) -> void:
+	if not is_instance_valid(room) or room.is_queued_for_deletion() or not room.is_inside_tree():
+		return
+	var pickup: ComponentPickup = load("res://scenes/items/component_pickup.tscn").instantiate()
+	pickup.component_id = item.get_prototype().get_prototype_id()
+	pickup.rolled_item = item
+	pickup.set_meta("enemy_drop", enemy_id)
+	if first_drop:
+		pickup.set_meta("floor_guarantee", true)
+	room.add_child(pickup)
+	pickup.global_position = death_position

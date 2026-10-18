@@ -31,6 +31,7 @@ func run() -> void:
 	player.inventory.pickup("scattergun")
 	player.weapons.cycle_weapon(1)
 	var before := player.inventory.export_run_state()
+	(main.find_child("FloorAssembler", true, false) as FloorAssembler).enemy_drop_chance = 0.0
 	var enemies := get_nodes_in_group("enemies")
 	for enemy in enemies:
 		enemy.health.apply_damage(enemy.health.max_health, DamagePacket.new())

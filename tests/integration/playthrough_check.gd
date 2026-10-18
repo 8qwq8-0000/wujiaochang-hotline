@@ -42,7 +42,8 @@ func run() -> void:
 		var inventory := player.get_node("ComponentInventory") as ComponentInventory
 		check(inventory.backpack.get_item_count() == 0 and inventory.weapon_slot.get_item() != null and inventory.secondary_weapon_slot.get_item() == null, "fresh run has no stale inventory")
 		check(get_nodes_in_group("component_pickups").is_empty(), "no free starter pickups")
-		# Clear the first area: ordinary deaths cannot directly drop equipment.
+		(current_scene.find_child("FloorAssembler", true, false) as FloorAssembler).enemy_drop_chance = 0.0
+		# Isolate the first-area fallback while preserving three restart cycles.
 		for enemy in get_nodes_in_group("enemies"):
 			enemy.health.apply_damage(enemy.health.max_health, DamagePacket.new())
 		for enemy in get_nodes_in_group("enemies"):

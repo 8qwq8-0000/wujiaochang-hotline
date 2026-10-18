@@ -60,6 +60,7 @@ func run() -> void:
 	for floor_number in 2:
 		await wait_room(main)
 		var player := get_first_node_in_group("player") as PlayerController
+		(main.find_child("FloorAssembler", true, false) as FloorAssembler).enemy_drop_chance = 0.0
 		player.health.configure_max_health(1000)
 		await preload("res://tests/integration/combat_test_flow.gd").clear_floor(self)
 		check(get_nodes_in_group("component_pickups").size() == 1, "exactly one physical guarantee on each completed floor")

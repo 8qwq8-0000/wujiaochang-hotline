@@ -36,7 +36,7 @@ func _on_all_required_defeated() -> void:
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null:
 		events.publish_room_cleared(self)
-		var detail := "本层保底位于右下方" if reward_count > 0 else "最终出口已开放"
+		var detail := "通道已开放，掉落请在敌人倒下处拾取" if area_index + 1 < area_total else "最终出口已开放"
 		var message := "区域 %d/%d 清场 · %s" % [area_index + 1, area_total, detail] if sequence_managed else "区域清理完成，出口电梯已启用"
 		events.publish_notice(&"room_cleared", message, Color(0.35, 1.0, 0.55), CombatNotice.Priority.NORMAL, 0.0, 2.0)
 
@@ -73,15 +73,3 @@ func open_side(side: String) -> void:
 		visual.polygon = PackedVector2Array([Vector2(-8, center - 66), Vector2(8, center - 66), Vector2(8, center + 66), Vector2(-8, center + 66)])
 		visual.color = Color(0.22, 0.28, 0.36)
 		wall.add_child(visual)
-
-
-func spawn_floor_guarantee(item: InventoryItem) -> void:
-	if reward_count > 0:
-		return
-	reward_count += 1
-	var pickup: ComponentPickup = load("res://scenes/items/component_pickup.tscn").instantiate()
-	pickup.component_id = item.get_prototype().get_prototype_id()
-	pickup.rolled_item = item
-	pickup.position = Vector2(550, 260)
-	pickup.set_meta("floor_guarantee", true)
-	add_child(pickup)

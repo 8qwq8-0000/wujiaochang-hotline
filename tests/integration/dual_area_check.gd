@@ -56,6 +56,7 @@ func run_checks() -> void:
 	player.heat.set_physics_process(false)
 	freeze_enemies()
 	var assembler := main.find_child("FloorAssembler", true, false) as FloorAssembler
+	assembler.enemy_drop_chance = 0.0
 	var first: CombatRoom = assembler.generated_rooms[0]
 	var second: CombatRoom = assembler.generated_rooms[1]
 	var run := root.get_node("RunManager")
