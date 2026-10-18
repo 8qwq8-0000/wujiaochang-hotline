@@ -116,3 +116,28 @@ func _valid_profile(value: Variant) -> bool:
 			return false
 		ids[id] = true
 	return true
+
+
+func has_saved_profile() -> bool:
+	return FileAccess.file_exists(save_path)
+
+
+func create_new_profile() -> bool:
+	# Back up the raw file, including an unreadable/legacy profile, before replacing
+	# anything. Merely entering character selection never writes to the save.
+	if has_saved_profile():
+		var backup := "%s.backup-%d-%d" % [save_path, int(Time.get_unix_time_from_system()), Time.get_ticks_usec()]
+		if DirAccess.copy_absolute(save_path, backup) != OK:
+			error_message = "旧存档备份失败，未创建新存档"
+			return false
+	var previous := _profile.duplicate(true)
+	var was_loaded := _loaded
+	var was_writable := _writable
+	_loaded = true
+	_writable = true
+	if not commit([], {}):
+		_profile = previous
+		_loaded = was_loaded
+		_writable = was_writable
+		return false
+	return true
