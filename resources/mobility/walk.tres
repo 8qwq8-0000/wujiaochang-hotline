@@ -6,6 +6,6 @@
 script = ExtResource("1")
 id = &"walk"
 display_name = "步行（无套件）"
-max_speed = 155.0
+max_speed = 125.0
 acceleration = 1250.0
 braking = 1650.0

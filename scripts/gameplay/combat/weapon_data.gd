@@ -19,7 +19,7 @@ enum TriggerMode {
 @export var attack_kind: AttackKind = AttackKind.PROJECTILE
 @export var trigger_mode: TriggerMode = TriggerMode.SEMI_AUTO
 @export_range(1, 99, 1) var damage: int = 1
-@export_range(0.01, 5.0, 0.01) var cooldown: float = 0.25
+@export_range(0.01, 5.0, 0.01) var cooldown: float = 0.32
 @export_range(0.0, 100.0, 0.5) var heat_per_attack: float = 15.0
 @export_range(1.0, 1000.0, 1.0) var attack_range: float = 72.0
 @export_range(1.0, 2000.0, 1.0) var projectile_speed: float = 440.0

@@ -6,7 +6,7 @@
 script = ExtResource("1")
 id = &"quadruped"
 display_name = "四足越障架"
-max_speed = 185.0
+max_speed = 150.0
 acceleration = 1800.0
 braking = 1900.0
 ability_cooldown = 1.8
