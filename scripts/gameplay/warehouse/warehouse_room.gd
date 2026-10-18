@@ -26,6 +26,7 @@ func _ready() -> void:
 	for entry in profile.chest:
 		var item := InventoryItem.new()
 		if item.deserialize(entry):
+			ComponentRolls.ensure(item)
 			chest.add_item(item)
 	player.import_run_state(profile.loadout)
 	player.health.set_current_health(player.config.max_health)
@@ -168,3 +169,26 @@ func _open_trial() -> void:
 		player.set_input_enabled(true)
 		$Instructions.text = "试验场加载失败，请重试"
 		return
+
+
+func synthesize(subject: InventoryItem, material: InventoryItem) -> bool:
+	if _mutating or _departing or not chest.has_item(subject) or not chest.has_item(material) or not ComponentRolls.compatible(subject, material):
+		panel.show_message("需要两件同槽位、同品质的普通仓库组件")
+		return false
+	var result := ComponentRolls.fuse(subject, material, RandomNumberGenerator.new())
+	var next := []
+	for item in chest.get_items():
+		if item != subject and item != material:
+			next.append(item.serialize())
+	next.append(result.serialize())
+	# Persist the entire proposed transaction before touching either live material.
+	_mutating = true
+	var saved: bool = store.commit(next, player.export_run_state())
+	if saved:
+		chest.remove_item(subject)
+		chest.remove_item(material)
+		chest.add_item(result)
+	_mutating = false
+	panel.show_message("合成完成 · " + ComponentRolls.describe(result) if saved else store.error_message)
+	panel.refresh()
+	return saved

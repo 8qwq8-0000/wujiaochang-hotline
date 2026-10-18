@@ -11,6 +11,10 @@ var _bag_list: VBoxContainer
 var _chest_list: VBoxContainer
 var _count: Label
 var _message: Label
+var _materials: Array = [null, null]
+var _material_buttons: Array[Button] = []
+var _synthesis_button: Button
+const SYNTHESIS_DRAG := preload("res://scripts/ui/synthesis_drag_button.gd")
 
 func _ready() -> void:
 	layer = 95
@@ -47,6 +51,23 @@ func _ready() -> void:
 	column.add_child(columns)
 	_bag_list = _make_list(columns, "随身装备 → 存入")
 	_chest_list = _make_list(columns, "储物箱 → 取出")
+	if room.has_method("synthesize"):
+		var row := HBoxContainer.new()
+		column.add_child(row)
+		for index in 2:
+			var slot := Button.new()
+			slot.set_script(SYNTHESIS_DRAG)
+			slot.panel = self
+			slot.target_index = index
+			slot.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			slot.add_theme_font_size_override("font_size", 12)
+			slot.pressed.connect(func() -> void: select_material(index, null))
+			row.add_child(slot)
+			_material_buttons.append(slot)
+		_synthesis_button = Button.new()
+		_synthesis_button.text = "合成并保存"
+		_synthesis_button.pressed.connect(_synthesize)
+		row.add_child(_synthesis_button)
 	_message = Label.new()
 	_message.add_theme_font_size_override("font_size", 12)
 	_message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -101,6 +122,7 @@ func show_message(message: String) -> void:
 	_message.text = message
 
 func refresh() -> void:
+	_refresh_materials()
 	for list in [_bag_list, _chest_list]:
 		for child in list.get_children():
 			list.remove_child(child)
@@ -140,7 +162,11 @@ func _chest_display_items() -> Array:
 
 func _add_item(parent: Control, item: InventoryItem, prefix: String, deposit: bool) -> void:
 	var button := Button.new()
-	button.text = prefix + item.get_title()
+	if room.has_method("synthesize") and not deposit:
+		button.set_script(SYNTHESIS_DRAG)
+		button.panel = self
+		button.item = item
+	button.text = prefix + ComponentRolls.title(item)
 	button.icon = item.get_texture()
 	button.expand_icon = true
 	button.add_theme_constant_override("icon_max_width", 20)
@@ -149,10 +175,34 @@ func _add_item(parent: Control, item: InventoryItem, prefix: String, deposit: bo
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	button.disabled = deposit and bool(item.get_property("bound", false))
-	button.tooltip_text = "绑定初始装备不能存入" if button.disabled else ("点击存入箱子" if deposit else "点击取出到背包")
+	button.tooltip_text = ComponentRolls.describe(item) + "\n" + "绑定初始装备不能存入" if button.disabled else ("点击存入箱子" if deposit else "点击取出到背包")
 	button.pressed.connect(func() -> void: room.transfer(item, deposit))
 	parent.add_child(button)
 
 func _exit_tree() -> void:
 	if _owns_pause:
 		get_tree().paused = false
+
+func select_material(index: int, item: InventoryItem) -> void:
+	_materials[index] = item
+	if item != null and _materials[1 - index] == item:
+		_materials[1 - index] = null
+	_refresh_materials()
+	show_message("从仓库拖入主体与材料；保留主体形态，升一品质，原型封顶。点击槽位取消。")
+
+func _refresh_materials() -> void:
+	if _material_buttons.is_empty():
+		return
+	for index in 2:
+		var item: InventoryItem = _materials[index]
+		if item != null and not room.chest.has_item(item):
+			_materials[index] = null
+		item = _materials[index]
+		_material_buttons[index].text = ("主体" if index == 0 else "材料") + " · " + (ComponentRolls.title(item) if item != null else "从仓库拖入")
+		_material_buttons[index].text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		_material_buttons[index].custom_minimum_size.x = 165
+		_material_buttons[index].tooltip_text = ComponentRolls.describe(item) if item != null else "拖入同槽位同品质组件"
+	_synthesis_button.disabled = not ComponentRolls.compatible(_materials[0], _materials[1])
+
+func _synthesize() -> void:
+	room.synthesize(_materials[0], _materials[1])
