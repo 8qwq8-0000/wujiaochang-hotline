@@ -59,4 +59,9 @@ func clear_invulnerability() -> void:
 
 
 func is_invulnerable() -> bool:
-	return _invulnerability_remaining > 0.0
+	if _invulnerability_remaining > 0.0:
+		return true
+	# Keep dodge protection separate from post-hit/insurance protection. Ending
+	# a charge must never erase another source's invulnerability window.
+	var mobility := actor.get_node_or_null("MobilityController") as MobilityController if is_instance_valid(actor) else null
+	return mobility != null and mobility.provides_invulnerability()

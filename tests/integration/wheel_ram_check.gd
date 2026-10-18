@@ -78,7 +78,7 @@ func run() -> void:
 	check(not player.mobility.is_ability_active() and player.position.x >= 80 and player.position.x < 100, "ram lasts about 84 pixels then ends")
 	check(player.velocity.length() <= mode.max_speed, "no leftover burst speed after ram")
 	check(player.mobility.can_attack() and player.mobility.can_guard(), "weapon and guard remain available for combos")
-	check(not player.hurt_box.is_invulnerable(), "ram grants no free invulnerability")
+	check(not player.hurt_box.is_invulnerable(), "ram invulnerability expires before charge finishes")
 	await ticks(90)
 	check(player.mobility.activate_ability(player, Vector2.LEFT), "cooldown permits next ram with stationary aim fallback")
 	check(player.velocity.x < 0, "stationary ram follows aim")

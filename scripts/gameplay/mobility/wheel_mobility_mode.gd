@@ -1,6 +1,7 @@
 class_name WheelMobilityMode
 extends MobilityMode
 
+@export_range(0.0, 0.5, 0.01) var ram_invulnerability_seconds: float = 0.15
 @export_range(1, 10, 1) var ram_damage: int = 1
 @export_range(0.0, 2.0, 0.05) var ram_stagger_seconds: float = 0.65
 @export_range(1.0, 40.0, 1.0) var ram_radius: float = 14.0

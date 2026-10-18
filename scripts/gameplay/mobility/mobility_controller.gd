@@ -149,6 +149,14 @@ func is_ability_active() -> bool:
 	return _ability_active_remaining > 0.0
 
 
+func provides_invulnerability() -> bool:
+	var wheel := _current_mode as WheelMobilityMode
+	if wheel == null or not is_ability_active():
+		return false
+	var elapsed := wheel.ability_active_seconds - _ability_active_remaining
+	return elapsed < wheel.ram_invulnerability_seconds - 0.000001
+
+
 func _perform_ram(body: CharacterBody2D, start: Vector2) -> void:
 	var mode := _current_mode as WheelMobilityMode
 	var end := body.global_position
