@@ -1,6 +1,7 @@
 extends Node2D
 
 const COMBAT_PATH := "res://scenes/levels/week1_combat_room.tscn"
+const BOSS_TEST_PATH := "res://scenes/levels/bosses/rooftop_boss_arena.tscn"
 const PANEL := preload("res://scripts/ui/warehouse_panel.gd")
 var chest: Inventory
 var panel: CanvasLayer
@@ -168,3 +169,33 @@ func _open_trial() -> void:
 		player.set_input_enabled(true)
 		$Instructions.text = "试验场加载失败，请重试"
 		return
+
+
+func enter_boss_test() -> bool:
+	if _departing or get_tree().paused:
+		return false
+	var flow := get_parent().get_parent().get_node_or_null("SceneFlow") as SceneContainerManager
+	if flow == null:
+		$Instructions.text = "请从项目主入口运行，再进入 BOSS 测试"
+		return false
+	if not save_loadout():
+		$Instructions.text = store.error_message
+		return false
+	var snapshot := player.export_run_state()
+	var run := get_node_or_null("/root/RunManager")
+	if run != null:
+		run.begin_run()
+	if not flow.request_scene(BOSS_TEST_PATH, {
+		"player_state": snapshot,
+		"boss_test": true,
+	}):
+		$Instructions.text = "BOSS 测试场景加载失败，请重试"
+		return false
+	_departing = true
+	player.set_input_enabled(false)
+	flow.load_failed.connect(func(_path: String, _error: String) -> void:
+		_departing = false
+		player.set_input_enabled(true)
+		$Instructions.text = "BOSS 测试场景加载失败，请重试"
+	, CONNECT_ONE_SHOT)
+	return true
