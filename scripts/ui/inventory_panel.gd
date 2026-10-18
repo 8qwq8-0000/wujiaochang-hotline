@@ -128,6 +128,7 @@ func refresh() -> void:
 	for index in _buttons.size():
 		var item := inventory.item_at("backpack", index)
 		_buttons[index].text = ComponentRolls.title(item).replace("（绑定）", "") if item != null else "空位 · 拖入"
+		ComponentRolls.apply_quality_color(_buttons[index], item)
 		_buttons[index].icon = item.get_texture() if item != null else null
 		_buttons[index].tooltip_text = (ComponentRolls.describe(item) + "\n" if item != null else "") + "拖到装备槽或黑匣，也可拖到其它背包物品上交换位置" if item != null else "把槽内物品拖回背包"
 		# Empty cells stay enabled so Godot can deliver drops to them.
@@ -137,5 +138,6 @@ func refresh() -> void:
 		if entry.location == "blackbox" and item != null:
 			name += " · 已触发" if bool(item.get_property("circuit_breaker_used", false)) else (" · 保险就绪" if item.get_property("slot", "") == "insurance" else " · 死亡保留")
 		entry.button.text = "%s · %s" % [entry.title, name]
+		ComponentRolls.apply_quality_color(entry.button, item)
 		entry.button.icon = item.get_texture() if item != null else null
 		entry.button.tooltip_text = (ComponentRolls.describe(item) + "\n" if item != null else "") + "%s：%s\n拖入物品装备或交换；拖回背包取出。不兼容的交换会保留原状。" % [entry.title, name]

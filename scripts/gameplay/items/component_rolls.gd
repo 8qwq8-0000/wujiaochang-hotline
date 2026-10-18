@@ -2,6 +2,16 @@ class_name ComponentRolls
 extends RefCounted
 
 const QUALITIES := ["绑定", "制式", "改良", "原型"]
+const QUALITY_COLORS := [Color("a8b1bd"), Color("e7edf3"), Color("70b7ff"), Color("cf99ff")]
+
+static func quality_color(item: InventoryItem) -> Color:
+	return QUALITY_COLORS[quality(item)] if ordinary(item) or starter(item) else Color.WHITE
+
+static func apply_quality_color(control: Control, item: InventoryItem) -> void:
+	var color := quality_color(item)
+	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color", "font_focus_color"]:
+		control.add_theme_color_override(state, color)
+
 # Six broad, additive bonuses. Values are percentages except guard window (ms).
 const AFFIXES := {
 	"attack": ["攻击", 20, 50], "cooling": ["散热", 10, 30],

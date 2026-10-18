@@ -22,6 +22,7 @@ func _ready() -> void:
 	_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	_label.add_theme_constant_override("outline_size", 3)
 	_label.text = "E 拾取 · %s" % ComponentRolls.title(rolled_item)
+	ComponentRolls.apply_quality_color(_label, rolled_item)
 	_label.visible = false
 	add_child(_label)
 
@@ -41,3 +42,7 @@ func try_pickup(inventory: ComponentInventory) -> bool:
 	_picked = true
 	queue_free()
 	return true
+
+func _draw() -> void:
+	if rolled_item != null:
+		draw_arc(Vector2.ZERO, 17.0, 0.0, TAU, 28, ComponentRolls.quality_color(rolled_item), 2.0, true)

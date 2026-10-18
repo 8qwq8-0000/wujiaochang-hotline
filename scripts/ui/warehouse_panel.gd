@@ -143,6 +143,7 @@ func _chest_display_items() -> Array:
 
 func _add_item(parent: Control, item: InventoryItem, prefix: String, deposit: bool) -> void:
 	var button := Button.new()
+	ComponentRolls.apply_quality_color(button, item)
 	button.text = prefix + ComponentRolls.title(item)
 	button.icon = item.get_texture()
 	button.expand_icon = true

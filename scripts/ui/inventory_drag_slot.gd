@@ -20,7 +20,8 @@ func _get_drag_data(_position: Vector2) -> Variant:
 		icon_view.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		preview.add_child(icon_view)
 	var label := Label.new()
-	label.text = item.get_title()
+	label.text = ComponentRolls.title(item)
+	ComponentRolls.apply_quality_color(label, item)
 	label.add_theme_font_size_override("font_size", 14)
 	label.add_theme_color_override("font_outline_color", Color.BLACK)
 	label.add_theme_constant_override("outline_size", 4)

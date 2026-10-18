@@ -203,6 +203,7 @@ func _add_item(item: InventoryItem, location: String) -> void:
 	button.item = item
 	var names := {"weapon": "主武器 · 正在装备", "weapon_secondary": "副武器 · 正在装备", "mobility": "机动 · 正在装备", "blackbox": "黑匣", "backpack": "背包", "chest": "仓库"}
 	var selected := " · 已选主体" if item == _materials[0] else (" · 已选材料" if item == _materials[1] else "")
+	ComponentRolls.apply_quality_color(button, item)
 	button.text = ComponentRolls.title(item) + "\n" + names[location] + selected
 	button.icon = item.get_texture()
 	button.expand_icon = true
@@ -229,6 +230,7 @@ func _refresh_preview() -> void:
 	for index in 2:
 		var item: InventoryItem = _materials[index]
 		_material_buttons[index].text = ("01  主体" if index == 0 else "02  消耗材料") + "\n" + (ComponentRolls.title(item) if item != null else "拖入 / 点击选择")
+		ComponentRolls.apply_quality_color(_material_buttons[index], item)
 		_material_buttons[index].tooltip_text = ComponentRolls.describe(item) if item != null else "从左侧选择组件"
 		_material_buttons[index].add_theme_stylebox_override("normal", _style("223744", CYAN if _target == index else Color("52706c")))
 	var a: InventoryItem = _materials[0]
@@ -240,7 +242,7 @@ func _refresh_preview() -> void:
 	var tier := mini(ComponentRolls.synthesis_quality(a) + 1, 3)
 	var id := "baton" if ComponentRolls.starter(a) else a.get_prototype().get_prototype_id()
 	var name: String = ComponentInventory.PROTOTYPES.data[id].name
-	var heading := "[color=#e6bc73][b]%s · %s[/b][/color]" % [ComponentRolls.QUALITIES[tier], name]
+	var heading := "[color=#%s][b]%s · %s[/b][/color]" % [ComponentRolls.QUALITY_COLORS[tier].to_html(false), ComponentRolls.QUALITIES[tier], name]
 	if b == null:
 		_preview.text = heading + "\n\n选择另一件同槽位、同品质组件\n初始警棍按制式武器配对"
 		return
@@ -270,7 +272,7 @@ func _synthesize() -> void:
 	if room.synthesize(_materials[0], _materials[1]):
 		var result: InventoryItem = room.last_synthesis_result
 		refresh()
-		_preview.text = "[color=#8de3da][b]升级完成[/b][/color]\n" + ComponentRolls.describe(result) + "\n\n已回到主体原位置"
+		_preview.text = "[color=#8de3da][b]升级完成[/b][/color]\n" + "[color=#" + ComponentRolls.quality_color(result).to_html(false) + "]" + ComponentRolls.describe(result) + "[/color]\n\n已回到主体原位置"
 
 func _exit_tree() -> void:
 	if _owns_pause:

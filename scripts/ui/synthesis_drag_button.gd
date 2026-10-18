@@ -9,6 +9,7 @@ func _get_drag_data(_position: Vector2) -> Variant:
 		return null
 	var label := Label.new()
 	label.text = ComponentRolls.title(item)
+	ComponentRolls.apply_quality_color(label, item)
 	set_drag_preview(label)
 	return {"synthesis_panel": panel, "item": item}
 
