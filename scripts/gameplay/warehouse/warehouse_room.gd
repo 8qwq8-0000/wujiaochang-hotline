@@ -1,6 +1,6 @@
 extends Node2D
 
-const COMBAT_PATH := "res://scenes/levels/floors/combat_prototype.tscn"
+const COMBAT_PATH := "res://scenes/levels/week1_combat_room.tscn"
 const PANEL := preload("res://scripts/ui/warehouse_panel.gd")
 var chest: Inventory
 var panel: CanvasLayer

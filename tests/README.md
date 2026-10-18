@@ -52,7 +52,7 @@ godot --headless --path . --script res://tests/integration/enemy_loot_check.gd
 godot --headless --path . --script res://tests/integration/playthrough_check.gd
 ```
 
-Week 1 队友房间检查：`godot --headless --path . --script res://tests/integration/week1_room_check.gd`，覆盖 F6 单独运行与 Main 容器加载、实际敌人数同步、真实 E 拾取、敌人掉落、清场换装和 R 重开；不应输出 SKIP。
+Week 1 队友房间已作为正式“仓库出击”和“继续下一层”场景启用。专项检查：`godot --headless --path . --script res://tests/integration/week1_room_check.gd`，覆盖 F6 单独运行与 Main 容器加载、实际敌人数同步、真实 E 拾取、敌人掉落、清场换装、撤离出口和 R 重开；不应输出 SKIP。仓库与撤离检查另验证正式路径确实加载该场景。
 
 背包全图暂停检查：`godot --headless --path . --script res://tests/integration/inventory_pause_check.gd`，覆盖敌人/子弹/热量/冷却停止，界面操作、Tab/Esc、死亡、暂停中重开和场景退出恢复。
 

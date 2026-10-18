@@ -1,6 +1,6 @@
 extends CanvasLayer
 
-const FLOOR_PATH := "res://scenes/levels/floors/combat_prototype.tscn"
+const FLOOR_PATH := "res://scenes/levels/week1_combat_room.tscn"
 var _player: PlayerController
 var _owns_pause := false
 var _settled := false
