@@ -1,4 +1,4 @@
-[gd_scene load_steps=20 format=3 uid="uid://cqyh8dw1e1njs"]
+[gd_scene format=3 uid="uid://cqyh8dw1e1njs"]
 
 [ext_resource type="Script" path="res://scripts/levels/week1_combat_room.gd" id="0_script"]
 [ext_resource type="Texture2D" path="res://assets/art/environment/tile_window.png" id="2_window"]
@@ -12,6 +12,7 @@
 [ext_resource type="PackedScene" path="res://scenes/actors/player/player.tscn" id="10_player"]
 [ext_resource type="PackedScene" path="res://scenes/actors/enemies/enemy.tscn" id="11_enemy"]
 [ext_resource type="PackedScene" path="res://scenes/items/test_component.tscn" id="12_component"]
+[ext_resource type="Script" path="res://scripts/gameplay/rooms/exit_elevator.gd" id="13_exit"]
 
 [sub_resource type="RectangleShape2D" id="rect_wall_top"]
 size = Vector2(640, 32)
@@ -34,7 +35,7 @@ size = Vector2(32, 32)
 [sub_resource type="RectangleShape2D" id="rect_door"]
 size = Vector2(45, 55)
 
-[node name="Week1CombatRoom" type="Node2D"]
+[node name="Week1CombatRoom" type="Node2D" groups=["combat_rooms"]]
 script = ExtResource("0_script")
 
 [node name="Floor" type="Sprite2D" parent="."]
@@ -91,8 +92,11 @@ centered = true
 flip_h = true
 texture = ExtResource("7_door_room")
 
-[node name="ElevatorDoor" type="StaticBody2D" parent="."]
+[node name="ElevatorDoor" type="Area2D" parent="."]
 position = Vector2(585.5, 272)
+collision_layer = 64
+collision_mask = 2
+script = ExtResource("13_exit")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="ElevatorDoor"]
 shape = SubResource("rect_door")
@@ -154,7 +158,7 @@ texture = ExtResource("5_prop_b")
 
 [node name="Instances" type="Node2D" parent="."]
 
-[node name="Player" parent="Instances" instance=ExtResource("10_player")]
+[node name="Player" parent="." instance=ExtResource("10_player")]
 position = Vector2(320, 288)
 
 [node name="Enemy1" parent="Instances" instance=ExtResource("11_enemy")]

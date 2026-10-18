@@ -6,20 +6,30 @@ extends Node2D
 @onready var clear_label: Label = $ClearPrompt/Label
 @onready var player_spawn: Marker2D = $PlayerSpawn
 @onready var component_spawn: Marker2D = $ComponentSpawn
+@onready var player: PlayerController = $Player
+@onready var exit_elevator: ExitElevator = $ElevatorDoor
 
 ## Audio
 var ambience_player: AudioStreamPlayer = null
 
 ## State
 var enemies_alive: int = 0
-var room_cleared: bool = false
+var is_room_cleared: bool = false
 
 signal room_cleared_signal
+signal room_cleared
+
+func _enter_tree() -> void:
+	add_to_group("environment_areas")
+
+func contains_world_point(point: Vector2) -> bool:
+	return Rect2(0.0, 0.0, 640.0, 384.0).has_point(to_local(point))
 
 func _ready() -> void:
 	_start_ambience()
 	clear_prompt.visible = false
-	room_cleared = false
+	exit_elevator.set_enabled(false)
+	is_room_cleared = false
 	# Count the actual living enemies in this room; never substitute a guessed count.
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if is_ancestor_of(enemy):
@@ -46,7 +56,7 @@ func _start_ambience() -> void:
 		ambience_player.play()
 
 func _process(_delta: float) -> void:
-	if not room_cleared and enemies_alive <= 0:
+	if not is_room_cleared and enemies_alive <= 0:
 		_on_room_cleared()
 
 func _on_enemy_died(_packet: DamagePacket) -> void:
@@ -56,12 +66,18 @@ func _on_enemy_died(_packet: DamagePacket) -> void:
 		run.set_mandatory_enemy_count(enemies_alive)
 
 func _on_room_cleared() -> void:
-	room_cleared = true
+	is_room_cleared = true
 	clear_prompt.visible = true
+	exit_elevator.set_enabled(true)
 	room_cleared_signal.emit()
+	room_cleared.emit()
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null:
 		events.publish_floor_cleared()
+
+func receive_scene_payload(payload: Dictionary) -> void:
+	if payload.has("player_state") and payload["player_state"] is Dictionary:
+		player.import_run_state(payload["player_state"])
 
 func _unhandled_input(event: InputEvent) -> void:
 	# Bootstrap owns full-scene restart when loaded through Main.

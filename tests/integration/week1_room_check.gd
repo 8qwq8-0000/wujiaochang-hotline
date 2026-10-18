@@ -51,6 +51,8 @@ func run() -> void:
 			return
 		var actual_count := get_nodes_in_group("enemies").size()
 		check(root.get_node("RunManager").mandatory_enemies_remaining == actual_count, "count uses actual enemies")
+		var exit := scene.find_child("ElevatorDoor", true, false) as ExitElevator
+		check(exit != null and not exit.enabled, "exit starts locked")
 		var inventory := player.get_node("ComponentInventory") as ComponentInventory
 		var component := get_first_node_in_group("component_pickups") as ComponentPickup
 		check(component != null, "placeholder is a real pickup")
@@ -70,6 +72,7 @@ func run() -> void:
 		await process_frame
 		await process_frame
 		check(root.get_node("RunManager").mandatory_enemies_remaining == 0, "room clear updates objective")
+		check(exit != null and exit.enabled, "room clear enables the real exit")
 		check(get_nodes_in_group("component_pickups").size() == actual_count, "one drop per enemy in teammate room")
 		check(inventory.pickup("pistol") and inventory.equip(0), "can equip later weapon after teammate room clears")
 		key(KEY_R)
