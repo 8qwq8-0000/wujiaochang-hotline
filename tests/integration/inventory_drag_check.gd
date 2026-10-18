@@ -125,6 +125,8 @@ func run_checks() -> void:
 	before = player.export_run_state()
 	player.mobility.ability_cooldown_remaining = 0.6
 	player.mobility.set("_ability_active_remaining", 0.2)
+	player.mobility.set("_ram_direction", Vector2.LEFT)
+	player.mobility.set("_ram_hits", {123: true})
 	await drag(blackbox, cells[5].get_global_rect().get_center())
 	check(inv.blackbox_slot.get_item() != insurance and inv.backpack.has_item(insurance), "full backpack accepts compatible atomic exchange from blackbox")
 	check(player.mobility.ability_cooldown_remaining == 0.6 and player.mobility.get("_ability_active_remaining") == 0.2, "blackbox exchange does not reset mobility cooldown or active ability")
@@ -138,6 +140,7 @@ func run_checks() -> void:
 	await drag(cells[core_index], blackbox.get_global_rect().get_center())
 	check(player.export_run_state() == before, "failed drag checkpoint restores both original inventories")
 	check(player.heat.current_heat == 27 and player.weapons.get("_cooldown_remaining") == 0.75 and player.mobility.ability_cooldown_remaining == 0.6, "failed drag keeps heat and cooldowns unchanged")
+	check(player.mobility.get("_ram_direction") == Vector2.LEFT and player.mobility.get("_ram_hits").has(123), "failed checkpoint preserves charge heading and hit deduplication")
 	store.save_path = SAVE_PATH
 	room.save_loadout()
 	# A drag carries the instance itself, not a mutable list index.

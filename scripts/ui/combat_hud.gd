@@ -54,7 +54,10 @@ func _process(_delta: float) -> void:
 	_health_meter.set_meter(float(health_state.current), float(health_state.maximum))
 	_heat_meter.meter_color = CyberUITheme.DANGER if heat_state.overheated else CyberUITheme.WARNING
 	_heat_meter.set_meter(float(heat_state.current), float(heat_state.maximum))
-	_mobility_value.text = "%s  // SPACE\n%s" % [_player.get_mobility_display_name(), _player.get_node("DefenseComponent").display_state()]
+	var mobility_hint := "SPACE"
+	if _player.mobility.get_current_mode() is WheelMobilityMode:
+		mobility_hint = "冲撞 %.1fs" % _player.mobility.ability_cooldown_remaining if _player.mobility.ability_cooldown_remaining > 0.0 else "冲撞 SPACE"
+	_mobility_value.text = "%s  // %s\n%s" % [_player.get_mobility_display_name(), mobility_hint, _player.get_node("DefenseComponent").display_state()]
 	_weapon_value.text = "> %s  %s\n  Q/滚轮 切换" % ["A" if _player.weapons.current_index == 0 else "B", _player.get_weapon_display_name()]
 	_guard_value.text = "格挡协议  %s" % _guard_state_name(_player.get_guard_state())
 	if is_instance_valid(_player.talent_core):

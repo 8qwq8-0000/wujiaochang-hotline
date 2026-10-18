@@ -295,6 +295,8 @@ func drop_item(item: InventoryItem, destination: String, index: int = -1) -> boo
 	var active_weapon := player.weapons.current_index
 	var ability_cooldown := player.mobility.ability_cooldown_remaining
 	var ability_active: float = player.mobility.get("_ability_active_remaining")
+	var ram_direction: Vector2 = player.mobility.get("_ram_direction")
+	var ram_hits: Dictionary = player.mobility.get("_ram_hits").duplicate()
 	var other := item_at(destination, index)
 	var moved := false
 	if source == "backpack" and destination == "backpack" and other != null:
@@ -334,6 +336,8 @@ func drop_item(item: InventoryItem, destination: String, index: int = -1) -> boo
 		_apply_equipment()
 		player.mobility.ability_cooldown_remaining = ability_cooldown
 		player.mobility.set("_ability_active_remaining", ability_active)
+		player.mobility.set("_ram_direction", ram_direction)
+		player.mobility.set("_ram_hits", ram_hits)
 		changed.emit()
 		return false
 	changed.emit()

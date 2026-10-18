@@ -89,7 +89,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("guard") and mobility.can_guard():
 		guard.begin_guard(aim_direction)
 	if event.is_action_pressed("mobility_ability"):
-		mobility.activate_ability(self, aim_direction)
+		mobility.activate_ability(self, aim_direction, Input.get_vector("move_left", "move_right", "move_up", "move_down"))
 	if InputMap.has_action("interact") and event.is_action_pressed("interact"):
 		interactor.request_interaction(self)
 	if event.is_action_pressed("weapon_switch") or event.is_action_pressed("weapon_next"):
