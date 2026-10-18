@@ -1,0 +1,106 @@
+{
+  "input": "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_shield_back_v1\\raw\\right_run_shield_back_raw_v1.png",
+  "input_size": [
+    2170,
+    725
+  ],
+  "boundaries": [
+    0,
+    362,
+    723,
+    1085,
+    1447,
+    1808,
+    2170
+  ],
+  "output_size": [
+    128,
+    256
+  ],
+  "records": [
+    {
+      "frame": 1,
+      "source_box": [
+        0,
+        0,
+        362,
+        725
+      ],
+      "source_size": [
+        362,
+        725
+      ],
+      "output": "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_shield_back_v1\\split_v1\\frame-001.png"
+    },
+    {
+      "frame": 2,
+      "source_box": [
+        362,
+        0,
+        723,
+        725
+      ],
+      "source_size": [
+        361,
+        725
+      ],
+      "output": "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_shield_back_v1\\split_v1\\frame-002.png"
+    },
+    {
+      "frame": 3,
+      "source_box": [
+        723,
+        0,
+        1085,
+        725
+      ],
+      "source_size": [
+        362,
+        725
+      ],
+      "output": "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_shield_back_v1\\split_v1\\frame-003.png"
+    },
+    {
+      "frame": 4,
+      "source_box": [
+        1085,
+        0,
+        1447,
+        725
+      ],
+      "source_size": [
+        362,
+        725
+      ],
+      "output": "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_shield_back_v1\\split_v1\\frame-004.png"
+    },
+    {
+      "frame": 5,
+      "source_box": [
+        1447,
+        0,
+        1808,
+        725
+      ],
+      "source_size": [
+        361,
+        725
+      ],
+      "output": "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_shield_back_v1\\split_v1\\frame-005.png"
+    },
+    {
+      "frame": 6,
+      "source_box": [
+        1808,
+        0,
+        2170,
+        725
+      ],
+      "source_size": [
+        362,
+        725
+      ],
+      "output": "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_shield_back_v1\\split_v1\\frame-006.png"
+    }
+  ]
+}

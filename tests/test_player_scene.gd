@@ -16,25 +16,59 @@ func test_player_scene_has_required_components() -> void:
 	assert_true(player.get_node_or_null("CircuitBreakerComponent") is CircuitBreakerComponent)
 	assert_true(player.get_node_or_null("InteractionDetector") is InteractorComponent)
 	assert_true(player.get_node_or_null("VisualRoot/BodyVisual") is AnimatedSprite2D)
+	var wrist_socket := player.get_node_or_null("VisualRoot/WristSocket") as PlayerWristSocket
+	assert_true(wrist_socket != null)
 	assert_true(player.get_node_or_null("VisualRoot/WeaponPivot") is WeaponMount)
 	assert_true(player.get_node_or_null("VFXSockets/Foot") is Marker2D)
 	var sprite := player.get_node("VisualRoot/BodyVisual") as AnimatedSprite2D
-	for animation in [&"idle_left", &"idle_right", &"walk_left", &"walk_right"]:
+	for animation in [&"idle", &"walk_left", &"walk_right"]:
 		assert_true(sprite.sprite_frames.has_animation(animation))
+	for removed_idle in [&"idle_down", &"idle_up", &"idle_left", &"idle_right"]:
+		assert_false(sprite.sprite_frames.has_animation(removed_idle))
 	assert_eq(sprite.sprite_frames.get_frame_count(&"walk_down"), 6)
 	assert_eq(sprite.sprite_frames.get_frame_count(&"walk_up"), 6)
 	assert_eq(sprite.sprite_frames.get_frame_count(&"walk_left"), 6)
 	assert_eq(sprite.sprite_frames.get_frame_count(&"walk_right"), 6)
-	assert_eq(sprite.sprite_frames.get_frame_count(&"idle_left"), 6)
-	assert_eq(sprite.sprite_frames.get_frame_count(&"idle_right"), 6)
-	assert_true(
+	assert_eq(sprite.sprite_frames.get_frame_count(&"idle"), 6)
+	var walk_down_regions: Array[float] = []
+	for frame_index in sprite.sprite_frames.get_frame_count(&"walk_down"):
+		var frame_texture := sprite.sprite_frames.get_frame_texture(
+			&"walk_down",
+			frame_index
+		) as AtlasTexture
+		walk_down_regions.append(frame_texture.region.position.x)
+	assert_eq(walk_down_regions, [0.0, 128.0, 384.0, 256.0, 512.0, 640.0])
+	assert_false(
 		sprite.sprite_frames.get_frame_texture(&"walk_left", 0)
 		== sprite.sprite_frames.get_frame_texture(&"walk_right", 0)
 	)
+	var walk_right_frame := sprite.sprite_frames.get_frame_texture(
+		&"walk_right",
+		0
+	) as AtlasTexture
+	assert_true(walk_right_frame.atlas.resource_path.ends_with("player_walk_right.png"))
 	assert_true(sprite.scale.is_equal_approx(Vector2(0.25, 0.25)))
 	var visuals := player.get_node("VisualRoot") as PlayerVisualController
 	assert_eq(visuals._direction_name(Vector2.LEFT), "left")
 	assert_eq(visuals._direction_name(Vector2.RIGHT), "right")
+	for direction in ["down", "up", "left", "right"]:
+		assert_eq(visuals._body_animation(direction, false), &"idle")
+	assert_eq(visuals._body_animation("right", true), &"walk_right")
+	assert_false(sprite.flip_h)
+	assert_true(visuals._weapon_draws_in_front("down"))
+	assert_true(visuals._weapon_draws_in_front("right"))
+	assert_false(visuals._weapon_draws_in_front("up"))
+	assert_false(visuals._weapon_draws_in_front("left"))
+	for animation in [
+		&"idle",
+		&"walk_down", &"walk_up", &"walk_left", &"walk_right",
+	]:
+		assert_eq(
+			wrist_socket.get_pose_frame_count(animation),
+			sprite.sprite_frames.get_frame_count(animation),
+			String(animation) + " wrist frames"
+		)
+	assert_true(wrist_socket.get_source_wrist(&"walk_right", 0).x > 64.0)
 
 
 func test_default_player_config_uses_baton_and_walking() -> void:

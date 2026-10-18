@@ -1,0 +1,83 @@
+{
+  "ok": true,
+  "errors": [],
+  "warnings": [],
+  "frames": [
+    {
+      "frame": 1,
+      "size": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        166,
+        200,
+        1369,
+        1370
+      ],
+      "visibleArea": 1407510,
+      "footY": 1369,
+      "colors": 49555,
+      "opaque": false
+    },
+    {
+      "frame": 2,
+      "size": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        175,
+        180,
+        1360,
+        1370
+      ],
+      "visibleArea": 1410150,
+      "footY": 1369,
+      "colors": 69092,
+      "opaque": false
+    },
+    {
+      "frame": 3,
+      "size": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        190,
+        223,
+        1345,
+        1370
+      ],
+      "visibleArea": 1324785,
+      "footY": 1369,
+      "colors": 49967,
+      "opaque": false
+    },
+    {
+      "frame": 4,
+      "size": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        186,
+        202,
+        1349,
+        1370
+      ],
+      "visibleArea": 1358384,
+      "footY": 1369,
+      "colors": 44044,
+      "opaque": false
+    }
+  ],
+  "input": "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\directions_v1\\aligned",
+  "sources": [
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\directions_v1\\aligned\\back.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\directions_v1\\aligned\\front.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\directions_v1\\aligned\\left.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\directions_v1\\aligned\\right.png"
+  ],
+  "count": 4
+}

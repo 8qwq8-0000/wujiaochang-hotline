@@ -1,0 +1,28 @@
+{
+  "frames": 1,
+  "files": [
+    "frame-001.png"
+  ],
+  "durationsMs": [
+    100
+  ],
+  "sources": [
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\pixel_front_v1\\raw\\front_pixel_draft.png"
+  ],
+  "normalized": {
+    "canvas": [
+      1264,
+      1264
+    ],
+    "anchor": "bottom-center",
+    "outputCanvas": [
+      158,
+      158
+    ],
+    "trim": true,
+    "scale": 0.125,
+    "colors": 24,
+    "matte": null,
+    "tolerance": null
+  }
+}

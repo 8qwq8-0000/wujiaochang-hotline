@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/presentation/weapon_view.gd" id="1_view"]
-[ext_resource type="Texture2D" path="res://assets/art/weapons/placeholder/placeholder_weapon_spear.png" id="2_texture"]
+[ext_resource type="Texture2D" path="res://assets/art/weapons/placeholder/placeholder_service_pistol_unpainted.png" id="2_texture"]
+[ext_resource type="Script" path="res://scripts/presentation/procedural_coating_2d.gd" id="3_coating"]
 
 [node name="ServicePistolView" type="Node2D"]
 texture_filter = 1
@@ -13,14 +14,16 @@ feedback_seconds = 0.07
 
 [node name="BodySprite" type="Sprite2D" parent="BodyRoot"]
 texture_filter = 1
-modulate = Color(0.45, 0.95, 0.72, 1)
-position = Vector2(13, 0)
-scale = Vector2(0.5, 0.5)
+position = Vector2(20, 0)
 texture = ExtResource("2_texture")
-flip_h = true
+
+[node name="Coating" type="Node2D" parent="BodyRoot"]
+z_index = 2
+script = ExtResource("3_coating")
+seed_key = &"service_pistol"
 
 [node name="MuzzleSocket" type="Marker2D" parent="."]
-position = Vector2(27, 0)
+position = Vector2(39, 0)
 
 [node name="MuzzleFlash" type="Polygon2D" parent="MuzzleSocket"]
 visible = false

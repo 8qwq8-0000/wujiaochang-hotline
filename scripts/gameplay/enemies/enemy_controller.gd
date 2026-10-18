@@ -35,6 +35,8 @@ const DEFAULT_VIEWPORT_SIZE := Vector2(640.0, 360.0)
 @export var profile: EnemyProfile
 @export var initial_facing := Vector2.LEFT
 var facing := Vector2.LEFT
+var death_motion_direction := Vector2.ZERO
+var death_impact_direction := Vector2.ZERO
 var _alerted := false
 var _memory_remaining := 0.0
 var _last_known_position := Vector2.ZERO
@@ -674,9 +676,15 @@ func apply_knockback(force: Vector2) -> void:
 	velocity += force
 
 
-func _on_died(_packet: DamagePacket) -> void:
+func _on_died(packet: DamagePacket) -> void:
 	if state in [State.DEAD, State.SELF_DESTRUCT] or _defeat_finalized:
 		return
+	death_motion_direction = velocity.normalized() if not velocity.is_zero_approx() else Vector2.ZERO
+	if packet != null:
+		if not packet.travel_direction.is_zero_approx():
+			death_impact_direction = packet.travel_direction.normalized()
+		elif not packet.knockback.is_zero_approx():
+			death_impact_direction = packet.knockback.normalized()
 	_cancel_precharge()
 	_cancel_investigation()
 	if profile.self_destruct_enabled:

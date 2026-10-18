@@ -1,0 +1,150 @@
+{
+  "source_frames": 6,
+  "source_palette_rgb_colors": 11563,
+  "records": [
+    {
+      "frame": 1,
+      "source_bbox": [
+        10,
+        80,
+        118,
+        244
+      ],
+      "candidate_bbox": [
+        6,
+        80,
+        112,
+        235
+      ],
+      "scale": 1.0580645161290323,
+      "output_position": [
+        8,
+        80
+      ],
+      "output_size": [
+        112,
+        164
+      ]
+    },
+    {
+      "frame": 2,
+      "source_bbox": [
+        22,
+        80,
+        107,
+        244
+      ],
+      "candidate_bbox": [
+        20,
+        78,
+        108,
+        236
+      ],
+      "scale": 1.0379746835443038,
+      "output_position": [
+        19,
+        80
+      ],
+      "output_size": [
+        91,
+        164
+      ]
+    },
+    {
+      "frame": 3,
+      "source_bbox": [
+        17,
+        80,
+        111,
+        244
+      ],
+      "candidate_bbox": [
+        9,
+        81,
+        112,
+        235
+      ],
+      "scale": 1.0649350649350648,
+      "output_position": [
+        9,
+        80
+      ],
+      "output_size": [
+        110,
+        164
+      ]
+    },
+    {
+      "frame": 4,
+      "source_bbox": [
+        13,
+        81,
+        116,
+        244
+      ],
+      "candidate_bbox": [
+        16,
+        79,
+        107,
+        233
+      ],
+      "scale": 1.0584415584415585,
+      "output_position": [
+        16,
+        81
+      ],
+      "output_size": [
+        96,
+        163
+      ]
+    },
+    {
+      "frame": 5,
+      "source_bbox": [
+        22,
+        80,
+        106,
+        244
+      ],
+      "candidate_bbox": [
+        18,
+        77,
+        107,
+        236
+      ],
+      "scale": 1.0314465408805031,
+      "output_position": [
+        18,
+        80
+      ],
+      "output_size": [
+        92,
+        164
+      ]
+    },
+    {
+      "frame": 6,
+      "source_bbox": [
+        18,
+        80,
+        110,
+        244
+      ],
+      "candidate_bbox": [
+        8,
+        80,
+        112,
+        235
+      ],
+      "scale": 1.0580645161290323,
+      "output_position": [
+        9,
+        80
+      ],
+      "output_size": [
+        110,
+        164
+      ]
+    }
+  ]
+}

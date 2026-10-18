@@ -5,12 +5,14 @@ const EFFECT_SCENE := preload("res://scenes/presentation/effect_flash.tscn")
 const DAMAGE_NUMBER_SCENE := preload("res://scenes/presentation/damage_number.tscn")
 const AFTERIMAGE_SCENE := preload("res://scenes/presentation/afterimage_effect.tscn")
 const ARC_EFFECT := preload("res://scripts/presentation/electric_arc_effect.gd")
+const STAIN_LAYER_SCRIPT := preload("res://scripts/presentation/cyber_stain_layer.gd")
 const AFTERIMAGE_COLOR := Color(0.25, 0.85, 1.0, 0.55)
 const AFTERIMAGE_DURATION := 0.25
 
 @export_range(1, 256, 1) var total_effect_budget: int = 64
 @export_range(1, 128, 1) var prewarm_count: int = 12
 @export_range(1, 12, 1) var afterimage_budget: int = 6
+@export_range(1, 128, 1) var stain_budget: int = 48
 
 var _available: Array[EffectFlash] = []
 var _active: Array[EffectFlash] = []
@@ -19,9 +21,12 @@ var _active_numbers: Array[DamageNumber] = []
 var _available_afterimages: Array[AfterimageEffect] = []
 var _active_afterimages: Array[AfterimageEffect] = []
 var _active_arcs: Array[Node2D] = []
+var _stain_layer: Variant
+var _stain_serial := 0
 
 
 func _ready() -> void:
+	_attach_stain_layer(_current_scene_host())
 	for _index in prewarm_count:
 		_available.append(_create_effect())
 		_available_numbers.append(_create_damage_number())
@@ -36,6 +41,86 @@ func _ready() -> void:
 		events.electric_arc_requested.connect(_spawn_arc)
 		events.fuel_explosion_requested.connect(func(point: Vector2, radius: float) -> void: spawn_flash(point, Color("ff9446"), radius, 0.3))
 		events.environment_discharge_requested.connect(func(point: Vector2, radius: float) -> void: spawn_flash(point, Color("69d6ec"), radius, 0.3))
+		events.entity_defeated.connect(_on_entity_defeated)
+	var scene_flow := get_node_or_null("../SceneFlow")
+	if scene_flow != null and scene_flow.has_signal("scene_swapped"):
+		scene_flow.scene_swapped.connect(
+			func(scene: Node, _payload: Dictionary) -> void: _attach_stain_layer(scene)
+		)
+
+
+func _current_scene_host() -> Node:
+	var container := get_node_or_null("../SceneContainer")
+	if container != null and container.get_child_count() > 0:
+		return container.get_child(0)
+	return self
+
+
+func _attach_stain_layer(host: Node) -> void:
+	if not is_instance_valid(host):
+		host = self
+	if is_instance_valid(_stain_layer):
+		_stain_layer.queue_free()
+	_stain_layer = STAIN_LAYER_SCRIPT.new()
+	_stain_layer.name = "CyberStainLayer"
+	_stain_layer.stain_budget = stain_budget
+	host.add_child(_stain_layer)
+	# Root-level custom drawing and floor assemblers should render first, while
+	# actors render afterward. Insert immediately before the first actor.
+	var actor_index := -1
+	for index in host.get_child_count():
+		var child := host.get_child(index)
+		if child == _stain_layer:
+			continue
+		if child.is_in_group("player") or child.is_in_group("enemies") or child.name == "Player":
+			actor_index = index
+			break
+	if actor_index >= 0:
+		host.move_child(_stain_layer, actor_index)
+
+
+func spawn_death_stain(
+	world_position: Vector2,
+	profile: EnemyProfile,
+	motion_direction: Vector2 = Vector2.ZERO,
+	impact_direction: Vector2 = Vector2.ZERO
+) -> void:
+	if _stain_layer == null or profile == null:
+		return
+	_stain_serial += 1
+	var run_seed := 0
+	var run_manager := get_node_or_null("/root/RunManager")
+	if run_manager != null:
+		run_seed = int(run_manager.run_seed)
+	var cell := Vector2i(roundi(world_position.x), roundi(world_position.y))
+	var seed_value := hash("%d:%s:%d:%d:%d" % [run_seed, profile.id, cell.x, cell.y, _stain_serial])
+	_stain_layer.spawn_stain(
+		world_position,
+		seed_value,
+		int(profile.role),
+		motion_direction,
+		impact_direction
+	)
+
+
+func clear_stains() -> void:
+	if _stain_layer != null:
+		_stain_layer.clear_stains()
+
+
+func get_stain_count() -> int:
+	return _stain_layer.get_stain_count() if _stain_layer != null else 0
+
+
+func _on_entity_defeated(entity: Node) -> void:
+	if entity is EnemyController:
+		var enemy := entity as EnemyController
+		spawn_death_stain(
+			enemy.global_position,
+			enemy.profile,
+			enemy.death_motion_direction,
+			enemy.death_impact_direction
+		)
 
 
 func _spawn_arc(from: Vector2, to: Vector2, room: Node) -> void:

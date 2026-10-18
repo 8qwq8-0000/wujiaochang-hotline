@@ -1,0 +1,119 @@
+{
+  "ok": true,
+  "errors": [],
+  "warnings": [],
+  "frames": [
+    {
+      "frame": 1,
+      "size": [
+        128,
+        256
+      ],
+      "bbox": [
+        6,
+        80,
+        121,
+        244
+      ],
+      "visibleArea": 18860,
+      "footY": 243,
+      "colors": 1770,
+      "opaque": false
+    },
+    {
+      "frame": 2,
+      "size": [
+        128,
+        256
+      ],
+      "bbox": [
+        16,
+        80,
+        112,
+        244
+      ],
+      "visibleArea": 15744,
+      "footY": 243,
+      "colors": 1712,
+      "opaque": false
+    },
+    {
+      "frame": 3,
+      "size": [
+        128,
+        256
+      ],
+      "bbox": [
+        4,
+        80,
+        125,
+        244
+      ],
+      "visibleArea": 19844,
+      "footY": 243,
+      "colors": 1735,
+      "opaque": false
+    },
+    {
+      "frame": 4,
+      "size": [
+        128,
+        256
+      ],
+      "bbox": [
+        12,
+        81,
+        118,
+        244
+      ],
+      "visibleArea": 17278,
+      "footY": 243,
+      "colors": 1716,
+      "opaque": false
+    },
+    {
+      "frame": 5,
+      "size": [
+        128,
+        256
+      ],
+      "bbox": [
+        18,
+        80,
+        109,
+        244
+      ],
+      "visibleArea": 14924,
+      "footY": 243,
+      "colors": 1579,
+      "opaque": false
+    },
+    {
+      "frame": 6,
+      "size": [
+        128,
+        256
+      ],
+      "bbox": [
+        8,
+        80,
+        121,
+        244
+      ],
+      "visibleArea": 18532,
+      "footY": 243,
+      "colors": 1759,
+      "opaque": false
+    }
+  ],
+  "input": "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v2\\normalized_true_left_shield_v3\\palette-mapped",
+  "sources": [
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v2\\normalized_true_left_shield_v3\\palette-mapped\\frame-001.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v2\\normalized_true_left_shield_v3\\palette-mapped\\frame-002.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v2\\normalized_true_left_shield_v3\\palette-mapped\\frame-003.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v2\\normalized_true_left_shield_v3\\palette-mapped\\frame-004.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v2\\normalized_true_left_shield_v3\\palette-mapped\\frame-005.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v2\\normalized_true_left_shield_v3\\palette-mapped\\frame-006.png"
+  ],
+  "count": 6
+}

@@ -1,0 +1,36 @@
+{
+  "frames": 6,
+  "columns": 6,
+  "rows": 1,
+  "frameWidth": 128,
+  "frameHeight": 256,
+  "durationsMs": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+  ],
+  "fpsRequested": 10,
+  "sources": [
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v2\\normalized_true_left_shield_v3\\palette-mapped\\frame-001.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v2\\normalized_true_left_shield_v3\\palette-mapped\\frame-002.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v2\\normalized_true_left_shield_v3\\palette-mapped\\frame-003.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v2\\normalized_true_left_shield_v3\\palette-mapped\\frame-004.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v2\\normalized_true_left_shield_v3\\palette-mapped\\frame-005.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v2\\normalized_true_left_shield_v3\\palette-mapped\\frame-006.png"
+  ],
+  "files": {
+    "sheet": "sprite-sheet.png",
+    "gif": "animation.gif",
+    "frames": [
+      "frame-001.png",
+      "frame-002.png",
+      "frame-003.png",
+      "frame-004.png",
+      "frame-005.png",
+      "frame-006.png"
+    ]
+  }
+}

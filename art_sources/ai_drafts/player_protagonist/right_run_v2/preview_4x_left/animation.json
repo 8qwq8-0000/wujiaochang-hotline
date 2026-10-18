@@ -1,0 +1,28 @@
+{
+  "frames": 1,
+  "files": [
+    "frame-001.png"
+  ],
+  "durationsMs": [
+    100
+  ],
+  "sources": [
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v2\\left_template_pack\\sprite-sheet.png"
+  ],
+  "normalized": {
+    "canvas": [
+      768,
+      256
+    ],
+    "anchor": "bottom-center",
+    "outputCanvas": [
+      3072,
+      1024
+    ],
+    "trim": false,
+    "scale": 4.0,
+    "colors": null,
+    "matte": null,
+    "tolerance": null
+  }
+}
