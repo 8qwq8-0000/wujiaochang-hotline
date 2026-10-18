@@ -1,0 +1,7 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/levels/rooms/prototype_combat_room.tscn" id="1"]
+[ext_resource type="Resource" path="res://resources/rooms/layouts/split_office.tres" id="2"]
+
+[node name="SplitOffice" instance=ExtResource("1")]
+layout = ExtResource("2")

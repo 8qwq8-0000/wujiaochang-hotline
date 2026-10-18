@@ -1,6 +1,8 @@
 class_name CombatRoom
 extends Node2D
 
+@export var layout: CombatLayoutData
+
 signal room_cleared
 var cleared := false
 var sequence_managed := false
@@ -22,6 +24,8 @@ func contains_world_point(point: Vector2) -> bool:
 
 
 func _ready() -> void:
+	if layout != null:
+		_apply_layout()
 	spawner.all_required_defeated.connect(_on_all_required_defeated)
 	exit_elevator.set_enabled(false)
 
@@ -73,3 +77,36 @@ func open_side(side: String) -> void:
 		visual.polygon = PackedVector2Array([Vector2(-8, center - 66), Vector2(8, center - 66), Vector2(8, center + 66), Vector2(-8, center + 66)])
 		visual.color = Color(0.22, 0.28, 0.36)
 		wall.add_child(visual)
+
+
+func _apply_layout() -> void:
+	for old_name in ["CoverA", "CoverB"]:
+		var old := get_node_or_null(old_name)
+		if old != null:
+			remove_child(old)
+			old.free()
+	var geometry := Node2D.new()
+	geometry.name = "LayoutGeometry"
+	add_child(geometry)
+	for rect in layout.covers:
+		var body := StaticBody2D.new()
+		body.position = rect.get_center()
+		body.collision_layer = 1
+		body.collision_mask = 0
+		var shape := RectangleShape2D.new()
+		shape.size = rect.size
+		var collider := CollisionShape2D.new()
+		collider.shape = shape
+		body.add_child(collider)
+		var visual := Polygon2D.new()
+		visual.polygon = CombatLayoutData._outline(Rect2(-rect.size * 0.5, rect.size))
+		visual.color = layout.cover_color
+		body.add_child(visual)
+		geometry.add_child(body)
+	$Floor.color = layout.floor_color
+	var markers := $EnemySpawnPoints.get_children()
+	for index in mini(markers.size(), layout.enemy_positions.size()):
+		markers[index].position = layout.enemy_positions[index]
+	$PowerBox.position = layout.power_position
+	$FuelBarrel.position = layout.bomb_position
+	$NavigationRegion2D.navigation_polygon = layout.navigation_polygon()

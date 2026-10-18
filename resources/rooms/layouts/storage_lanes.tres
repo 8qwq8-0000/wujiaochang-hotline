@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="CombatLayoutData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/rooms/combat_layout_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"storage_lanes"
+display_name = "货架通道"
+covers = Array[Rect2]([Rect2(192, 80, 224, 32), Rect2(272, 248, 224, 32), Rect2(320, 156, 28, 48)])
+enemy_positions = Array[Vector2]([Vector2(250, 212), Vector2(520, 152), Vector2(474, 320)])
+power_position = Vector2(140, 282)
+bomb_position = Vector2(458, 82)
+floor_color = Color(0.14118, 0.1451, 0.13333, 1)
+cover_color = Color(0.41961, 0.4, 0.31373, 1)

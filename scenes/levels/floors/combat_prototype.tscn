@@ -1,8 +1,15 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://scripts/gameplay/rooms/combat_floor.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/actors/player/player.tscn" id="2"]
 [ext_resource type="Script" path="res://scripts/gameplay/rooms/floor_assembler.gd" id="3"]
+
+[ext_resource type="Resource" path="res://resources/rooms/templates/staggered_cover.tres" id="room_0"]
+[ext_resource type="Resource" path="res://resources/rooms/templates/central_server.tres" id="room_1"]
+[ext_resource type="Resource" path="res://resources/rooms/templates/storage_lanes.tres" id="room_2"]
+[ext_resource type="Resource" path="res://resources/rooms/templates/cross_checkpoint.tres" id="room_3"]
+[ext_resource type="Resource" path="res://resources/rooms/templates/offset_workshop.tres" id="room_4"]
+[ext_resource type="Resource" path="res://resources/rooms/templates/split_office.tres" id="room_5"]
 
 [node name="CombatPrototype" type="Node2D" groups=["combat_rooms"]]
 script = ExtResource("1")
@@ -11,6 +18,7 @@ script = ExtResource("1")
 script = ExtResource("3")
 room_count = 2
 sequential_progression = true
+room_pool = [ExtResource("room_0"), ExtResource("room_1"), ExtResource("room_2"), ExtResource("room_3"), ExtResource("room_4"), ExtResource("room_5")]
 
 [node name="Player" parent="." instance=ExtResource("2")]
 position = Vector2(74, 180)

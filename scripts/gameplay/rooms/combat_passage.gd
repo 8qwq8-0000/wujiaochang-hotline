@@ -19,8 +19,8 @@ func _ready() -> void:
 	_label.text = "清场后通行"
 	add_child(_label)
 	_link = NavigationLink2D.new()
-	_link.start_position = Vector2(-12, 0)
-	_link.end_position = Vector2(length + 12, 0)
+	_link.start_position = Vector2(-24, 0)
+	_link.end_position = Vector2(length + 24, 0)
 	_link.enabled = false
 	add_child(_link)
 	queue_redraw()

@@ -5,7 +5,7 @@ signal enemy_spawned(enemy: EnemyController)
 signal required_remaining_changed(remaining: int)
 signal all_required_defeated
 
-const ENEMY_SCENE := preload("res://scenes/actors/enemies/enemy.tscn")
+const ENEMY_SCENE_PATH := "res://scenes/actors/enemies/enemy.tscn"
 
 @export var marker_root_path: NodePath
 @export var spawn_parent_path: NodePath = NodePath("..")
@@ -36,8 +36,11 @@ func spawn_all() -> void:
 	if spawn_parent == null:
 		push_error("EnemySpawner requires a Node2D spawn parent")
 		return
+	# Resolve after scripts finish loading; room templates and enemy scripts can
+	# otherwise preload each other and cache an empty PackedScene.
+	var enemy_scene := load(ENEMY_SCENE_PATH) as PackedScene
 	for marker in _spawn_plan:
-		var enemy: EnemyController = ENEMY_SCENE.instantiate()
+		var enemy: EnemyController = enemy_scene.instantiate()
 		enemy.profile = marker.profile
 		enemy.mandatory = marker.mandatory
 		# Set the final local position before _ready records the patrol anchor.
