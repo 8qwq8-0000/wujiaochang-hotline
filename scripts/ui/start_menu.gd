@@ -1,8 +1,7 @@
 extends Control
 
 const WAREHOUSE := "res://scenes/bootstrap/warehouse_main.tscn"
-const PORTRAIT := preload("res://assets/art/ui/standard_chassis_portrait.png")
-const INK := Color("101d27")
+const PORTRAIT := preload("res://assets/art/ui/standard_chassis_cutout.png")
 const MUTED := Color("8b9fae")
 const LIGHT := Color("ebf1f3")
 const CYAN := Color("75e8df")
@@ -26,29 +25,29 @@ func _ready() -> void:
 	background.size = Vector2(1280, 720)
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_canvas.add_child(background)
-	var top := _label("WJC  /  五角场热线", 19, LIGHT)
-	place(top, Rect2(64, 32, 600, 32), _canvas)
-	var channel := _label("接线终端   //   CHANNEL 01", 16, MUTED)
-	channel.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	place(channel, Rect2(800, 32, 416, 32), _canvas)
-	var line := ColorRect.new()
-	line.color = Color("2b3c47")
-	place(line, Rect2(64, 81, 1152, 1), _canvas)
-	var card := Panel.new()
-	card.add_theme_stylebox_override("panel", CyberUITheme.create_box(Color("fafafa"), Color("fafafa"), 0))
-	place(card, Rect2(704, 112, 512, 548), _canvas)
+	# A quiet stage light behind the cutout; no card or opaque image backing.
+	var light := TextureRect.new()
+	var glow := GradientTexture2D.new()
+	var gradient := Gradient.new()
+	gradient.colors = PackedColorArray([Color(0.12, 0.35, 0.36, 0.23), Color(0.03, 0.07, 0.09, 0.0)])
+	glow.gradient = gradient
+	glow.width = 512
+	glow.height = 512
+	glow.fill = GradientTexture2D.FILL_RADIAL
+	glow.fill_from = Vector2(0.5, 0.5)
+	glow.fill_to = Vector2(1.0, 0.5)
+	light.texture = glow
+	light.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	place(light, Rect2(476, -64, 880, 850), _canvas)
 	var portrait := TextureRect.new()
 	portrait.texture = PORTRAIT
+	portrait.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	place(portrait, Rect2(714, 122, 492, 510), _canvas)
-	var tag := _label("01   /   标准机体", 16, INK)
-	place(tag, Rect2(726, 625, 450, 26), _canvas)
-	var footer := _label("WASD 移动    /    鼠标攻击    /    E 交互    /    Tab 配装", 15, MUTED)
-	place(footer, Rect2(64, 677, 1152, 26), _canvas)
+	place(portrait, Rect2(560, 24, 710, 672), _canvas)
 	_content = Control.new()
-	place(_content, Rect2(64, 112, 584, 548), _canvas)
+	place(_content, Rect2(96, 72, 520, 576), _canvas)
 	resized.connect(_resize_canvas)
 	_resize_canvas()
 	show_home()
@@ -81,19 +80,17 @@ func _button(value: String, rect: Rect2, action: Callable, primary := false) -> 
 	button.text = value
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	button.add_theme_font_override("font", CyberUITheme.FONT)
-	button.add_theme_font_size_override("font_size", 22)
+	button.add_theme_font_size_override("font_size", 25)
 	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
 		var highlighted: bool = state in ["hover", "focus", "pressed"]
-		var fill := CYAN if primary else Color("152431")
-		if highlighted:
-			fill = Color("c4fff5") if primary else Color("263e4c")
-		if state == "disabled":
-			fill = Color("131c25")
-		var style := CyberUITheme.create_box(fill, CYAN if highlighted else fill, 1)
-		style.content_margin_left = 22
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(0.25, 0.75, 0.7, 0.04) if highlighted else Color.TRANSPARENT
+		style.border_color = CYAN
+		style.border_width_left = 2 if highlighted else 0
+		style.content_margin_left = 20
 		button.add_theme_stylebox_override(state, style)
-		button.add_theme_color_override("font_" + state + "_color" if state != "normal" else "font_color", INK if primary else LIGHT)
-	button.add_theme_color_override("font_disabled_color", Color("50606e"))
+		button.add_theme_color_override("font_" + state + "_color" if state != "normal" else "font_color", CYAN if highlighted or primary else LIGHT)
+	button.add_theme_color_override("font_disabled_color", Color("465460"))
 	button.pressed.connect(action)
 	place(button, rect, _content)
 	if primary:
@@ -109,32 +106,32 @@ func _clear_page(next_page: String) -> void:
 	_status = null
 
 
-func _heading(kicker: String, title: String, description: String) -> void:
-	place(_label(kicker, 16, CYAN), Rect2(0, 2, 580, 28), _content)
-	place(_label(title, 46, LIGHT), Rect2(0, 46, 580, 66), _content)
-	var subtitle := _label(description, 19, MUTED)
-	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	place(subtitle, Rect2(0, 132, 548, 75), _content)
+func _heading(title: String, description: String = "") -> void:
+	place(_label(title, 60, LIGHT), Rect2(0, 74, 520, 84), _content)
+	if not description.is_empty():
+		var subtitle := _label(description, 19, MUTED)
+		subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		place(subtitle, Rect2(0, 184, 460, 76), _content)
 
 
 func show_home() -> void:
 	_clear_page("home")
-	_heading("CONNECTION READY  /  等待接入", "五角场热线", "接起热线，进入行动。\n选择继续当前进度，或从新的存档开始。")
+	_heading("五角场热线")
 	var valid: bool = store.load_profile()
 	var exists: bool = store.has_saved_profile()
-	_continue = _button("继续当前存档    →", Rect2(0, 236, 548, 64), continue_game, true)
+	_continue = _button("继续游戏", Rect2(0, 274, 360, 58), continue_game, true)
 	_continue.disabled = not exists or not valid
-	var new_game := _button("开始新存档", Rect2(0, 314, 548, 64), show_character)
-	_button("退出游戏", Rect2(0, 392, 548, 58), func() -> void: get_tree().quit())
-	var summary := "还没有存档，从新存档开始你的第一次行动。"
+	var new_game := _button("开始新存档", Rect2(0, 342, 360, 58), show_character)
+	_button("退出游戏", Rect2(0, 410, 360, 58), func() -> void: get_tree().quit())
+	var summary := "暂无存档"
 	if exists and valid:
 		var profile: Dictionary = store.get_profile()
-		summary = "当前存档可继续  ·  仓库装备 %d 件" % profile.chest.size()
+		summary = "仓库装备 %d 件" % profile.chest.size()
 	elif not valid:
 		summary = store.error_message + "；可开始新存档。"
 	_status = _label(summary, 17, MUTED if valid else AMBER)
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	place(_status, Rect2(0, 474, 548, 64), _content)
+	place(_status, Rect2(20, 498, 460, 64), _content)
 	if not _continue.disabled:
 		_continue.grab_focus()
 	else:
@@ -145,12 +142,11 @@ func show_character() -> void:
 	if _busy:
 		return
 	_clear_page("character")
-	_heading("SELECT CHASSIS  /  角色选择", "标准机体", "确认这台机体，开始新的行动记录。\n当前开放一个可选角色。")
-	place(_label("01  标准机体   /   已选择", 23, CYAN), Rect2(0, 238, 548, 42), _content)
-	var detail := _label("初始装备  /  制式警棍 × 1\n基础移动  /  步行\n轮式组件可在行动中获取并装备", 19, LIGHT)
-	place(detail, Rect2(0, 296, 548, 92), _content)
-	_button("确认机体 · 开始新存档    →", Rect2(0, 414, 548, 64), request_new_game, true)
-	_button("返回", Rect2(0, 492, 548, 52), show_home)
+	_heading("标准机体")
+	place(_label("携带制式警棍出发", 21, MUTED), Rect2(0, 190, 460, 38), _content)
+	_button("开始行动", Rect2(0, 342, 360, 60), request_new_game, true)
+	var back := _button("返回", Rect2(0, 420, 200, 48), show_home)
+	back.add_theme_font_size_override("font_size", 19)
 
 
 func request_new_game() -> void:
@@ -160,12 +156,12 @@ func request_new_game() -> void:
 		start_new_game()
 		return
 	_clear_page("confirm")
-	_heading("NEW RECORD  /  确认新存档", "重新开始？", "当前装备和仓库进度将重置。\n旧存档会先备份，再创建新存档。")
-	_button("备份旧存档并开始    →", Rect2(0, 256, 548, 64), start_new_game, true)
-	_button("取消，返回角色选择", Rect2(0, 334, 548, 64), show_character)
+	_heading("重新开始？", "当前装备与仓库进度将重置。\n旧存档会先备份。")
+	_button("确认重开", Rect2(0, 342, 360, 60), start_new_game, true)
+	_button("取消", Rect2(0, 420, 200, 48), show_character)
 	_status = _label("", 18, AMBER)
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	place(_status, Rect2(0, 432, 548, 100), _content)
+	place(_status, Rect2(0, 490, 460, 76), _content)
 
 
 func start_new_game() -> void:
@@ -174,7 +170,7 @@ func start_new_game() -> void:
 	if not store.create_new_profile():
 		if _status == null:
 			_status = _label("", 17, AMBER)
-			place(_status, Rect2(0, 388, 548, 26), _content)
+			place(_status, Rect2(0, 280, 460, 48), _content)
 		_status.text = store.error_message
 		return
 	_enter_warehouse()

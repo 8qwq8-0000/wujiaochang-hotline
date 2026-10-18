@@ -61,6 +61,9 @@ func run() -> void:
 	DirAccess.remove_absolute(SAVE)
 	for path in backups():
 		DirAccess.remove_absolute(path)
+	var cutout := (load("res://assets/art/ui/standard_chassis_cutout.png") as Texture2D).get_image()
+	check(cutout.detect_alpha() != Image.ALPHA_NONE, "portrait has true alpha transparency")
+	check(cutout.get_pixel(0, 0).a == 0.0, "portrait background is transparent")
 	var home := menu()
 	await process_frame
 	check(home.get("_continue").disabled, "no save disables continue")
@@ -70,7 +73,7 @@ func run() -> void:
 	await click(home, "开始新存档")
 	check(home.page == "character", "new game opens character selection through mouse")
 	check(not FileAccess.file_exists(SAVE), "character selection never creates save")
-	check(root.gui_get_focus_owner().text == "确认机体 · 开始新存档    →", "character confirmation receives keyboard focus")
+	check(root.gui_get_focus_owner().text == "开始行动", "character confirmation receives keyboard focus")
 	await screenshot("/tmp/hotline-start-character.png")
 	var escape := InputEventAction.new()
 	escape.action = "ui_cancel"
@@ -79,7 +82,7 @@ func run() -> void:
 	await process_frame
 	check(home.page == "home", "Escape returns home without creating save")
 	await click(home, "开始新存档")
-	await click(home, "确认机体 · 开始新存档    →")
+	await click(home, "开始行动")
 	var room := await warehouse()
 	check(room != null, "first game enters warehouse")
 	if room == null:
@@ -101,13 +104,13 @@ func run() -> void:
 	await process_frame
 	check(not home.get("_continue").disabled, "valid save enables continue")
 	await click(home, "开始新存档")
-	await click(home, "确认机体 · 开始新存档    →")
+	await click(home, "开始行动")
 	check(home.page == "confirm" and FileAccess.get_file_as_string(SAVE) == original, "existing save requires confirmation without mutation")
 	await screenshot("/tmp/hotline-start-confirm.png")
-	await click(home, "取消，返回角色选择")
+	await click(home, "取消")
 	check(FileAccess.get_file_as_string(SAVE) == original and backups().is_empty(), "cancel leaves file unchanged and no backup side effects")
 	home.show_home()
-	await click(home, "继续当前存档    →")
+	await click(home, "继续游戏")
 	room = await warehouse()
 	check(room != null and room.chest.get_item_count() == 1, "continue restores chest")
 	check(room.player.inventory.weapon_slot.get_item().get_property("instance_id") == previous_weapon, "continue retains same weapon instance")
@@ -118,7 +121,7 @@ func run() -> void:
 	await process_frame
 	home.show_character()
 	home.request_new_game()
-	await click(home, "备份旧存档并开始    →")
+	await click(home, "确认重开")
 	room = await warehouse()
 	check(room != null and room.chest.get_item_count() == 0, "confirmed new game clears old chest")
 	check(room.player.inventory.weapon_slot.get_item().get_property("instance_id") != previous_weapon, "new save grants a new ordinary baton")
