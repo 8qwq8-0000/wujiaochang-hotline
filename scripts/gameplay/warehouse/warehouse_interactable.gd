@@ -12,7 +12,7 @@ func interact(actor: Node2D) -> void:
 	if kind == "chest":
 		room.panel.open()
 	elif kind == "synthesis":
-		room.panel.open(true)
+		room.upgrade_panel.open()
 	elif kind == "trial":
 		room.enter_trial()
 	else:

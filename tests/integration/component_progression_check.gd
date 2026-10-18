@@ -90,14 +90,22 @@ func run() -> void:
 	check(room.transfer(a, true), "rolled equipped item deposits into warehouse")
 	room.chest.add_item(b)
 	check(room.save_loadout(), "persist second material")
-	room.panel.open()
+	room.upgrade_panel.open()
 	await settle()
-	var rows: Array = room.panel.get("_chest_list").get_children()
-	var targets: Array = room.panel.get("_material_buttons")
-	await drag(rows[0], targets[0].get_global_rect().get_center())
-	await drag(rows[1], targets[1].get_global_rect().get_center())
-	check(room.panel.get("_materials") == [a, b] and not room.panel.get("_synthesis_button").disabled, "native warehouse drag selects subject and material without moving ownership")
-	room.panel.close()
+	var rows: Array = room.upgrade_panel.get("_list").get_children()
+	var targets: Array = room.upgrade_panel.get("_material_buttons")
+	var subject_button: Button
+	var material_button: Button
+	for row in rows:
+		if row.get("item") == a:
+			subject_button = row
+	await drag(subject_button, targets[0].get_global_rect().get_center())
+	for row in room.upgrade_panel.get("_list").get_children():
+		if row.get("item") == b:
+			material_button = row
+	await drag(material_button, targets[1].get_global_rect().get_center())
+	check(room.upgrade_panel.get("_materials") == [a, b] and not room.upgrade_panel.get("_synthesis_button").disabled, "native warehouse drag selects subject and material without moving ownership")
+	room.upgrade_panel.close()
 	for index in 6:
 		inv.backpack.add_item(ComponentRolls.create("wheel", 1, rng))
 	check(inv.backpack.get_item_count() == 6, "synthesis setup uses full backpack")
@@ -158,11 +166,11 @@ func run() -> void:
 	reloaded.queue_free()
 	var profile: Dictionary = store.get_profile()
 	check(not profile.chest.is_empty() and profile.chest[0] == persisted, "atomic saved profile contains exact result")
-	room.panel.open()
+	room.upgrade_panel.open()
 	await settle()
 	if OS.get_cmdline_user_args().has("--capture"):
 		root.get_texture().get_image().save_png("/tmp/hotline-synthesis.png")
-	room.panel.close()
+	room.upgrade_panel.close()
 	room.queue_free()
 	await settle()
 	DirAccess.remove_absolute(valid_path)

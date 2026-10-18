@@ -4,6 +4,8 @@ const COMBAT_PATH := "res://scenes/levels/floors/combat_prototype.tscn"
 const PANEL := preload("res://scripts/ui/warehouse_panel.gd")
 var chest: Inventory
 var panel: CanvasLayer
+var upgrade_panel: CanvasLayer
+var last_synthesis_result: InventoryItem
 var _mutating := false
 var _departing := false
 var _save_queued := false
@@ -21,6 +23,10 @@ func _ready() -> void:
 	panel.set_script(PANEL)
 	panel.room = self
 	add_child(panel)
+	upgrade_panel = CanvasLayer.new()
+	upgrade_panel.set_script(preload("res://scripts/ui/synthesis_panel.gd"))
+	upgrade_panel.room = self
+	add_child(upgrade_panel)
 	var profile: Dictionary = store.get_profile()
 	_mutating = true
 	for entry in profile.chest:
@@ -172,26 +178,69 @@ func _open_trial() -> void:
 		return
 
 
+func owns_synthesis_item(item: InventoryItem) -> bool:
+	return item != null and (chest.has_item(item) or player.inventory.item_location(item) != "")
+
+
+func _synthesis_feedback(message: String) -> void:
+	panel.show_message(message)
+	upgrade_panel.show_message(message)
+
+
 func synthesize(subject: InventoryItem, material: InventoryItem) -> bool:
-	if _mutating or _departing or not chest.has_item(subject) or not chest.has_item(material) or not ComponentRolls.compatible(subject, material):
-		panel.show_message("需要两件同槽位、同品质的普通仓库组件")
+	if _mutating or _departing or not owns_synthesis_item(subject) or not owns_synthesis_item(material) or not ComponentRolls.compatible(subject, material):
+		_synthesis_feedback("请选择两件同槽位、同品质的组件；初始警棍按制式计算")
 		return false
 	var result := ComponentRolls.fuse(subject, material, RandomNumberGenerator.new())
-	var next := []
+	var inv: ComponentInventory = player.inventory
+	var location := "chest" if chest.has_item(subject) else inv.item_location(subject)
+	var subject_index := inv.backpack.get_item_index(subject) if location == "backpack" else -1
+	var next_chest := []
 	for item in chest.get_items():
 		if item != subject and item != material:
-			next.append(item.serialize())
-	next.append(result.serialize())
-	# Persist the entire proposed transaction before touching either live material.
+			next_chest.append(item.serialize())
+	var next_state := player.export_run_state().duplicate(true)
+	var state: Dictionary = next_state.inventory
+	var ids := [subject.get_property("instance_id"), material.get_property("instance_id")]
+	var bag := []
+	for item in inv.backpack.get_items():
+		if item != subject and item != material:
+			bag.append(item.serialize())
+	state.backpack["items"] = bag
+	var slots := {"weapon": "primary", "weapon_secondary": "secondary", "mobility": "mobility", "blackbox": "blackbox"}
+	for slot_key in slots.values():
+		var entry: Dictionary = state[slot_key]
+		if entry.has("item") and entry.item.get("properties", {}).get("instance_id", {}).get("value", "") in ids:
+			state[slot_key] = {}
+	if location == "chest":
+		next_chest.append(result.serialize())
+	elif location == "backpack":
+		bag.insert(mini(subject_index, bag.size()), result.serialize())
+	else:
+		state[slots[location]] = {"item": result.serialize()}
+	var active: int = int(state.active_weapon)
+	if state["primary" if active == 0 else "secondary"].is_empty():
+		state.active_weapon = 0 if not state.primary.is_empty() else (1 if not state.secondary.is_empty() else 0)
+	# Commit the proposed ownership graph before consuming any live item.
 	_mutating = true
-	var saved: bool = store.commit(next, player.export_run_state())
+	var saved: bool = store.commit(next_chest, next_state)
 	if saved:
-		chest.remove_item(subject)
-		chest.remove_item(material)
-		chest.add_item(result)
+		subject.get_inventory().remove_item(subject)
+		material.get_inventory().remove_item(material)
+		if location == "chest":
+			chest.add_item(result)
+		elif location == "backpack":
+			inv.backpack.add_item(result)
+			inv.backpack.move_item(inv.backpack.get_item_index(result), mini(subject_index, inv.backpack.get_item_count() - 1))
+		else:
+			inv._slot_for(location).equip(result)
+		inv._apply_equipment()
+		inv.changed.emit()
+		last_synthesis_result = result
 	_mutating = false
-	panel.show_message("合成完成 · " + ComponentRolls.describe(result) if saved else store.error_message)
+	_synthesis_feedback("升级完成 · " + ComponentRolls.title(result) if saved else store.error_message)
 	panel.refresh()
+	upgrade_panel.refresh()
 	return saved
 
 
