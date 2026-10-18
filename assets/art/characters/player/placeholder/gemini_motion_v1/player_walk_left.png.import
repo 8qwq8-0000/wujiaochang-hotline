@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dewxqip8f4gmy"
-path="res://.godot/imported/placeholder_player_up.png-5e7e7d96b6f75d6d91d1079d27a2f755.ctex"
+uid="uid://b0kgecw84ptgh"
+path="res://.godot/imported/player_walk_left.png-41d2093bdd3ce26722ee1d44d3b120f7.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/art/characters/player/placeholder/placeholder_player_up.png"
-dest_files=["res://.godot/imported/placeholder_player_up.png-5e7e7d96b6f75d6d91d1079d27a2f755.ctex"]
+source_file="res://assets/art/characters/player/placeholder/gemini_motion_v1/player_walk_left.png"
+dest_files=["res://.godot/imported/player_walk_left.png-41d2093bdd3ce26722ee1d44d3b120f7.ctex"]
 
 [params]
 

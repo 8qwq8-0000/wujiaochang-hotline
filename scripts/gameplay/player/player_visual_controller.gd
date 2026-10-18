@@ -26,7 +26,9 @@ func update_visual(
 	if animation != _last_animation and body_sprite.sprite_frames.has_animation(animation):
 		body_sprite.play(animation)
 		_last_animation = animation
-	body_sprite.flip_h = direction_name == "side" and aim_direction.x < 0.0
+	# The supplied pack authors one horizontal direction. Right-facing movement and
+	# idle reuse that sequence by mirroring it at runtime.
+	body_sprite.flip_h = direction_name == "right"
 	update_weapon_aim(aim_direction, weapon_swing_offset)
 	guard_visual.update_guard(guard_state, aim_direction, guard_arc)
 
@@ -75,4 +77,4 @@ func set_dead(dead: bool) -> void:
 func _direction_name(direction: Vector2) -> String:
 	if absf(direction.y) > absf(direction.x) * 0.75:
 		return "up" if direction.y < 0.0 else "down"
-	return "side"
+	return "left" if direction.x < 0.0 else "right"
