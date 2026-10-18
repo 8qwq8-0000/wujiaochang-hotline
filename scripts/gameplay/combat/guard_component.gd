@@ -24,6 +24,7 @@ var state: State = State.IDLE
 var guard_direction: Vector2 = Vector2.RIGHT
 var _time_remaining: float = 0.0
 var recovery_multiplier := 1.0
+var equipment_window_bonus := 0.0
 
 
 func _physics_process(delta: float) -> void:
@@ -111,7 +112,7 @@ func _is_inside_guard_arc(packet: DamagePacket, target_position: Vector2) -> boo
 func _advance_state() -> void:
 	match state:
 		State.STARTUP:
-			_enter_state(State.PERFECT, perfect_seconds)
+			_enter_state(State.PERFECT, perfect_seconds + equipment_window_bonus)
 		State.PERFECT:
 			_enter_state(State.NORMAL, normal_seconds)
 		State.NORMAL:

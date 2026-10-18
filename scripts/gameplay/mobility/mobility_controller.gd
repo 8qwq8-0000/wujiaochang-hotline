@@ -20,6 +20,8 @@ var terrain_tag: StringName = &"normal"
 var debug_loadout_enabled: bool = false
 var _current_mode: MobilityMode = WALK_MODE
 var _ability_active_remaining: float = 0.0
+var _ram_direction := Vector2.ZERO
+var _ram_hits: Dictionary = {}
 
 
 func _ready() -> void:
@@ -41,18 +43,39 @@ func tick(
 	external_velocity: Vector2 = Vector2.ZERO
 ) -> void:
 	ability_cooldown_remaining = maxf(ability_cooldown_remaining - delta, 0.0)
-	_ability_active_remaining = maxf(_ability_active_remaining - delta, 0.0)
 	var locomotion_velocity := body.velocity - external_velocity
 	var next_velocity := _current_mode.calculate_velocity(input_vector, locomotion_velocity, facing, delta)
+	var ramming := _current_mode is WheelMobilityMode and is_ability_active()
+	if ramming:
+		# Keep the charge direction and speed for its actual active window.
+		next_velocity = _ram_direction * _current_mode.ability_impulse * minf(_ability_active_remaining / maxf(delta, 0.000001), 1.0)
+	var start := body.global_position
 	body.velocity = next_velocity * _current_mode.terrain_speed_multiplier(terrain_tag) + external_velocity
 	body.move_and_slide()
+	if ramming:
+		_perform_ram(body, start)
+		for index in body.get_slide_collision_count():
+			if body.get_slide_collision(index).get_normal().dot(_ram_direction) < -0.1:
+				_ability_active_remaining = 0.0
+				body.velocity = Vector2.ZERO
+				break
+	_ability_active_remaining = maxf(_ability_active_remaining - delta, 0.0)
+	if _ability_active_remaining < 0.000001:
+		_ability_active_remaining = 0.0
+	if ramming and not is_ability_active():
+		body.velocity = body.velocity.limit_length(_current_mode.max_speed)
 	ability_cooldown_changed.emit(ability_cooldown_remaining, _current_mode.ability_cooldown)
 
 
-func activate_ability(body: CharacterBody2D, facing: Vector2) -> bool:
+func activate_ability(body: CharacterBody2D, facing: Vector2, input_vector: Vector2 = Vector2.ZERO) -> bool:
 	if _current_mode.ability_cooldown <= 0.0 or ability_cooldown_remaining > 0.0:
 		return false
-	body.velocity = _current_mode.ability_velocity(facing, body.velocity)
+	var heading := facing
+	if _current_mode is WheelMobilityMode and not input_vector.is_zero_approx():
+		heading = input_vector
+	_ram_direction = heading.normalized() if not heading.is_zero_approx() else Vector2.RIGHT
+	_ram_hits.clear()
+	body.velocity = _current_mode.ability_velocity(_ram_direction, body.velocity)
 	ability_cooldown_remaining = _current_mode.ability_cooldown
 	_ability_active_remaining = _current_mode.ability_active_seconds
 	ability_activated.emit(_current_mode)
@@ -107,6 +130,8 @@ func can_guard() -> bool:
 func reset_transient_state() -> void:
 	ability_cooldown_remaining = 0.0
 	_ability_active_remaining = 0.0
+	_ram_direction = Vector2.ZERO
+	_ram_hits.clear()
 
 
 func _index_for_id(id: StringName) -> int:
@@ -122,3 +147,50 @@ func set_equipped_mode(mode: MobilityMode) -> void:
 
 func is_ability_active() -> bool:
 	return _ability_active_remaining > 0.0
+
+
+func provides_invulnerability() -> bool:
+	var wheel := _current_mode as WheelMobilityMode
+	if wheel == null or not is_ability_active():
+		return false
+	var elapsed := wheel.ability_active_seconds - _ability_active_remaining
+	return elapsed < wheel.ram_invulnerability_seconds - 0.000001
+
+
+func _perform_ram(body: CharacterBody2D, start: Vector2) -> void:
+	var mode := _current_mode as WheelMobilityMode
+	var end := body.global_position
+	var shape := CapsuleShape2D.new()
+	shape.radius = mode.ram_radius
+	shape.height = start.distance_to(end) + 2.0 * mode.ram_radius
+	var query := PhysicsShapeQueryParameters2D.new()
+	query.shape = shape
+	query.transform = Transform2D((end - start).angle() - PI / 2.0, (start + end) * 0.5)
+	query.collision_mask = 16
+	query.collide_with_areas = true
+	query.collide_with_bodies = false
+	var space := body.get_world_2d().direct_space_state
+	for hit in space.intersect_shape(query, 64):
+		var hurt := hit.collider as HurtBox2DComponent
+		if hurt == null or hurt.faction != CombatFaction.Id.ENEMY or not is_instance_valid(hurt.actor):
+			continue
+		var enemy := hurt.actor
+		var id := enemy.get_instance_id()
+		if _ram_hits.has(id):
+			continue
+		# The contact radius must not damage enemies through a wall.
+		var sight := PhysicsRayQueryParameters2D.create(start, enemy.global_position, 1)
+		if not space.intersect_ray(sight).is_empty():
+			continue
+		_ram_hits[id] = true
+		var packet := DamagePacket.new()
+		packet.base_damage = mode.ram_damage
+		packet.source = body
+		packet.source_faction = CombatFaction.Id.PLAYER
+		packet.source_position = start
+		packet.travel_direction = _ram_direction
+		packet.stagger_seconds = mode.ram_stagger_seconds
+		packet.is_melee = true
+		var result := hurt.receive_hit(packet)
+		if result.final_damage > 0 and not result.target_defeated and enemy.has_method("apply_stagger"):
+			enemy.apply_stagger(mode.ram_stagger_seconds)

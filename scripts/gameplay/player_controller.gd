@@ -89,7 +89,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("guard") and mobility.can_guard():
 		guard.begin_guard(aim_direction)
 	if event.is_action_pressed("mobility_ability"):
-		mobility.activate_ability(self, aim_direction)
+		mobility.activate_ability(self, aim_direction, Input.get_vector("move_left", "move_right", "move_up", "move_down"))
 	if InputMap.has_action("interact") and event.is_action_pressed("interact"):
 		interactor.request_interaction(self)
 	if event.is_action_pressed("weapon_switch") or event.is_action_pressed("weapon_next"):
@@ -199,7 +199,7 @@ func get_health_state() -> Dictionary:
 
 
 func get_heat_state() -> Dictionary:
-	return {"current": heat.current_heat, "maximum": heat.max_heat, "overheated": heat.is_overheated}
+	return {"current": heat.current_heat, "maximum": heat.effective_max(), "overheated": heat.is_overheated}
 
 
 func get_weapon_display_name() -> String:
@@ -494,7 +494,7 @@ func _on_died(packet: DamagePacket) -> void:
 
 func _emit_public_state() -> void:
 	health_changed.emit(health.current_health, health.max_health, 0)
-	heat_changed.emit(heat.current_heat, heat.max_heat)
+	heat_changed.emit(heat.current_heat, heat.effective_max())
 	weapon_changed.emit(weapons.get_current_weapon())
 	mobility_changed.emit(mobility.get_current_mode())
 	guard_state_changed.emit(guard.state)

@@ -77,6 +77,7 @@ func run() -> void:
 	projectile.set_physics_process(false)
 	projectile._physics_process(0.2)
 	check(projectile.is_queued_for_deletion(), "projectile stops at cover")
+	(scene.find_child("FloorAssembler", true, false) as FloorAssembler).enemy_drop_chance = 0.0
 	var before := get_nodes_in_group("component_pickups").size()
 	var enemies := get_nodes_in_group("enemies")
 	for enemy in enemies:
@@ -87,8 +88,8 @@ func run() -> void:
 			enemy._physics_process(enemy.profile.self_destruct_delay + 0.01)
 	await process_frame
 	await process_frame
-	check(get_nodes_in_group("component_pickups").size() == before + enemies.size(), "one drop per death, no duplicate")
-	check(root.get_node("RunManager").mandatory_enemies_remaining == 0, "clearing enables equipment")
+	check(get_nodes_in_group("component_pickups").size() == before + 1, "one floor guarantee; repeated ordinary deaths do not duplicate loot")
+	check(root.get_node("RunManager").mandatory_enemies_remaining == 3, "next area objectives remain after first clear")
 	var inventory := player.get_node("ComponentInventory") as ComponentInventory
 	check(inventory.pickup("pistol") and inventory.pickup("pistol") and inventory.equip(0), "loot-compatible weapon can equip after clear")
 	var shot_count := scene.find_children("Projectile*", "Area2D", true, false).size()

@@ -1,6 +1,6 @@
 {
   "baton": {
-    "name": "破门警棍",
+    "name": "警棍",
     "slot": "weapon",
     "effect": "res://resources/weapons/baton.tres",
     "image": "res://assets/art/items/baton.svg",
@@ -34,14 +34,6 @@
     "maximum_stack_size": 1,
     "circuit_breaker_used": false
   },
-  "initial_baton": {
-    "name": "初始警棍（绑定）",
-    "slot": "weapon",
-    "effect": "res://resources/weapons/initial_baton.tres",
-    "image": "res://assets/art/items/baton.svg",
-    "maximum_stack_size": 1,
-    "bound": true
-  },
   "test_conductive_pistol": {
     "name": "试验·导电枪",
     "slot": "weapon",
@@ -57,5 +49,11 @@
     "image": "res://assets/art/items/pistol.svg",
     "maximum_stack_size": 1,
     "debug_only": true
+  },
+  "armor": {
+    "name": "缓冲装甲",
+    "slot": "defense",
+    "image": "res://assets/art/items/armor.svg",
+    "maximum_stack_size": 1
   }
 }

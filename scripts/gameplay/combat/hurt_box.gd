@@ -37,9 +37,9 @@ func receive_hit(packet: DamagePacket) -> DamageResult:
 			return duplicate_hit
 		packet.electric_event.hit_ids[actor.get_instance_id()] = true
 	var result := DamageResolver.resolve(packet, actor, faction, health, guard)
-	if result.final_damage == 0 and packet.damage_type == &"electric":
+	if result.final_damage + result.absorbed_damage == 0 and packet.damage_type == &"electric":
 		packet.electric_event.hit_ids.erase(actor.get_instance_id())
-	if result.final_damage > 0 and damage_invulnerability_seconds > 0.0:
+	if result.final_damage + result.absorbed_damage > 0 and damage_invulnerability_seconds > 0.0:
 		set_invulnerable(damage_invulnerability_seconds)
 	if result.final_damage > 0 and actor.has_method("apply_knockback"):
 		actor.apply_knockback(packet.knockback)
@@ -59,4 +59,9 @@ func clear_invulnerability() -> void:
 
 
 func is_invulnerable() -> bool:
-	return _invulnerability_remaining > 0.0
+	if _invulnerability_remaining > 0.0:
+		return true
+	# Keep dodge protection separate from post-hit/insurance protection. Ending
+	# a charge must never erase another source's invulnerability window.
+	var mobility := actor.get_node_or_null("MobilityController") as MobilityController if is_instance_valid(actor) else null
+	return mobility != null and mobility.provides_invulnerability()

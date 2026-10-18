@@ -28,6 +28,7 @@ func _ready() -> void:
 	if events != null:
 		events.combat_message_requested.connect(show_message)
 		events.combat_notice_requested.connect(_on_notice_requested)
+		events.combat_area_progress.connect(_on_area_progress)
 		events.floor_cleared.connect(func() -> void: _set_objective_text("本层已清理：前往出口"))
 	var run_manager := get_node_or_null("/root/RunManager")
 	if run_manager != null:
@@ -53,7 +54,10 @@ func _process(_delta: float) -> void:
 	_health_meter.set_meter(float(health_state.current), float(health_state.maximum))
 	_heat_meter.meter_color = CyberUITheme.DANGER if heat_state.overheated else CyberUITheme.WARNING
 	_heat_meter.set_meter(float(heat_state.current), float(heat_state.maximum))
-	_mobility_value.text = "%s  // SPACE" % _player.get_mobility_display_name()
+	var mobility_hint := "SPACE"
+	if _player.mobility.get_current_mode() is WheelMobilityMode:
+		mobility_hint = "冲撞 %.1fs" % _player.mobility.ability_cooldown_remaining if _player.mobility.ability_cooldown_remaining > 0.0 else "冲撞 SPACE"
+	_mobility_value.text = "%s  // %s\n%s" % [_player.get_mobility_display_name(), mobility_hint, _player.get_node("DefenseComponent").display_state()]
 	_weapon_value.text = "> %s  %s\n  Q/滚轮 切换" % ["A" if _player.weapons.current_index == 0 else "B", _player.get_weapon_display_name()]
 	_guard_value.text = "格挡协议  %s" % _guard_state_name(_player.get_guard_state())
 	if is_instance_valid(_player.talent_core):
@@ -142,7 +146,7 @@ func _build_cyber_hud() -> void:
 	_objective_value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	objective.add_child(_objective_value)
 
-	var mobility := _make_panel("机动 / MOBILITY", Rect2(8, 286, 175, 66))
+	var mobility := _make_panel("机动 / 防御", Rect2(8, 274, 175, 78))
 	_mobility_value = Label.new()
 	_mobility_value.text = "步行（无套件）"
 	_mobility_value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -205,3 +209,10 @@ func _set_objective_text(text: String) -> void:
 func _saved_crt_strength() -> CRTOverlay.Strength:
 	var saved := int(PlayerConfig.get_config(&"UISettings", &"CRTStrength", CRTOverlay.Strength.LOW))
 	return clampi(saved, CRTOverlay.Strength.OFF, CRTOverlay.Strength.STANDARD) as CRTOverlay.Strength
+
+
+func _on_area_progress(index: int, total: int, remaining: int, cleared: bool) -> void:
+	if cleared and index < total:
+		_set_objective_text("区域 %d/%d 已清场\n前往下一区 →" % [index, total])
+	else:
+		_set_objective_text("区域 %d/%d\n必杀目标剩余：%d" % [index, total, remaining])

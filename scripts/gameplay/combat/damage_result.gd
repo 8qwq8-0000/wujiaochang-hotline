@@ -13,6 +13,7 @@ var outcome: Outcome = Outcome.IGNORED
 var packet: DamagePacket
 var target: Node
 var final_damage: int = 0
+var absorbed_damage: int = 0
 var blocked: bool = false
 var reflected: bool = false
 var perfect: bool = false

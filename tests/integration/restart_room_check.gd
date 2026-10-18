@@ -65,16 +65,11 @@ func _run_checks() -> void:
 			player.health.apply_damage(player.health.max_health, DamagePacket.new())
 			_check(player.get("_dead"), "Player should be dead before restart")
 		if round_index == 2:
-			var enemies := get_nodes_in_group("enemies")
-			for enemy in enemies:
-				enemy.health.apply_damage(enemy.health.max_health, DamagePacket.new())
-			for enemy in enemies:
-				if is_instance_valid(enemy) and enemy.state == EnemyController.State.SELF_DESTRUCT:
-					enemy._physics_process(enemy.profile.self_destruct_delay + 0.01)
-			await process_frame
+			await preload("res://tests/integration/combat_test_flow.gd").clear_floor(self)
 			_check(run_manager.mandatory_enemies_remaining == 0, "All required enemies must be cleared")
-			for elevator in current_scene.find_children("ExitElevator", "Area2D", true, false):
-				_check(elevator.enabled, "Exit should be enabled before restart")
+			var assembler: FloorAssembler = current_scene.find_child("FloorAssembler", true, false)
+			_check(not assembler.generated_rooms[0].exit_elevator.enabled, "Intermediate exit stays disabled")
+			_check(assembler.generated_rooms.back().exit_elevator.enabled, "Final exit is enabled before restart")
 		# A projectile attached to Main must also disappear on restart.
 		var projectile: Node = load("res://scenes/combat/projectile.tscn").instantiate()
 		current_scene.add_child(projectile)
@@ -97,6 +92,11 @@ func _run_checks() -> void:
 		_check(is_zero_approx(player.heat.current_heat) and not player.heat.is_overheated, "Heat should reset")
 		for elevator in current_scene.find_children("ExitElevator", "Area2D", true, false):
 			_check(not elevator.enabled, "Exit should be locked until the new battle is cleared")
+		var reset: FloorAssembler = current_scene.find_child("FloorAssembler", true, false)
+		_check(not reset.passages[0].unlocked and reset._rooms_remaining == 2, "Restart restores passage lock and both pending clears")
+		_check(not reset.generated_rooms[1].active and not reset.generated_rooms[1].spawner._spawned, "Restart keeps second encounter dormant")
+		for area in reset.generated_rooms:
+			_check(not area.cleared and area.reward_count == 0, "Restart removes area rewards and clear flags")
 		print("Restart check ", round_index + 1, " complete")
 	print("Restart integration failures: ", _failures)
 	current_scene.queue_free()
