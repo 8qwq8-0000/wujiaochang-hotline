@@ -42,4 +42,4 @@ func test_different_quality_cannot_fuse() -> void:
 	var a := ComponentRolls.create("pistol", 1, rng)
 	var b := ComponentRolls.create("baton", 2, rng)
 	assert_false(ComponentRolls.compatible(a, b))
-	assert_null(ComponentRolls.fuse(a, b, rng))
+	assert_true(ComponentRolls.fuse(a, b, rng) == null)

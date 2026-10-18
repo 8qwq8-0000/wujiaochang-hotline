@@ -53,7 +53,7 @@ func run_checks() -> void:
 	var list: VBoxContainer = scene.panel.get("_chest_list")
 	var clicked := false
 	for button in list.get_children():
-		if button is Button and button.text == pistol.get_title():
+		if button is Button and button.text == ComponentRolls.title(pistol):
 			var point: Vector2 = button.get_global_transform_with_canvas()*(button.size/2)
 			for pressed in [true,false]:
 				var event := InputEventMouseButton.new()
