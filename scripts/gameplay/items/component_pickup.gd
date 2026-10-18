@@ -2,10 +2,13 @@ class_name ComponentPickup
 extends Node2D
 
 @export_enum("baton", "pistol", "scattergun", "wheel") var component_id := "pistol"
+var rolled_item: InventoryItem
 var _picked := false
 var _label: Label
 
 func _ready() -> void:
+	if rolled_item == null:
+		rolled_item = ComponentRolls.create(component_id, 1, RandomNumberGenerator.new())
 	add_to_group("component_pickups")
 	var definition: Dictionary = ComponentInventory.PROTOTYPES.data.get(component_id, {})
 	var icon := Sprite2D.new()
@@ -18,7 +21,7 @@ func _ready() -> void:
 	_label.add_theme_font_size_override("font_size", 12)
 	_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	_label.add_theme_constant_override("outline_size", 3)
-	_label.text = "E 拾取 · %s" % definition.get("name", component_id)
+	_label.text = "E 拾取 · %s" % ComponentRolls.title(rolled_item)
 	_label.visible = false
 	add_child(_label)
 
@@ -33,7 +36,7 @@ func can_reach(player: Node2D) -> bool:
 	return get_world_2d().direct_space_state.intersect_ray(query).is_empty()
 
 func try_pickup(inventory: ComponentInventory) -> bool:
-	if not can_reach(inventory.player) or not inventory.pickup(component_id):
+	if not can_reach(inventory.player) or not inventory.pickup(component_id, rolled_item):
 		return false
 	_picked = true
 	queue_free()

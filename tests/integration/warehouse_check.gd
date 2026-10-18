@@ -59,7 +59,7 @@ func run_checks() -> void:
 	check(inventory.pickup("pistol"), "fixture picks up reserve weapon")
 	var pistol := inventory.secondary_weapon_slot.get_item()
 	var id: String = pistol.get_property("instance_id")
-	pistol.set_property("quality", "prototype")
+	pistol.set_property("quality", 3)
 	pistol.set_property("heat", 37.5)
 	check(room.transfer(pistol, true), "equipped reserve can be stored directly")
 	check(inventory.secondary_weapon_slot.get_item() == null, "deposit clears equipment slot")
@@ -70,7 +70,7 @@ func run_checks() -> void:
 	check(not room.transfer(foreign, false), "cannot withdraw an item absent from chest")
 	check(room.transfer(pistol, false), "withdrawal goes into backpack")
 	check(inventory.backpack.has_item(pistol), "withdraw does not auto-equip or replace weapons")
-	check(pistol.get_property("instance_id") == id and pistol.get_property("quality") == "prototype" and pistol.get_property("heat") == 37.5, "instance id and custom properties survive transfer")
+	check(pistol.get_property("instance_id") == id and pistol.get_property("quality") == 3 and pistol.get_property("heat") == 37.5, "instance id and custom properties survive transfer")
 	check(room.transfer(pistol, true), "backpack item can be deposited")
 	for index in 6:
 		check(inventory.pickup("wheel"), "fill all six bag cells")

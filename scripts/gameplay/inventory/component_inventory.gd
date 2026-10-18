@@ -127,7 +127,7 @@ func _assign_instance_id(item: InventoryItem) -> void:
 	_serial += 1
 	item.set_property("instance_id", "%d-%d-%d" % [get_instance_id(), Time.get_ticks_usec(), _serial])
 
-func pickup(component_id: String) -> bool:
+func pickup(component_id: String, rolled_item: InventoryItem = null) -> bool:
 	if player.health.is_dead() or not PROTOTYPES.data.has(component_id):
 		return false
 	if component_id == "circuit_breaker" and get_insurance_item() != null:
@@ -140,13 +140,19 @@ func pickup(component_id: String) -> bool:
 					return false
 	var is_weapon := str(PROTOTYPES.data[component_id].get("slot", "")) == "weapon"
 	var auto_secondary := is_weapon and not _has_picked_up_weapon and secondary_weapon_slot.get_item() == null
-	var item := InventoryItem.new(PROTOTYPES, component_id)
+	var item := rolled_item if rolled_item != null else InventoryItem.new(PROTOTYPES, component_id)
+	if item.get_inventory() != null or item_location(item) != "":
+		return false
+	if item.get_prototype().get_prototype_id() != component_id:
+		return false
+	ComponentRolls.ensure(item)
 	# The first weapon can go straight into a free reserve even if the bag is full.
 	var stored := secondary_weapon_slot.equip(item) if auto_secondary else backpack.add_item(item)
 	if not stored:
 		_notify("背包已满（6/6），组件留在地上", &"full")
 		return false
-	_assign_instance_id(item)
+	if not item.has_property("instance_id"):
+		_assign_instance_id(item)
 	if is_weapon:
 		_has_picked_up_weapon = true
 	if auto_secondary:
@@ -338,10 +344,19 @@ func _apply_equipment() -> void:
 	var weapon := weapon_slot.get_item()
 	var secondary := secondary_weapon_slot.get_item()
 	player.get_node("WeaponController").set_carried_weapons(
-		load(str(weapon.get_property("effect"))) if weapon != null else null,
-		load(str(secondary.get_property("effect"))) if secondary != null else null)
+		ComponentRolls.weapon(weapon), ComponentRolls.weapon(secondary))
 	var mode := mobility_slot.get_item()
-	player.get_node("MobilityController").set_equipped_mode(load(str(mode.get_property("effect"))) if mode != null else null)
+	var mode_data: MobilityMode = (load(str(mode.get_property("effect"))) if mode != null else MobilityController.WALK_MODE).duplicate(true)
+	var equipped := [weapon, secondary, mode]
+	if mode_data != null:
+		mode_data.max_speed *= 1.0 + ComponentRolls.bonus(equipped, "mobility") / 100.0
+	player.get_node("MobilityController").set_equipped_mode(mode_data)
+	player.get_node("HeatComponent").equipment_capacity_bonus = ComponentRolls.bonus(equipped, "capacity") / 100.0
+	player.get_node("HeatComponent").equipment_cooling_bonus = ComponentRolls.bonus(equipped, "cooling") / 100.0
+	player.get_node("GuardComponent").equipment_window_bonus = ComponentRolls.bonus(equipped, "guard") / 1000.0
+	player.get_node("StatusComponent").equipment_negative_duration_reduction = ComponentRolls.bonus(equipped, "status") / 100.0
+	var heat: HeatComponent = player.get_node("HeatComponent")
+	heat.set_heat(heat.current_heat)
 	sync_insurance()
 
 
@@ -520,6 +535,9 @@ func import_run_state(state: Dictionary) -> void:
 		blackbox_slot.deserialize(state["blackbox"])
 	_has_picked_up_weapon = bool(state.get("has_picked_up_weapon", false))
 	player.weapons.current_index = clampi(int(state.get("active_weapon", 0)), 0, 1)
+	for item in backpack.get_items() + [weapon_slot.get_item(), secondary_weapon_slot.get_item(), mobility_slot.get_item(), blackbox_slot.get_item()]:
+		if item != null:
+			ComponentRolls.ensure(item)
 	_apply_equipment()
 	changed.emit()
 

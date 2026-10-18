@@ -199,7 +199,7 @@ func get_health_state() -> Dictionary:
 
 
 func get_heat_state() -> Dictionary:
-	return {"current": heat.current_heat, "maximum": heat.max_heat, "overheated": heat.is_overheated}
+	return {"current": heat.current_heat, "maximum": heat.effective_max(), "overheated": heat.is_overheated}
 
 
 func get_weapon_display_name() -> String:
@@ -494,7 +494,7 @@ func _on_died(packet: DamagePacket) -> void:
 
 func _emit_public_state() -> void:
 	health_changed.emit(health.current_health, health.max_health, 0)
-	heat_changed.emit(heat.current_heat, heat.max_heat)
+	heat_changed.emit(heat.current_heat, heat.effective_max())
 	weapon_changed.emit(weapons.get_current_weapon())
 	mobility_changed.emit(mobility.get_current_mode())
 	guard_state_changed.emit(guard.state)

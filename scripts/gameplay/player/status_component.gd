@@ -10,6 +10,7 @@ signal reaction_triggered(id: StringName, secondary_targets: int)
 const CONDUCTIVE := &"conductive"
 const CONDUCTIVE_SECONDS := 6.0
 
+var equipment_negative_duration_reduction := 0.0
 var _statuses: Dictionary = {}
 var _immunity_tags: Dictionary = {}
 
@@ -49,6 +50,8 @@ func _physics_process(delta: float) -> void:
 func add_status(id: StringName, duration: float, tags: PackedStringArray = []) -> bool:
 	if id.is_empty() or duration <= 0.0 or _is_immune(tags):
 		return false
+	if tags.has("negative"):
+		duration *= 1.0 - clampf(equipment_negative_duration_reduction, 0.0, 0.75)
 	if _statuses.has(id):
 		var entry: Dictionary = _statuses[id]
 		entry["remaining"] = maxf(float(entry.get("remaining", 0.0)), duration)
