@@ -151,10 +151,7 @@ func _draw() -> void:
 	for y in range(64, 329, 24):
 		draw_line(Vector2(24, y), Vector2(616, y), Color("203342"))
 	draw_rect(Rect2(24, 62, 592, 266), Color("476271"), false, 3)
-	# Left wall shelving and loading bay markings.
-	for y in [105, 155, 205]:
-		draw_rect(Rect2(42, y, 62, 32), Color("293e4b"))
-		draw_line(Vector2(42, y + 28), Vector2(104, y + 28), Color("71848b"), 2)
+	# Loading bay markings.
 	draw_rect(Rect2(490, 134, 100, 120), Color("253c42"))
 	draw_rect(Rect2(490, 134, 100, 120), Color("c2b275"), false, 2)
 
