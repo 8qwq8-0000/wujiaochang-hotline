@@ -119,19 +119,19 @@ func run_checks() -> void:
 	check(not buffs.active_buff.is_empty() and buffs.source_room == second, "second power box grants an independent area buff")
 	await clear_active()
 	check(second.cleared and run.mandatory_enemies_remaining == 0 and assembler._rooms_remaining == 0, "both cleared areas complete the floor")
-	check(buffs.active_buff.is_empty() and second.reward_count == 0, "second clear expires its buff without a second floor guarantee")
+	check(buffs.active_buff.is_empty() and second.reward_count == 1, "second clear expires its buff and issues independent area guarantee")
 	check(str(hud.objective_label.text).contains("本层已清理"), "HUD shows floor completion only after both clears")
 	check(not first.exit_elevator.enabled and second.exit_elevator.enabled, "only final exit becomes enabled")
 	var rewards := 0
 	for pickup in get_nodes_in_group("component_pickups"):
-		if pickup.has_meta("floor_guarantee"):
+		if pickup.has_meta("area_guarantee"):
 			rewards += 1
-	check(rewards == 1, "exactly one guarantee per floor")
+	check(rewards == 2, "exactly one independent guarantee per area")
 	second._on_all_required_defeated()
 	assembler._on_room_cleared(second)
-	check(get_nodes_in_group("component_pickups").size() == 1 and assembler._rooms_remaining == 0, "duplicate final clear cannot issue another guarantee")
+	check(get_nodes_in_group("component_pickups").size() == 2 and assembler._rooms_remaining == 0, "duplicate final clear cannot issue another area guarantee")
 	var guarantee: ComponentPickup = get_first_node_in_group("component_pickups")
-	check(ComponentRolls.quality(guarantee.rolled_item) >= 1 and ComponentRolls.affixes(guarantee.rolled_item).size() >= 1, "floor guarantee contains real rolled quality and affixes")
+	check(ComponentRolls.quality(guarantee.rolled_item) >= 1 and ComponentRolls.affixes(guarantee.rolled_item).size() >= 1, "area guarantee contains real rolled quality and affixes")
 	player.global_position = second.exit_elevator.global_position
 	await settle()
 	check(ui.get("_overlay").visible and not paused, "actual final exit opens non-pausing extraction choice")

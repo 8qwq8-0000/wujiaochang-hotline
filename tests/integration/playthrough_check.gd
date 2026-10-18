@@ -81,7 +81,8 @@ func run() -> void:
 		await process_frame
 		await process_frame
 		check(root.get_node("RunManager").mandatory_enemies_remaining == 0, "floor is cleared")
-		check(get_nodes_in_group("component_pickups").is_empty(), "collected guarantee is not repeated by final clear")
+		check(get_nodes_in_group("component_pickups").size() == 1, "second area supplies its own guarantee after first-area loot was collected")
+		check(get_first_node_in_group("component_pickups").get_parent().area_index == 1, "final clear loot belongs to second area rather than repeating first-area guarantee")
 		press_key(KEY_TAB)
 		await process_frame
 		inventory.panel.get("_buttons")[0].pressed.emit()

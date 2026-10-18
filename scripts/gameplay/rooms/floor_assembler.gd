@@ -17,7 +17,7 @@ var _rooms_remaining: int = 0
 var active_area_index := 0
 var passages: Array[CombatPassage] = []
 var _cleared_ids := {}
-var _guarantee_granted := false
+var _guaranteed_areas := {}
 var _loot_rng := RandomNumberGenerator.new()
 var _drop_chance_rng := RandomNumberGenerator.new()
 
@@ -35,7 +35,7 @@ func assemble() -> void:
 		passage.queue_free()
 	passages.clear()
 	_cleared_ids.clear()
-	_guarantee_granted = false
+	_guaranteed_areas.clear()
 	active_area_index = 0
 	var random := RandomNumberGenerator.new()
 	var run_manager := get_node_or_null("/root/RunManager")
@@ -161,13 +161,14 @@ func try_enemy_drop(enemy: EnemyController, room: CombatRoom, death_position: Ve
 	if room not in generated_rooms or enemy.state != EnemyController.State.DEAD or enemy.has_meta("floor_loot_processed"):
 		return
 	enemy.set_meta("floor_loot_processed", true)
-	# First local clear fulfils the floor minimum if all previous death rolls missed.
+	# Each area fulfils its own minimum if its previous death rolls all missed.
 	# EnemySpawner resolves objectives before CombatEvents publishes the death.
-	var forced := not _guarantee_granted and room.cleared
+	var area_id := room.get_instance_id()
+	var forced := not _guaranteed_areas.has(area_id) and room.cleared
 	if not forced and _drop_chance_rng.randf() >= enemy_drop_chance:
 		return
-	var first_drop := not _guarantee_granted
-	_guarantee_granted = true
+	var first_drop := not _guaranteed_areas.has(area_id)
+	_guaranteed_areas[area_id] = true
 	if first_drop:
 		room.reward_count += 1
 	var run := get_node_or_null("/root/RunManager")
@@ -183,6 +184,6 @@ func _spawn_enemy_drop(room: CombatRoom, death_position: Vector2, item: Inventor
 	pickup.rolled_item = item
 	pickup.set_meta("enemy_drop", enemy_id)
 	if first_drop:
-		pickup.set_meta("floor_guarantee", true)
+		pickup.set_meta("area_guarantee", true)
 	room.add_child(pickup)
 	pickup.global_position = death_position

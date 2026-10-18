@@ -63,7 +63,7 @@ func run() -> void:
 		(main.find_child("FloorAssembler", true, false) as FloorAssembler).enemy_drop_chance = 0.0
 		player.health.configure_max_health(1000)
 		await preload("res://tests/integration/combat_test_flow.gd").clear_floor(self)
-		check(get_nodes_in_group("component_pickups").size() == 1, "exactly one physical guarantee on each completed floor")
+		check(get_nodes_in_group("component_pickups").size() == 2, "each completed floor has one physical guarantee per area")
 		var pickup := get_first_node_in_group("component_pickups") as ComponentPickup
 		var rolled := pickup.rolled_item
 		var data := rolled.serialize()
@@ -77,7 +77,8 @@ func run() -> void:
 			root.push_input(event, true)
 			await process_frame
 		await settle()
-		check(get_nodes_in_group("component_pickups").is_empty() and player.inventory.item_location(rolled) != "", "real E input collects same rolled instance")
+		check(get_nodes_in_group("component_pickups").size() == 1 and player.inventory.item_location(rolled) != "", "real E input collects same rolled instance while other area loot remains")
+		check(get_first_node_in_group("component_pickups").get_parent().area_index == 1, "second-area guarantee remains independent and is not auto-collected")
 		if player.inventory.backpack.has_item(rolled):
 			check(player.inventory.equip(player.inventory.backpack.get_item_index(rolled)), "collected guarantee equips after local clear")
 		check(rolled.serialize() == data, "equipping never changes rolled quality affixes or ID")
