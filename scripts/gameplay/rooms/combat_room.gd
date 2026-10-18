@@ -88,6 +88,13 @@ func _apply_layout() -> void:
 	var geometry := Node2D.new()
 	geometry.name = "LayoutGeometry"
 	add_child(geometry)
+	var palette := [Color("20343d"), Color("283844"), Color("263b3b"), Color("303440"), Color("293d43"), Color("35333d")]
+	for index in layout.zones.size():
+		var zone := Polygon2D.new()
+		zone.polygon = CombatLayoutData._outline(layout.zones[index])
+		zone.color = palette[index % palette.size()]
+		zone.z_index = -1
+		geometry.add_child(zone)
 	for rect in layout.covers:
 		var body := StaticBody2D.new()
 		body.position = rect.get_center()
@@ -103,10 +110,45 @@ func _apply_layout() -> void:
 		visual.color = layout.cover_color
 		body.add_child(visual)
 		geometry.add_child(body)
+	for rect in layout.windows:
+		var window := StaticBody2D.new()
+		window.name = "ObservationWindow"
+		window.position = rect.get_center()
+		# Actors collide with glass; vision/projectile rays use world layer 1.
+		window.collision_layer = 128
+		window.collision_mask = 0
+		var shape := RectangleShape2D.new()
+		shape.size = rect.size
+		var collider := CollisionShape2D.new()
+		collider.shape = shape
+		window.add_child(collider)
+		var visual := Polygon2D.new()
+		visual.polygon = CombatLayoutData._outline(Rect2(-rect.size * 0.5, rect.size))
+		visual.color = Color("72c7e4")
+		window.add_child(visual)
+		geometry.add_child(window)
+	for definition in layout.doors:
+		var door: AutomaticDoor = load("res://scenes/environment/automatic_door.tscn").instantiate()
+		door.position = Vector2(definition.x, definition.y)
+		door.rotation = definition.z
+		door.scale.y = definition.w / 64.0
+		door.hinged_visual = true
+		geometry.add_child(door)
 	$Floor.color = layout.floor_color
-	var markers := $EnemySpawnPoints.get_children()
-	for index in mini(markers.size(), layout.enemy_positions.size()):
-		markers[index].position = layout.enemy_positions[index]
+	$Floor.z_index = -2
+	if not layout.enemy_profiles.is_empty():
+		for old in $EnemySpawnPoints.get_children():
+			$EnemySpawnPoints.remove_child(old)
+			old.free()
+		for index in layout.enemy_positions.size():
+			var marker := EnemySpawnMarker.new()
+			marker.position = layout.enemy_positions[index]
+			marker.profile = layout.enemy_profiles[index] as EnemyProfile
+			$EnemySpawnPoints.add_child(marker)
+	else:
+		var markers := $EnemySpawnPoints.get_children()
+		for index in mini(markers.size(), layout.enemy_positions.size()):
+			markers[index].position = layout.enemy_positions[index]
 	$PowerBox.position = layout.power_position
 	$FuelBarrel.position = layout.bomb_position
 	$NavigationRegion2D.navigation_polygon = layout.navigation_polygon()

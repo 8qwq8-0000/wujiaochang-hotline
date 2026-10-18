@@ -1,6 +1,7 @@
 extends SceneTree
 
-const IDS := ["staggered_cover", "central_server", "storage_lanes", "cross_checkpoint", "offset_workshop", "split_office"]
+const FORMAL_IDS := ["interlinked_apartment", "loading_workshop"]
+const IDS := ["interlinked_apartment", "loading_workshop", "staggered_cover", "central_server", "storage_lanes", "cross_checkpoint", "offset_workshop", "split_office"]
 var checks := 0
 var failures := 0
 
@@ -25,6 +26,8 @@ func inside_cover(point: Vector2, covers: Array[Rect2], clearance: float = 0.0) 
 	return false
 
 func run() -> void:
+	root.get_node("WarehouseStore").save_path = "user://bc_room_layouts_check.json"
+	DirAccess.remove_absolute("user://bc_room_layouts_check.json")
 	var run_manager := root.get_node("RunManager")
 	run_manager.begin_run(4287)
 	var seen_pairs := {}
@@ -38,7 +41,7 @@ func run() -> void:
 			root.add_child(floor_node)
 			current_scene = floor_node
 			var assembler: FloorAssembler = floor_node.get_node("FloorAssembler")
-			check(assembler.room_pool.size() == IDS.size(), "formal floor wires all six layouts")
+			check(assembler.room_pool.size() == FORMAL_IDS.size(), "formal floor wires the two selected layouts")
 			var paths: Array[String] = []
 			for room in assembler.generated_rooms:
 				paths.append(room.scene_file_path)
@@ -52,7 +55,7 @@ func run() -> void:
 				else:
 					check(pair_at_zero == pair, "same seed and floor regenerate identical layouts")
 			await settle()
-			check(run_manager.mandatory_enemies_remaining == 6, "all layouts preserve two-area objectives")
+			check(run_manager.mandatory_enemies_remaining == 12, "all layouts preserve two-area objectives")
 			assembler.passages[0].unlock()
 			var entry := Vector2(74,180)
 			var next_entry: Vector2 = assembler.generated_rooms[1].to_global(entry)
@@ -66,8 +69,8 @@ func run() -> void:
 			check(route_connected, "unlocked passage links different navigation meshes")
 			floor_node.queue_free()
 			await settle()
-	check(seen_layouts.size() == IDS.size(), "seed samples reach all six layouts")
-	check(seen_pairs.size() >= 6, "seeds and floors provide varied room pairs")
+	check(seen_layouts.size() == FORMAL_IDS.size(), "seed samples reach both selected layouts")
+	check(seen_pairs.size() == 2, "seeds and floors provide varied room pairs")
 	for id in IDS:
 		var template: RoomTemplateData = load("res://resources/rooms/templates/" + id + ".tres")
 		var room := template.scene.instantiate() as CombatRoom
@@ -80,6 +83,8 @@ func run() -> void:
 		camera.make_current()
 		var covers: Array[Rect2] = []
 		covers.assign(room.layout.covers if room.layout != null else [Rect2(254,71,32,94), Rect2(379,195,32,94)])
+		if room.layout != null:
+			covers.append_array(room.layout.windows)
 		await settle()
 		var region: NavigationRegion2D = room.get_node("NavigationRegion2D")
 		for wait_frame in 30:
@@ -114,7 +119,7 @@ func run() -> void:
 		enemy.profile.patrol_enabled = false
 		enemy.profile.awareness_range = 1000.0
 		enemy.profile.alert_memory_seconds = 20.0
-		enemy.position = Vector2(560,180)
+		enemy.position = room.layout.enemy_positions.back() if room.layout != null else Vector2(560,180)
 		room.get_node("Enemies").add_child(enemy)
 		enemy.navigation_agent.max_speed = enemy.profile.move_speed
 		enemy._alert_to(target.global_position, false)
@@ -136,4 +141,5 @@ func run() -> void:
 		room.queue_free()
 		await settle()
 	print("Room layout checks: ", checks, "; failures: ", failures)
+	DirAccess.remove_absolute("user://bc_room_layouts_check.json")
 	quit(0 if failures == 0 else 1)

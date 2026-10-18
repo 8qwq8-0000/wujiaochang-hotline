@@ -3,6 +3,8 @@ extends Node2D
 
 @export var knockdown_seconds := 0.8
 @export var knockdown_reach := 60.0
+@export var hinged_visual := false
+var _swing := 0.0
 var opened := false
 var slammed := false
 var knocked_count := 0
@@ -24,6 +26,9 @@ func _on_contact(body: Node2D) -> void:
 	opened = true
 	slammed = body is PlayerController and body.mobility.is_ability_active() and body.velocity.dot(direction) > 80.0
 	$Body/Shape.set_deferred("disabled",true)
+	if hinged_visual:
+		var tween := create_tween()
+		tween.tween_method(_set_swing, 0.0, -signf(direction.dot(normal)) * PI / 2.0, 0.22)
 	if slammed:
 		call_deferred("_knock_down",direction,body)
 	queue_redraw()
@@ -49,7 +54,16 @@ func _knock_down(direction: Vector2, source: Node2D) -> void:
 		events.publish_noise(source,global_position,160)
 		events.publish_message("冲刺撞门 · 门后敌人击倒 %.1f 秒" % knockdown_seconds,Color("f1cf85"))
 
+func _set_swing(value: float) -> void:
+	_swing = value
+	queue_redraw()
+
 func _draw() -> void:
+	if hinged_visual:
+		var hinge := Vector2(0, -32)
+		draw_circle(hinge, 3, Color("a9b9bc"))
+		draw_line(hinge, hinge + Vector2(0, 64).rotated(_swing), Color("d8b575"), 4)
+		return
 	draw_rect(Rect2(-9,-36,18,72),Color("8aabb3"),false,3)
 	if opened:
 		draw_rect(Rect2(-3,-34,30,7),Color("40687b"))

@@ -133,4 +133,6 @@ godot --headless --path . --script res://tests/integration/automatic_door_check.
 
 机动品质与背包丢弃：`godot --headless --path . --script res://tests/integration/mobility_and_discard_check.gd`，30 项检查覆盖品质冲撞伤害/冷却、资源克隆、合成预览、真实右键菜单、同实例丢弃与拾回、存档失败回滚。`dual_area_check.gd` 现包含 40 项检查，进入第二房间后回路永久封闭，包括真实反向移动碰撞验证。
 
-房间构型：`godot --headless --path . --script res://tests/integration/room_layouts_check.gd`，116 项检查覆盖六种房型、同层去重、种子复现、楼层重抽、跨区导航、出生点/道具/出口可达和实际敌人绕墙追踪。去掉 `--headless` 会在 `/tmp/hotline-room-*.png` 输出实际构型截图。
+房间构型：`godot --headless --path . --script res://tests/integration/room_layouts_check.gd`，128 项检查覆盖正式 B/C 构型池、同层去重、种子复现、楼层重抽、跨区导航，以及全部 8 种房型的出生点/道具/出口可达和实际敌人绕墙追踪。去掉 `--headless` 会在 `/tmp/hotline-room-*.png` 输出实际构型截图。
+
+互通房间：`godot --headless --path . --script res://tests/integration/interlinked_rooms_check.gd`，48 项真实物理检查覆盖 B/C 六名敌人配置、全部 19 处门的实际穿越，以及观察窗挡人、通视与实际弹丸伤害。去掉 `--headless` 输出 `/tmp/hotline-bc-*.png` 实机截图。

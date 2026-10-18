@@ -39,6 +39,8 @@ func _press_restart(echo: bool = false) -> void:
 	Input.parse_input_event(release)
 
 func _run_checks() -> void:
+	root.get_node("WarehouseStore").save_path = "user://bc_restart_room_check.json"
+	DirAccess.remove_absolute("user://bc_restart_room_check.json")
 	var main: Node = load("res://scenes/bootstrap/main.tscn").instantiate()
 	root.add_child(main)
 	current_scene = main
@@ -101,4 +103,5 @@ func _run_checks() -> void:
 	print("Restart integration failures: ", _failures)
 	current_scene.queue_free()
 	await process_frame
+	DirAccess.remove_absolute("user://bc_restart_room_check.json")
 	quit(0 if _failures == 0 else 1)

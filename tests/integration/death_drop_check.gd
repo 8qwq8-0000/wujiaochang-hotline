@@ -22,13 +22,15 @@ func kill(enemy: EnemyController) -> void:
 		enemy._physics_process(enemy.profile.self_destruct_delay + 0.01)
 
 func run() -> void:
+	root.get_node("WarehouseStore").save_path = "user://bc_death_drop_check.json"
+	DirAccess.remove_absolute("user://bc_death_drop_check.json")
 	var main: Node = load("res://scenes/bootstrap/main.tscn").instantiate()
 	main.get_node("SceneFlow").fade_duration = 0
 	root.add_child(main)
 	current_scene = main
 	for frame in 600:
 		await process_frame
-		if get_nodes_in_group("enemies").size() == 3 and not main.get_node("SceneFlow").get("_is_loading"):
+		if get_nodes_in_group("enemies").size() == 6 and not main.get_node("SceneFlow").get("_is_loading"):
 			break
 	var player := get_first_node_in_group("player") as PlayerController
 	player.set_physics_process(false)
@@ -135,4 +137,5 @@ func run() -> void:
 	main.queue_free()
 	await settle()
 	print("Death drop checks: ", checks, "; failures: ", failures)
+	DirAccess.remove_absolute("user://bc_death_drop_check.json")
 	quit(0 if failures == 0 else 1)

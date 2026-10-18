@@ -39,13 +39,15 @@ func walk_right(player: PlayerController, frames: int) -> void:
 	await settle()
 
 func run_checks() -> void:
+	root.get_node("WarehouseStore").save_path = "user://bc_dual_area_check.json"
+	DirAccess.remove_absolute("user://bc_dual_area_check.json")
 	var main: Node = load("res://scenes/bootstrap/main.tscn").instantiate()
 	main.get_node("SceneFlow").fade_duration = 0
 	root.add_child(main)
 	current_scene = main
 	for frame in 600:
 		await process_frame
-		if get_nodes_in_group("enemies").size() == 3 and not main.get_node("SceneFlow").get("_is_loading"):
+		if get_nodes_in_group("enemies").size() == 6 and not main.get_node("SceneFlow").get("_is_loading"):
 			break
 	var player := get_first_node_in_group("player") as PlayerController
 	check(player != null, "main loads a player")
@@ -64,11 +66,11 @@ func run_checks() -> void:
 	var hud := main.find_child("CombatHUD", true, false)
 	check(assembler.generated_rooms.size() == 2 and assembler.passages.size() == 1, "one floor contains two connected areas")
 	check(first.active and not second.active and not second.spawner._spawned, "only first area is active before entry")
-	check(run.mandatory_enemies_remaining == 6 and get_nodes_in_group("enemies").size() == 3, "pending area contributes to floor objectives without spawning early")
+	check(run.mandatory_enemies_remaining == 12 and get_nodes_in_group("enemies").size() == 6, "pending area contributes to floor objectives without spawning early")
 	for room in [first, second]:
 		check(room.find_children("*", "PowerBox", true, false).size() == 1, "each area has one power box")
 		check(room.find_children("*", "FuelBarrel", true, false).size() == 1, "each area has one bomb box")
-		check(room.find_children("*", "AutomaticDoor", true, false).is_empty(), "formal areas have no automatic doors")
+		check(not room.find_children("*", "AutomaticDoor", true, false).is_empty(), "formal areas contain usable interior doors")
 	player.global_position = first.to_global(Vector2(600,180))
 	await settle()
 	await walk_right(player, 40)
@@ -82,10 +84,10 @@ func run_checks() -> void:
 	var first_enemy: EnemyController = get_first_node_in_group("enemies")
 	first.spawner._on_enemy_defeated(first_enemy, true)
 	first.spawner._on_enemy_defeated(first_enemy, true)
-	check(first.spawner.required_remaining == 2 and not first.cleared and first.reward_count == 0, "duplicate death signals cannot prematurely clear area or issue guarantee")
+	check(first.spawner.required_remaining == 5 and not first.cleared and first.reward_count == 0, "duplicate death signals cannot prematurely clear area or issue guarantee")
 	await clear_active()
 	check(first.cleared and not second.cleared and assembler._rooms_remaining == 1, "clearing first area does not clear the floor")
-	check(run.mandatory_enemies_remaining == 3 and buffs.active_buff.is_empty(), "first clear removes only its buff and leaves pending objectives")
+	check(run.mandatory_enemies_remaining == 6 and buffs.active_buff.is_empty(), "first clear removes only its buff and leaves pending objectives")
 	check(str(hud.objective_label.text).contains("1/2 已清场"), "HUD directs player to the next area")
 	check(first.reward_count == 1 and assembler.passages[0].unlocked, "first clear grants one supply and unlocks the passage")
 	check(player.inventory.can_change_equipment(), "cleared area allows equipment changes despite pending next area")
@@ -104,7 +106,7 @@ func run_checks() -> void:
 	freeze_enemies()
 	check(str(hud.objective_label.text).contains("2/2"), "HUD switches to second area objectives")
 	check(player.global_position.x > second.global_position.x and second.active and assembler.active_area_index == 1, "actual walking through passage activates second area")
-	check(get_nodes_in_group("enemies").size() == 3 and run.mandatory_enemies_remaining == 3, "second enemies spawn once without resetting total objectives")
+	check(get_nodes_in_group("enemies").size() == 6 and run.mandatory_enemies_remaining == 6, "second enemies spawn once without resetting total objectives")
 	check(player.get_instance_id() == identity and player.export_run_state() == state and run.floor_index == 0, "area traversal preserves player, inventory and floor")
 	check(player.health.current_health == health and is_equal_approx(player.heat.current_heat,heat), "area traversal preserves health and heat")
 	check(EnvironmentArea.for_actor(player) == second and not player.inventory.can_change_equipment(), "area scope and combat equipment lock switch on entry")
@@ -152,4 +154,5 @@ func run_checks() -> void:
 	main.queue_free()
 	await process_frame
 	print("Dual area checks: ", checks, "; failures: ", failures)
+	DirAccess.remove_absolute("user://bc_dual_area_check.json")
 	quit(0 if failures == 0 else 1)
