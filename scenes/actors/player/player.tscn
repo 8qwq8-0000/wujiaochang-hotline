@@ -23,7 +23,7 @@
 [ext_resource type="Script" uid="uid://co1drnaptmoj4" path="res://scripts/gameplay/player/talent_core_controller.gd" id="20_talent_core"]
 [ext_resource type="Script" uid="uid://b35xuobakrv1" path="res://scripts/presentation/weapon_mount.gd" id="21_weapon_mount"]
 [ext_resource type="Script" uid="uid://bdhd3ocwco4" path="res://scripts/gameplay/player/room_buff_component.gd" id="22_room_buff"]
-[ext_resource type="Script" path="res://scripts/presentation/player_wrist_socket.gd" id="23_wrist_socket"]
+[ext_resource type="Script" uid="uid://dg53xird04joq" path="res://scripts/presentation/player_wrist_socket.gd" id="23_wrist_socket"]
 [ext_resource type="Script" uid="uid://l0hycqi8fyxu" path="res://scripts/presentation/status_indicator.gd" id="status_indicator"]
 
 [sub_resource type="RectangleShape2D" id="WorldCollisionShape"]
@@ -67,13 +67,13 @@ region = Rect2(0, 0, 128, 256)
 atlas = ExtResource("14_down")
 region = Rect2(128, 0, 128, 256)
 
-[sub_resource type="AtlasTexture" id="Atlas_down_2"]
-atlas = ExtResource("14_down")
-region = Rect2(256, 0, 128, 256)
-
 [sub_resource type="AtlasTexture" id="Atlas_down_3"]
 atlas = ExtResource("14_down")
 region = Rect2(384, 0, 128, 256)
+
+[sub_resource type="AtlasTexture" id="Atlas_down_2"]
+atlas = ExtResource("14_down")
+region = Rect2(256, 0, 128, 256)
 
 [sub_resource type="AtlasTexture" id="Atlas_down_4"]
 atlas = ExtResource("14_down")
@@ -349,7 +349,7 @@ sprite_frames = SubResource("PlayerSpriteFrames")
 animation = &"idle"
 autoplay = "idle"
 
-[node name="WristSocket" type="Node2D" parent="VisualRoot"]
+[node name="WristSocket" type="Node2D" parent="VisualRoot" unique_id=583310016]
 script = ExtResource("23_wrist_socket")
 
 [node name="WeaponPivot" type="Node2D" parent="VisualRoot" unique_id=1990713956]
