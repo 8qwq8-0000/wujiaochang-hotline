@@ -1,6 +1,6 @@
 extends Area2D
 
-@export_enum("chest", "deploy", "trial") var kind := "chest"
+@export_enum("chest", "deploy", "trial", "synthesis") var kind := "chest"
 @onready var room: Node2D = get_parent()
 
 func can_interact(actor: Node2D) -> bool:
@@ -11,6 +11,8 @@ func interact(actor: Node2D) -> void:
 		return
 	if kind == "chest":
 		room.panel.open()
+	elif kind == "synthesis":
+		room.panel.open(true)
 	elif kind == "trial":
 		room.enter_trial()
 	else:
@@ -27,6 +29,18 @@ func _draw() -> void:
 		draw_rect(Rect2(-32, -20, 64, 40), Color("a6c0a4"), false, 2)
 		draw_line(Vector2(-30, -6), Vector2(30, -6), Color("a6c0a4"), 2)
 		draw_rect(Rect2(-4, -10, 8, 14), Color("e3c681"))
+	elif kind == "synthesis":
+		# Placeholder mechanic silhouette with goggles, apron and upgrade workbench.
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2(0.7, 0.7))
+		draw_circle(Vector2(0, -18), 10, Color("d4aa80"))
+		draw_rect(Rect2(-10, -23, 20, 6), Color("7cd9df"))
+		draw_rect(Rect2(-13, -7, 26, 27), Color("c58d49"))
+		draw_rect(Rect2(-8, -4, 16, 24), Color("526470"))
+		for x in [-8, 4]:
+			draw_rect(Rect2(x, 20, 5, 12), Color("a3aeb6"))
+		draw_rect(Rect2(16, 0, 18, 6), Color("85b3bd"))
+		draw_line(Vector2(22, -12), Vector2(22, 4), Color("e3c681"), 3)
+		draw_line(Vector2(16, -12), Vector2(29, -12), Color("e3c681"), 4)
 	else:
 		draw_rect(Rect2(-24, -32, 48, 64), Color("60513b") if kind == "trial" else Color("385b61"))
 		draw_line(Vector2(-15, 0), Vector2(15, 0), Color("d6d299"), 3)
