@@ -26,6 +26,7 @@ func contains_world_point(point: Vector2) -> bool:
 func _ready() -> void:
 	if layout != null:
 		_apply_layout()
+	_place_barrel()
 	spawner.all_required_defeated.connect(_on_all_required_defeated)
 	exit_elevator.set_enabled(false)
 
@@ -152,3 +153,24 @@ func _apply_layout() -> void:
 	$PowerBox.position = layout.power_position
 	$FuelBarrel.position = layout.bomb_position
 	$NavigationRegion2D.navigation_polygon = layout.navigation_polygon()
+
+
+func _place_barrel() -> void:
+	var blockers: Array[Rect2] = []
+	var doors: Array[Vector4] = []
+	var windows: Array[Rect2] = []
+	if layout != null:
+		blockers.append_array(layout.covers)
+		blockers.append_array(layout.windows)
+		windows.assign(layout.windows)
+		doors.assign(layout.doors)
+	else:
+		# Original standalone room has two rectangular cover bodies.
+		for name in ["CoverA", "CoverB"]:
+			var cover := get_node_or_null(name) as StaticBody2D
+			if cover != null:
+				var shape := cover.get_node("CollisionShape2D").shape as RectangleShape2D
+				blockers.append(Rect2(cover.position - shape.size * 0.5, shape.size))
+	var run := get_node_or_null("/root/RunManager")
+	var seed_value: int = (run.run_seed if run != null else 1) + 104729 * (run.floor_index + 1 if run != null else 1) + area_index * 97
+	$FuelBarrel.position = EncounterPropPlacement.choose_barrel_position(spawner.planned_positions(self), blockers, doors, $PowerBox.position, seed_value, $FuelBarrel.position, windows)

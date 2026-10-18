@@ -89,3 +89,11 @@ func remaining_objectives() -> int:
 		if marker.mandatory:
 			count += 1
 	return count
+
+
+func planned_positions(relative_to: Node2D) -> Array[Vector2]:
+	_prepare_plan()
+	var points: Array[Vector2] = []
+	for marker in _spawn_plan:
+		points.append(relative_to.to_local(marker.global_position))
+	return points

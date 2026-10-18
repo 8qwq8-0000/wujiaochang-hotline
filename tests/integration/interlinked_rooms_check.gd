@@ -67,6 +67,9 @@ func run() -> void:
 			check(door.opened and door.get_node("Body/Shape").disabled, id + " physical contact opens door at " + str(door.position))
 			check((player.global_position - door.global_position).dot(normal) > 10, id + " player physically crosses doorway")
 		if id == "loading_workshop":
+			# Barrel position is now encounter-dependent; isolate the window shot.
+			room.get_node("FuelBarrel").queue_free()
+			await settle()
 			var window: StaticBody2D = room.get_node("LayoutGeometry/ObservationWindow")
 			var center := window.global_position
 			var ray := PhysicsRayQueryParameters2D.create(center - Vector2(25,0), center + Vector2(25,0), 1)
