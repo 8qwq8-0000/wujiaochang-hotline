@@ -94,7 +94,7 @@ func run() -> void:
 			ui.return_to_warehouse()
 	warehouse = await wait_room(main)
 	var inv: ComponentInventory = warehouse.player.inventory
-	for item in inv.backpack.get_items() + [inv.weapon_slot.get_item(), inv.secondary_weapon_slot.get_item(), inv.mobility_slot.get_item()]:
+	for item in inv.backpack.get_items() + [inv.weapon_slot.get_item(), inv.secondary_weapon_slot.get_item(), inv.mobility_slot.get_item(), inv.defense_slot.get_item()]:
 		if ComponentRolls.ordinary(item):
 			check(warehouse.transfer(item, true), "extracted rolled gear deposits into chest")
 	check(warehouse.chest.get_item_count() == 2, "two floor guarantees arrive in warehouse without duplication")

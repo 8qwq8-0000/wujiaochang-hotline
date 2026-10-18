@@ -54,7 +54,7 @@ func _process(_delta: float) -> void:
 	_health_meter.set_meter(float(health_state.current), float(health_state.maximum))
 	_heat_meter.meter_color = CyberUITheme.DANGER if heat_state.overheated else CyberUITheme.WARNING
 	_heat_meter.set_meter(float(heat_state.current), float(heat_state.maximum))
-	_mobility_value.text = "%s  // SPACE" % _player.get_mobility_display_name()
+	_mobility_value.text = "%s  // SPACE\n%s" % [_player.get_mobility_display_name(), _player.get_node("DefenseComponent").display_state()]
 	_weapon_value.text = "> %s  %s\n  Q/滚轮 切换" % ["A" if _player.weapons.current_index == 0 else "B", _player.get_weapon_display_name()]
 	_guard_value.text = "格挡协议  %s" % _guard_state_name(_player.get_guard_state())
 	if is_instance_valid(_player.talent_core):
@@ -143,7 +143,7 @@ func _build_cyber_hud() -> void:
 	_objective_value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	objective.add_child(_objective_value)
 
-	var mobility := _make_panel("机动 / MOBILITY", Rect2(8, 286, 175, 66))
+	var mobility := _make_panel("机动 / 防御", Rect2(8, 274, 175, 78))
 	_mobility_value = Label.new()
 	_mobility_value.text = "步行（无套件）"
 	_mobility_value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

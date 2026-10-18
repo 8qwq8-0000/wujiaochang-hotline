@@ -59,7 +59,7 @@ func _ready() -> void:
 	close_button.add_theme_font_size_override("font_size", 12)
 	close_button.pressed.connect(close)
 	header.add_child(close_button)
-	column.add_child(_label("两件组件，一次升级。选定主体，保留它的武器或机动形态。", 11, Color("a6b9c4")))
+	column.add_child(_label("两件组件，一次升级。选定主体，保留它的武器、机动或防御类型。", 11, Color("a6b9c4")))
 	var body := HBoxContainer.new()
 	body.add_theme_constant_override("separation", 12)
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -70,7 +70,7 @@ func _ready() -> void:
 	catalog.add_child(_label("可用组件", 15, CYAN))
 	var filters := HBoxContainer.new()
 	catalog.add_child(filters)
-	for option in [{"id": "all", "title": "全部"}, {"id": "weapon", "title": "武器"}, {"id": "mobility", "title": "机动"}]:
+	for option in [{"id": "all", "title": "全部"}, {"id": "weapon", "title": "武器"}, {"id": "mobility", "title": "机动"}, {"id": "defense", "title": "防御"}]:
 		var button := Button.new()
 		button.text = option.title
 		button.add_theme_font_size_override("font_size", 11)
@@ -181,7 +181,7 @@ func refresh() -> void:
 		_list.remove_child(child)
 		child.queue_free()
 	var inv: ComponentInventory = room.player.inventory
-	for location in ["weapon", "weapon_secondary", "mobility", "blackbox", "backpack", "chest"]:
+	for location in ["weapon", "weapon_secondary", "mobility", "defense", "blackbox", "backpack", "chest"]:
 		var items: Array = []
 		if location == "chest":
 			items = room.chest.get_items()
@@ -201,7 +201,7 @@ func _add_item(item: InventoryItem, location: String) -> void:
 	button.set_script(DRAG)
 	button.panel = self
 	button.item = item
-	var names := {"weapon": "主武器 · 正在装备", "weapon_secondary": "副武器 · 正在装备", "mobility": "机动 · 正在装备", "blackbox": "黑匣", "backpack": "背包", "chest": "仓库"}
+	var names := {"weapon": "主武器 · 正在装备", "weapon_secondary": "副武器 · 正在装备", "mobility": "机动 · 正在装备", "defense": "防御 · 正在装备", "blackbox": "黑匣", "backpack": "背包", "chest": "仓库"}
 	var selected := " · 已选主体" if item == _materials[0] else (" · 已选材料" if item == _materials[1] else "")
 	ComponentRolls.apply_quality_color(button, item)
 	button.text = ComponentRolls.title(item) + "\n" + names[location] + selected
@@ -237,17 +237,19 @@ func _refresh_preview() -> void:
 	var b: InventoryItem = _materials[1]
 	_synthesis_button.disabled = not ComponentRolls.compatible(a, b)
 	if a == null:
-		_preview.text = "[color=#e6bc73][b]升级结果预览[/b][/color]\n\n先选一件主体组件\n武器 / 机动形态由主体决定"
+		_preview.text = "[color=#e6bc73][b]升级结果预览[/b][/color]\n\n先选一件主体组件\n武器 / 机动 / 防御类型由主体决定"
 		return
 	var tier := mini(ComponentRolls.synthesis_quality(a) + 1, 3)
 	var id := "baton" if ComponentRolls.starter(a) else a.get_prototype().get_prototype_id()
 	var name: String = ComponentInventory.PROTOTYPES.data[id].name
 	var heading := "[color=#%s][b]%s · %s[/b][/color]" % [ComponentRolls.QUALITY_COLORS[tier].to_html(false), ComponentRolls.QUALITIES[tier], name]
+	if a.get_property("slot") == "defense":
+		heading += "\n护甲恢复 %.0f 秒 → %.0f 秒" % [ComponentRolls.ARMOR_RECOVERY_SECONDS[ComponentRolls.quality(a) - 1], ComponentRolls.ARMOR_RECOVERY_SECONDS[tier - 1]]
 	if b == null:
 		_preview.text = heading + "\n\n选择另一件同槽位、同品质组件\n初始警棍按制式武器配对"
 		return
 	if a.get_property("slot") != b.get_property("slot"):
-		_preview.text = "[color=#efad8c]槽位不匹配[/color]\n\n武器只能与武器合成\n机动只能与机动合成"
+		_preview.text = "[color=#efad8c]槽位不匹配[/color]\n\n武器、机动、防御分别合成\n请选择与主体同槽位的材料"
 		return
 	if ComponentRolls.synthesis_quality(a) != ComponentRolls.synthesis_quality(b):
 		_preview.text = "[color=#efad8c]品质不匹配[/color]\n\n请选择同品质材料\n初始警棍按制式计算"
