@@ -18,6 +18,7 @@ var _spawn_plan: Array[EnemySpawnMarker] = []
 
 var required_remaining: int = 0
 var _spawned := false
+var _defeated_ids := {}
 
 
 func _ready() -> void:
@@ -54,8 +55,9 @@ func spawn_all() -> void:
 
 
 func _on_enemy_defeated(_enemy: EnemyController, was_mandatory: bool) -> void:
-	if not was_mandatory:
+	if not was_mandatory or _defeated_ids.has(_enemy.get_instance_id()):
 		return
+	_defeated_ids[_enemy.get_instance_id()] = true
 	required_remaining = maxi(required_remaining - 1, 0)
 	required_remaining_changed.emit(required_remaining)
 	var run_manager := get_node_or_null("/root/RunManager")

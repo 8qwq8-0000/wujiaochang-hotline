@@ -32,13 +32,11 @@ func _on_all_required_defeated() -> void:
 	cleared = true
 	if not sequence_managed:
 		exit_elevator.set_enabled(true)
-	if sequence_managed:
-		_spawn_clear_reward()
 	room_cleared.emit()
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null:
 		events.publish_room_cleared(self)
-		var message := "区域 %d/%d 清场 · 获得清场补给" % [area_index + 1, area_total] if sequence_managed else "区域清理完成，出口电梯已启用"
+		var message := "区域 %d/%d 清场 · 通道已开放" % [area_index + 1, area_total] if sequence_managed else "区域清理完成，出口电梯已启用"
 		events.publish_notice(&"room_cleared", message, Color(0.35, 1.0, 0.55), CombatNotice.Priority.NORMAL, 0.0, 2.0)
 
 
@@ -76,12 +74,13 @@ func open_side(side: String) -> void:
 		wall.add_child(visual)
 
 
-func _spawn_clear_reward() -> void:
+func spawn_floor_guarantee(item: InventoryItem) -> void:
 	if reward_count > 0:
 		return
 	reward_count += 1
 	var pickup: ComponentPickup = load("res://scenes/items/component_pickup.tscn").instantiate()
-	pickup.component_id = "pistol" if area_index == 0 else "wheel"
+	pickup.component_id = item.get_prototype().get_prototype_id()
+	pickup.rolled_item = item
 	pickup.position = Vector2(550, 260)
-	pickup.set_meta("clear_reward", true)
+	pickup.set_meta("floor_guarantee", true)
 	add_child(pickup)

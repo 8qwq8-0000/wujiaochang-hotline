@@ -42,14 +42,16 @@ func run() -> void:
 		var inventory := player.get_node("ComponentInventory") as ComponentInventory
 		check(inventory.backpack.get_item_count() == 0 and inventory.weapon_slot.get_item() != null and inventory.secondary_weapon_slot.get_item() == null, "fresh run has no stale inventory")
 		check(get_nodes_in_group("component_pickups").is_empty(), "no free starter pickups")
+		# Clear the first area: ordinary deaths cannot directly drop equipment.
 		for enemy in get_nodes_in_group("enemies"):
-			if enemy.profile.role == EnemyProfile.Role.RANGED_SIGHTLINE:
-				enemy.health.apply_damage(enemy.health.max_health, DamagePacket.new())
-				break
+			enemy.health.apply_damage(enemy.health.max_health, DamagePacket.new())
+		for enemy in get_nodes_in_group("enemies"):
+			if enemy.state == EnemyController.State.SELF_DESTRUCT:
+				enemy._physics_process(enemy.profile.self_destruct_delay + 0.01)
 		await process_frame
 		await process_frame
 		var drop := get_first_node_in_group("component_pickups") as ComponentPickup
-		check(drop != null, "enemy supplies first weapon")
+		check(drop != null, "first clear supplies floor guarantee")
 		if drop == null:
 			quit(1)
 			return
@@ -58,11 +60,19 @@ func run() -> void:
 		await process_frame
 		press_key(KEY_E)
 		await process_frame
-		check(inventory.backpack.get_item_count() == 0 and inventory.secondary_weapon_slot.get_item() != null, "E puts first weapon into reserve")
+		check(not is_instance_valid(drop) or drop.is_queued_for_deletion(), "E collects the rolled floor guarantee")
+		# Continue the existing UI and combat-lock regression with a known weapon.
+		inventory.backpack.clear()
+		inventory.secondary_weapon_slot.clear()
+		inventory._has_picked_up_weapon = false
+		inventory.pickup("pistol")
 		check(inventory.pickup("pistol"), "later weapon enters backpack")
 		press_key(KEY_TAB)
 		await process_frame
 		check(inventory.is_open, "Tab opens actual panel")
+		player.global_position = Vector2(754, 180)
+		await physics_frame
+		await physics_frame
 		inventory.panel.get("_buttons")[0].pressed.emit()
 		check(str(inventory.weapon_slot.get_item().get_property("effect")).ends_with("initial_baton.tres"), "panel blocks combat equipment change")
 		press_key(KEY_TAB)
@@ -70,7 +80,7 @@ func run() -> void:
 		await process_frame
 		await process_frame
 		check(root.get_node("RunManager").mandatory_enemies_remaining == 0, "floor is cleared")
-		check(get_nodes_in_group("component_pickups").size() == 7, "remaining five enemy drops plus two area supplies")
+		check(get_nodes_in_group("component_pickups").is_empty(), "collected guarantee is not repeated by final clear")
 		press_key(KEY_TAB)
 		await process_frame
 		inventory.panel.get("_buttons")[0].pressed.emit()

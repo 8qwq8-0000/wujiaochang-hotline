@@ -78,6 +78,10 @@ func run_checks() -> void:
 	box.interact(player)
 	var buffs := player.get_node("RoomBuffComponent") as RoomBuffComponent
 	check(not buffs.active_buff.is_empty(), "first area grants its own power buff")
+	var first_enemy: EnemyController = get_first_node_in_group("enemies")
+	first.spawner._on_enemy_defeated(first_enemy, true)
+	first.spawner._on_enemy_defeated(first_enemy, true)
+	check(first.spawner.required_remaining == 2 and not first.cleared and first.reward_count == 0, "duplicate death signals cannot prematurely clear area or issue guarantee")
 	await clear_active()
 	check(first.cleared and not second.cleared and assembler._rooms_remaining == 1, "clearing first area does not clear the floor")
 	check(run.mandatory_enemies_remaining == 3 and buffs.active_buff.is_empty(), "first clear removes only its buff and leaves pending objectives")
@@ -114,14 +118,19 @@ func run_checks() -> void:
 	check(not buffs.active_buff.is_empty() and buffs.source_room == second, "second power box grants an independent area buff")
 	await clear_active()
 	check(second.cleared and run.mandatory_enemies_remaining == 0 and assembler._rooms_remaining == 0, "both cleared areas complete the floor")
-	check(buffs.active_buff.is_empty() and second.reward_count == 1, "second clear expires its buff and grants one supply")
+	check(buffs.active_buff.is_empty() and second.reward_count == 0, "second clear expires its buff without a second floor guarantee")
 	check(str(hud.objective_label.text).contains("本层已清理"), "HUD shows floor completion only after both clears")
 	check(not first.exit_elevator.enabled and second.exit_elevator.enabled, "only final exit becomes enabled")
 	var rewards := 0
 	for pickup in get_nodes_in_group("component_pickups"):
-		if pickup.has_meta("clear_reward"):
+		if pickup.has_meta("floor_guarantee"):
 			rewards += 1
-	check(rewards == 2, "exactly one supply per area")
+	check(rewards == 1, "exactly one guarantee per floor")
+	second._on_all_required_defeated()
+	assembler._on_room_cleared(second)
+	check(get_nodes_in_group("component_pickups").size() == 1 and assembler._rooms_remaining == 0, "duplicate final clear cannot issue another guarantee")
+	var guarantee: ComponentPickup = get_first_node_in_group("component_pickups")
+	check(ComponentRolls.quality(guarantee.rolled_item) >= 1 and ComponentRolls.affixes(guarantee.rolled_item).size() >= 1, "floor guarantee contains real rolled quality and affixes")
 	player.global_position = second.exit_elevator.global_position
 	await settle()
 	check(ui.get("_overlay").visible and not paused, "actual final exit opens non-pausing extraction choice")

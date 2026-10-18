@@ -44,7 +44,7 @@ func run() -> void:
 		if not pickup.has_meta("clear_reward"):
 			drop = pickup
 			break
-	check(drop != null and drop.get_parent().is_in_group("combat_rooms"), "drop is owned by combat room")
+	check(drop != null and drop.get_parent() is CombatRoom and drop.get_parent().get_parent().get_parent().is_in_group("combat_rooms"), "drop is owned by combat room")
 	player.weapons.set("_cooldown_remaining", 0)
 	check(player.weapons.try_attack(player.global_position, Vector2.RIGHT, player), "carried reserve can fire")
 	var bullet := main.find_child("Projectile*", true, false)

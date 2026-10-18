@@ -16,6 +16,8 @@ var _rooms_remaining: int = 0
 var active_area_index := 0
 var passages: Array[CombatPassage] = []
 var _cleared_ids := {}
+var _guarantee_granted := false
+var _loot_rng := RandomNumberGenerator.new()
 
 
 func _ready() -> void:
@@ -31,11 +33,13 @@ func assemble() -> void:
 		passage.queue_free()
 	passages.clear()
 	_cleared_ids.clear()
+	_guarantee_granted = false
 	active_area_index = 0
 	var random := RandomNumberGenerator.new()
 	var run_manager := get_node_or_null("/root/RunManager")
 	var seed_value: int = run_manager.run_seed if run_manager != null and run_manager.run_seed != 0 else 1
 	random.seed = seed_value
+	_loot_rng.seed = seed_value + 7919 * (run_manager.floor_index + 1 if run_manager != null else 1)
 	var floor_number: int = run_manager.floor_index + 1 if run_manager != null else 1
 	for index in room_count:
 		var packed := _choose_room(random, floor_number)
@@ -87,6 +91,10 @@ func _on_room_cleared(_room: Node) -> void:
 	if _cleared_ids.has(_room.get_instance_id()):
 		return
 	_cleared_ids[_room.get_instance_id()] = true
+	if not _guarantee_granted and _room is CombatRoom:
+		_guarantee_granted = true
+		var run := get_node_or_null("/root/RunManager")
+		_room.spawn_floor_guarantee(ComponentRolls.floor_drop(run.floor_index + 1 if run != null else 1, _loot_rng))
 	_rooms_remaining = maxi(_rooms_remaining - 1, 0)
 	if sequential_progression:
 		var index := generated_rooms.find(_room)
