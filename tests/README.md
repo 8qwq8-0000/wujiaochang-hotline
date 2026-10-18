@@ -52,7 +52,7 @@ godot --headless --path . --script res://tests/integration/enemy_loot_check.gd
 godot --headless --path . --script res://tests/integration/playthrough_check.gd
 ```
 
-队友房间合并并应用接入补丁后，再运行 `tests/integration/week1_room_check.gd`；缺少房间时输出 SKIP。接入方法见 `docs/technical/组件背包与掉落实施说明.md`。
+Week 1 队友房间检查：`godot --headless --path . --script res://tests/integration/week1_room_check.gd`，覆盖 F6 单独运行与 Main 容器加载、实际敌人数同步、真实 E 拾取、敌人掉落、清场换装和 R 重开；不应输出 SKIP。
 
 背包全图暂停检查：`godot --headless --path . --script res://tests/integration/inventory_pause_check.gd`，覆盖敌人/子弹/热量/冷却停止，界面操作、Tab/Esc、死亡、暂停中重开和场景退出恢复。
 
@@ -64,7 +64,7 @@ godot --headless --path . --script res://tests/integration/playthrough_check.gd
 
 装备不占格与开局配置：`godot --headless --path . --script res://tests/integration/backpack_weapon_capacity_check.gd`，覆盖初始 0/6、独立主副武器与机动槽、满包拒绝卸下、满包安全替换、卸下后占格和实例不重复。
 
-集成分支：`integration/week1` 暂不接入 last1118 的关卡；`week1_room_check.gd` 的 SKIP 不计为通过。
+Week 1 房间已接入当前玩法接口；`week1_room_check.gd` 的 SKIP 不计为通过。
 
 房间切换：`godot --headless --path . --script res://tests/integration/room_transition_check.gd`，覆盖背包与装备快照、实例编号、首次拾取资格，以及旧房间掉落／子弹清理。
 

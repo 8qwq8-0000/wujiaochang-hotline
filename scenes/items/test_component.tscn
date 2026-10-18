@@ -1,16 +1,6 @@
-[gd_scene load_steps=3 format=3 uid="uid://ctestcomponent01"]
+[gd_scene load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://scripts/gameplay/items/test_component.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://scenes/items/component_pickup.tscn" id="1_pickup"]
 
-[sub_resource type="RectangleShape2D" id="pick_shape"]
-size = Vector2(16, 16)
-
-[node name="TestComponent" type="Area2D"]
-script = ExtResource("1_script")
-
-[node name="Sprite2D" type="Sprite2D" parent="."]
-modulate = Color(1, 0.8, 0, 1)
-scale = Vector2(0.5, 0.5)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-shape = SubResource("pick_shape")
+[node name="TestComponent" instance=ExtResource("1_pickup")]
+component_id = "pistol"
