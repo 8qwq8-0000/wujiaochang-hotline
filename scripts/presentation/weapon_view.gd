@@ -13,6 +13,8 @@ const COATING_SCRIPT := preload("res://scripts/presentation/procedural_coating_2
 @export var coating_path: NodePath = NodePath("BodyRoot/Coating")
 @export_range(0.0, 16.0, 0.5) var recoil_distance: float = 3.0
 @export_range(0.01, 0.5, 0.01) var feedback_seconds: float = 0.08
+@export_range(0.0, 2.0, 0.01) var muzzle_flash_hold_seconds: float = 0.0
+@export_range(0.01, 1.0, 0.01) var muzzle_flash_fade_seconds: float = 0.06
 
 var data: WeaponComponentData
 var _feedback_tween: Tween
@@ -95,7 +97,7 @@ func _play_projectile_feedback() -> void:
 	if body_root != null:
 		_feedback_tween.tween_property(body_root, "position", _body_position, feedback_seconds)
 	if muzzle_flash != null:
-		_feedback_tween.tween_property(muzzle_flash, "modulate:a", 0.0, minf(feedback_seconds, 0.06))
+		_feedback_tween.tween_property(muzzle_flash, "modulate:a", 0.0, muzzle_flash_fade_seconds).set_delay(muzzle_flash_hold_seconds)
 	_feedback_tween.finished.connect(_finish_feedback)
 
 

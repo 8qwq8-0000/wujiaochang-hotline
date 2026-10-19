@@ -31,8 +31,8 @@ static func synthesizable(item: InventoryItem) -> bool:
 static func synthesis_quality(item: InventoryItem) -> int:
 	return quality(item)
 
-# Migrate serialized items before GLoot resolves their prototype. Preserve ID,
-# quality, affixes and cooldowns, while discarding the old bound-only overrides.
+# Retired melee weapons become plain issued pistols wherever they were stored.
+# Keep instance identity so slot references and duplicate checks remain valid.
 static func migrate_snapshot(value: Variant) -> Variant:
 	if value is Array:
 		var items := []
@@ -44,17 +44,15 @@ static func migrate_snapshot(value: Variant) -> Variant:
 	var data := {}
 	for key in value:
 		data[key] = migrate_snapshot(value[key])
-	if data.get("prototype_id", "") == "initial_baton" and data.get("protoset", "") == "res://resources/items/components.json":
-		data.prototype_id = "baton"
-		var properties: Variant = data.get("properties", {})
-		if properties is Dictionary:
-			properties.erase("bound")
-			properties.erase("name")
-			properties.erase("effect")
-			data.properties = properties
+	if data.get("prototype_id", "") in ["baton", "initial_baton"] and data.get("protoset", "") == "res://resources/items/components.json":
+		data.prototype_id = "pistol"
+		var properties: Dictionary = create_issued_pistol().serialize().get("properties", {})
+		var old_properties: Variant = data.get("properties", {})
+		if old_properties is Dictionary and old_properties.has("instance_id"):
+			properties.instance_id = old_properties.instance_id
+		data.properties = properties
 	_migrate_serialized_affixes(data)
 	return data
-
 
 static func _migrate_serialized_affixes(data: Dictionary) -> void:
 	var properties: Variant = data.get("properties", {})
@@ -98,7 +96,7 @@ static func ensure(item: InventoryItem) -> void:
 		item.set_property("affixes", _migrated_affixes(affixes(item)))
 
 static func make_item(id: String) -> InventoryItem:
-	var prototype_id := "baton" if id == "initial_baton" else id
+	var prototype_id := "pistol" if id in ["baton", "initial_baton"] else id
 	var item := InventoryItem.new(ComponentInventory.PROTOTYPES, prototype_id)
 	# Older scene transitions cleared GLoot's process-wide cached ProtoTree.
 	# Rebuild it before returning an item so already-authored pickups cannot
@@ -109,6 +107,8 @@ static func make_item(id: String) -> InventoryItem:
 	return item
 
 static func create(id: String, tier: int, rng: RandomNumberGenerator) -> InventoryItem:
+	if id in ["baton", "initial_baton"]:
+		return create_issued_pistol()
 	var item := create_without_affixes(id, tier, rng)
 	if item.get_prototype() == null:
 		return item

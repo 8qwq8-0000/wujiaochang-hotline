@@ -33,10 +33,10 @@ func get_profile() -> Dictionary:
 	return _profile.duplicate(true)
 
 
-func commit(chest: Array, loadout: Dictionary) -> bool:
+func commit(chest: Array, loadout: Dictionary, difficulty: String = "") -> bool:
 	if not load_profile():
 		return false
-	var next := {"version": SAVE_VERSION, "chest": chest.duplicate(true), "loadout": loadout.duplicate(true)}
+	var next := {"version": SAVE_VERSION, "chest": chest.duplicate(true), "loadout": loadout.duplicate(true), "difficulty": difficulty if not difficulty.is_empty() else _profile.get("difficulty", ["low_pressure", "standard", "high_pressure"][int(get_node("/root/GameSettings").difficulty)])}
 	next = ComponentRolls.migrate_snapshot(next)
 	if not _valid_profile(next):
 		error_message = "装备数据异常，未保存"
@@ -68,6 +68,8 @@ func _valid_profile(value: Variant) -> bool:
 	if not value is Dictionary or value.get("version") != SAVE_VERSION:
 		return false
 	if not value.get("chest") is Array or not value.get("loadout") is Dictionary:
+		return false
+	if value.get("difficulty", "standard") not in ["low_pressure", "standard", "high_pressure"]:
 		return false
 	var items: Array = value.chest.duplicate()
 	var state: Dictionary = value.loadout
@@ -122,7 +124,10 @@ func has_saved_profile() -> bool:
 	return FileAccess.file_exists(save_path)
 
 
-func create_new_profile() -> bool:
+func create_new_profile(difficulty: String = "standard") -> bool:
+	if difficulty not in ["low_pressure", "standard", "high_pressure"]:
+		error_message = "无效的难度选项"
+		return false
 	# Back up the raw file, including an unreadable/legacy profile, before replacing
 	# anything. Merely entering character selection never writes to the save.
 	if has_saved_profile():
@@ -135,7 +140,7 @@ func create_new_profile() -> bool:
 	var was_writable := _writable
 	_loaded = true
 	_writable = true
-	if not commit([], {}):
+	if not commit([], {}, difficulty):
 		_profile = previous
 		_loaded = was_loaded
 		_writable = was_writable

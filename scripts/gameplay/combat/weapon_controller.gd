@@ -5,11 +5,9 @@ signal weapon_changed(index: int, data: WeaponComponentData)
 signal attack_performed(data: WeaponComponentData)
 
 const PROJECTILE_SCENE_PATH := "res://scenes/combat/projectile.tscn"
-const BATON := preload("res://resources/weapons/baton.tres")
-const SERVICE_PISTOL := preload("res://resources/weapons/service_pistol.tres")
+const DEFAULT_WEAPON := preload("res://resources/weapons/service_pistol.tres")
 const DEBUG_WEAPONS := [
-	BATON,
-	SERVICE_PISTOL,
+	DEFAULT_WEAPON,
 	preload("res://resources/weapons/scattergun.tres"),
 ]
 
@@ -20,7 +18,7 @@ var weapons: Array[WeaponComponentData] = []
 var current_index: int = 0
 var debug_loadout_enabled: bool = false
 var attack_speed_multiplier := 1.0
-var _current_weapon: WeaponComponentData = SERVICE_PISTOL
+var _current_weapon: WeaponComponentData = DEFAULT_WEAPON
 var _cooldown_remaining: float = 0.0
 var _swing_remaining: float = 0.0
 var _swing_duration: float = 0.0
@@ -46,9 +44,9 @@ func configure(default_weapon: WeaponComponentData, enable_debug_loadout: bool) 
 	debug_loadout_enabled = enable_debug_loadout
 	if enable_debug_loadout:
 		weapons.assign(DEBUG_WEAPONS)
-		equip_weapon(default_weapon if default_weapon != null else SERVICE_PISTOL)
+		equip_weapon(default_weapon if default_weapon != null else DEFAULT_WEAPON)
 	else:
-		set_carried_weapons(default_weapon if default_weapon != null else SERVICE_PISTOL, null)
+		set_carried_weapons(default_weapon if default_weapon != null else DEFAULT_WEAPON, null)
 
 
 func get_current_weapon() -> WeaponComponentData:

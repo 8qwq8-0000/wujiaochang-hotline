@@ -24,7 +24,7 @@ func test_all_runtime_weapons_have_valid_views() -> void:
 		assert_true(view.get_node_or_null("BodyRoot/BodySprite") is Sprite2D, path + " body")
 		var coating := view.get_node_or_null("BodyRoot/Coating")
 		assert_true(coating != null and coating.get_script() == COATING_SCRIPT, path + " coating")
-		assert_true(view.get_node_or_null("MuzzleSocket") is Marker2D, path + " muzzle")
+		assert_true(view.get_node_or_null(view.muzzle_socket_path) is Marker2D, path + " muzzle")
 		assert_true(view.get_node_or_null("EffectSocket") is Marker2D, path + " effect")
 		var sprite := view.get_node("BodyRoot/BodySprite") as Sprite2D
 		assert_eq(sprite.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST, path + " nearest")

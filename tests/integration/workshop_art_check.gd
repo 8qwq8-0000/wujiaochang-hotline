@@ -15,6 +15,26 @@ func run() -> void:
 		check(texture.get_width()>0 and texture.get_height()>0, key + " is a usable atlas texture")
 		check(Rect2(Vector2.ZERO,image.get_size()).encloses(texture.region), key + " silhouette crop stays inside source PNG")
 		check(image.detect_alpha()!=Image.ALPHA_NONE if key!="floor" else image.detect_alpha()==Image.ALPHA_NONE, key + " has correct transparency")
+	# A direction change must mirror the body in place, never move it off its feet.
+	for profile_id in ["melee_pressure", "ranged_sightline", "heavy_anchor"]:
+		var enemy: EnemyController = load("res://scenes/actors/enemies/enemy.tscn").instantiate()
+		enemy.profile = load("res://resources/enemies/" + profile_id + ".tres")
+		root.add_child(enemy)
+		enemy.set_physics_process(false)
+		var body := enemy.get_node("Sprite2D") as Sprite2D
+		var initial_rect: Rect2 = body.transform * body.get_rect()
+		check(is_equal_approx(initial_rect.get_center().x, 0.0) and is_equal_approx(initial_rect.end.y, 10.0), profile_id + " body is centered on its foot anchor")
+		for frame in range(8):
+			enemy.position += Vector2(3, 2)
+			enemy.facing = Vector2.LEFT if frame % 2 == 0 else Vector2.RIGHT
+			await process_frame
+			# process_frame fires before node _process; wait for the visual update.
+			await process_frame
+			var world_rect: Rect2 = body.global_transform * body.get_rect()
+			check(body.flip_h == (frame % 2 == 1), profile_id + " follows horizontal facing")
+			check(world_rect.is_equal_approx(Rect2(initial_rect.position + enemy.global_position, initial_rect.size)), profile_id + " body follows movement without a flip offset")
+		enemy.queue_free()
+		await process_frame
 	for id in ["loading_workshop", "interlinked_apartment"]:
 		var room: CombatRoom = load("res://scenes/levels/rooms/variants/"+id+".tscn").instantiate()
 		room.configure_stage(0,2)

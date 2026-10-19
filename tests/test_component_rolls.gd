@@ -35,7 +35,7 @@ func test_item_creation_restores_cleared_prototype_catalog() -> void:
 func test_legacy_attack_affix_migrates_and_shared_affixes_survive() -> void:
 	var rng := RandomNumberGenerator.new()
 	var a := ComponentRolls.create("pistol", 3, rng)
-	var b := ComponentRolls.create("baton", 3, rng)
+	var b := ComponentRolls.create("scattergun", 3, rng)
 	a.set_property("affixes", {"attack": 20, "guard": 20, "status": 10})
 	b.set_property("affixes", {"attack": 50, "guard": 60, "cooling": 30})
 	for index in 15:
@@ -49,7 +49,7 @@ func test_legacy_attack_affix_migrates_and_shared_affixes_survive() -> void:
 func test_different_quality_cannot_fuse() -> void:
 	var rng := RandomNumberGenerator.new()
 	var a := ComponentRolls.create("pistol", 1, rng)
-	var b := ComponentRolls.create("baton", 2, rng)
+	var b := ComponentRolls.create("scattergun", 2, rng)
 	assert_false(ComponentRolls.compatible(a, b))
 	assert_true(ComponentRolls.fuse(a, b, rng) == null)
 

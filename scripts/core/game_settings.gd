@@ -36,6 +36,9 @@ func _load_and_apply() -> void:
 		PlayerConfig.set_config(AppSettings.GAME_SECTION, KEY_DIFFICULTY, int(difficulty))
 	else:
 		difficulty = saved_difficulty as Difficulty
+	var profile: Dictionary = get_node("/root/WarehouseStore").get_profile()
+	if profile.has("difficulty"):
+		difficulty = ["low_pressure", "standard", "high_pressure"].find(profile.difficulty) as Difficulty
 	high_pressure_alert = difficulty == Difficulty.HIGH
 	continuous_precharge = bool(PlayerConfig.get_config(AppSettings.GAME_SECTION, KEY_CONTINUOUS_PRECHARGE, false))
 	AppSettings.set_from_config_and_window(get_window())

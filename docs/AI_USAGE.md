@@ -27,3 +27,12 @@
 - Replaced the active v3 pixel-cleanup background after review because its architectural linework had drifted.
 - Adopted the exact user-provided 1672×941 image as `rooftop_server_chapel_source_v4.png` and produced the 960×540 runtime export with deterministic high-quality resizing only; no AI redraw or palette reduction was applied.
 - Retained the runtime server indicators, phase darkness and phase-two colored lighting as separate Godot layers; the indicator clock now updates at 12 FPS after playtest feedback requested double-speed blinking.
+
+## 2026-10-19 — PR #9 follow-up integration
+
+- User requested old-baton retirement, directional standing aim, native muzzle flashes, wrist-style rail-cannon preview, persistent consumed-insurance tint, new-save difficulty selection, and reuse of PR #8 environment art in member C's test room.
+- Preserved PR #9 combat rebalance and three difficulty levels while applying these fixes in an isolated worktree. Rail cannon remains preview-only. Generated source and prompt: art_sources/ai_drafts/weapons/arm_lock_rail_cannon_v1/.
+- Unit tests: 62/62 after incorporating b147f38. Targeted checks and known limitations: docs/technical/腕锁武器与盾反训练实施说明.md. Member C attribution and actual asset wiring: docs/technical/PR9成员C提交核查.md.
+- Known failures remain: week1 room drop-count assertions (F6 and Main); b147f38 addresses post-door enemy pathing and is included. Some test exits still report ObjectDB/resource-use warnings; .NET/Windows export not checked.
+
+- Final user instruction: do not push parry training yet. Excluded its sandbox controls, enemy behavior, and guard_training_check from this commit; original desktop working copy retains them.
