@@ -9,7 +9,7 @@ const DEFAULT_ROOM := preload("res://scenes/levels/rooms/prototype_combat_room.t
 @export_range(1, 8, 1) var room_count: int = 1
 @export var sequential_progression := false
 @export_range(0.0, 1.0, 0.01) var enemy_drop_chance := 0.20
-@export var room_spacing: Vector2 = Vector2(680.0, 0.0)
+@export var room_spacing: Vector2 = Vector2(1000.0, 0.0)
 @export var room_pool: Array[RoomTemplateData] = []
 
 var _chosen_scene_paths := {}
@@ -129,8 +129,8 @@ func _build_passages() -> void:
 		generated_rooms[index].open_side("Right")
 		generated_rooms[index + 1].open_side("Left")
 		var passage := CombatPassage.new()
-		passage.position = generated_rooms[index].position + Vector2(624, 180)
-		passage.length = generated_rooms[index + 1].position.x - generated_rooms[index].position.x - 608
+		passage.position = generated_rooms[index].position + Vector2(CombatRoom.ROOM_SIZE.x - 16.0, CombatRoom.ROOM_SIZE.y * 0.5)
+		passage.length = generated_rooms[index + 1].position.x - generated_rooms[index].position.x - (CombatRoom.ROOM_SIZE.x - 32.0)
 		add_child(passage)
 		passages.append(passage)
 	for index in generated_rooms.size():

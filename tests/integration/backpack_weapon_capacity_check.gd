@@ -16,7 +16,7 @@ func run() -> void:
 	var inv := player.inventory
 	root.get_node("RunManager").set_mandatory_enemy_count(0)
 	check(inv.backpack.get_item_count() == 0, "initial equipped weapon does not occupy backpack")
-	check(inv.weapon_slot.get_item() != null, "initial baton remains equipped")
+	check(inv.weapon_slot.get_item() != null, "initial service pistol remains equipped")
 	check(inv.pickup("pistol"), "first weapon equips reserve")
 	check(inv.backpack.get_item_count() == 0, "both equipped weapons are outside bag")
 	var primary_id: String = inv.weapon_slot.get_item().get_property("instance_id")
@@ -44,7 +44,7 @@ func run() -> void:
 	check(inv.unequip("weapon_secondary"), "reserve can move back into free cell")
 	check(player.weapons.get_current_weapon() == null, "empty weapon slots have no free fallback")
 	check(not player.weapons.try_attack(player.global_position, Vector2.RIGHT, player), "empty loadout cannot attack")
-	check(inv.equip(0, 0), "bound initial baton can be equipped again")
+	check(inv.equip(0, 0), "ordinary initial pistol can be equipped again")
 	check(inv.backpack.get_item_count() == 5, "equipping into empty slot frees one cell")
 	check(inv.unequip("mobility"), "free cell accepts mobility")
 	check(inv.backpack.get_item_count() == 6 and player.mobility.get_current_mode().id == &"walk", "mobility unequip occupies cell and restores walking")

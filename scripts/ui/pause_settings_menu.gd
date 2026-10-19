@@ -20,7 +20,7 @@ var _resolution: OptionButton
 var _crt_strength: OptionButton
 var _fullscreen: CheckButton
 var _mute: CheckButton
-var _alert_mode: CheckButton
+var _alert_mode: OptionButton
 var _continuous_precharge: CheckButton
 var _confirm_row: HBoxContainer
 var _confirm_label: Label
@@ -188,12 +188,13 @@ func _build_settings_page() -> VBoxContainer:
 	_mute.toggled.connect(_on_mute_toggled)
 	content.add_child(_mute)
 	_add_section_title(content, "难度")
-	_alert_mode = CheckButton.new()
-	_alert_mode.text = "高压难度"
-	_alert_mode.toggled.connect(_on_alert_mode_toggled)
-	content.add_child(_alert_mode)
+	_alert_mode = OptionButton.new()
+	for label in ["低压", "标准", "高压"]:
+		_alert_mode.add_item(label)
+	_alert_mode.item_selected.connect(_on_alert_mode_selected)
+	_add_labeled_control(content, "警戒压力", _alert_mode)
 	var difficulty_hint := Label.new()
-	difficulty_hint.text = "关闭：标准，发现者周围 320 px 响应\n开启：高压，同房间敌人全部响应"
+	difficulty_hint.text = "低压：缩短索敌、听觉与支援范围\n标准：320 px 支援\n高压：同房间敌人全部响应"
 	difficulty_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	difficulty_hint.modulate = Color(0.72, 0.78, 0.86)
 	content.add_child(difficulty_hint)
@@ -265,7 +266,7 @@ func _sync_settings_controls() -> void:
 	_crt_strength.select(int(_get_saved_crt_strength()))
 	var settings := get_node_or_null("/root/GameSettings")
 	if settings != null:
-		_alert_mode.set_pressed_no_signal(bool(settings.high_pressure_alert))
+		_alert_mode.select(int(settings.difficulty))
 		_continuous_precharge.set_pressed_no_signal(bool(settings.continuous_precharge))
 
 
@@ -344,10 +345,15 @@ func _on_crt_strength_selected(index: int) -> void:
 			(overlay_node as CRTOverlay).set_strength(next_strength)
 
 
-func _on_alert_mode_toggled(enabled: bool) -> void:
+func _on_alert_mode_selected(index: int) -> void:
 	var settings := get_node_or_null("/root/GameSettings")
 	if settings != null:
-		settings.set_high_pressure_alert(enabled)
+		settings.set_difficulty(index as GameSettingsController.Difficulty)
+
+
+# Compatibility for older integration callers while the setting is now tri-state.
+func _on_alert_mode_toggled(enabled: bool) -> void:
+	_on_alert_mode_selected(GameSettingsController.Difficulty.HIGH if enabled else GameSettingsController.Difficulty.STANDARD)
 
 
 func _on_continuous_precharge_toggled(enabled: bool) -> void:

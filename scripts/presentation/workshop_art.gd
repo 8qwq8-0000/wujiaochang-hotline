@@ -65,12 +65,13 @@ func _draw() -> void:
 			draw_line(jamb-normal*3,jamb+normal*3,Color("f7c56b"),2)
 
 func _draw_floor() -> void:
-	draw_rect(Rect2(0,0,640,360),Color("101a23"))
+	var size := layout.room_size
+	draw_rect(Rect2(Vector2.ZERO, size),Color("101a23"))
 	var texture := asset("floor")
 	var cell := texture.get_size()/4.0
-	for y in range(16,344,24):
-		for x in range(16,624,24):
-			var tile := Rect2(x,y,minf(24,624-x),minf(24,344-y))
+	for y in range(16,int(size.y)-16,24):
+		for x in range(16,int(size.x)-16,24):
+			var tile := Rect2(x,y,minf(24,size.x-16-x),minf(24,size.y-16-y))
 			var source := Rect2(Vector2((x/24)%4,(y/24)%4)*cell,cell*tile.size/24.0)
 			draw_texture_rect_region(texture,tile,source,Color(0.73,0.79,0.83))
 	var tints := [Color(0.03,0.18,0.24,0.17),Color(0.08,0.14,0.21,0.10),Color(0.20,0.19,0.08,0.14),Color(0.05,0.1,0.16,0.09),Color(0.12,0.21,0.15,0.16),Color(0.23,0.17,0.08,0.14)]
@@ -86,16 +87,19 @@ func _draw_floor() -> void:
 			draw_circle(point,float(radius),Color(0.95,0.59,0.15,0.006))
 
 func _draw_perimeter() -> void:
-	_beam(Rect2(0,0,640,16))
-	_beam(Rect2(0,344,640,16))
+	var size := layout.room_size
+	_beam(Rect2(0,0,size.x,16))
+	_beam(Rect2(0,size.y-16,size.x,16))
+	var opening_size := 96.0
+	var segment_size := (size.y - opening_size) * 0.5
 	for right: bool in [false,true]:
-		var x := 624 if right else 0
+		var x: float = size.x - 16.0 if right else 0.0
 		var opened := right_open if right else left_open
 		if opened:
-			_beam(Rect2(x,0,16,132))
-			_beam(Rect2(x,228,16,132))
+			_beam(Rect2(x,0,16,segment_size))
+			_beam(Rect2(x,size.y-segment_size,16,segment_size))
 		else:
-			_beam(Rect2(x,0,16,360))
+			_beam(Rect2(x,0,16,size.y))
 
 func _beam(rect: Rect2) -> void:
 	var vertical := rect.size.y > rect.size.x
@@ -126,18 +130,3 @@ func _hazard(rect: Rect2) -> void:
 	for x in range(int(rect.position.x),int(rect.end.x)-3,6):
 		draw_line(Vector2(x,rect.position.y),Vector2(x+3,rect.position.y),Color("a57e30"),2)
 		draw_line(Vector2(x,rect.end.y),Vector2(x+3,rect.end.y),Color("a57e30"),2)
-
-static func draw_enemy(actor: EnemyController, flash: bool) -> void:
-	var key := "ranged" if actor.profile.role == EnemyProfile.Role.RANGED_SIGHTLINE else "melee"
-	var texture := asset(key)
-	var size := texture.get_size() * minf(38.0/texture.get_width(),38.0/texture.get_height())
-	actor.draw_set_transform(Vector2(0,7),0,Vector2(1,0.35))
-	actor.draw_circle(Vector2.ZERO,11,Color(0,0,0,0.32))
-	actor.draw_set_transform(Vector2.ZERO)
-	var rect := Rect2(Vector2(-size.x/2,10-size.y),size)
-	# Horizontal facing mirrors the sprite without rotating an upright humanoid.
-	if actor.facing.x > 0.1:
-		rect.position.x += rect.size.x
-		rect.size.x = -rect.size.x
-	actor.draw_texture_rect(texture,rect,false,Color(1.7,1.5,1.2) if flash else Color.WHITE)
-	actor.draw_line(Vector2(0,7),Vector2(0,7)+actor.facing*13,Color(0.65,0.9,1,0.45),1)

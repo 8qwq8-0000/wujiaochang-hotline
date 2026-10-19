@@ -20,7 +20,8 @@ func update_visual(
 	velocity: Vector2,
 	guard_state: GuardComponent.State,
 	guard_arc: float,
-	weapon_swing_offset: float = 0.0
+	weapon_swing_offset: float = 0.0,
+	weapon_aim_direction: Vector2 = Vector2.ZERO
 ) -> void:
 	var moving := velocity.length_squared() > 64.0
 	var direction_name := _direction_name(aim_direction)
@@ -33,7 +34,7 @@ func update_visual(
 	body_sprite.flip_h = false
 	wrist_socket.sync_pose(body_sprite, StringName(animation), body_sprite.frame)
 	weapon_pivot.position = wrist_socket.position
-	update_weapon_aim(aim_direction, weapon_swing_offset)
+	update_weapon_aim(weapon_aim_direction if not weapon_aim_direction.is_zero_approx() else aim_direction, weapon_swing_offset)
 	guard_visual.update_guard(guard_state, aim_direction, guard_arc)
 
 
@@ -66,6 +67,10 @@ func get_weapon_muzzle_global_position() -> Vector2:
 
 func get_weapon_mount_global_position() -> Vector2:
 	return weapon_pivot.global_position
+
+
+func get_weapon_barrel_global_direction() -> Vector2:
+	return weapon_pivot.global_transform.x.normalized()
 
 
 func set_dead(dead: bool) -> void:

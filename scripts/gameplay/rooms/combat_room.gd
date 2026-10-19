@@ -1,6 +1,10 @@
 class_name CombatRoom
 extends Node2D
 
+const BASE_ROOM_SIZE := Vector2(640.0, 360.0)
+const ROOM_SCALE := 1.5
+const ROOM_SIZE := BASE_ROOM_SIZE * ROOM_SCALE
+
 @export var layout: CombatLayoutData
 
 signal room_cleared
@@ -20,17 +24,20 @@ func _enter_tree() -> void:
 
 
 func contains_world_point(point: Vector2) -> bool:
-	return Rect2(0, 0, 640, 360).has_point(to_local(point))
+	return Rect2(Vector2.ZERO, ROOM_SIZE).has_point(to_local(point))
 
 
 func _ready() -> void:
+	_expand_room_shell()
 	if layout != null:
+		layout = layout.scaled_for_room(ROOM_SCALE, BASE_ROOM_SIZE)
 		_apply_layout()
 	_place_barrel()
 	if layout != null and layout.id in [&"interlinked_apartment", &"loading_workshop"]:
 		_apply_workshop_art()
 	spawner.all_required_defeated.connect(_on_all_required_defeated)
 	exit_elevator.set_enabled(false)
+	call_deferred("_configure_player_camera_if_inside")
 
 
 func _on_all_required_defeated() -> void:
@@ -63,6 +70,7 @@ func activate() -> void:
 		return
 	active = true
 	spawner.spawn_all()
+	_configure_player_camera_if_inside()
 
 
 func open_side(side: String) -> void:
@@ -76,15 +84,18 @@ func open_side(side: String) -> void:
 	var wall := get_node(side + "Wall") as StaticBody2D
 	wall.get_node("CollisionShape2D").set_deferred("disabled", true)
 	wall.get_node("Visual").hide()
-	for center in [-114.0, 114.0]:
+	var opening_size := 96.0
+	var segment_size := (ROOM_SIZE.y - opening_size) * 0.5
+	var center_offset := opening_size * 0.5 + segment_size * 0.5
+	for center in [-center_offset, center_offset]:
 		var shape := RectangleShape2D.new()
-		shape.size = Vector2(16, 132)
+		shape.size = Vector2(16, segment_size)
 		var collider := CollisionShape2D.new()
 		collider.shape = shape
 		collider.position.y = center
 		wall.add_child(collider)
 		var visual := Polygon2D.new()
-		visual.polygon = PackedVector2Array([Vector2(-8, center - 66), Vector2(8, center - 66), Vector2(8, center + 66), Vector2(-8, center + 66)])
+		visual.polygon = PackedVector2Array([Vector2(-8, center - segment_size * 0.5), Vector2(8, center - segment_size * 0.5), Vector2(8, center + segment_size * 0.5), Vector2(-8, center + segment_size * 0.5)])
 		visual.color = Color(0.22, 0.28, 0.36)
 		wall.add_child(visual)
 
@@ -142,7 +153,6 @@ func _apply_layout() -> void:
 		door.position = Vector2(definition.x, definition.y)
 		door.rotation = definition.z
 		door.scale.y = definition.w / 64.0
-		door.hinged_visual = true
 		geometry.add_child(door)
 	$Floor.color = layout.floor_color
 	$Floor.z_index = -2
@@ -162,6 +172,66 @@ func _apply_layout() -> void:
 	$PowerBox.position = layout.power_position
 	$FuelBarrel.position = layout.bomb_position
 	$NavigationRegion2D.navigation_polygon = layout.navigation_polygon()
+
+
+func _expand_room_shell() -> void:
+	var horizontal_shape := RectangleShape2D.new()
+	horizontal_shape.size = Vector2(ROOM_SIZE.x, 16.0)
+	var vertical_shape := RectangleShape2D.new()
+	vertical_shape.size = Vector2(16.0, ROOM_SIZE.y)
+	$Floor.polygon = CombatLayoutData._outline(Rect2(Vector2(8, 8), ROOM_SIZE - Vector2(16, 16)))
+	for definition in [
+		[$TopWall, Vector2(ROOM_SIZE.x * 0.5, 8), horizontal_shape, Vector2(ROOM_SIZE.x, 16)],
+		[$BottomWall, Vector2(ROOM_SIZE.x * 0.5, ROOM_SIZE.y - 8), horizontal_shape, Vector2(ROOM_SIZE.x, 16)],
+		[$LeftWall, Vector2(8, ROOM_SIZE.y * 0.5), vertical_shape, Vector2(16, ROOM_SIZE.y)],
+		[$RightWall, Vector2(ROOM_SIZE.x - 8, ROOM_SIZE.y * 0.5), vertical_shape, Vector2(16, ROOM_SIZE.y)],
+	]:
+		var wall: StaticBody2D = definition[0]
+		wall.position = definition[1]
+		wall.get_node("CollisionShape2D").shape = definition[2]
+		var size: Vector2 = definition[3]
+		wall.get_node("Visual").polygon = CombatLayoutData._outline(Rect2(-size * 0.5, size))
+	exit_elevator.position = CombatLayoutData._scaled_point(exit_elevator.position, ROOM_SCALE, BASE_ROOM_SIZE)
+	if layout == null:
+		for node in [$CoverA, $CoverB, $PowerBox, $FuelBarrel]:
+			node.position = CombatLayoutData._scaled_point(node.position, ROOM_SCALE, BASE_ROOM_SIZE)
+		for marker in $EnemySpawnPoints.get_children():
+			marker.position = CombatLayoutData._scaled_point(marker.position, ROOM_SCALE, BASE_ROOM_SIZE)
+		var fallback_navigation := CombatLayoutData.new()
+		fallback_navigation.room_size = ROOM_SIZE
+		for cover in [$CoverA, $CoverB]:
+			var cover_shape := cover.get_node("CollisionShape2D").shape as RectangleShape2D
+			fallback_navigation.covers.append(Rect2(cover.position - cover_shape.size * 0.5, cover_shape.size))
+		$NavigationRegion2D.navigation_polygon = fallback_navigation.navigation_polygon()
+
+
+func _configure_player_camera_if_inside() -> void:
+	var player := get_tree().get_first_node_in_group("player") as PlayerController
+	if player == null or not active or not contains_world_point(player.global_position):
+		return
+	var origin := global_position
+	player.camera.limit_left = floori(origin.x)
+	player.camera.limit_top = floori(origin.y)
+	player.camera.limit_right = ceili(origin.x + ROOM_SIZE.x)
+	player.camera.limit_bottom = ceili(origin.y + ROOM_SIZE.y)
+	_try_operator_low_pressure_notice(player)
+
+
+func _try_operator_low_pressure_notice(player: PlayerController) -> void:
+	if not sequence_managed:
+		return
+	var settings := get_node_or_null("/root/GameSettings")
+	var run := get_node_or_null("/root/RunManager")
+	var events := get_node_or_null("/root/CombatEvents")
+	if settings == null or run == null or events == null or not settings.is_low_pressure() or run.operator_hack_announced:
+		return
+	run.operator_hack_announced = true
+	var lines := {
+		TalentCoreController.ASSAULT_PROTOCOL: "敌方火控链路已被我压低。先手窗口开放。",
+		TalentCoreController.DEFENSE_PROTOCOL: "敌方警戒通信已受抑制。稳住阵线。",
+		TalentCoreController.MOBILITY_PROTOCOL: "敌方定位回传被我延迟。移动窗口开放。",
+	}
+	events.publish_operator_communication(lines.get(player.talent_core.current_protocol_id, lines[TalentCoreController.DEFENSE_PROTOCOL]))
 
 
 func _place_barrel() -> void:
