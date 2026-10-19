@@ -29,6 +29,11 @@ func run_checks() -> void:
 	player.inventory.pickup("pistol")
 	player.weapons.select_weapon(1)
 	await process_frame
+	var barrel_direction := Vector2(3, 4).normalized()
+	player.visuals.update_weapon_aim(barrel_direction)
+	var attack_transform := player._get_attack_transform()
+	check(attack_transform.x.normalized().is_equal_approx(barrel_direction), "projectile transform follows the exact rendered barrel axis")
+	check(attack_transform.origin.is_equal_approx(player.weapons.clamp_projectile_origin(player.visuals.get_weapon_mount_global_position(), player.visuals.get_weapon_muzzle_global_position())), "projectile still originates at the rendered muzzle")
 	# Real GUI dispatch: decorative HUD must not consume firing/guard clicks.
 	var hud: Node = main.get_node("CombatHUD")
 	for path in ["Overlay/TopLeft", "Overlay/Objective", "Overlay/NoticeQueue"]:

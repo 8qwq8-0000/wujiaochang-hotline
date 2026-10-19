@@ -53,7 +53,7 @@ func _process(_delta: float) -> void:
 		next = 1 if _owner.get("opened") else 0
 	elif kind == "exit":
 		next = 1 if _owner.get("enabled") else 0
-	var pose := float(_owner.get("_swing")) if kind == "door" and _owner.get("hinged_visual") == true else 0.0
+	var pose := 0.0
 	if next != _state or not is_equal_approx(pose, _pose):
 		_state = next
 		_pose = pose
@@ -61,12 +61,6 @@ func _process(_delta: float) -> void:
 
 func _draw() -> void:
 	if _owner == null:
-		return
-	if kind == "door" and _owner.get("hinged_visual") == true:
-		# Fit the material to the existing thin hinged leaf, using the actual tween
-		# angle instead of changing collision or the opening direction.
-		draw_set_transform(Vector2(0, -32), _pose)
-		draw_texture_rect(art_texture("bulkhead_closed.png"), Rect2(-6, 0, 12, 64), false)
 		return
 	var filename := ""
 	var tint := Color.WHITE

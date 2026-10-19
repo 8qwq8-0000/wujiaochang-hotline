@@ -51,7 +51,7 @@ func _ready() -> void:
 	panel = PANEL_SCENE.instantiate()
 	panel.inventory = self
 	add_child(panel)
-	var initial := ComponentRolls.create("baton", 1, RandomNumberGenerator.new())
+	var initial := ComponentRolls.create_issued_pistol()
 	weapon_slot.equip(initial)
 	var insurance := InventoryItem.new(PROTOTYPES, "circuit_breaker")
 	_assign_instance_id(insurance)

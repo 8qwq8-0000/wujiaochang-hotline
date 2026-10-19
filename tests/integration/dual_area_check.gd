@@ -71,7 +71,7 @@ func run_checks() -> void:
 		check(room.find_children("*", "PowerBox", true, false).size() == 1, "each area has one power box")
 		check(room.find_children("*", "FuelBarrel", true, false).size() == 1, "each area has one bomb box")
 		check(not room.find_children("*", "AutomaticDoor", true, false).is_empty(), "formal areas contain usable interior doors")
-	player.global_position = first.to_global(Vector2(600,180))
+	player.global_position = first.to_global(Vector2(900,270))
 	await settle()
 	await walk_right(player, 40)
 	check(player.global_position.x < second.global_position.x and not second.active, "real collision blocks passage until first clear")
@@ -100,7 +100,7 @@ func run_checks() -> void:
 	var health := player.health.current_health
 	player.heat.try_add_heat(20)
 	var heat := player.heat.current_heat
-	player.global_position = first.to_global(Vector2(600,180))
+	player.global_position = first.to_global(Vector2(900,270))
 	await settle()
 	await walk_right(player, 46)
 	freeze_enemies()
@@ -111,21 +111,21 @@ func run_checks() -> void:
 	check(player.health.current_health == health and is_equal_approx(player.heat.current_heat,heat), "area traversal preserves health and heat")
 	check(EnvironmentArea.for_actor(player) == second and not player.inventory.can_change_equipment(), "area scope and combat equipment lock switch on entry")
 	check(assembler.passages[0].return_sealed, "entering second area permanently seals return route")
-	player.global_position = second.to_global(Vector2(20, 180))
+	player.global_position = second.to_global(Vector2(30, 270))
 	await settle()
 	for frame in 50:
 		await physics_frame
 		player.velocity = Vector2(-180, 0)
 		player.move_and_slide()
 	player.velocity = Vector2.ZERO
-	check(player.global_position.x > first.global_position.x + 640, "real collision prevents walking back into first area")
+	check(player.global_position.x > first.global_position.x + CombatRoom.ROOM_SIZE.x, "real collision prevents walking back into first area")
 	assembler.passages[0].unlock()
 	await settle()
 	check(not assembler.passages[0].get("_barrier").disabled, "later unlock cannot reopen sealed return gate")
 	var enemy := get_first_node_in_group("enemies") as EnemyController
-	player.global_position = first.to_global(Vector2(600,180))
+	player.global_position = first.to_global(Vector2(900,270))
 	check(not enemy._same_room(player), "second-area AI does not pursue into cleared first area")
-	player.global_position = second.to_global(Vector2(74,180))
+	player.global_position = second.to_global(Vector2(111,270))
 	var box2 := second.find_child("PowerBox",true,false) as PowerBox
 	player.global_position = box2.global_position+Vector2(0,-35)
 	await settle()

@@ -60,9 +60,9 @@ func run() -> void:
 	player.set_physics_process(false)
 	player.heat.set_physics_process(false)
 	var inv := player.inventory
-	check(ComponentRolls.quality(inv.weapon_slot.get_item()) == 1 and ComponentRolls.affixes(inv.weapon_slot.get_item()).size() == 1, "new save starts with an ordinary standard baton")
+	check(ComponentRolls.quality(inv.weapon_slot.get_item()) == 1 and ComponentRolls.affixes(inv.weapon_slot.get_item()).is_empty(), "new save starts with a no-affix quality-one service pistol")
 	# Keep later isolated bonus checks independent of the random starting roll.
-	inv.weapon_slot.get_item().set_property("affixes", {"attack": 20})
+	inv.weapon_slot.get_item().set_property("affixes", {"capacity": 20})
 	inv._apply_equipment()
 	for tier in range(1, 4):
 		for index in 30:
@@ -82,13 +82,14 @@ func run() -> void:
 	check(inv.pickup("pistol", a), "rolled item pickup equips free reserve")
 	check(inv.secondary_weapon_slot.get_item() == a, "pickup retains same instance")
 	player.weapons.select_weapon(1)
-	check(player.weapons.get_current_weapon().damage > load("res://resources/weapons/service_pistol.tres").damage, "attack affix changes actual weapon damage")
+	check(not ComponentRolls.affixes(a).has("attack") and ComponentRolls.affixes(a).get("capacity") == 20.0, "legacy attack affix migrates to capped heat capacity")
+	check(player.weapons.get_current_weapon().damage == load("res://resources/weapons/service_pistol.tres").damage, "removed attack affix no longer changes weapon damage")
 	check(load("res://resources/weapons/service_pistol.tres").damage == 1, "shared weapon resource is untouched")
 	var before := player.export_run_state()
 	for index in 3:
 		player.import_run_state(before)
 	check(player.export_run_state() == before, "repeated snapshots preserve exact instances and rolled values")
-	check(player.weapons.get_current_weapon().damage == ComponentRolls.weapon(a).damage, "repeated imports never stack attack")
+	check(player.weapons.get_current_weapon().damage == ComponentRolls.weapon(a).damage, "repeated imports preserve migrated weapon data")
 	a = inv.secondary_weapon_slot.get_item()
 	check(room.transfer(a, true), "rolled equipped item deposits into warehouse")
 	room.chest.add_item(b)
@@ -122,7 +123,7 @@ func run() -> void:
 	check(room.synthesize(a, b), "full bag synthesis succeeds into chest")
 	check(not room.chest.has_item(a) and not room.chest.has_item(b) and room.chest.get_item_count() == 1, "exactly two materials consumed and one result created")
 	var result: InventoryItem = room.chest.get_items()[0]
-	check(result.get_prototype().get_prototype_id() == "pistol" and ComponentRolls.quality(result) == 2 and ComponentRolls.affixes(result) == {"attack": 40.0}, "subject shape and stronger shared affix inherited")
+	check(result.get_prototype().get_prototype_id() == "pistol" and ComponentRolls.quality(result) == 2 and ComponentRolls.affixes(result) == {"capacity": 30.0}, "subject shape and migrated capped capacity affix inherited")
 	check(not room.synthesize(a, b), "stale material references cannot duplicate synthesis")
 	var persisted := result.serialize()
 	check(not room.transfer(result, false) and room.chest.has_item(result), "full bag withdrawal retains synthesized item")
@@ -139,6 +140,8 @@ func run() -> void:
 	check(ComponentRolls.quality(fused) == 3 and ComponentRolls.affixes(fused).size() == 3, "prototype adjusts merged pool while retaining cap")
 	for key in ComponentRolls.affixes(fused):
 		check(ComponentRolls.affixes(fused)[key] == maxf(float(ComponentRolls.affixes(c).get(key, 0)), float(ComponentRolls.affixes(d).get(key, 0))), "selected affix keeps max parent value")
+	inv.weapon_slot.get_item().set_property("affixes", {})
+	inv._apply_equipment()
 	inv.backpack.clear()
 	inv.pickup("wheel", c)
 	inv.equip(0)

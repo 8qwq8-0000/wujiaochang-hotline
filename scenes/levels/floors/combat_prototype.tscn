@@ -17,4 +17,4 @@ sequential_progression = true
 room_pool = [ExtResource("room_b"), ExtResource("room_c")]
 
 [node name="Player" parent="." instance=ExtResource("2")]
-position = Vector2(74, 180)
+position = Vector2(111, 270)

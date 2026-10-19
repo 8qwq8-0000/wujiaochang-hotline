@@ -27,6 +27,15 @@ func receive_hit(packet: DamagePacket) -> DamageResult:
 		ignored.target = actor
 		hit_resolved.emit(ignored)
 		return ignored
+	if packet.base_damage > 0 and actor.has_method("try_absorb_hit") and bool(actor.try_absorb_hit(packet)):
+		var absorbed := DamageResult.new()
+		absorbed.packet = packet
+		absorbed.target = actor
+		absorbed.outcome = DamageResult.Outcome.BLOCKED
+		absorbed.absorbed_damage = packet.base_damage
+		absorbed.blocked = true
+		hit_resolved.emit(absorbed)
+		return absorbed
 	if packet.damage_type == &"electric":
 		if packet.electric_event.is_empty():
 			packet.electric_event = ElectricReaction.begin_event(actor)

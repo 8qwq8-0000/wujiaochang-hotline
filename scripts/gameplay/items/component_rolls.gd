@@ -15,10 +15,10 @@ static func apply_quality_color(control: Control, item: InventoryItem) -> void:
 	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color", "font_focus_color"]:
 		control.add_theme_color_override(state, color)
 
-# Six broad, additive bonuses. Values are percentages except guard window (ms).
+# Five broad, additive bonuses. Values are percentages except guard window (ms).
 const AFFIXES := {
-	"attack": ["攻击", 20, 50], "cooling": ["散热", 10, 30],
-	"capacity": ["热量上限", 10, 30], "guard": ["完美格挡窗口", 20, 60],
+	"cooling": ["散热", 10, 30], "capacity": ["热量上限", 10, 30],
+	"guard": ["完美格挡窗口", 20, 60],
 	"mobility": ["机动速度", 10, 25], "status": ["负面状态时长减免", 10, 25],
 }
 
@@ -52,7 +52,32 @@ static func migrate_snapshot(value: Variant) -> Variant:
 			properties.erase("name")
 			properties.erase("effect")
 			data.properties = properties
+	_migrate_serialized_affixes(data)
 	return data
+
+
+static func _migrate_serialized_affixes(data: Dictionary) -> void:
+	var properties: Variant = data.get("properties", {})
+	if not properties is Dictionary or not properties.has("affixes"):
+		return
+	var stored: Variant = properties["affixes"]
+	if stored is Dictionary and stored.has("value"):
+		var encoded: Variant = stored["value"]
+		var decoded: Variant = str_to_var(encoded) if encoded is String else encoded
+		if decoded is Dictionary:
+			stored["value"] = var_to_str(_migrated_affixes(decoded)) if encoded is String else _migrated_affixes(decoded)
+			properties["affixes"] = stored
+	elif stored is Dictionary:
+		properties["affixes"] = _migrated_affixes(stored)
+	data["properties"] = properties
+
+
+static func _migrated_affixes(value: Dictionary) -> Dictionary:
+	var migrated := value.duplicate(true)
+	if migrated.has("attack"):
+		migrated["capacity"] = maxf(float(migrated.get("capacity", 0.0)), minf(float(migrated["attack"]), 30.0))
+		migrated.erase("attack")
+	return migrated
 
 static func quality(item: InventoryItem) -> int:
 	return clampi(int(item.get_property("quality", 1)), 1, 3) if ordinary(item) else 0
@@ -68,7 +93,9 @@ static func ensure(item: InventoryItem) -> void:
 		item.set_property("quality", 1)
 	if not item.has_property("affixes"):
 		# Deterministic old-save migration, never reroll on loading.
-		item.set_property("affixes", {"attack" if item.get_property("slot") == "weapon" else "mobility": 20})
+		item.set_property("affixes", {"capacity" if item.get_property("slot") == "weapon" else "mobility": 20})
+	else:
+		item.set_property("affixes", _migrated_affixes(affixes(item)))
 
 static func make_item(id: String) -> InventoryItem:
 	var prototype_id := "baton" if id == "initial_baton" else id
@@ -82,21 +109,32 @@ static func make_item(id: String) -> InventoryItem:
 	return item
 
 static func create(id: String, tier: int, rng: RandomNumberGenerator) -> InventoryItem:
+	var item := create_without_affixes(id, tier, rng)
+	if item.get_prototype() == null:
+		return item
+	if ordinary(item):
+		var pool: Array = AFFIXES.keys()
+		for index in rng.randi_range(1, clampi(tier, 1, 3)):
+			var key: String = pool.pop_at(rng.randi_range(0, pool.size() - 1))
+			var rolled := affixes(item).duplicate()
+			rolled[key] = rng.randi_range(AFFIXES[key][1], AFFIXES[key][2])
+			item.set_property("affixes", rolled)
+	return item
+
+
+static func create_without_affixes(id: String, tier: int, rng: RandomNumberGenerator) -> InventoryItem:
 	var item := make_item(id)
 	if item.get_prototype() == null:
 		return item
 	item.set_property("instance_id", "%d-%d-%d" % [Time.get_ticks_usec(), item.get_instance_id(), rng.randi()])
 	if ordinary(item):
 		item.set_property("quality", clampi(tier, 1, 3))
-		var pool: Array = AFFIXES.keys()
-		if item.get_property("slot") != "weapon":
-			pool.erase("attack")
-		var rolled := {}
-		for index in rng.randi_range(1, clampi(tier, 1, 3)):
-			var key: String = pool.pop_at(rng.randi_range(0, pool.size() - 1))
-			rolled[key] = rng.randi_range(AFFIXES[key][1], AFFIXES[key][2])
-		item.set_property("affixes", rolled)
+		item.set_property("affixes", {})
 	return item
+
+
+static func create_issued_pistol() -> InventoryItem:
+	return create_without_affixes("pistol", 1, RandomNumberGenerator.new())
 
 static func title(item: InventoryItem) -> String:
 	return "%s · %s" % [QUALITIES[quality(item)], item.get_title()] if ordinary(item) else item.get_title()
@@ -123,7 +161,6 @@ static func weapon(item: InventoryItem) -> WeaponComponentData:
 	if item == null:
 		return null
 	var data: WeaponComponentData = load(str(item.get_property("effect"))).duplicate(true)
-	data.damage = maxi(1, ceili(data.damage * (1.0 + bonus([item], "attack") / 100.0)))
 	return data
 
 static func mobility_mode(item: InventoryItem, equipped: Array) -> MobilityMode:
@@ -142,13 +179,15 @@ static func fuse(a: InventoryItem, b: InventoryItem, rng: RandomNumberGenerator)
 		return null
 	var tier := mini(synthesis_quality(a) + 1, 3)
 	var result := create(a.get_prototype().get_prototype_id(), tier, rng)
-	var merged := affixes(a).duplicate(true)
-	for key in affixes(b):
-		merged[key] = maxf(float(merged.get(key, 0)), float(affixes(b)[key]))
+	var affixes_a := _migrated_affixes(affixes(a))
+	var affixes_b := _migrated_affixes(affixes(b))
+	var merged := affixes_a.duplicate(true)
+	for key in affixes_b:
+		merged[key] = maxf(float(merged.get(key, 0)), float(affixes_b[key]))
 	var selected := {}
 	# Shared affixes always survive; choose the remaining distinct entries randomly.
-	for key in affixes(a):
-		if affixes(b).has(key):
+	for key in affixes_a:
+		if affixes_b.has(key):
 			selected[key] = merged[key]
 	var pool: Array = merged.keys()
 	for key in selected:

@@ -89,11 +89,15 @@ var _attack_precharged := false
 var _initial_precharge_consumed := false
 var _self_destruct_remaining := 0.0
 var _defeat_finalized := false
+var shield_charges := 0
+var _shield_hit_flash_remaining := 0.0
 const ATTACK_WARNING := preload("res://assets/audio/sfx/enemy_ui/enemy_attack.wav")
 
 @onready var navigation_agent: NavigationAgent2D = $NavigationAgent2D
 @onready var health: HealthComponent = $HealthComponent
 @onready var hurt_box: HurtBox2DComponent = $HurtBox
+@onready var sprite: Sprite2D = $Sprite2D
+@onready var animation_player: AnimationPlayer = $AnimationPlayer
 
 
 func _ready() -> void:
@@ -127,8 +131,40 @@ func apply_profile(value: EnemyProfile) -> void:
 	profile = value
 	if profile != null:
 		tactical_brain.configure(profile.decision_interval, _tactical_side)
+		shield_charges = 1 if profile.role == EnemyProfile.Role.HEAVY_ANCHOR else 0
 	if is_node_ready():
 		health.configure_max_health(profile.max_health)
+		_configure_sprite()
+		queue_redraw()
+
+
+func _configure_sprite() -> void:
+	if not is_instance_valid(sprite) or profile == null:
+		return
+	var key := "ranged" if profile.role == EnemyProfile.Role.RANGED_SIGHTLINE else "melee"
+	var texture := WorkshopArt.asset(key)
+	var size := texture.get_size()
+	var visual_scale := minf(38.0 / size.x, 38.0 / size.y)
+	sprite.texture = texture
+	sprite.scale = Vector2.ONE * visual_scale
+	# The source art is centered, while the actor origin stays at its feet.
+	sprite.position = Vector2(0.0, 10.0 - size.y * visual_scale * 0.5)
+	_sync_sprite_state()
+
+
+func _sync_sprite_state() -> void:
+	if not is_instance_valid(sprite):
+		return
+	sprite.flip_h = facing.x > 0.1
+	sprite.modulate = Color(1.7, 1.5, 1.2) if (
+		state == State.SELF_DESTRUCT and int(_self_destruct_remaining * 16.0) % 2 == 0
+	) else Color.WHITE
+
+
+func _process(delta: float) -> void:
+	_sync_sprite_state()
+	if _shield_hit_flash_remaining > 0.0:
+		_shield_hit_flash_remaining = maxf(_shield_hit_flash_remaining - delta, 0.0)
 		queue_redraw()
 
 
@@ -755,9 +791,13 @@ func _draw() -> void:
 	var color := profile.body_color if profile != null else Color.RED
 	if state == State.SELF_DESTRUCT and int(_self_destruct_remaining * 16.0) % 2 == 0:
 		color = Color.WHITE
-	WorkshopArt.draw_enemy(self, color == Color.WHITE)
+	draw_set_transform(Vector2(0, 7), 0, Vector2(1, 0.35))
+	draw_circle(Vector2.ZERO, 11, Color(0, 0, 0, 0.32))
+	draw_set_transform(Vector2.ZERO)
+	draw_line(Vector2(0, 7), Vector2(0, 7) + facing * 13, Color(0.65, 0.9, 1, 0.45), 1)
 	if profile != null and profile.role == EnemyProfile.Role.HEAVY_ANCHOR:
 		draw_rect(Rect2(-8.0, -8.0, 16.0, 16.0), color.darkened(0.25), false, 3.0)
+		_draw_heavy_shield()
 
 	if state == State.WINDUP:
 		var progress := 1.0 - _windup_remaining / profile.attack_windup
@@ -789,7 +829,9 @@ func can_see_target() -> bool:
 		float(ProjectSettings.get_setting("display/window/size/viewport_width", DEFAULT_VIEWPORT_SIZE.x)),
 		float(ProjectSettings.get_setting("display/window/size/viewport_height", DEFAULT_VIEWPORT_SIZE.y))
 	)
-	var half_extents := viewport_size * 0.5
+	var settings: Node = get_node_or_null("/root/GameSettings")
+	var visual_scale: float = float(settings.get_visual_range_scale()) if settings != null and settings.has_method("get_visual_range_scale") else 1.0
+	var half_extents := viewport_size * 0.5 * visual_scale
 	if absf(offset.x) > half_extents.x or absf(offset.y) > half_extents.y:
 		return false
 	# The legacy range remains a useful profile/test limiter. Runtime profiles
@@ -866,7 +908,9 @@ func _on_noise(source: Node, origin: Vector2, radius: float) -> void:
 		return
 	if source is PlayerController and source.health.is_dead():
 		return
-	var effective_range := minf(radius, profile.hearing_range)
+	var settings: Node = get_node_or_null("/root/GameSettings")
+	var hearing_limit: float = float(settings.get_hearing_range_limit()) if settings != null and settings.has_method("get_hearing_range_limit") else INF
+	var effective_range := minf(minf(radius, profile.hearing_range), hearing_limit)
 	if not _clear_path_to(origin):
 		effective_range *= profile.blocked_sound_multiplier
 	if global_position.distance_to(origin) <= effective_range:
@@ -885,7 +929,9 @@ func _on_movement_noise(source: Node, origin: Vector2, radius: float) -> void:
 		return
 	if source is PlayerController and source.health.is_dead():
 		return
-	var effective_range := minf(radius, profile.hearing_range)
+	var settings: Node = get_node_or_null("/root/GameSettings")
+	var hearing_limit: float = float(settings.get_hearing_range_limit()) if settings != null and settings.has_method("get_hearing_range_limit") else INF
+	var effective_range := minf(minf(radius, profile.hearing_range), hearing_limit)
 	if not _clear_path_to(origin):
 		effective_range *= profile.blocked_sound_multiplier
 	if global_position.distance_to(origin) <= effective_range:
@@ -935,6 +981,35 @@ func _on_damaged(_amount: int, packet: DamagePacket) -> void:
 		return
 	if is_instance_valid(packet.source) and _same_room(packet.source):
 		_alert_to(packet.source_position, false)
+
+
+func try_absorb_hit(_packet: DamagePacket) -> bool:
+	if shield_charges <= 0 or profile == null or profile.role != EnemyProfile.Role.HEAVY_ANCHOR:
+		return false
+	shield_charges -= 1
+	_shield_hit_flash_remaining = 0.16
+	var events := get_node_or_null("/root/CombatEvents")
+	if events != null:
+		events.request_effect(global_position, Color(0.35, 0.88, 1.0), 24.0, 0.16)
+	queue_redraw()
+	return true
+
+
+func _draw_heavy_shield() -> void:
+	if shield_charges <= 0 and _shield_hit_flash_remaining <= 0.0:
+		return
+	var points := PackedVector2Array()
+	for index in 6:
+		points.append(Vector2.RIGHT.rotated(PI / 6.0 + TAU * float(index) / 6.0) * 20.0)
+	points.append(points[0])
+	var alpha := 0.52 if shield_charges > 0 else clampf(_shield_hit_flash_remaining / 0.16, 0.0, 1.0)
+	var shield_color := Color(0.28, 0.82, 1.0, alpha)
+	if shield_charges > 0:
+		draw_polyline(points, shield_color, 1.5, true)
+	else:
+		for index in 6:
+			if index % 2 == 0:
+				draw_line(points[index], points[index + 1].lerp(points[index], 0.35), shield_color, 2.0)
 
 
 func _forget_target() -> void:

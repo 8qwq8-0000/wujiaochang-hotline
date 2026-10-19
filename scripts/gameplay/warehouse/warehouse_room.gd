@@ -277,7 +277,7 @@ func synthesize(subject: InventoryItem, material: InventoryItem) -> bool:
 
 func _ensure_fallback_weapon() -> void:
 	# A save always offers an equipped weapon on entry/departure, preferring an
-	# existing instance over minting another baton. Blackbox choices stay protected.
+	# existing instance over minting another pistol. Blackbox choices stay protected.
 	var inv: ComponentInventory = player.inventory
 	if inv.weapon_slot.get_item() != null or inv.secondary_weapon_slot.get_item() != null:
 		return
@@ -286,6 +286,6 @@ func _ensure_fallback_weapon() -> void:
 			inv.weapon_slot.equip(item)
 			inv._apply_equipment()
 			return
-	var fallback := ComponentRolls.create("baton", 1, RandomNumberGenerator.new())
+	var fallback := ComponentRolls.create_issued_pistol()
 	inv.weapon_slot.equip(fallback)
 	inv._apply_equipment()

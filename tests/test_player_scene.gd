@@ -71,14 +71,36 @@ func test_player_scene_has_required_components() -> void:
 	assert_true(wrist_socket.get_source_wrist(&"walk_right", 0).x > 64.0)
 
 
-func test_default_player_config_uses_baton_and_walking() -> void:
+func test_default_player_config_uses_service_pistol_and_walking() -> void:
 	var config: CombatPlayerConfig = load("res://resources/player/default_player_config.tres")
 	assert_eq(config.max_health, 3)
 	assert_true(is_equal_approx(config.damage_invulnerability_seconds, 0.18))
-	assert_eq(config.default_weapon.id, &"baton")
-	assert_eq(config.default_weapon.heat_per_attack, 0.0)
+	assert_eq(config.default_weapon.id, &"service_pistol")
+	assert_eq(config.default_weapon.heat_per_attack, 17.0)
 	assert_eq(config.default_mobility.id, &"walk")
 	assert_false(config.debug_loadout_enabled)
+
+
+func test_confirmed_weapon_heat_capacities_ignore_natural_cooling() -> void:
+	var pistol: WeaponComponentData = load("res://resources/weapons/service_pistol.tres")
+	var scattergun: WeaponComponentData = load("res://resources/weapons/scattergun.tres")
+	var baton: WeaponComponentData = load("res://resources/weapons/baton.tres")
+	var heat := HeatComponent.new()
+	for shot in 5:
+		assert_true(heat.try_add_heat(pistol.heat_per_attack))
+	assert_false(heat.is_overheated)
+	assert_true(heat.try_add_heat(pistol.heat_per_attack))
+	assert_true(heat.is_overheated)
+	heat.set_heat(0.0)
+	heat.is_overheated = false
+	for shot in 4:
+		assert_true(heat.try_add_heat(scattergun.heat_per_attack))
+	assert_true(heat.is_overheated)
+	heat.set_heat(0.0)
+	heat.is_overheated = false
+	for swing in 20:
+		assert_true(heat.try_add_heat(baton.heat_per_attack))
+	assert_false(heat.is_overheated)
 
 
 func test_circuit_breaker_prevents_only_first_fatal_hit() -> void:

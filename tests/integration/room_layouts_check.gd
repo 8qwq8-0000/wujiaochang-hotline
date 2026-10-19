@@ -57,7 +57,7 @@ func run() -> void:
 			await settle()
 			check(run_manager.mandatory_enemies_remaining == 12, "all layouts preserve two-area objectives")
 			assembler.passages[0].unlock()
-			var entry := Vector2(74,180)
+			var entry := CombatLayoutData._scaled_point(Vector2(74,180), CombatRoom.ROOM_SCALE, CombatRoom.BASE_ROOM_SIZE)
 			var next_entry: Vector2 = assembler.generated_rooms[1].to_global(entry)
 			var route_connected := false
 			for wait_frame in 30:
@@ -78,21 +78,28 @@ func run() -> void:
 		root.add_child(room)
 		current_scene = room
 		var camera := Camera2D.new()
-		camera.position = Vector2(320, 180)
+		camera.position = CombatRoom.ROOM_SIZE * 0.5
 		room.add_child(camera)
 		camera.make_current()
 		var covers: Array[Rect2] = []
-		covers.assign(room.layout.covers if room.layout != null else [Rect2(254,71,32,94), Rect2(379,195,32,94)])
+		if room.layout != null:
+			covers.assign(room.layout.covers)
+		else:
+			for cover_name in ["CoverA", "CoverB"]:
+				var cover := room.get_node(cover_name) as StaticBody2D
+				var cover_shape := cover.get_node("CollisionShape2D").shape as RectangleShape2D
+				covers.append(Rect2(cover.position - cover_shape.size * 0.5, cover_shape.size))
 		if room.layout != null:
 			covers.append_array(room.layout.windows)
 		await settle()
 		var region: NavigationRegion2D = room.get_node("NavigationRegion2D")
+		var entry := CombatLayoutData._scaled_point(Vector2(74,180), CombatRoom.ROOM_SCALE, CombatRoom.BASE_ROOM_SIZE)
 		for wait_frame in 30:
-			if NavigationServer2D.map_get_closest_point_owner(room.get_world_2d().navigation_map, Vector2(74,180)) == region.get_rid():
+			if NavigationServer2D.map_get_closest_point_owner(room.get_world_2d().navigation_map, entry) == region.get_rid():
 				break
 			await physics_frame
 		check(region.navigation_polygon.get_polygon_count() > 0, "%s has baked navigation" % id)
-		var destinations: Array[Vector2] = [Vector2(592,180), room.get_node("PowerBox").position, room.get_node("FuelBarrel").position]
+		var destinations: Array[Vector2] = [room.get_node("ExitElevator").position, room.get_node("PowerBox").position, room.get_node("FuelBarrel").position]
 		for marker in room.get_node("EnemySpawnPoints").get_children():
 			destinations.append(marker.position)
 		var all_reachable := true
@@ -100,7 +107,7 @@ func run() -> void:
 		var no_wall_crossing := true
 		for destination in destinations:
 			all_clear = all_clear and not inside_cover(destination, covers, 12.0)
-			var path := NavigationServer2D.map_get_path(room.get_world_2d().navigation_map, Vector2(74,180), destination, true)
+			var path := NavigationServer2D.map_get_path(room.get_world_2d().navigation_map, entry, destination, true)
 			all_reachable = all_reachable and path.size() >= 2 and path[-1].distance_to(destination) < 5.0
 			for index in range(1, path.size()):
 				var steps := maxi(1, ceili(path[index - 1].distance_to(path[index]) / 4.0))
@@ -111,11 +118,11 @@ func run() -> void:
 		check(no_wall_crossing, "%s navigation segments respect collider clearance" % id)
 		var target := Node2D.new()
 		target.add_to_group("player")
-		target.position = Vector2(74,180)
+		target.position = entry
 		room.add_child(target)
 		var enemy: EnemyController = load("res://scenes/actors/enemies/enemy.tscn").instantiate()
 		enemy.profile = load("res://resources/enemies/melee_pressure.tres").duplicate(true)
-		enemy.profile.move_speed = 260.0
+		enemy.profile.move_speed = 500.0
 		enemy.profile.patrol_enabled = false
 		enemy.profile.awareness_range = 1000.0
 		enemy.profile.alert_memory_seconds = 20.0
@@ -124,7 +131,7 @@ func run() -> void:
 		enemy.navigation_agent.max_speed = enemy.profile.move_speed
 		enemy._alert_to(target.global_position, false)
 		var clipped_cover := false
-		for frame in 240:
+		for frame in 360:
 			await physics_frame
 			clipped_cover = clipped_cover or inside_cover(enemy.position, covers)
 		check(not clipped_cover, "%s real AI never clips through interior walls" % id)

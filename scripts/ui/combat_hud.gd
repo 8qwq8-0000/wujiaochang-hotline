@@ -20,6 +20,11 @@ var _guard_value: Label
 var _buff_value: Label
 var _objective_value: Label
 var _crt_overlay: CRTOverlay
+var _operator_panel: TerminalPanel
+var _operator_label: Label
+var _operator_scanlines: Control
+var _operator_audio: AudioStreamPlayer
+var _operator_tween: Tween
 
 
 func _ready() -> void:
@@ -28,6 +33,7 @@ func _ready() -> void:
 	if events != null:
 		events.combat_message_requested.connect(show_message)
 		events.combat_notice_requested.connect(_on_notice_requested)
+		events.operator_communication_requested.connect(_show_operator_communication)
 		events.combat_area_progress.connect(_on_area_progress)
 		events.floor_cleared.connect(func() -> void: _set_objective_text("本层已清理：前往出口"))
 	var run_manager := get_node_or_null("/root/RunManager")
@@ -177,6 +183,64 @@ func _build_cyber_hud() -> void:
 	_crt_overlay.name = "CRTOverlay"
 	_crt_overlay.strength = _saved_crt_strength()
 	overlay.add_child(_crt_overlay)
+	_build_operator_overlay()
+
+
+func _build_operator_overlay() -> void:
+	_operator_panel = _make_panel("接线员 / PERSONAL AI", Rect2(170, 112, 300, 76))
+	_operator_panel.hide()
+	_operator_label = Label.new()
+	_operator_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_operator_label.modulate = Color("b9f8d2")
+	_operator_panel.add_child(_operator_label)
+	_operator_scanlines = Control.new()
+	_operator_scanlines.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_operator_scanlines.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_operator_scanlines.hide()
+	_operator_panel.add_child(_operator_scanlines)
+	for y in range(4, 72, 6):
+		var line := ColorRect.new()
+		line.position = Vector2(0, y)
+		line.size = Vector2(300, 1)
+		line.color = Color(0.25, 1.0, 0.62, 0.14)
+		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_operator_scanlines.add_child(line)
+	_operator_audio = AudioStreamPlayer.new()
+	_operator_audio.bus = &"SFX"
+	_operator_audio.volume_db = -18.0
+	_operator_audio.stream = _make_radio_static()
+	add_child(_operator_audio)
+
+
+func _show_operator_communication(text: String) -> void:
+	if _operator_tween != null and _operator_tween.is_valid():
+		_operator_tween.kill()
+	_operator_label.text = text
+	_operator_panel.modulate = Color.WHITE
+	_operator_panel.show()
+	_operator_scanlines.show()
+	_operator_audio.play()
+	_operator_tween = create_tween()
+	_operator_tween.tween_interval(0.25)
+	_operator_tween.tween_callback(_operator_scanlines.hide)
+	_operator_tween.tween_interval(1.55)
+	_operator_tween.tween_property(_operator_panel, "modulate:a", 0.0, 0.2)
+	_operator_tween.tween_callback(_operator_panel.hide)
+
+
+func _make_radio_static() -> AudioStreamWAV:
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_8_BITS
+	stream.mix_rate = 12000
+	stream.stereo = false
+	var samples := PackedByteArray()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 0xC0DE51
+	for index in 1800:
+		var envelope := 1.0 - float(index) / 1800.0
+		samples.append(clampi(128 + roundi(float(rng.randi_range(-48, 48)) * envelope), 0, 255))
+	stream.data = samples
+	return stream
 
 
 func _make_panel(title_text: String, rect: Rect2) -> TerminalPanel:

@@ -104,6 +104,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _physics_process(delta: float) -> void:
 	_update_aim_direction()
+	var weapon_aim_direction := _get_weapon_aim_direction()
 	guard.update_direction(aim_direction)
 	if _dead:
 		velocity = Vector2.ZERO
@@ -116,7 +117,7 @@ func _physics_process(delta: float) -> void:
 	_external_velocity = _external_velocity.move_toward(Vector2.ZERO, config.knockback_recovery * delta)
 	weapons.update_attack_pose(global_position, aim_direction, self)
 	# The muzzle must use this frame's aim before an attack is spawned.
-	visuals.update_weapon_aim(aim_direction, weapons.get_melee_swing_angle_offset())
+	visuals.update_weapon_aim(weapon_aim_direction, weapons.get_melee_swing_angle_offset())
 	if _input_enabled and guard.can_attack() and mobility.can_attack() and _should_attack_this_frame():
 		var attack := _get_attack_transform()
 		weapons.try_attack(attack.origin, attack.x.normalized(), self)
@@ -128,7 +129,8 @@ func _physics_process(delta: float) -> void:
 		velocity,
 		guard.state,
 		guard.guard_arc_degrees,
-		weapons.get_melee_swing_angle_offset()
+		weapons.get_melee_swing_angle_offset(),
+		weapon_aim_direction
 	)
 	_tick_afterimages(delta)
 	_update_movement_audio()
@@ -296,6 +298,14 @@ func _update_aim_direction() -> void:
 		aim_direction = mouse_delta.normalized()
 
 
+func _get_weapon_aim_direction() -> Vector2:
+	var data := weapons.get_current_weapon()
+	if data == null or data.attack_kind == WeaponComponentData.AttackKind.MELEE:
+		return aim_direction
+	var direction := get_global_mouse_position() - visuals.get_weapon_mount_global_position()
+	return direction.normalized() if direction.length_squared() > 1.0 else aim_direction
+
+
 func _update_camera(delta: float) -> void:
 	var target := aim_direction * config.camera_look_ahead
 	var weight := clampf(config.camera_look_ahead_response * delta, 0.0, 1.0)
@@ -331,11 +341,10 @@ func _get_attack_transform() -> Transform2D:
 		visuals.get_weapon_mount_global_position(),
 		muzzle
 	)
-	var target := get_global_mouse_position()
-	var direction := target - muzzle
-	if direction.length_squared() <= 16.0:
-		direction = aim_direction
-	return Transform2D(direction.normalized().angle(), muzzle)
+	var direction := visuals.get_weapon_barrel_global_direction()
+	if direction.is_zero_approx():
+		direction = _get_weapon_aim_direction()
+	return Transform2D(direction.angle(), muzzle)
 
 
 func _should_attack_this_frame() -> bool:

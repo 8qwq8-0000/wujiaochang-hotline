@@ -53,14 +53,14 @@ func run() -> void:
 	check(room.transfer(starter, true), "starter deposits directly from equipped slot")
 	check(player.export_recovery_state().inventory.primary.is_empty(), "stored starter is not recreated in death recovery")
 	room._ensure_fallback_weapon()
-	check(inv.weapon_slot.get_item() == starter and room.chest.get_item_count() == 0, "fallback reuses stored baton instead of duplicating it")
-	check(room.transfer(starter, true), "return reused baton to storage fixture")
+	check(inv.weapon_slot.get_item() == starter and room.chest.get_item_count() == 0, "fallback reuses stored pistol instead of duplicating it")
+	check(room.transfer(starter, true), "return reused pistol to storage fixture")
 	check(room.transfer(starter, false), "starter withdraws into backpack")
 	check(inv.backpack.has_item(starter) and starter.get_property("instance_id") == original_id, "starter bag transfer preserves identity")
 	check(room.transfer(starter, true), "starter redeposits for upgrade")
-	starter.set_property("affixes", {"attack": 20})
+	starter.set_property("affixes", {"capacity": 20})
 	var material := ComponentRolls.create("pistol", 1, RandomNumberGenerator.new())
-	material.set_property("affixes", {"attack": 40})
+	material.set_property("affixes", {"capacity": 30})
 	room.chest.add_item(material)
 	check(room.save_loadout(), "save upgrade material")
 	check(ComponentRolls.compatible(starter, material), "starter combines with standard weapon")
@@ -73,7 +73,7 @@ func run() -> void:
 	store.save_path = "user://missing-npc-directory/save.json"
 	check(not room.synthesize(starter, material) and room.chest.has_item(starter) and room.chest.has_item(material), "failed save retains starter and upgrade material")
 	store.save_path = SAVE_PATH
-	room.upgrade_panel.show_message("制式警棍 + 制式武器 → 改良警棍 · 保留主体形态")
+	room.upgrade_panel.show_message("制式手枪 + 制式武器 → 改良手枪 · 保留主体形态")
 	if OS.get_cmdline_user_args().has("--capture"):
 		await process_frame
 		root.get_texture().get_image().save_png("/tmp/hotline-npc-upgrade.png")
@@ -88,11 +88,11 @@ func run() -> void:
 		await process_frame
 	check(room.chest.get_item_count() == 1 and not room.chest.has_item(starter), "upgrade button consumes both originals")
 	var upgraded: InventoryItem = room.chest.get_items()[0]
-	check(upgraded.get_prototype().get_prototype_id() == "baton" and ComponentRolls.quality(upgraded) == 2 and ComponentRolls.affixes(upgraded) == {"attack": 40.0}, "starter subject becomes improved baton with inherited affix")
-	check(not upgraded.get_property("bound", false), "upgraded baton is ordinary loot")
+	check(upgraded.get_prototype().get_prototype_id() == "pistol" and ComponentRolls.quality(upgraded) == 2 and ComponentRolls.affixes(upgraded) == {"capacity": 30.0}, "starter subject becomes improved pistol with inherited affix")
+	check(not upgraded.get_property("bound", false), "upgraded pistol is ordinary loot")
 	check(player.export_recovery_state().inventory.primary.is_empty(), "consumed starter never respawns on death")
 	check(room.transfer(upgraded, false) and inv.equip(0), "upgraded weapon can be withdrawn and equipped")
-	check(player.weapons.get_current_weapon().id == &"baton", "upgraded baton works in weapon controller")
+	check(player.weapons.get_current_weapon().id == &"service_pistol", "upgraded pistol works in weapon controller")
 	check(player.export_recovery_state().inventory.primary.is_empty(), "upgraded weapon does not gain starter death protection")
 	await key(KEY_ESCAPE)
 	check(not paused and player.is_input_enabled(), "closing NPC restores control")
@@ -105,7 +105,7 @@ func run() -> void:
 	check(room.transfer(inv.weapon_slot.get_item(), true), "restore stored upgrade fixture")
 	room.chest.clear()
 	room._ensure_fallback_weapon()
-	check(inv.weapon_slot.get_item().get_prototype().get_prototype_id() == "baton", "losing all available weapons restores playable fallback")
+	check(inv.weapon_slot.get_item().get_prototype().get_prototype_id() == "pistol", "losing all available weapons restores playable pistol fallback")
 	var fallback_id: String = inv.weapon_slot.get_item().get_property("instance_id")
 	room._ensure_fallback_weapon()
 	check(inv.weapon_slot.get_item().get_property("instance_id") == fallback_id, "fallback generation is idempotent")
