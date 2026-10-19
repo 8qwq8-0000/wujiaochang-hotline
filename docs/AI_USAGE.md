@@ -36,3 +36,7 @@
 - Known failures remain: week1 room drop-count assertions (F6 and Main); b147f38 addresses post-door enemy pathing and is included. Some test exits still report ObjectDB/resource-use warnings; .NET/Windows export not checked.
 
 - Final user instruction: do not push parry training yet. Excluded its sandbox controls, enemy behavior, and guard_training_check from this commit; original desktop working copy retains them.
+
+## 2026-10-19 — Unreferenced member C resources
+
+- Removed 11 replaced environment images, 3 unreferenced audio assets, and an obsolete test-component script, together with their import/UID metadata (30 files). The live test-component scene, room logic, collision data and referenced ambience remain. Checked both resource paths and UID references; unit tests 62/62 and standalone room loading passed. PR description is intentionally unchanged per user instruction.
