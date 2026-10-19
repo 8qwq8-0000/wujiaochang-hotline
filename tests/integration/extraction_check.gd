@@ -68,7 +68,7 @@ func run_checks() -> void:
 	check(not paused, "continue restores world")
 	player = await wait_floor(flow)
 	check(run.floor_index == 1, "continue advances floor")
-	check(main.get_node("SceneContainer").get_child(0).scene_file_path == "res://scenes/levels/week1_combat_room.tscn", "continue loads the Week 1 combat room")
+	check(main.get_node("SceneContainer").get_child(0).scene_file_path == "res://scenes/levels/floors/combat_prototype.tscn", "continue loads the procedural combat floor")
 	check(player.export_run_state() == before, "continue preserves equipment and bag")
 	await clear_floor()
 	ui.open_exit()

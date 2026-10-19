@@ -1,5 +1,6 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 [ext_resource type="Script" path="res://scripts/gameplay/environment/automatic_door.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/presentation/refined_environment_art.gd" id="refined_art"]
 [sub_resource type="RectangleShape2D" id="Door"]
 size = Vector2(12,64)
 [sub_resource type="RectangleShape2D" id="Contact"]
@@ -16,3 +17,8 @@ collision_layer = 0
 collision_mask = 6
 [node name="Shape" type="CollisionShape2D" parent="Contact"]
 shape = SubResource("Contact")
+
+[node name="RefinedArt" type="Node2D" parent="."]
+script = ExtResource("refined_art")
+kind = "door"
+draw_size = Vector2(40, 72)

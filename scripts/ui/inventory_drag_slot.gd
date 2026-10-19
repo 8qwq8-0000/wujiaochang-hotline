@@ -45,3 +45,11 @@ func _valid_payload(data: Variant) -> bool:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_DRAG_END or what == NOTIFICATION_MOUSE_EXIT:
 		modulate = Color.WHITE
+
+
+func _gui_input(event: InputEvent) -> void:
+	if location == "backpack" and event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+		var item := inventory.item_at(location, cell_index)
+		if inventory.can_discard(item):
+			inventory.panel.show_discard_menu(item)
+			accept_event()

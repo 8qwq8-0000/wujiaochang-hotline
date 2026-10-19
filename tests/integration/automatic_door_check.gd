@@ -30,6 +30,8 @@ func approach(player: PlayerController,door: AutomaticDoor,direction: Vector2) -
 			break
 	await process_frame
 func run_checks() -> void:
+	root.get_node("WarehouseStore").save_path = "user://bc_automatic_door_check.json"
+	DirAccess.remove_absolute("user://bc_automatic_door_check.json")
 	room = Node2D.new()
 	room.add_to_group("combat_rooms")
 	root.add_child(room)
@@ -116,4 +118,5 @@ func run_checks() -> void:
 	other.queue_free()
 	await process_frame
 	print("Automatic door checks: ",checks,"; failures: ",failures)
+	DirAccess.remove_absolute("user://bc_automatic_door_check.json")
 	quit(0 if failures == 0 else 1)

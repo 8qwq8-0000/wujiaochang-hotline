@@ -19,7 +19,7 @@ func press_key(code: Key) -> void:
 func wait_battle(previous: Node = null) -> PlayerController:
 	for frame in 600:
 		var player := get_first_node_in_group("player") as PlayerController
-		if current_scene != null and current_scene != previous and player != null and get_nodes_in_group("enemies").size() == 3 and not current_scene.get_node("SceneFlow").get("_is_loading"):
+		if current_scene != null and current_scene != previous and player != null and get_nodes_in_group("enemies").size() == 6 and not current_scene.get_node("SceneFlow").get("_is_loading"):
 			player.set_physics_process(false)
 			for enemy in get_nodes_in_group("enemies"):
 				enemy.set_physics_process(false)
@@ -31,6 +31,8 @@ func defeat_all_enemies() -> void:
 	await preload("res://tests/integration/combat_test_flow.gd").clear_floor(self)
 
 func run() -> void:
+	root.get_node("WarehouseStore").save_path = "user://bc_playthrough_check.json"
+	DirAccess.remove_absolute("user://bc_playthrough_check.json")
 	var main: Node = load("res://scenes/bootstrap/main.tscn").instantiate()
 	root.add_child(main)
 	current_scene = main
@@ -105,4 +107,5 @@ func run() -> void:
 	print("Full playthrough failures: ", failures)
 	current_scene.queue_free()
 	await process_frame
+	DirAccess.remove_absolute("user://bc_playthrough_check.json")
 	quit(0 if failures == 0 else 1)

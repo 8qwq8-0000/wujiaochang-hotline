@@ -6,10 +6,10 @@
 script = ExtResource("1")
 id = &"wheel"
 display_name = "轮式推进组件"
-max_speed = 200.0
+max_speed = 150.0
 acceleration = 2200.0
 braking = 3000.0
-ability_cooldown = 1.4
+ability_cooldown = 1.2
 ability_impulse = 420.0
 knockback_multiplier = 0.9
 ability_active_seconds = 0.20
