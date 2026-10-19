@@ -904,7 +904,10 @@ func _broadcast_confirmed_alert(location: Vector2) -> void:
 
 
 func _on_noise(source: Node, origin: Vector2, radius: float) -> void:
-	if state in [State.DEAD, State.SELF_DESTRUCT] or get_tree().paused or not _same_room(source):
+	# An alerted enemy can be the source of a door-break or combat noise. That
+	# sound is useful to nearby allies, but must not overwrite its own last known
+	# player position with the noise origin and make it chase back to the door.
+	if source == self or state in [State.DEAD, State.SELF_DESTRUCT] or get_tree().paused or not _same_room(source):
 		return
 	if source is PlayerController and source.health.is_dead():
 		return
@@ -919,7 +922,8 @@ func _on_noise(source: Node, origin: Vector2, radius: float) -> void:
 
 func _on_movement_noise(source: Node, origin: Vector2, radius: float) -> void:
 	if (
-		profile.role != EnemyProfile.Role.RANGED_SIGHTLINE
+		source == self
+		or profile.role != EnemyProfile.Role.RANGED_SIGHTLINE
 		or radius <= FOOTSTEP_NOISE_THRESHOLD
 		or _footstep_update_remaining > 0.0
 		or state in [State.DEAD, State.SELF_DESTRUCT]
