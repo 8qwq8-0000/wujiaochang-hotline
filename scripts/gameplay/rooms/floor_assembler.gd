@@ -12,6 +12,7 @@ const DEFAULT_ROOM := preload("res://scenes/levels/rooms/prototype_combat_room.t
 @export var room_spacing: Vector2 = Vector2(680.0, 0.0)
 @export var room_pool: Array[RoomTemplateData] = []
 
+var _chosen_scene_paths := {}
 var generated_rooms: Array[Node] = []
 var _rooms_remaining: int = 0
 var active_area_index := 0
@@ -37,10 +38,11 @@ func assemble() -> void:
 	_cleared_ids.clear()
 	_guaranteed_areas.clear()
 	active_area_index = 0
+	_chosen_scene_paths.clear()
 	var random := RandomNumberGenerator.new()
 	var run_manager := get_node_or_null("/root/RunManager")
 	var seed_value: int = run_manager.run_seed if run_manager != null and run_manager.run_seed != 0 else 1
-	random.seed = seed_value
+	random.seed = seed_value + 15485863 * (run_manager.floor_index if run_manager != null else 0)
 	_loot_rng.seed = seed_value + 7919 * (run_manager.floor_index + 1 if run_manager != null else 1)
 	_drop_chance_rng.seed = _loot_rng.seed + 104729
 	var floor_number: int = run_manager.floor_index + 1 if run_manager != null else 1
@@ -83,11 +85,23 @@ func _choose_room(random: RandomNumberGenerator, floor_number: int) -> PackedSce
 	for data in room_pool:
 		if data != null and data.is_available_for_floor(floor_number):
 			candidates.append(data)
-			weights.append(data.weight)
 	if candidates.is_empty():
 		return DEFAULT_ROOM
+	# Keep authored rooms, but avoid repeating a scene within the floor while
+	# unused eligible templates remain. Small custom pools still have a fallback.
+	var unused: Array[RoomTemplateData] = []
+	for data in candidates:
+		if not _chosen_scene_paths.has(data.scene.resource_path):
+			unused.append(data)
+	if not unused.is_empty():
+		candidates = unused
+	weights.clear()
+	for data in candidates:
+		weights.append(data.weight)
 	var index := choose_weighted_index(weights, random.randf())
-	return candidates[index].scene
+	var selected := candidates[index].scene
+	_chosen_scene_paths[selected.resource_path] = true
+	return selected
 
 
 func _on_room_cleared(_room: Node) -> void:
@@ -141,7 +155,9 @@ func _physics_process(_delta: float) -> void:
 		return
 	var next: CombatRoom = generated_rooms[active_area_index + 1]
 	if next.contains_world_point(player.global_position):
+		passages[active_area_index].seal_return()
 		active_area_index += 1
+		get_node("/root/CombatEvents").publish_notice(&"return_path_closed", "后方通道已封闭", Color("e6bc73"))
 		next.activate()
 		_refresh_objectives()
 

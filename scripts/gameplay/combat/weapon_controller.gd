@@ -4,7 +4,7 @@ extends Node2D
 signal weapon_changed(index: int, data: WeaponComponentData)
 signal attack_performed(data: WeaponComponentData)
 
-const PROJECTILE_SCENE := preload("res://scenes/combat/projectile.tscn")
+const PROJECTILE_SCENE_PATH := "res://scenes/combat/projectile.tscn"
 const BATON := preload("res://resources/weapons/baton.tres")
 const DEBUG_WEAPONS := [
 	BATON,
@@ -177,12 +177,14 @@ func _perform_melee_tick(data: WeaponComponentData, origin: Vector2, direction: 
 
 
 func _perform_projectiles(data: WeaponComponentData, origin: Vector2, direction: Vector2, source_node: Node) -> void:
+	# Resolve after actor/room scripts finish loading to avoid a cyclic scene preload.
+	var projectile_scene := load(PROJECTILE_SCENE_PATH) as PackedScene
 	var count := maxi(data.projectile_count, 1)
 	for index in count:
 		var offset := 0.0
 		if count > 1:
 			offset = lerpf(-data.spread_degrees * 0.5, data.spread_degrees * 0.5, float(index) / float(count - 1))
-		var projectile: CombatProjectile = PROJECTILE_SCENE.instantiate()
+		var projectile: CombatProjectile = projectile_scene.instantiate()
 		CombatProjectile.room_for_actor(source_node).add_child(projectile)
 		projectile.global_position = origin
 		projectile.setup(source_node, faction, direction.rotated(deg_to_rad(offset)), data.damage, data.projectile_speed)

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="CombatLayoutData" load_steps=4 format=3]
+[ext_resource type="Script" path="res://scripts/gameplay/rooms/combat_layout_data.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/enemies/melee_pressure.tres" id="melee"]
+[ext_resource type="Resource" path="res://resources/enemies/ranged_sightline.tres" id="ranged"]
+[resource]
+script = ExtResource("1")
+id = &"interlinked_apartment"
+display_name = "错位公寓"
+covers = Array[Rect2]([Rect2(45.724, 61.635, 47.289, 25.670), Rect2(65.991, 239.896, 38.507, 44.209), Rect2(194.347, 47.374, 62.151, 21.391), Rect2(501.724, 140.070, 58.773, 24.243), Rect2(184.213, 204.243, 24.996, 40.643), Rect2(467.947, 254.157, 27.022, 51.339), Rect2(154.867, 16.000, 6.000, 21.304), Rect2(154.867, 101.304, 6.000, 43.043), Rect2(154.867, 144.348, 6.000, 92.957), Rect2(154.867, 301.304, 6.000, 42.696), Rect2(377.800, 16.000, 6.000, 43.043), Rect2(377.800, 123.043, 6.000, 21.304), Rect2(157.867, 141.348, 24.040, 6.000), Rect2(245.907, 141.348, 33.560, 6.000), Rect2(279.467, 141.348, 18.667, 6.000), Rect2(362.133, 141.348, 18.667, 6.000), Rect2(377.800, 144.348, 6.000, 5.000), Rect2(377.800, 210.652, 6.000, 5.000), Rect2(380.800, 212.652, 140.360, 6.000), Rect2(585.160, 212.652, 38.840, 6.000), Rect2(276.467, 144.348, 6.000, 5.000), Rect2(276.467, 210.652, 6.000, 5.000), Rect2(276.467, 215.652, 6.000, 43.043), Rect2(276.467, 322.696, 6.000, 21.304), Rect2(279.467, 212.652, 22.767, 6.000), Rect2(366.233, 212.652, 14.567, 6.000)])
+zones = Array[Rect2]([Rect2(16.000, 16.000, 141.867, 328.000), Rect2(157.867, 16.000, 222.933, 128.348), Rect2(380.800, 16.000, 243.200, 199.652), Rect2(157.867, 144.348, 121.600, 199.652), Rect2(279.467, 144.348, 101.333, 71.304), Rect2(279.467, 215.652, 344.533, 128.348)])
+doors = Array[Vector4]([Vector4(157.867, 69.304, 0.000, 64.000), Vector4(157.867, 269.304, 0.000, 64.000), Vector4(380.800, 91.043, 0.000, 64.000), Vector4(213.907, 144.348, 1.571, 64.000), Vector4(330.133, 144.348, 1.571, 64.000), Vector4(380.800, 180.000, 0.000, 61.304), Vector4(553.160, 215.652, 1.571, 64.000), Vector4(279.467, 180.000, 0.000, 61.304), Vector4(279.467, 290.696, 0.000, 64.000), Vector4(334.233, 215.652, 1.571, 64.000)])
+windows = Array[Rect2]([])
+enemy_positions = Array[Vector2]([Vector2(309.867, 90.870), Vector2(438.222, 158.609), Vector2(566.578, 94.435), Vector2(220.693, 294.087), Vector2(394.311, 283.391), Vector2(559.822, 286.957)])
+enemy_profiles = Array[Resource]([ExtResource("melee"), ExtResource("melee"), ExtResource("ranged"), ExtResource("melee"), ExtResource("melee"), ExtResource("ranged")])
+power_position = Vector2(62, 315)
+bomb_position = Vector2(110, 110)
+floor_color = Color(0.09, 0.13, 0.17, 1)
+cover_color = Color(0.34, 0.42, 0.48, 1)

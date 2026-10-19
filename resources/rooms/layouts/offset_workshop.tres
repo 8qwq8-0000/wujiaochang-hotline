@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="CombatLayoutData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/rooms/combat_layout_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"offset_workshop"
+display_name = "错位维修间"
+covers = Array[Rect2]([Rect2(208, 16, 20, 88), Rect2(208, 168, 20, 176), Rect2(414, 16, 20, 192), Rect2(414, 272, 20, 72), Rect2(298, 94, 50, 28)])
+enemy_positions = Array[Vector2]([Vector2(292, 156), Vector2(520, 96), Vector2(506, 300)])
+power_position = Vector2(144, 284)
+bomb_position = Vector2(368, 282)
+floor_color = Color(0.1451, 0.12941, 0.12157, 1)
+cover_color = Color(0.44314, 0.35294, 0.30196, 1)

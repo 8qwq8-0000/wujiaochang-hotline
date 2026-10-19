@@ -2,6 +2,7 @@ class_name CombatPassage
 extends Node2D
 
 var unlocked := false
+var return_sealed := false
 var length := 72.0
 var _barrier: CollisionShape2D
 var _label: Label
@@ -18,8 +19,8 @@ func _ready() -> void:
 	_label.text = "清场后通行"
 	add_child(_label)
 	_link = NavigationLink2D.new()
-	_link.start_position = Vector2(-12, 0)
-	_link.end_position = Vector2(length + 12, 0)
+	_link.start_position = Vector2(-24, 0)
+	_link.end_position = Vector2(length + 24, 0)
 	_link.enabled = false
 	add_child(_link)
 	queue_redraw()
@@ -40,7 +41,7 @@ func _add_wall(point: Vector2, size: Vector2) -> CollisionShape2D:
 
 
 func unlock() -> void:
-	if unlocked:
+	if unlocked or return_sealed:
 		return
 	unlocked = true
 	_barrier.set_deferred("disabled", true)
@@ -49,11 +50,21 @@ func unlock() -> void:
 	queue_redraw()
 
 
+func seal_return() -> void:
+	if return_sealed or not unlocked:
+		return
+	return_sealed = true
+	_barrier.set_deferred("disabled", false)
+	_link.enabled = false
+	_label.text = "后方通道已封闭"
+	queue_redraw()
+
+
 func _draw() -> void:
 	draw_rect(Rect2(0, -48, length, 96), Color("172934"))
 	for y in [-48.0, 40.0]:
 		draw_rect(Rect2(0, y, length, 8), Color("45596c"))
-	if not unlocked:
+	if not unlocked or return_sealed:
 		draw_line(Vector2(length / 2, -40), Vector2(length / 2, 40), Color("e37662"), 5)
 	else:
 		draw_line(Vector2(10, 0), Vector2(length - 10, 0), Color("83e6ad"), 3)

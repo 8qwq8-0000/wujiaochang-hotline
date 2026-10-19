@@ -1,5 +1,6 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 [ext_resource type="Script" path="res://scripts/gameplay/environment/power_box.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/presentation/refined_environment_art.gd" id="refined_art"]
 [sub_resource type="RectangleShape2D" id="Shape"]
 size = Vector2(28,40)
 [node name="PowerBox" type="Area2D"]
@@ -9,3 +10,8 @@ monitoring = false
 script = ExtResource("1")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("Shape")
+
+[node name="RefinedArt" type="Node2D" parent="."]
+script = ExtResource("refined_art")
+kind = "power"
+draw_size = Vector2(30, 42)

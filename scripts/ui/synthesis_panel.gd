@@ -245,6 +245,8 @@ func _refresh_preview() -> void:
 	var heading := "[color=#%s][b]%s · %s[/b][/color]" % [ComponentRolls.QUALITY_COLORS[tier].to_html(false), ComponentRolls.QUALITIES[tier], name]
 	if a.get_property("slot") == "defense":
 		heading += "\n护甲恢复 %.0f 秒 → %.0f 秒" % [ComponentRolls.ARMOR_RECOVERY_SECONDS[ComponentRolls.quality(a) - 1], ComponentRolls.ARMOR_RECOVERY_SECONDS[tier - 1]]
+	if id == "wheel":
+		heading += "\n冲撞伤害 %d → %d · 冷却 %.1f → %.1f 秒" % [ComponentRolls.WHEEL_RAM_DAMAGE[ComponentRolls.quality(a) - 1], ComponentRolls.WHEEL_RAM_DAMAGE[tier - 1], ComponentRolls.WHEEL_RAM_COOLDOWNS[ComponentRolls.quality(a) - 1], ComponentRolls.WHEEL_RAM_COOLDOWNS[tier - 1]]
 	if b == null:
 		_preview.text = heading + "\n\n选择另一件同槽位、同品质组件"
 		return

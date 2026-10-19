@@ -136,7 +136,7 @@ func run_checks() -> void:
 	check(store.get_profile().loadout.inventory.backpack.get("items", []).is_empty() and store.get_profile().loadout.inventory.secondary.is_empty(), "only protected and bound items retain safe recovery copies")
 	var battle := await wait_scene(main)
 	check(not battle.is_in_group("warehouse") and get_nodes_in_group("enemies").size() > 0, "departure loads real combat floor")
-	check(battle.scene_file_path == "res://scenes/levels/week1_combat_room.tscn", "departure enables the Week 1 combat room")
+	check(battle.scene_file_path == "res://scenes/levels/floors/combat_prototype.tscn", "departure enables the procedural combat floor")
 	player = battle.get_node("Player")
 	check(player.inventory.backpack.get_item_count() == 5, "departure preserves chosen backpack")
 	check(not player.circuit_breaker.circuit_breaker_used and player.talent_core.takeover_charges == player.talent_core.takeover_charge_max, "new run refreshes per-run insurance and takeover resources")
