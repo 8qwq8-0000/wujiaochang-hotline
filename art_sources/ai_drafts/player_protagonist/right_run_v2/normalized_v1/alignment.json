@@ -1,0 +1,150 @@
+{
+  "source_frames": 6,
+  "source_palette_rgb_colors": 11563,
+  "records": [
+    {
+      "frame": 1,
+      "source_bbox": [
+        10,
+        80,
+        118,
+        244
+      ],
+      "candidate_bbox": [
+        4,
+        34,
+        119,
+        239
+      ],
+      "scale": 0.8,
+      "output_position": [
+        18,
+        80
+      ],
+      "output_size": [
+        92,
+        164
+      ]
+    },
+    {
+      "frame": 2,
+      "source_bbox": [
+        22,
+        80,
+        107,
+        244
+      ],
+      "candidate_bbox": [
+        3,
+        64,
+        120,
+        239
+      ],
+      "scale": 0.9371428571428572,
+      "output_position": [
+        10,
+        80
+      ],
+      "output_size": [
+        110,
+        164
+      ]
+    },
+    {
+      "frame": 3,
+      "source_bbox": [
+        17,
+        80,
+        112,
+        244
+      ],
+      "candidate_bbox": [
+        5,
+        30,
+        122,
+        238
+      ],
+      "scale": 0.7884615384615384,
+      "output_position": [
+        18,
+        80
+      ],
+      "output_size": [
+        92,
+        164
+      ]
+    },
+    {
+      "frame": 4,
+      "source_bbox": [
+        13,
+        81,
+        116,
+        244
+      ],
+      "candidate_bbox": [
+        14,
+        12,
+        128,
+        234
+      ],
+      "scale": 0.7342342342342343,
+      "output_position": [
+        22,
+        81
+      ],
+      "output_size": [
+        84,
+        163
+      ]
+    },
+    {
+      "frame": 5,
+      "source_bbox": [
+        22,
+        80,
+        106,
+        244
+      ],
+      "candidate_bbox": [
+        0,
+        33,
+        110,
+        247
+      ],
+      "scale": 0.7663551401869159,
+      "output_position": [
+        22,
+        80
+      ],
+      "output_size": [
+        84,
+        164
+      ]
+    },
+    {
+      "frame": 6,
+      "source_bbox": [
+        18,
+        80,
+        110,
+        244
+      ],
+      "candidate_bbox": [
+        3,
+        52,
+        111,
+        239
+      ],
+      "scale": 0.8770053475935828,
+      "output_position": [
+        16,
+        80
+      ],
+      "output_size": [
+        95,
+        164
+      ]
+    }
+  ]
+}

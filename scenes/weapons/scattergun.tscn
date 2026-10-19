@@ -1,31 +1,44 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/presentation/weapon_view.gd" id="1_view"]
-[ext_resource type="Texture2D" path="res://assets/art/weapons/placeholder/placeholder_weapon_spear.png" id="2_texture"]
+[ext_resource type="Texture2D" path="res://assets/art/weapons/placeholder/placeholder_scattergun_unpainted.png" id="2_texture"]
+[ext_resource type="Script" path="res://scripts/presentation/procedural_coating_2d.gd" id="3_coating"]
+
+[ext_resource type="Texture2D" path="res://assets/art/weapons/placeholder/scattergun_flash.png" id="4_flash"]
 
 [node name="ScattergunView" type="Node2D"]
 texture_filter = 1
 script = ExtResource("1_view")
+muzzle_socket_path = NodePath("BodyRoot/MuzzleSocket")
+muzzle_flash_path = NodePath("BodyRoot/MuzzleSocket/MuzzleFlash")
 recoil_distance = 6.0
 feedback_seconds = 0.11
 
 [node name="BodyRoot" type="Node2D" parent="."]
 
+[node name="RecoilBrace" type="Polygon2D" parent="BodyRoot"]
+polygon = PackedVector2Array(-12, -4, 4, -3, 6, -1, -9, -1, -10, 0, 6, 1, 4, 3, -12, 4, -14, 1, -14, -1)
+color = Color(0.12, 0.15, 0.18, 1)
+
 [node name="BodySprite" type="Sprite2D" parent="BodyRoot"]
+z_index = 1
 texture_filter = 1
-modulate = Color(1, 0.47, 0.24, 1)
-position = Vector2(13, 0)
-scale = Vector2(0.5, 0.5)
+position = Vector2(24, 0)
 texture = ExtResource("2_texture")
-flip_h = true
 
-[node name="MuzzleSocket" type="Marker2D" parent="."]
-position = Vector2(27, 0)
+[node name="Coating" type="Node2D" parent="BodyRoot"]
+z_index = 2
+script = ExtResource("3_coating")
+seed_key = &"scattergun"
 
-[node name="MuzzleFlash" type="Polygon2D" parent="MuzzleSocket"]
+[node name="MuzzleSocket" type="Marker2D" parent="BodyRoot"]
+position = Vector2(47, 0)
+
+[node name="MuzzleFlash" type="Sprite2D" parent="BodyRoot/MuzzleSocket"]
 visible = false
-polygon = PackedVector2Array(0, -3, 9, 0, 0, 3, 3, 0)
-color = Color(1, 0.55, 0.18, 1)
+position = Vector2(0, -5)
+texture = ExtResource("4_flash")
+centered = false
 
 [node name="EffectSocket" type="Marker2D" parent="."]
 position = Vector2(2, 0)

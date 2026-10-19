@@ -1,0 +1,31 @@
+{
+  "frames": 6,
+  "files": [
+    "frame-001.png",
+    "frame-002.png",
+    "frame-003.png",
+    "frame-004.png",
+    "frame-005.png",
+    "frame-006.png"
+  ],
+  "durationsMs": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+  ],
+  "sources": [
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v2\\raw\\right_run_codex_raw_v3_true_left_hand_shield.png#1",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v2\\raw\\right_run_codex_raw_v3_true_left_hand_shield.png#2",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v2\\raw\\right_run_codex_raw_v3_true_left_hand_shield.png#3",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v2\\raw\\right_run_codex_raw_v3_true_left_hand_shield.png#4",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v2\\raw\\right_run_codex_raw_v3_true_left_hand_shield.png#5",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v2\\raw\\right_run_codex_raw_v3_true_left_hand_shield.png#6"
+  ],
+  "sourceGrid": {
+    "columns": 6,
+    "rows": 1
+  }
+}

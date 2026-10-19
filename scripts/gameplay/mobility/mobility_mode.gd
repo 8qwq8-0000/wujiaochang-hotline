@@ -3,7 +3,7 @@ extends Resource
 
 @export var id: StringName = &"walk"
 @export var display_name: String = "步行（无套件）"
-@export_range(1.0, 1000.0, 1.0) var max_speed: float = 150.0
+@export_range(1.0, 1000.0, 1.0) var max_speed: float = 125.0
 @export_range(1.0, 5000.0, 1.0) var acceleration: float = 1200.0
 @export_range(1.0, 5000.0, 1.0) var braking: float = 1600.0
 @export_range(0.0, 10.0, 0.1) var ability_cooldown: float = 0.0

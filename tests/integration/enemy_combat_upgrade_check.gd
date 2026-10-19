@@ -45,6 +45,12 @@ func run() -> void:
 	check(vision.can_see_target(), "camera-width boundary remains visible at 320 pixels")
 	vision.position.x = 421
 	check(not vision.can_see_target(), "camera-width rectangle rejects targets beyond 320 pixels")
+	settings.set_difficulty(GameSettingsController.Difficulty.LOW, false)
+	vision.position.x = 340
+	check(vision.can_see_target(), "low pressure keeps the 240-pixel visual boundary visible")
+	vision.position.x = 341
+	check(not vision.can_see_target(), "low pressure rejects targets beyond its 240-pixel visual boundary")
+	settings.set_difficulty(GameSettingsController.Difficulty.STANDARD, false)
 
 	var observer := enemy_at(room, "res://resources/enemies/melee_pressure.tres", Vector2(100, 300))
 	var near_ally := enemy_at(room, "res://resources/enemies/melee_pressure.tres", Vector2(400, 300), Vector2.RIGHT)
@@ -111,7 +117,19 @@ func run() -> void:
 		explosion_effects[0] += 1
 	events.noise_emitted.connect(count_explosion)
 	events.effect_requested.connect(count_explosion_effect)
-	heavy.health.apply_damage(heavy.health.max_health, DamagePacket.new())
+	var shield_packet := DamagePacket.new()
+	shield_packet.base_damage = 1
+	shield_packet.source = player
+	shield_packet.source_faction = CombatFaction.Id.PLAYER
+	shield_packet.source_position = player.global_position
+	shield_packet.knockback = Vector2(200, 0)
+	shield_packet.status_tags = PackedStringArray(["oiled"])
+	var shield_result := heavy.hurt_box.receive_hit(shield_packet)
+	check(shield_result.blocked and heavy.shield_charges == 0 and heavy.health.current_health == 1, "heavy shield fully cancels the first positive hit")
+	check(heavy.velocity.is_zero_approx() and not heavy.get_node("StatusComponent").has_status(&"oiled"), "shield also cancels knockback and status")
+	check(explosion_effects[0] == 1, "shield break requests its own restrained flash")
+	explosion_effects[0] = 0
+	heavy.hurt_box.receive_hit(shield_packet)
 	check(heavy.state == EnemyController.State.SELF_DESTRUCT and defeated[0] == 0, "heavy defeat waits for the self-destruct warning")
 	heavy._physics_process(0.44)
 	check(defeated[0] == 0, "self-destruct does not resolve before 0.45 seconds")

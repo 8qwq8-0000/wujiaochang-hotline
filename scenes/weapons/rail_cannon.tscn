@@ -1,0 +1,30 @@
+[gd_scene load_steps=5 format=3]
+[ext_resource type="Script" path="res://scripts/presentation/weapon_view.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/art/weapons/placeholder/arm_lock_rail_cannon.png" id="2"]
+[ext_resource type="Texture2D" path="res://assets/art/weapons/placeholder/rail_cannon_beam.png" id="3"]
+[ext_resource type="Script" path="res://scripts/presentation/procedural_coating_2d.gd" id="4"]
+[node name="RailCannonView" type="Node2D"]
+texture_filter = 1
+script = ExtResource("1")
+muzzle_socket_path = NodePath("BodyRoot/MuzzleSocket")
+muzzle_flash_path = NodePath("BodyRoot/MuzzleSocket/MuzzleFlash")
+recoil_distance = 2.0
+feedback_seconds = 0.09
+muzzle_flash_hold_seconds = 0.24
+muzzle_flash_fade_seconds = 0.08
+[node name="BodyRoot" type="Node2D" parent="."]
+[node name="BodySprite" type="Sprite2D" parent="BodyRoot"]
+position = Vector2(24, 0)
+texture = ExtResource("2")
+[node name="Coating" type="Node2D" parent="BodyRoot"]
+z_index = 2
+script = ExtResource("4")
+seed_key = &"rail_cannon"
+[node name="MuzzleSocket" type="Marker2D" parent="BodyRoot"]
+position = Vector2(47, 0)
+[node name="MuzzleFlash" type="Sprite2D" parent="BodyRoot/MuzzleSocket"]
+visible = false
+position = Vector2(0, -4)
+texture = ExtResource("3")
+centered = false
+[node name="EffectSocket" type="Marker2D" parent="."]

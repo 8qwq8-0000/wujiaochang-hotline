@@ -13,6 +13,7 @@ var player_state: Dictionary = {}
 var extraction_result: Dictionary = {}
 var run_finished := false
 var persistent_run := false
+var operator_hack_announced := false
 
 
 func begin_run(seed_value: int = 0) -> void:
@@ -23,6 +24,7 @@ func begin_run(seed_value: int = 0) -> void:
 	extraction_result.clear()
 	run_finished = false
 	persistent_run = false
+	operator_hack_announced = false
 	run_started.emit(run_seed)
 
 

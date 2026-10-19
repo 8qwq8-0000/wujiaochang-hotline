@@ -1,0 +1,29 @@
+{
+  "ok": true,
+  "errors": [],
+  "warnings": [],
+  "frames": [
+    {
+      "frame": 1,
+      "size": [
+        40,
+        16
+      ],
+      "bbox": [
+        1,
+        4,
+        39,
+        12
+      ],
+      "visibleArea": 304,
+      "footY": 11,
+      "colors": 14,
+      "opaque": false
+    }
+  ],
+  "input": "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\weapons\\weapon_base_unpainted_v3\\sprites\\service_pistol.png",
+  "sources": [
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\weapons\\weapon_base_unpainted_v3\\sprites\\service_pistol.png"
+  ],
+  "count": 1
+}

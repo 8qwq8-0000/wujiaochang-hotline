@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/presentation/weapon_view.gd" id="1_view"]
 [ext_resource type="Texture2D" path="res://assets/art/weapons/placeholder/placeholder_weapon_spear.png" id="2_texture"]
+[ext_resource type="Script" path="res://scripts/presentation/procedural_coating_2d.gd" id="3_coating"]
 
 [node name="WeaponViewTemplate" type="Node2D"]
 texture_filter = 1
@@ -15,6 +16,10 @@ position = Vector2(13, 0)
 scale = Vector2(0.5, 0.5)
 texture = ExtResource("2_texture")
 flip_h = true
+
+[node name="Coating" type="Node2D" parent="BodyRoot"]
+z_index = 2
+script = ExtResource("3_coating")
 
 [node name="MuzzleSocket" type="Marker2D" parent="."]
 position = Vector2(27, 0)

@@ -30,6 +30,8 @@ func approach(player: PlayerController,door: AutomaticDoor,direction: Vector2) -
 			break
 	await process_frame
 func run_checks() -> void:
+	root.get_node("WarehouseStore").save_path = "user://bc_automatic_door_check.json"
+	DirAccess.remove_absolute("user://bc_automatic_door_check.json")
 	room = Node2D.new()
 	room.add_to_group("combat_rooms")
 	root.add_child(room)
@@ -40,6 +42,11 @@ func run_checks() -> void:
 	player.set_physics_process(false)
 	var walking := door_at(Vector2(200,350))
 	var walk_target := enemy_at(Vector2(240,350))
+	var breach_radii: Array[float] = []
+	root.get_node("CombatEvents").noise_emitted.connect(func(source: Node, origin: Vector2, radius: float) -> void:
+		if source == player and origin.distance_to(walking.global_position) < 2.0:
+			breach_radii.append(radius)
+	)
 	await physics_frame
 	await physics_frame
 	player.weapons.set_equipped_weapon(load("res://resources/weapons/service_pistol.tres"))
@@ -48,6 +55,8 @@ func run_checks() -> void:
 	check(not walking.opened and walk_target.health.current_health == 8,"closed door blocks projectile without damage/destruction")
 	await approach(player,walking,Vector2.RIGHT)
 	check(walking.opened and not walking.slammed and walking.knocked_count == 0,"real walking contact opens door without knockdown")
+	check(breach_radii == [96.0], "ordinary breach emits only the restrained 96-pixel investigation noise")
+	check(walking.find_children("DoorFragment*", "Sprite2D", true, false).size() >= 4, "breach uses cut pieces of the closed door texture")
 	await physics_frame
 	check(walking.get_node("Body/Shape").disabled,"open door removes blocking collider")
 	player.weapons.try_attack(Vector2(205,350),Vector2.RIGHT,player)
@@ -116,4 +125,5 @@ func run_checks() -> void:
 	other.queue_free()
 	await process_frame
 	print("Automatic door checks: ",checks,"; failures: ",failures)
+	DirAccess.remove_absolute("user://bc_automatic_door_check.json")
 	quit(0 if failures == 0 else 1)

@@ -1,0 +1,29 @@
+{
+  "ok": true,
+  "errors": [],
+  "warnings": [],
+  "frames": [
+    {
+      "frame": 1,
+      "size": [
+        48,
+        20
+      ],
+      "bbox": [
+        1,
+        4,
+        47,
+        15
+      ],
+      "visibleArea": 506,
+      "footY": 14,
+      "colors": 15,
+      "opaque": false
+    }
+  ],
+  "input": "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\weapons\\weapon_base_unpainted_v3\\sprites\\scattergun.png",
+  "sources": [
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\weapons\\weapon_base_unpainted_v3\\sprites\\scattergun.png"
+  ],
+  "count": 1
+}

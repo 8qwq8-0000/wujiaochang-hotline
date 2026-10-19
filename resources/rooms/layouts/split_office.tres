@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="CombatLayoutData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/rooms/combat_layout_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"split_office"
+display_name = "双翼办公室"
+covers = Array[Rect2]([Rect2(296, 16, 16, 98), Rect2(296, 246, 16, 98), Rect2(168, 124, 72, 16), Rect2(304, 124, 84, 16), Rect2(452, 124, 92, 16), Rect2(168, 220, 72, 16), Rect2(304, 220, 84, 16), Rect2(452, 220, 92, 16)])
+enemy_positions = Array[Vector2]([Vector2(250, 72), Vector2(500, 76), Vector2(424, 288)])
+power_position = Vector2(156, 286)
+bomb_position = Vector2(484, 282)
+floor_color = Color(0.10588, 0.14118, 0.16863, 1)
+cover_color = Color(0.3098, 0.39216, 0.43529, 1)

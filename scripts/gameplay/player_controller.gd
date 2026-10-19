@@ -89,7 +89,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("guard") and mobility.can_guard():
 		guard.begin_guard(aim_direction)
 	if event.is_action_pressed("mobility_ability"):
-		mobility.activate_ability(self, aim_direction)
+		mobility.activate_ability(self, aim_direction, Input.get_vector("move_left", "move_right", "move_up", "move_down"))
 	if InputMap.has_action("interact") and event.is_action_pressed("interact"):
 		interactor.request_interaction(self)
 	if event.is_action_pressed("weapon_switch") or event.is_action_pressed("weapon_next"):
@@ -104,6 +104,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _physics_process(delta: float) -> void:
 	_update_aim_direction()
+	var weapon_aim_direction := _get_weapon_aim_direction()
 	guard.update_direction(aim_direction)
 	if _dead:
 		velocity = Vector2.ZERO
@@ -116,7 +117,7 @@ func _physics_process(delta: float) -> void:
 	_external_velocity = _external_velocity.move_toward(Vector2.ZERO, config.knockback_recovery * delta)
 	weapons.update_attack_pose(global_position, aim_direction, self)
 	# The muzzle must use this frame's aim before an attack is spawned.
-	visuals.update_weapon_aim(aim_direction, weapons.get_melee_swing_angle_offset())
+	visuals.update_visual(aim_direction, velocity, guard.state, guard.guard_arc_degrees, weapons.get_melee_swing_angle_offset(), get_global_mouse_position())
 	if _input_enabled and guard.can_attack() and mobility.can_attack() and _should_attack_this_frame():
 		var attack := _get_attack_transform()
 		weapons.try_attack(attack.origin, attack.x.normalized(), self)
@@ -128,7 +129,8 @@ func _physics_process(delta: float) -> void:
 		velocity,
 		guard.state,
 		guard.guard_arc_degrees,
-		weapons.get_melee_swing_angle_offset()
+		weapons.get_melee_swing_angle_offset(),
+		get_global_mouse_position()
 	)
 	_tick_afterimages(delta)
 	_update_movement_audio()
@@ -199,7 +201,7 @@ func get_health_state() -> Dictionary:
 
 
 func get_heat_state() -> Dictionary:
-	return {"current": heat.current_heat, "maximum": heat.max_heat, "overheated": heat.is_overheated}
+	return {"current": heat.current_heat, "maximum": heat.effective_max(), "overheated": heat.is_overheated}
 
 
 func get_weapon_display_name() -> String:
@@ -296,6 +298,14 @@ func _update_aim_direction() -> void:
 		aim_direction = mouse_delta.normalized()
 
 
+func _get_weapon_aim_direction() -> Vector2:
+	var data := weapons.get_current_weapon()
+	if data == null or data.attack_kind == WeaponComponentData.AttackKind.MELEE:
+		return aim_direction
+	var direction := get_global_mouse_position() - visuals.get_weapon_mount_global_position()
+	return direction.normalized() if direction.length_squared() > 1.0 else aim_direction
+
+
 func _update_camera(delta: float) -> void:
 	var target := aim_direction * config.camera_look_ahead
 	var weight := clampf(config.camera_look_ahead_response * delta, 0.0, 1.0)
@@ -331,11 +341,8 @@ func _get_attack_transform() -> Transform2D:
 		visuals.get_weapon_mount_global_position(),
 		muzzle
 	)
-	var target := get_global_mouse_position()
-	var direction := target - muzzle
-	if direction.length_squared() <= 16.0:
-		direction = aim_direction
-	return Transform2D(direction.normalized().angle(), muzzle)
+	var barrel_direction := visuals.weapon_pivot.global_transform.x.normalized()
+	return Transform2D(barrel_direction.angle(), muzzle)
 
 
 func _should_attack_this_frame() -> bool:
@@ -494,7 +501,7 @@ func _on_died(packet: DamagePacket) -> void:
 
 func _emit_public_state() -> void:
 	health_changed.emit(health.current_health, health.max_health, 0)
-	heat_changed.emit(heat.current_heat, heat.max_heat)
+	heat_changed.emit(heat.current_heat, heat.effective_max())
 	weapon_changed.emit(weapons.get_current_weapon())
 	mobility_changed.emit(mobility.get_current_mode())
 	guard_state_changed.emit(guard.state)

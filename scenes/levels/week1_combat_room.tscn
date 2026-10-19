@@ -1,0 +1,223 @@
+[gd_scene format=3 uid="uid://cqyh8dw1e1njs"]
+
+[ext_resource type="Script" path="res://scripts/levels/week1_combat_room.gd" id="0_script"]
+[ext_resource type="PackedScene" path="res://scenes/actors/player/player.tscn" id="10_player"]
+[ext_resource type="PackedScene" path="res://scenes/actors/enemies/enemy.tscn" id="11_enemy"]
+[ext_resource type="PackedScene" path="res://scenes/items/test_component.tscn" id="12_component"]
+[ext_resource type="Script" path="res://scripts/gameplay/rooms/exit_elevator.gd" id="13_exit"]
+
+[ext_resource type="Script" path="res://scripts/presentation/workshop_art.gd" id="art_floor"]
+[ext_resource type="Script" path="res://scripts/gameplay/rooms/combat_layout_data.gd" id="art_layout"]
+[ext_resource type="Script" path="res://scripts/presentation/refined_environment_art.gd" id="art_exit"]
+[ext_resource type="Texture2D" path="res://assets/art/environment/workshop/wall.png" id="art_wall"]
+[ext_resource type="Texture2D" path="res://assets/art/environment/workshop/crate.png" id="art_crate"]
+[ext_resource type="Texture2D" path="res://assets/art/environment/workshop/console.png" id="art_console"]
+[ext_resource type="Texture2D" path="res://assets/art/environment/refined/bulkhead_closed.png" id="art_door"]
+
+[sub_resource type="Resource" id="FloorLayout"]
+script = ExtResource("art_layout")
+room_size = Vector2(640, 384)
+
+[sub_resource type="AtlasTexture" id="WallArt"]
+atlas = ExtResource("art_wall")
+region = Rect2(35, 253, 2102, 220)
+
+[sub_resource type="AtlasTexture" id="CrateArt"]
+atlas = ExtResource("art_crate")
+region = Rect2(326, 241, 660, 717)
+
+[sub_resource type="AtlasTexture" id="ConsoleArt"]
+atlas = ExtResource("art_console")
+region = Rect2(244, 209, 1285, 486)
+
+[sub_resource type="AtlasTexture" id="DoorArt"]
+atlas = ExtResource("art_door")
+region = Rect2(228, 324, 667, 697)
+
+[sub_resource type="RectangleShape2D" id="rect_wall_top"]
+size = Vector2(640, 32)
+
+[sub_resource type="RectangleShape2D" id="rect_wall_bottom"]
+size = Vector2(640, 32)
+
+[sub_resource type="RectangleShape2D" id="rect_wall_left"]
+size = Vector2(32, 384)
+
+[sub_resource type="RectangleShape2D" id="rect_wall_right"]
+size = Vector2(32, 384)
+
+[sub_resource type="RectangleShape2D" id="rect_obstacle"]
+size = Vector2(32, 32)
+
+[sub_resource type="RectangleShape2D" id="rect_obstacle_b"]
+size = Vector2(32, 32)
+
+[sub_resource type="RectangleShape2D" id="rect_door"]
+size = Vector2(45, 55)
+
+[node name="Week1CombatRoom" type="Node2D" groups=["combat_rooms"]]
+script = ExtResource("0_script")
+
+[node name="Floor" type="Node2D" parent="."]
+script = ExtResource("art_floor")
+layout = SubResource("FloorLayout")
+floor_pass = true
+
+[node name="Walls" type="Node2D" parent="."]
+
+[node name="WallTop" type="StaticBody2D" parent="Walls"]
+position = Vector2(320, 16)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallTop"]
+shape = SubResource("rect_wall_top")
+
+[node name="Sprite2D" type="Sprite2D" parent="Walls/WallTop"]
+texture = SubResource("WallArt")
+scale = Vector2(0.304472, 0.145455)
+
+[node name="WallBottom" type="StaticBody2D" parent="Walls"]
+position = Vector2(320, 368)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallBottom"]
+shape = SubResource("rect_wall_bottom")
+
+[node name="Sprite2D" type="Sprite2D" parent="Walls/WallBottom"]
+texture = SubResource("WallArt")
+scale = Vector2(0.304472, 0.145455)
+
+[node name="WallLeft" type="StaticBody2D" parent="Walls"]
+position = Vector2(16, 192)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallLeft"]
+shape = SubResource("rect_wall_left")
+
+[node name="Sprite2D" type="Sprite2D" parent="Walls/WallLeft"]
+texture = SubResource("WallArt")
+rotation = 1.5707963
+scale = Vector2(0.182683, 0.145455)
+
+[node name="WallRight" type="StaticBody2D" parent="Walls"]
+position = Vector2(624, 192)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/WallRight"]
+shape = SubResource("rect_wall_right")
+
+[node name="Sprite2D" type="Sprite2D" parent="Walls/WallRight"]
+texture = SubResource("WallArt")
+rotation = 1.5707963
+scale = Vector2(0.182683, 0.145455)
+
+[node name="Window" type="Polygon2D" parent="."]
+position = Vector2(256, 4)
+polygon = PackedVector2Array(0, 0, 64, 0, 64, 16, 0, 16)
+color = Color(0.18, 0.42, 0.49, 1)
+
+[node name="Frame" type="Line2D" parent="Window"]
+points = PackedVector2Array(0, 0, 64, 0, 64, 16, 0, 16, 0, 0)
+width = 2.0
+default_color = Color(0.07, 0.12, 0.16, 1)
+
+[node name="GlassLine" type="Line2D" parent="Window"]
+points = PackedVector2Array(2, 6, 62, 6)
+width = 1.0
+default_color = Color(0.77, 0.97, 1, 1)
+
+[node name="DoorRoom" type="Sprite2D" parent="."]
+position = Vector2(585.5, 128)
+centered = true
+texture = SubResource("DoorArt")
+scale = Vector2(0.067466, 0.078910)
+
+[node name="ElevatorDoor" type="Area2D" parent="."]
+position = Vector2(585.5, 272)
+collision_layer = 64
+collision_mask = 2
+script = ExtResource("13_exit")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ElevatorDoor"]
+shape = SubResource("rect_door")
+
+[node name="RefinedArt" type="Node2D" parent="ElevatorDoor"]
+script = ExtResource("art_exit")
+kind = "exit"
+draw_size = Vector2(45, 55)
+
+[node name="PlayerSpawn" type="Marker2D" parent="."]
+position = Vector2(320, 288)
+
+[node name="EnemySpawn1" type="Marker2D" parent="."]
+position = Vector2(96, 96)
+
+[node name="EnemySpawn3" type="Marker2D" parent="."]
+position = Vector2(320, 160)
+
+[node name="ComponentSpawn" type="Marker2D" parent="."]
+position = Vector2(544, 288)
+
+[node name="Obstacles" type="Node2D" parent="."]
+
+[node name="ObstacleA1" type="StaticBody2D" parent="Obstacles"]
+position = Vector2(192, 112)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Obstacles/ObstacleA1"]
+shape = SubResource("rect_obstacle")
+
+[node name="Sprite2D" type="Sprite2D" parent="Obstacles/ObstacleA1"]
+texture = SubResource("CrateArt")
+scale = Vector2(0.048485, 0.044630)
+
+[node name="ObstacleA2" type="StaticBody2D" parent="Obstacles"]
+position = Vector2(192, 144)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Obstacles/ObstacleA2"]
+shape = SubResource("rect_obstacle")
+
+[node name="Sprite2D" type="Sprite2D" parent="Obstacles/ObstacleA2"]
+texture = SubResource("CrateArt")
+scale = Vector2(0.048485, 0.044630)
+
+[node name="ObstacleB1" type="StaticBody2D" parent="Obstacles"]
+position = Vector2(288, 208)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Obstacles/ObstacleB1"]
+shape = SubResource("rect_obstacle_b")
+
+[node name="Sprite2D" type="Sprite2D" parent="Obstacles/ObstacleB1"]
+texture = SubResource("ConsoleArt")
+scale = Vector2(0.024903, 0.065844)
+
+[node name="ObstacleB2" type="StaticBody2D" parent="Obstacles"]
+position = Vector2(288, 240)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Obstacles/ObstacleB2"]
+shape = SubResource("rect_obstacle_b")
+
+[node name="Sprite2D" type="Sprite2D" parent="Obstacles/ObstacleB2"]
+texture = SubResource("ConsoleArt")
+scale = Vector2(0.024903, 0.065844)
+
+[node name="Instances" type="Node2D" parent="."]
+
+[node name="Player" parent="." instance=ExtResource("10_player")]
+position = Vector2(320, 288)
+
+[node name="Enemy1" parent="Instances" instance=ExtResource("11_enemy")]
+position = Vector2(96, 96)
+
+[node name="Enemy3" parent="Instances" instance=ExtResource("11_enemy")]
+position = Vector2(320, 160)
+
+[node name="TestComponent" parent="Instances" instance=ExtResource("12_component")]
+position = Vector2(544, 288)
+
+[node name="ClearPrompt" type="CanvasLayer" parent="."]
+visible = false
+
+[node name="Label" type="Label" parent="ClearPrompt"]
+offset_left = 160.0
+offset_top = 20.0
+offset_right = 480.0
+offset_bottom = 60.0
+text = "AREA CLEARED"
+horizontal_alignment = 1
+vertical_alignment = 1

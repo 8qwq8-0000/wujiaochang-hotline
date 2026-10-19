@@ -1,0 +1,87 @@
+{
+  "source": "wujiaochang-hotline\\art_sources\\ai_drafts\\weapons\\weapon_base_unpainted_v1.png",
+  "source_sha256": "46e77b633c1d016829c367d0bfc2cb4381597d96d2919e76731b9e6dd0dee726",
+  "mode": "manually-declared-row-crops",
+  "palette_colors_before_outline": 16,
+  "alpha_threshold": 96,
+  "weapons": [
+    {
+      "id": "arm_lock_baton",
+      "source_bbox": [
+        54,
+        73,
+        1478,
+        305
+      ],
+      "raw_size": [
+        1424,
+        232
+      ],
+      "canvas": [
+        48,
+        16
+      ],
+      "vertical_readability_scale": 1.55,
+      "visible_bbox": [
+        1,
+        2,
+        47,
+        13
+      ],
+      "visible_colors": 15,
+      "transparent": true
+    },
+    {
+      "id": "service_pistol",
+      "source_bbox": [
+        54,
+        351,
+        1122,
+        587
+      ],
+      "raw_size": [
+        1068,
+        236
+      ],
+      "canvas": [
+        40,
+        16
+      ],
+      "vertical_readability_scale": 1.0,
+      "visible_bbox": [
+        1,
+        4,
+        39,
+        12
+      ],
+      "visible_colors": 14,
+      "transparent": true
+    },
+    {
+      "id": "scattergun",
+      "source_bbox": [
+        54,
+        627,
+        1501,
+        960
+      ],
+      "raw_size": [
+        1447,
+        333
+      ],
+      "canvas": [
+        48,
+        20
+      ],
+      "vertical_readability_scale": 1.0,
+      "visible_bbox": [
+        1,
+        4,
+        47,
+        15
+      ],
+      "visible_colors": 15,
+      "transparent": true
+    }
+  ]
+}

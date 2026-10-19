@@ -15,9 +15,11 @@ signal damage_resolved(result: DamageResult)
 signal perfect_guarded(result: DamageResult)
 signal entity_defeated(entity: Node)
 signal room_cleared(room: Node)
+signal combat_area_progress(index: int, total: int, remaining: int, cleared: bool)
 signal floor_cleared
 signal combat_message_requested(text: String, color: Color)
 signal combat_notice_requested(notice: CombatNotice)
+signal operator_communication_requested(text: String)
 signal weapon_cue_requested(weapon_id: StringName, cue: StringName, world_position: Vector2)
 signal afterimage_requested(source: Node, sprite: AnimatedSprite2D)
 signal afterimages_clear_requested(source: Node)
@@ -54,6 +56,11 @@ func publish_notice(
 	display_seconds: float = 1.5
 ) -> void:
 	combat_notice_requested.emit(CombatNotice.new(id, text, color, priority, merge_window, display_seconds))
+
+
+func publish_operator_communication(text: String) -> void:
+	if not text.is_empty():
+		operator_communication_requested.emit(text)
 
 
 func publish_noise(source: Node, origin: Vector2, radius: float) -> void:

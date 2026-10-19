@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="五角场热线"
-run/main_scene="res://scenes/bootstrap/warehouse_main.tscn"
+run/main_scene="res://scenes/ui/start_menu.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
 
@@ -24,8 +24,8 @@ SoundManager="*uid://6q1wagejt60k"
 SaveSystem="*uid://bxcgiyru0vapu"
 CombatEvents="*res://scripts/core/combat_event_bus.gd"
 RunManager="*res://scripts/core/run_manager.gd"
-GameSettings="*res://scripts/core/game_settings.gd"
 WarehouseStore="*res://scripts/core/warehouse_store.gd"
+GameSettings="*res://scripts/core/game_settings.gd"
 
 [dialogic]
 

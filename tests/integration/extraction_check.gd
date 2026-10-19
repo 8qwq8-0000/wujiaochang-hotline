@@ -22,14 +22,7 @@ func wait_floor(flow: SceneContainerManager) -> PlayerController:
 	return null
 
 func clear_floor() -> void:
-	var enemies := get_nodes_in_group("enemies")
-	for enemy in enemies:
-		enemy.health.apply_damage(enemy.health.max_health, DamagePacket.new())
-	for enemy in enemies:
-		if is_instance_valid(enemy) and enemy.state == EnemyController.State.SELF_DESTRUCT:
-			enemy._physics_process(enemy.profile.self_destruct_delay + 0.01)
-	await process_frame
-	await process_frame
+	await preload("res://tests/integration/combat_test_flow.gd").clear_floor(self)
 
 func run_checks() -> void:
 	var store: Node = root.get_node("WarehouseStore")
@@ -55,7 +48,7 @@ func run_checks() -> void:
 	await clear_floor()
 	check(player.inventory.equip(0), "equip mobility after clear")
 	var before := player.export_run_state()
-	var exit: ExitElevator = main.find_child("ExitElevator", true, false)
+	var exit: ExitElevator = main.find_child("FloorAssembler", true, false).generated_rooms.back().exit_elevator
 	player.global_position = exit.global_position
 	for frame in 4:
 		await physics_frame
@@ -75,6 +68,7 @@ func run_checks() -> void:
 	check(not paused, "continue restores world")
 	player = await wait_floor(flow)
 	check(run.floor_index == 1, "continue advances floor")
+	check(main.get_node("SceneContainer").get_child(0).scene_file_path == "res://scenes/levels/floors/combat_prototype.tscn", "continue loads the procedural combat floor")
 	check(player.export_run_state() == before, "continue preserves equipment and bag")
 	await clear_floor()
 	ui.open_exit()

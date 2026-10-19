@@ -1,0 +1,62 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/bosses/rooftop_whale_goddess.gd" id="1_boss"]
+[ext_resource type="Texture2D" path="res://assets/art/characters/bosses/rooftop_whale_goddess/rooftop_boss_dormant.png" id="2_dormant"]
+[ext_resource type="Texture2D" path="res://assets/art/characters/bosses/rooftop_whale_goddess/rooftop_boss_glow.png" id="4_glow"]
+[ext_resource type="Script" path="res://scripts/gameplay/combat/health_component.gd" id="5_health"]
+[ext_resource type="Script" path="res://scripts/gameplay/combat/hurt_box.gd" id="6_hurtbox"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/bosses/rooftop_whale_echo_probe.wav" id="7_echo_probe"]
+
+[sub_resource type="CanvasItemMaterial" id="GlowMaterial"]
+blend_mode = 1
+
+[sub_resource type="RectangleShape2D" id="PedestalShape"]
+size = Vector2(126, 30)
+
+[sub_resource type="RectangleShape2D" id="HurtShape"]
+size = Vector2(130, 190)
+
+[node name="RooftopWhaleGoddess" type="StaticBody2D"]
+texture_filter = 1
+collision_layer = 1
+collision_mask = 0
+script = ExtResource("1_boss")
+dormant_texture = ExtResource("2_dormant")
+
+[node name="BodySprite" type="Sprite2D" parent="."]
+texture_filter = 1
+texture = ExtResource("2_dormant")
+
+[node name="GlowSprite" type="Sprite2D" parent="."]
+visible = false
+z_index = 1
+texture_filter = 1
+material = SubResource("GlowMaterial")
+texture = ExtResource("4_glow")
+
+[node name="EchoProbeAudio" type="AudioStreamPlayer2D" parent="."]
+position = Vector2(0, -42)
+stream = ExtResource("7_echo_probe")
+bus = &"SFX"
+
+[node name="PedestalCollision" type="CollisionShape2D" parent="."]
+position = Vector2(0, 96)
+shape = SubResource("PedestalShape")
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("5_health")
+max_health = 6
+
+[node name="HurtBox" type="Area2D" parent="."]
+collision_layer = 16
+collision_mask = 0
+monitoring = false
+monitorable = false
+script = ExtResource("6_hurtbox")
+faction = 2
+health_path = NodePath("../HealthComponent")
+actor_path = NodePath("..")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HurtBox"]
+position = Vector2(0, -2)
+shape = SubResource("HurtShape")

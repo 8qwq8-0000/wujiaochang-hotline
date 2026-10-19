@@ -1,0 +1,100 @@
+{
+  "floor": {
+    "size": [
+      1254,
+      1254
+    ],
+    "region": [
+      0,
+      0,
+      1254,
+      1254
+    ],
+    "source": "exec-17dbd871-b0eb-4f27-b9f9-80f07cedc561.png",
+    "has_transparency": false
+  },
+  "wall": {
+    "size": [
+      2172,
+      724
+    ],
+    "region": [
+      35,
+      253,
+      2102,
+      220
+    ],
+    "source": "exec-2ee52562-e755-4bb1-9a7a-d02f08e73ff0.png",
+    "has_transparency": true
+  },
+  "machine": {
+    "size": [
+      1536,
+      1024
+    ],
+    "region": [
+      171,
+      218,
+      1220,
+      583
+    ],
+    "source": "exec-58ac1e32-e64b-4d22-85bc-ddb346eb7426.png",
+    "has_transparency": true
+  },
+  "crate": {
+    "size": [
+      1312,
+      1199
+    ],
+    "region": [
+      326,
+      241,
+      660,
+      717
+    ],
+    "source": "exec-1c359657-b6ff-407d-8bcc-f9fb78a003e4.png",
+    "has_transparency": true
+  },
+  "console": {
+    "size": [
+      1774,
+      887
+    ],
+    "region": [
+      244,
+      209,
+      1285,
+      486
+    ],
+    "source": "exec-b9d10c5f-00e2-4f66-b5e1-a9fd3db83b0c.png",
+    "has_transparency": true
+  },
+  "melee": {
+    "size": [
+      1306,
+      1205
+    ],
+    "region": [
+      307,
+      336,
+      606,
+      578
+    ],
+    "source": "exec-9259d995-388b-4127-9f55-a73d551aad7d.png",
+    "has_transparency": true
+  },
+  "ranged": {
+    "size": [
+      1230,
+      1278
+    ],
+    "region": [
+      332,
+      229,
+      529,
+      845
+    ],
+    "source": "exec-906a93cb-dff3-4d02-8ce5-83f08b737711.png",
+    "has_transparency": true
+  }
+}

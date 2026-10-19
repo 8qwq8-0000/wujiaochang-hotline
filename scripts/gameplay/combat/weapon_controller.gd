@@ -4,11 +4,10 @@ extends Node2D
 signal weapon_changed(index: int, data: WeaponComponentData)
 signal attack_performed(data: WeaponComponentData)
 
-const PROJECTILE_SCENE := preload("res://scenes/combat/projectile.tscn")
-const BATON := preload("res://resources/weapons/baton.tres")
+const PROJECTILE_SCENE_PATH := "res://scenes/combat/projectile.tscn"
+const DEFAULT_WEAPON := preload("res://resources/weapons/service_pistol.tres")
 const DEBUG_WEAPONS := [
-	BATON,
-	preload("res://resources/weapons/service_pistol.tres"),
+	DEFAULT_WEAPON,
 	preload("res://resources/weapons/scattergun.tres"),
 ]
 
@@ -19,7 +18,7 @@ var weapons: Array[WeaponComponentData] = []
 var current_index: int = 0
 var debug_loadout_enabled: bool = false
 var attack_speed_multiplier := 1.0
-var _current_weapon: WeaponComponentData = BATON
+var _current_weapon: WeaponComponentData = DEFAULT_WEAPON
 var _cooldown_remaining: float = 0.0
 var _swing_remaining: float = 0.0
 var _swing_duration: float = 0.0
@@ -45,9 +44,9 @@ func configure(default_weapon: WeaponComponentData, enable_debug_loadout: bool) 
 	debug_loadout_enabled = enable_debug_loadout
 	if enable_debug_loadout:
 		weapons.assign(DEBUG_WEAPONS)
-		equip_weapon(default_weapon if default_weapon != null else BATON)
+		equip_weapon(default_weapon if default_weapon != null else DEFAULT_WEAPON)
 	else:
-		set_carried_weapons(default_weapon if default_weapon != null else BATON, null)
+		set_carried_weapons(default_weapon if default_weapon != null else DEFAULT_WEAPON, null)
 
 
 func get_current_weapon() -> WeaponComponentData:
@@ -177,12 +176,14 @@ func _perform_melee_tick(data: WeaponComponentData, origin: Vector2, direction: 
 
 
 func _perform_projectiles(data: WeaponComponentData, origin: Vector2, direction: Vector2, source_node: Node) -> void:
+	# Resolve after actor/room scripts finish loading to avoid a cyclic scene preload.
+	var projectile_scene := load(PROJECTILE_SCENE_PATH) as PackedScene
 	var count := maxi(data.projectile_count, 1)
 	for index in count:
 		var offset := 0.0
 		if count > 1:
 			offset = lerpf(-data.spread_degrees * 0.5, data.spread_degrees * 0.5, float(index) / float(count - 1))
-		var projectile: CombatProjectile = PROJECTILE_SCENE.instantiate()
+		var projectile: CombatProjectile = projectile_scene.instantiate()
 		CombatProjectile.room_for_actor(source_node).add_child(projectile)
 		projectile.global_position = origin
 		projectile.setup(source_node, faction, direction.rotated(deg_to_rad(offset)), data.damage, data.projectile_speed)

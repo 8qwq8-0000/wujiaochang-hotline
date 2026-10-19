@@ -19,9 +19,12 @@ func load_profile() -> bool:
 	if file == null:
 		return _reject("无法读取仓库存档，原文件已保留")
 	var json := JSON.new()
-	if json.parse(file.get_as_text()) != OK or not _valid_profile(json.data):
+	if json.parse(file.get_as_text()) != OK:
 		return _reject("仓库存档格式异常或版本不兼容，原文件已保留")
-	_profile = json.data.duplicate(true)
+	var migrated: Variant = ComponentRolls.migrate_snapshot(json.data)
+	if not _valid_profile(migrated):
+		return _reject("仓库存档格式异常或版本不兼容，原文件已保留")
+	_profile = migrated.duplicate(true)
 	return true
 
 
@@ -30,10 +33,11 @@ func get_profile() -> Dictionary:
 	return _profile.duplicate(true)
 
 
-func commit(chest: Array, loadout: Dictionary) -> bool:
+func commit(chest: Array, loadout: Dictionary, difficulty: String = "") -> bool:
 	if not load_profile():
 		return false
-	var next := {"version": SAVE_VERSION, "chest": chest.duplicate(true), "loadout": loadout.duplicate(true)}
+	var next := {"version": SAVE_VERSION, "chest": chest.duplicate(true), "loadout": loadout.duplicate(true), "difficulty": difficulty if not difficulty.is_empty() else _profile.get("difficulty", ["low_pressure", "standard", "high_pressure"][int(get_node("/root/GameSettings").difficulty)])}
+	next = ComponentRolls.migrate_snapshot(next)
 	if not _valid_profile(next):
 		error_message = "装备数据异常，未保存"
 		return false
@@ -65,6 +69,8 @@ func _valid_profile(value: Variant) -> bool:
 		return false
 	if not value.get("chest") is Array or not value.get("loadout") is Dictionary:
 		return false
+	if value.get("difficulty", "standard") not in ["low_pressure", "standard", "high_pressure"]:
+		return false
 	var items: Array = value.chest.duplicate()
 	var state: Dictionary = value.loadout
 	if not state.is_empty():
@@ -84,12 +90,13 @@ func _valid_profile(value: Variant) -> bool:
 				return false
 			if inv[key].has("item"):
 				items.append(inv[key].item)
-		# Old warehouse saves have no blackbox; PlayerController migrates them on load.
-		if inv.has("blackbox"):
-			if not inv.blackbox is Dictionary:
-				return false
-			if inv.blackbox.has("item"):
-				items.append(inv.blackbox.item)
+		# Optional slots keep old v1 saves compatible and join the same ID validation.
+		for optional_slot in ["blackbox", "defense"]:
+			if inv.has(optional_slot):
+				if not inv[optional_slot] is Dictionary:
+					return false
+				if inv[optional_slot].has("item"):
+					items.append(inv[optional_slot].item)
 	var ids := {}
 	var insurance_count := 0
 	for item in items:
@@ -110,4 +117,32 @@ func _valid_profile(value: Variant) -> bool:
 		if id.is_empty() or ids.has(id):
 			return false
 		ids[id] = true
+	return true
+
+
+func has_saved_profile() -> bool:
+	return FileAccess.file_exists(save_path)
+
+
+func create_new_profile(difficulty: String = "standard") -> bool:
+	if difficulty not in ["low_pressure", "standard", "high_pressure"]:
+		error_message = "无效的难度选项"
+		return false
+	# Back up the raw file, including an unreadable/legacy profile, before replacing
+	# anything. Merely entering character selection never writes to the save.
+	if has_saved_profile():
+		var backup := "%s.backup-%d-%d" % [save_path, int(Time.get_unix_time_from_system()), Time.get_ticks_usec()]
+		if DirAccess.copy_absolute(save_path, backup) != OK:
+			error_message = "旧存档备份失败，未创建新存档"
+			return false
+	var previous := _profile.duplicate(true)
+	var was_loaded := _loaded
+	var was_writable := _writable
+	_loaded = true
+	_writable = true
+	if not commit([], {}, difficulty):
+		_profile = previous
+		_loaded = was_loaded
+		_writable = was_writable
+		return false
 	return true

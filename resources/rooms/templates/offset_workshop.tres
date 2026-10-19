@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="RoomTemplateData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/rooms/room_template_data.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/levels/rooms/variants/offset_workshop.tscn" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"offset_workshop"
+scene = ExtResource("2")
+tags = PackedStringArray("partition", "close_range")

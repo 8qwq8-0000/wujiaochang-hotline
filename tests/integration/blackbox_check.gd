@@ -146,7 +146,7 @@ func run_checks() -> void:
 	check(not paused and inv.backpack.get_item_count() == 0, "return to warehouse restores playable state without lost bag items")
 	check(inv.blackbox_slot.get_item().get_property("instance_id") == protected_id, "same protected item is recovered")
 	check(inv.get_insurance_item() == null and not player.circuit_breaker.equipped, "core lost outside blackbox is not silently regenerated")
-	check(inv.weapon_slot.get_item().get_property("bound"), "bound starter remains available")
+	check(inv.weapon_slot.get_item() != null and inv.weapon_slot.get_item().get_property("slot") == "weapon" and not inv.weapon_slot.get_item().get_property("bound", false), "warehouse restores an ordinary usable weapon")
 	# A fresh service reads the same death result, including an absent core.
 	var fresh: Node = load("res://scripts/core/warehouse_store.gd").new()
 	fresh.save_path = SAVE_PATH

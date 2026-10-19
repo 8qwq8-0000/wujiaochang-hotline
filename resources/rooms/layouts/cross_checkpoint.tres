@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="CombatLayoutData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/rooms/combat_layout_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"cross_checkpoint"
+display_name = "十字检查站"
+covers = Array[Rect2]([Rect2(296, 44, 24, 98), Rect2(296, 218, 24, 98), Rect2(136, 168, 100, 24), Rect2(404, 168, 100, 24)])
+enemy_positions = Array[Vector2]([Vector2(222, 94), Vector2(516, 100), Vector2(442, 278)])
+power_position = Vector2(168, 274)
+bomb_position = Vector2(442, 112)
+floor_color = Color(0.14118, 0.13333, 0.16471, 1)
+cover_color = Color(0.38824, 0.33333, 0.40784, 1)

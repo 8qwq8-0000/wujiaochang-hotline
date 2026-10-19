@@ -21,11 +21,12 @@ func test_quadruped_crosses_only_authored_low_obstacles() -> void:
 	assert_true(mode.rough_terrain_multiplier >= 0.9)
 
 
-func test_wheel_has_higher_top_speed_than_quadruped() -> void:
+func test_wheel_keeps_modest_speed_bonus_and_burst() -> void:
 	var wheel: MobilityMode = load("res://resources/mobility/wheel.tres")
-	var quadruped: MobilityMode = load("res://resources/mobility/quadruped.tres")
-	assert_gt(wheel.max_speed, quadruped.max_speed)
+	assert_gt(wheel.ability_impulse, wheel.max_speed)
 	assert_gt(wheel.ability_cooldown, 0.0)
+	var walk: MobilityMode = load("res://resources/mobility/walk.tres")
+	assert_true(wheel.max_speed > walk.max_speed and wheel.max_speed <= walk.max_speed * 1.25)
 
 
 func test_flight_ignores_ground_slow() -> void:

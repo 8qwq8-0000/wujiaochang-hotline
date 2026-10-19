@@ -1,0 +1,29 @@
+{
+  "ok": true,
+  "errors": [],
+  "warnings": [],
+  "frames": [
+    {
+      "frame": 1,
+      "size": [
+        48,
+        16
+      ],
+      "bbox": [
+        1,
+        2,
+        47,
+        13
+      ],
+      "visibleArea": 506,
+      "footY": 12,
+      "colors": 15,
+      "opaque": false
+    }
+  ],
+  "input": "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\weapons\\weapon_base_unpainted_v3\\sprites\\arm_lock_baton.png",
+  "sources": [
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\weapons\\weapon_base_unpainted_v3\\sprites\\arm_lock_baton.png"
+  ],
+  "count": 1
+}

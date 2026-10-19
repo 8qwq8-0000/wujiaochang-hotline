@@ -27,7 +27,7 @@ func run_checks() -> void:
 	player.heat.set_physics_process(false)
 	var mount := player.get_node("VisualRoot/WeaponPivot") as WeaponMount
 	check(mount != null and mount.current_view != null, "player mounts a weapon view")
-	check(mount.current_data.id == &"initial_baton", "initial bound weapon view is active")
+	check(mount.current_view.scene_file_path == mount.current_data.view_scene.resource_path, "initially equipped weapon uses its configured view")
 	check(mount.get_child_count() == 1, "only the active weapon view is instantiated")
 
 	check(player.inventory.pickup("pistol"), "pistol enters reserve slot")

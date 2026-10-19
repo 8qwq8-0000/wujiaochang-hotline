@@ -1,0 +1,119 @@
+{
+  "ok": true,
+  "errors": [],
+  "warnings": [],
+  "frames": [
+    {
+      "frame": 1,
+      "size": [
+        128,
+        256
+      ],
+      "bbox": [
+        16,
+        100,
+        111,
+        244
+      ],
+      "visibleArea": 13680,
+      "footY": 243,
+      "colors": 128,
+      "opaque": false
+    },
+    {
+      "frame": 2,
+      "size": [
+        128,
+        256
+      ],
+      "bbox": [
+        27,
+        76,
+        100,
+        244
+      ],
+      "visibleArea": 12264,
+      "footY": 243,
+      "colors": 128,
+      "opaque": false
+    },
+    {
+      "frame": 3,
+      "size": [
+        128,
+        256
+      ],
+      "bbox": [
+        17,
+        100,
+        110,
+        244
+      ],
+      "visibleArea": 13392,
+      "footY": 243,
+      "colors": 128,
+      "opaque": false
+    },
+    {
+      "frame": 4,
+      "size": [
+        128,
+        256
+      ],
+      "bbox": [
+        9,
+        100,
+        118,
+        244
+      ],
+      "visibleArea": 15696,
+      "footY": 243,
+      "colors": 128,
+      "opaque": false
+    },
+    {
+      "frame": 5,
+      "size": [
+        128,
+        256
+      ],
+      "bbox": [
+        17,
+        82,
+        110,
+        244
+      ],
+      "visibleArea": 15066,
+      "footY": 243,
+      "colors": 128,
+      "opaque": false
+    },
+    {
+      "frame": 6,
+      "size": [
+        128,
+        256
+      ],
+      "bbox": [
+        20,
+        100,
+        107,
+        244
+      ],
+      "visibleArea": 12528,
+      "footY": 243,
+      "colors": 128,
+      "opaque": false
+    }
+  ],
+  "input": "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v1\\final_frames_v4",
+  "sources": [
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v1\\final_frames_v4\\frame-001.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v1\\final_frames_v4\\frame-002.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v1\\final_frames_v4\\frame-003.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v1\\final_frames_v4\\frame-004.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v1\\final_frames_v4\\frame-005.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v1\\final_frames_v4\\frame-006.png"
+  ],
+  "count": 6
+}

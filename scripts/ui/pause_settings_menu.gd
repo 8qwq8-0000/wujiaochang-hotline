@@ -20,7 +20,6 @@ var _resolution: OptionButton
 var _crt_strength: OptionButton
 var _fullscreen: CheckButton
 var _mute: CheckButton
-var _alert_mode: CheckButton
 var _continuous_precharge: CheckButton
 var _confirm_row: HBoxContainer
 var _confirm_label: Label
@@ -187,16 +186,6 @@ func _build_settings_page() -> VBoxContainer:
 	_mute.text = "全部静音"
 	_mute.toggled.connect(_on_mute_toggled)
 	content.add_child(_mute)
-	_add_section_title(content, "难度")
-	_alert_mode = CheckButton.new()
-	_alert_mode.text = "高压难度"
-	_alert_mode.toggled.connect(_on_alert_mode_toggled)
-	content.add_child(_alert_mode)
-	var difficulty_hint := Label.new()
-	difficulty_hint.text = "关闭：标准，发现者周围 320 px 响应\n开启：高压，同房间敌人全部响应"
-	difficulty_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	difficulty_hint.modulate = Color(0.72, 0.78, 0.86)
-	content.add_child(difficulty_hint)
 	_add_section_title(content, "AI 测试")
 	_continuous_precharge = CheckButton.new()
 	_continuous_precharge.text = "连续蓄力"
@@ -265,7 +254,6 @@ func _sync_settings_controls() -> void:
 	_crt_strength.select(int(_get_saved_crt_strength()))
 	var settings := get_node_or_null("/root/GameSettings")
 	if settings != null:
-		_alert_mode.set_pressed_no_signal(bool(settings.high_pressure_alert))
 		_continuous_precharge.set_pressed_no_signal(bool(settings.continuous_precharge))
 
 
@@ -342,12 +330,6 @@ func _on_crt_strength_selected(index: int) -> void:
 	for overlay_node in get_tree().get_nodes_in_group(&"crt_overlay"):
 		if overlay_node is CRTOverlay:
 			(overlay_node as CRTOverlay).set_strength(next_strength)
-
-
-func _on_alert_mode_toggled(enabled: bool) -> void:
-	var settings := get_node_or_null("/root/GameSettings")
-	if settings != null:
-		settings.set_high_pressure_alert(enabled)
 
 
 func _on_continuous_precharge_toggled(enabled: bool) -> void:

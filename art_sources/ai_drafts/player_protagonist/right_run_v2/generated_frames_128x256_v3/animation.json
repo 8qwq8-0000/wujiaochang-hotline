@@ -1,0 +1,43 @@
+{
+  "frames": 6,
+  "files": [
+    "frame-001.png",
+    "frame-002.png",
+    "frame-003.png",
+    "frame-004.png",
+    "frame-005.png",
+    "frame-006.png"
+  ],
+  "durationsMs": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+  ],
+  "sources": [
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v2\\generated_frames_raw_v3\\frame-001.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v2\\generated_frames_raw_v3\\frame-002.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v2\\generated_frames_raw_v3\\frame-003.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v2\\generated_frames_raw_v3\\frame-004.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v2\\generated_frames_raw_v3\\frame-005.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\right_run_v2\\generated_frames_raw_v3\\frame-006.png"
+  ],
+  "normalized": {
+    "canvas": [
+      362,
+      724
+    ],
+    "anchor": "bottom-center",
+    "outputCanvas": [
+      128,
+      256
+    ],
+    "trim": false,
+    "scale": 0.353591160220994,
+    "colors": null,
+    "matte": null,
+    "tolerance": null
+  }
+}

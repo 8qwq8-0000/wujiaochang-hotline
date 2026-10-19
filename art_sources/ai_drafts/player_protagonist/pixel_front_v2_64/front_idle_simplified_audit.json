@@ -1,0 +1,29 @@
+{
+  "ok": true,
+  "errors": [],
+  "warnings": [],
+  "frames": [
+    {
+      "frame": 1,
+      "size": [
+        64,
+        64
+      ],
+      "bbox": [
+        6,
+        4,
+        60,
+        58
+      ],
+      "visibleArea": 2916,
+      "footY": 57,
+      "colors": 7,
+      "opaque": false
+    }
+  ],
+  "input": "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\pixel_front_v2_64\\front_idle_64x64_simplified.png",
+  "sources": [
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\pixel_front_v2_64\\front_idle_64x64_simplified.png"
+  ],
+  "count": 1
+}

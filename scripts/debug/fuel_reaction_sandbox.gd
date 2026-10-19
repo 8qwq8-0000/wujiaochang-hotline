@@ -39,7 +39,7 @@ func _shock_targets() -> void:
 func _restock() -> void:
 	for id: String in ComponentInventory.PROTOTYPES.data:
 		var prototype: Dictionary = ComponentInventory.PROTOTYPES.data[id]
-		if prototype.get("debug_only", false) or prototype.get("bound", false):
+		if id in ["baton", "initial_baton"] or prototype.get("debug_only", false) or prototype.get("bound", false):
 			continue
 		var stocked := false
 		for item in chest.get_items():
@@ -61,6 +61,6 @@ func transfer(item: InventoryItem, deposit: bool) -> bool:
 	elif not deposit and item.get_property("slot", "") == "insurance" and player.inventory.get_insurance_item() != null:
 		panel.show_message("保险核心只能持有一个，请先把当前核心存回箱子")
 	else:
-		panel.show_message("绑定初始装备不能存入" if deposit else "背包已满，请先存回物品或关闭箱子后配装")
+		panel.show_message("该物品无法存入" if deposit else "背包已满，请先存回物品或关闭箱子后配装")
 	panel.refresh()
 	return moved

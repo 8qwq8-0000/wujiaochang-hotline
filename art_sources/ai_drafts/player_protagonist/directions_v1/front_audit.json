@@ -1,0 +1,29 @@
+{
+  "ok": true,
+  "errors": [],
+  "warnings": [],
+  "frames": [
+    {
+      "frame": 1,
+      "size": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        190,
+        180,
+        1375,
+        1370
+      ],
+      "visibleArea": 1410150,
+      "footY": 1369,
+      "colors": 69092,
+      "opaque": false
+    }
+  ],
+  "input": "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\directions_v1\\normalized",
+  "sources": [
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\directions_v1\\normalized\\front.png"
+  ],
+  "count": 1
+}

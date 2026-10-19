@@ -1,11 +1,16 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/presentation/weapon_view.gd" id="1_view"]
-[ext_resource type="Texture2D" path="res://assets/art/weapons/placeholder/placeholder_weapon_spear.png" id="2_texture"]
+[ext_resource type="Texture2D" path="res://assets/art/weapons/placeholder/placeholder_service_pistol_unpainted.png" id="2_texture"]
+[ext_resource type="Script" path="res://scripts/presentation/procedural_coating_2d.gd" id="3_coating"]
+
+[ext_resource type="Texture2D" path="res://assets/art/weapons/placeholder/service_pistol_flash.png" id="4_flash"]
 
 [node name="ServicePistolView" type="Node2D"]
 texture_filter = 1
 script = ExtResource("1_view")
+muzzle_socket_path = NodePath("BodyRoot/MuzzleSocket")
+muzzle_flash_path = NodePath("BodyRoot/MuzzleSocket/MuzzleFlash")
 recoil_distance = 3.0
 feedback_seconds = 0.07
 
@@ -13,19 +18,22 @@ feedback_seconds = 0.07
 
 [node name="BodySprite" type="Sprite2D" parent="BodyRoot"]
 texture_filter = 1
-modulate = Color(0.45, 0.95, 0.72, 1)
-position = Vector2(13, 0)
-scale = Vector2(0.5, 0.5)
+position = Vector2(20, 0)
 texture = ExtResource("2_texture")
-flip_h = true
 
-[node name="MuzzleSocket" type="Marker2D" parent="."]
-position = Vector2(27, 0)
+[node name="Coating" type="Node2D" parent="BodyRoot"]
+z_index = 2
+script = ExtResource("3_coating")
+seed_key = &"service_pistol"
 
-[node name="MuzzleFlash" type="Polygon2D" parent="MuzzleSocket"]
+[node name="MuzzleSocket" type="Marker2D" parent="BodyRoot"]
+position = Vector2(39, 0)
+
+[node name="MuzzleFlash" type="Sprite2D" parent="BodyRoot/MuzzleSocket"]
 visible = false
-polygon = PackedVector2Array(0, -2, 7, 0, 0, 2, 2, 0)
-color = Color(1, 0.88, 0.35, 1)
+position = Vector2(0, -4)
+texture = ExtResource("4_flash")
+centered = false
 
 [node name="EffectSocket" type="Marker2D" parent="."]
 position = Vector2(2, 0)

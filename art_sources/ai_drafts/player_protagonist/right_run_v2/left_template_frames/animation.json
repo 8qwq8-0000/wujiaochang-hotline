@@ -1,0 +1,31 @@
+{
+  "frames": 6,
+  "files": [
+    "frame-001.png",
+    "frame-002.png",
+    "frame-003.png",
+    "frame-004.png",
+    "frame-005.png",
+    "frame-006.png"
+  ],
+  "durationsMs": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+  ],
+  "sources": [
+    "D:\\Projects\\wujiaochang-hotline\\assets\\art\\characters\\player\\placeholder\\gemini_motion_v1\\player_walk_left.png#1",
+    "D:\\Projects\\wujiaochang-hotline\\assets\\art\\characters\\player\\placeholder\\gemini_motion_v1\\player_walk_left.png#2",
+    "D:\\Projects\\wujiaochang-hotline\\assets\\art\\characters\\player\\placeholder\\gemini_motion_v1\\player_walk_left.png#3",
+    "D:\\Projects\\wujiaochang-hotline\\assets\\art\\characters\\player\\placeholder\\gemini_motion_v1\\player_walk_left.png#4",
+    "D:\\Projects\\wujiaochang-hotline\\assets\\art\\characters\\player\\placeholder\\gemini_motion_v1\\player_walk_left.png#5",
+    "D:\\Projects\\wujiaochang-hotline\\assets\\art\\characters\\player\\placeholder\\gemini_motion_v1\\player_walk_left.png#6"
+  ],
+  "sourceGrid": {
+    "columns": 8,
+    "rows": 1
+  }
+}
