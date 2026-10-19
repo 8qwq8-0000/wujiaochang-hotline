@@ -12,6 +12,7 @@ var _content: Control
 var _continue: Button
 var _status: Label
 var _busy := false
+var _difficulty := "standard"
 @onready var store: Node = get_node("/root/WarehouseStore")
 
 
@@ -121,7 +122,7 @@ func show_home() -> void:
 	var exists: bool = store.has_saved_profile()
 	_continue = _button("继续游戏", Rect2(0, 274, 360, 58), continue_game, true)
 	_continue.disabled = not exists or not valid
-	var new_game := _button("开始新存档", Rect2(0, 342, 360, 58), show_character)
+	var new_game := _button("开始新存档", Rect2(0, 342, 360, 58), show_difficulty)
 	_button("退出游戏", Rect2(0, 410, 360, 58), func() -> void: get_tree().quit())
 	var summary := "暂无存档"
 	if exists and valid:
@@ -138,14 +139,30 @@ func show_home() -> void:
 		new_game.grab_focus()
 
 
+func show_difficulty() -> void:
+	_clear_page("difficulty")
+	place(_label("选择难度", 36, LIGHT), Rect2(0, 70, 460, 64), _content)
+	place(_label("仅影响敌人的感知与支援范围", 18, MUTED), Rect2(0, 148, 490, 40), _content)
+	_button("低压", Rect2(0, 218, 360, 48), _select_difficulty.bind("low_pressure"))
+	var standard := _button("标准", Rect2(0, 282, 360, 48), _select_difficulty.bind("standard"), true)
+	_button("高压", Rect2(0, 346, 360, 48), _select_difficulty.bind("high_pressure"))
+	_button("返回", Rect2(0, 440, 200, 48), show_home)
+	standard.grab_focus()
+
+
+func _select_difficulty(difficulty: String) -> void:
+	_difficulty = difficulty
+	show_character()
+
+
 func show_character() -> void:
 	if _busy:
 		return
 	_clear_page("character")
 	_heading("标准机体")
-	place(_label("携带制式警棍出发", 21, MUTED), Rect2(0, 190, 460, 38), _content)
+	place(_label("携带制式手枪出发 · " + {"low_pressure": "低压", "standard": "标准", "high_pressure": "高压"}.get(_difficulty, "标准"), 21, MUTED), Rect2(0, 190, 460, 38), _content)
 	_button("开始行动", Rect2(0, 342, 360, 60), request_new_game, true)
-	var back := _button("返回", Rect2(0, 420, 200, 48), show_home)
+	var back := _button("返回", Rect2(0, 420, 200, 48), show_difficulty)
 	back.add_theme_font_size_override("font_size", 19)
 
 
@@ -167,7 +184,7 @@ func request_new_game() -> void:
 func start_new_game() -> void:
 	if _busy:
 		return
-	if not store.create_new_profile():
+	if not store.create_new_profile(_difficulty):
 		if _status == null:
 			_status = _label("", 17, AMBER)
 			place(_status, Rect2(0, 280, 460, 48), _content)
@@ -184,6 +201,8 @@ func continue_game() -> void:
 
 func _enter_warehouse() -> void:
 	_busy = true
+	var difficulty: String = store.get_profile().get("difficulty", ["low_pressure", "standard", "high_pressure"][int(get_node("/root/GameSettings").difficulty)])
+	get_node("/root/GameSettings").set_difficulty(["low_pressure", "standard", "high_pressure"].find(difficulty) as GameSettingsController.Difficulty, false)
 	get_node("/root/RunManager").begin_run()
 	get_node("/root/RunManager").set_scene_payload({})
 	var error := get_tree().change_scene_to_file(WAREHOUSE)
@@ -198,4 +217,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		if page == "confirm":
 			show_character()
 		elif page == "character":
+			show_difficulty()
+		elif page == "difficulty":
 			show_home()

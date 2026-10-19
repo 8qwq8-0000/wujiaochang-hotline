@@ -39,7 +39,7 @@ func _shock_targets() -> void:
 func _restock() -> void:
 	for id: String in ComponentInventory.PROTOTYPES.data:
 		var prototype: Dictionary = ComponentInventory.PROTOTYPES.data[id]
-		if prototype.get("debug_only", false) or prototype.get("bound", false):
+		if id in ["baton", "initial_baton"] or prototype.get("debug_only", false) or prototype.get("bound", false):
 			continue
 		var stocked := false
 		for item in chest.get_items():

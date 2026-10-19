@@ -11,6 +11,8 @@ extends CanvasLayer
 @onready var notice_queue: CombatNoticeQueue = $Overlay/NoticeQueue
 
 var _player: PlayerController
+var _circuit_value: Label
+var _circuit_protection_active := false
 var _health_meter: SegmentMeter
 var _takeover_meter: SegmentMeter
 var _heat_meter: SegmentMeter
@@ -57,7 +59,9 @@ func _process(_delta: float) -> void:
 	mobility_label.text = "机动  %s" % _player.get_mobility_display_name()
 	weapon_label.text = "武装 %d/2  %s [Q/滚轮]" % [_player.weapons.current_index + 1, _player.get_weapon_display_name()]
 	guard_label.text = "格挡  %s" % _guard_state_name(_player.get_guard_state())
+	_health_meter.segments = int(health_state.maximum)
 	_health_meter.set_meter(float(health_state.current), float(health_state.maximum))
+	_update_circuit_status()
 	_heat_meter.meter_color = CyberUITheme.DANGER if heat_state.overheated else CyberUITheme.WARNING
 	_heat_meter.set_meter(float(heat_state.current), float(heat_state.maximum))
 	var mobility_hint := "SPACE"
@@ -71,6 +75,8 @@ func _process(_delta: float) -> void:
 
 
 func _bind_player(player: PlayerController) -> void:
+	_circuit_protection_active = false
+	player.circuit_breaker.circuit_breaker_triggered.connect(_on_circuit_protection_triggered)
 	player.tree_exiting.connect(func() -> void:
 		_player = null
 		buff_label.hide()
@@ -135,13 +141,13 @@ func _build_cyber_hud() -> void:
 	var status_stack := VBoxContainer.new()
 	status_stack.add_theme_constant_override("separation", 2)
 	status.add_child(status_stack)
-	_health_meter = _make_meter("耐久", 3.0, 3.0, 4, CyberUITheme.PHOSPHOR)
+	_health_meter = _make_meter("耐久", 3.0, 3.0, 3, CyberUITheme.PHOSPHOR)
 	_takeover_meter = _make_meter("接管", 1.0, 1.0, 3, CyberUITheme.HIGHLIGHT)
 	status_stack.add_child(_health_meter)
 	status_stack.add_child(_takeover_meter)
-	var circuit := Label.new()
-	circuit.text = "断路保险  STANDBY"
-	status_stack.add_child(circuit)
+	_circuit_value = Label.new()
+	_circuit_value.text = "断路保险  就绪"
+	status_stack.add_child(_circuit_value)
 	_buff_value = Label.new()
 	_buff_value.hide()
 	status_stack.add_child(_buff_value)
@@ -280,3 +286,29 @@ func _on_area_progress(index: int, total: int, remaining: int, cleared: bool) ->
 		_set_objective_text("区域 %d/%d 已清场\n前往下一区 →" % [index, total])
 	else:
 		_set_objective_text("区域 %d/%d\n必杀目标剩余：%d" % [index, total, remaining])
+
+
+func _on_circuit_protection_triggered() -> void:
+	_circuit_protection_active = true
+
+
+func _update_circuit_status() -> void:
+	var circuit := _player.circuit_breaker
+	if _circuit_protection_active and not _player.hurt_box.is_invulnerable():
+		_circuit_protection_active = false
+	var tint := CyberUITheme.PHOSPHOR
+	_health_meter.caption = "耐久"
+	if _circuit_protection_active:
+		_health_meter.caption = "保护中"
+		tint = CyberUITheme.WARNING
+		_circuit_value.text = "断路保险触发 · 保护中"
+	elif not circuit.equipped:
+		_circuit_value.text = "断路保险  未装备"
+		tint = CyberUITheme.MUTED
+	elif circuit.circuit_breaker_used:
+		_circuit_value.text = "断路保险  已消耗"
+		tint = CyberUITheme.MUTED
+	else:
+		_circuit_value.text = "断路保险  就绪"
+	_circuit_value.add_theme_color_override("font_color", tint)
+	_health_meter.meter_color = CyberUITheme.WARNING if _circuit_protection_active or circuit.circuit_breaker_used else CyberUITheme.PHOSPHOR

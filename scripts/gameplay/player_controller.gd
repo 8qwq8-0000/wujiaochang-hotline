@@ -117,7 +117,7 @@ func _physics_process(delta: float) -> void:
 	_external_velocity = _external_velocity.move_toward(Vector2.ZERO, config.knockback_recovery * delta)
 	weapons.update_attack_pose(global_position, aim_direction, self)
 	# The muzzle must use this frame's aim before an attack is spawned.
-	visuals.update_weapon_aim(weapon_aim_direction, weapons.get_melee_swing_angle_offset())
+	visuals.update_visual(aim_direction, velocity, guard.state, guard.guard_arc_degrees, weapons.get_melee_swing_angle_offset(), get_global_mouse_position())
 	if _input_enabled and guard.can_attack() and mobility.can_attack() and _should_attack_this_frame():
 		var attack := _get_attack_transform()
 		weapons.try_attack(attack.origin, attack.x.normalized(), self)
@@ -130,7 +130,7 @@ func _physics_process(delta: float) -> void:
 		guard.state,
 		guard.guard_arc_degrees,
 		weapons.get_melee_swing_angle_offset(),
-		weapon_aim_direction
+		get_global_mouse_position()
 	)
 	_tick_afterimages(delta)
 	_update_movement_audio()
@@ -341,10 +341,8 @@ func _get_attack_transform() -> Transform2D:
 		visuals.get_weapon_mount_global_position(),
 		muzzle
 	)
-	var direction := visuals.get_weapon_barrel_global_direction()
-	if direction.is_zero_approx():
-		direction = _get_weapon_aim_direction()
-	return Transform2D(direction.angle(), muzzle)
+	var barrel_direction := visuals.weapon_pivot.global_transform.x.normalized()
+	return Transform2D(barrel_direction.angle(), muzzle)
 
 
 func _should_attack_this_frame() -> bool:

@@ -24,8 +24,8 @@ SoundManager="*uid://6q1wagejt60k"
 SaveSystem="*uid://bxcgiyru0vapu"
 CombatEvents="*res://scripts/core/combat_event_bus.gd"
 RunManager="*res://scripts/core/run_manager.gd"
-GameSettings="*res://scripts/core/game_settings.gd"
 WarehouseStore="*res://scripts/core/warehouse_store.gd"
+GameSettings="*res://scripts/core/game_settings.gd"
 
 [dialogic]
 

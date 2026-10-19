@@ -23,9 +23,9 @@ component_id = "wheel"
 [node name="Scattergun" parent="." instance=ExtResource("3")]
 position = Vector2(280, 180)
 component_id = "scattergun"
-[node name="Baton" parent="." instance=ExtResource("3")]
+[node name="Pistol3" parent="." instance=ExtResource("3")]
 position = Vector2(350, 180)
-component_id = "baton"
+component_id = "pistol"
 [node name="Pistol2" parent="." instance=ExtResource("3")]
 position = Vector2(420, 180)
 component_id = "pistol"
@@ -34,4 +34,4 @@ position = Vector2(490, 180)
 component_id = "wheel"
 [node name="FullTest" parent="." instance=ExtResource("3")]
 position = Vector2(550, 180)
-component_id = "baton"
+component_id = "pistol"

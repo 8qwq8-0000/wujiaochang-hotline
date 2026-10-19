@@ -21,25 +21,36 @@ func update_visual(
 	guard_state: GuardComponent.State,
 	guard_arc: float,
 	weapon_swing_offset: float = 0.0,
-	weapon_aim_direction: Vector2 = Vector2.ZERO
+	aim_target: Vector2 = Vector2.INF
 ) -> void:
 	var moving := velocity.length_squared() > 64.0
 	var direction_name := _direction_name(aim_direction)
 	var animation := _body_animation(direction_name, moving)
-	if animation != _last_animation and body_sprite.sprite_frames.has_animation(animation):
+	if body_sprite.sprite_frames.has_animation(animation) and (animation != _last_animation or (moving and not body_sprite.is_playing())):
 		body_sprite.play(animation)
 		_last_animation = animation
-	# Every direction now has an authored source animation. The sole idle clip
-	# always keeps its original orientation, so body mirroring is disabled.
+	# Use the same authored direction and wrist pose while standing and walking.
+	# Freeze a planted frame at rest; resume the clip when movement starts.
+	if not moving:
+		body_sprite.pause()
+		body_sprite.frame = 0
 	body_sprite.flip_h = false
 	wrist_socket.sync_pose(body_sprite, StringName(animation), body_sprite.frame)
 	weapon_pivot.position = wrist_socket.position
-	update_weapon_aim(weapon_aim_direction if not weapon_aim_direction.is_zero_approx() else aim_direction, weapon_swing_offset)
+	update_weapon_aim(aim_direction, weapon_swing_offset, aim_target)
 	guard_visual.update_guard(guard_state, aim_direction, guard_arc)
 
 
-func update_weapon_aim(aim_direction: Vector2, weapon_swing_offset: float = 0.0) -> void:
-	weapon_pivot.rotation = aim_direction.angle() + weapon_swing_offset
+func update_weapon_aim(aim_direction: Vector2, weapon_swing_offset: float = 0.0, aim_target: Vector2 = Vector2.INF) -> void:
+	var angle := aim_direction.angle()
+	if aim_target.is_finite() and is_instance_valid(weapon_pivot.current_view):
+		var delta := to_local(aim_target) - weapon_pivot.position
+		var muzzle_y := weapon_pivot.to_local(weapon_pivot.current_view.muzzle_socket.global_position).y
+		if aim_direction.x < 0.0:
+			muzzle_y = -muzzle_y
+		if delta.length() > absf(muzzle_y) + 2.0:
+			angle = delta.angle() - asin(muzzle_y / delta.length())
+	weapon_pivot.rotation = angle + weapon_swing_offset
 	weapon_pivot.scale.y = -1.0 if aim_direction.x < 0.0 else 1.0
 	var direction_name := _direction_name(aim_direction)
 	_set_weapon_draw_order(direction_name)
@@ -90,9 +101,7 @@ func _direction_name(direction: Vector2) -> String:
 	return "left" if direction.x < 0.0 else "right"
 
 
-func _body_animation(direction_name: String, moving: bool) -> StringName:
-	if not moving:
-		return &"idle"
+func _body_animation(direction_name: String, _moving: bool) -> StringName:
 	return StringName("walk_" + direction_name)
 
 

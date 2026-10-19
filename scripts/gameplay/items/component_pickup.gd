@@ -1,7 +1,7 @@
 class_name ComponentPickup
 extends Node2D
 
-@export_enum("baton", "pistol", "scattergun", "wheel", "armor") var component_id := "pistol"
+@export_enum("pistol", "scattergun", "wheel", "armor") var component_id := "pistol"
 var rolled_item: InventoryItem
 var _picked := false
 var _label: Label
@@ -10,7 +10,7 @@ func _ready() -> void:
 	if rolled_item == null:
 		rolled_item = ComponentRolls.create(component_id, 1, RandomNumberGenerator.new())
 	add_to_group("component_pickups")
-	var definition: Dictionary = ComponentInventory.PROTOTYPES.data.get(component_id, {})
+	var definition: Dictionary = ComponentInventory.PROTOTYPES.data.get(rolled_item.get_prototype().get_prototype_id(), {})
 	var icon := Sprite2D.new()
 	icon.texture = load(str(definition.get("image", "res://icon.svg")))
 	add_child(icon)
