@@ -747,10 +747,7 @@ func _draw() -> void:
 	var color := profile.body_color if profile != null else Color.RED
 	if state == State.SELF_DESTRUCT and int(_self_destruct_remaining * 16.0) % 2 == 0:
 		color = Color.WHITE
-	draw_circle(Vector2.ZERO, 11.0, color)
-	draw_arc(Vector2.ZERO, 13.0, 0.0, TAU, 24, color.lightened(0.35), 2.0)
-	# One shared direction line: the ranged weapon also follows this heading.
-	draw_line(Vector2.ZERO, facing * 17.0, Color.WHITE, 2.0)
+	WorkshopArt.draw_enemy(self, color == Color.WHITE)
 	if profile != null and profile.role == EnemyProfile.Role.HEAVY_ANCHOR:
 		draw_rect(Rect2(-8.0, -8.0, 16.0, 16.0), color.darkened(0.25), false, 3.0)
 

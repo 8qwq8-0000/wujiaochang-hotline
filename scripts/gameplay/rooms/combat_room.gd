@@ -27,6 +27,8 @@ func _ready() -> void:
 	if layout != null:
 		_apply_layout()
 	_place_barrel()
+	if layout != null and layout.id in [&"interlinked_apartment", &"loading_workshop"]:
+		_apply_workshop_art()
 	spawner.all_required_defeated.connect(_on_all_required_defeated)
 	exit_elevator.set_enabled(false)
 
@@ -64,6 +66,13 @@ func activate() -> void:
 
 
 func open_side(side: String) -> void:
+	var art := get_node_or_null("WorkshopForeground") as WorkshopArt
+	if art != null:
+		if side == "Left":
+			art.left_open = true
+		else:
+			art.right_open = true
+		art.queue_redraw()
 	var wall := get_node(side + "Wall") as StaticBody2D
 	wall.get_node("CollisionShape2D").set_deferred("disabled", true)
 	wall.get_node("Visual").hide()
@@ -174,3 +183,31 @@ func _place_barrel() -> void:
 	var run := get_node_or_null("/root/RunManager")
 	var seed_value: int = (run.run_seed if run != null else 1) + 104729 * (run.floor_index + 1 if run != null else 1) + area_index * 97
 	$FuelBarrel.position = EncounterPropPlacement.choose_barrel_position(spawner.planned_positions(self), blockers, doors, $PowerBox.position, seed_value, $FuelBarrel.position, windows)
+
+
+func _apply_workshop_art() -> void:
+	$Floor.hide()
+	for side in ["Top", "Bottom", "Left", "Right"]:
+		get_node(side + "Wall/Visual").hide()
+	for child in $LayoutGeometry.get_children():
+		if child is Polygon2D:
+			child.hide()
+		elif child is StaticBody2D:
+			for visual in child.get_children():
+				if visual is Polygon2D:
+					visual.hide()
+	var floor_art := WorkshopArt.new()
+	floor_art.name = "WorkshopFloor"
+	floor_art.layout = layout
+	floor_art.floor_pass = true
+	floor_art.z_index = -2
+	add_child(floor_art)
+	var foreground := WorkshopArt.new()
+	foreground.name = "WorkshopForeground"
+	foreground.layout = layout
+	add_child(foreground)
+	for prop in [$PowerBox, $FuelBarrel]:
+		var label := prop.get_node_or_null("Label") as Label
+		if label != null:
+			label.hide()
+	$ExitElevator/Label.hide()
