@@ -8,6 +8,10 @@ var enabled: bool = false
 
 
 func _ready() -> void:
+	var art := RefinedEnvironmentArt.new()
+	art.kind = "exit"
+	art.draw_size = Vector2(52, 68)
+	add_child(art)
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 	queue_redraw()
