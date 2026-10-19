@@ -24,6 +24,14 @@ func test_rolls_have_unique_ids_and_no_ineffective_mobility_attack() -> void:
 		assert_false(ComponentRolls.affixes(item).has("attack"))
 		assert_true(ComponentRolls.affixes(item).size() >= 1 and ComponentRolls.affixes(item).size() <= 3)
 
+func test_item_creation_restores_cleared_prototype_catalog() -> void:
+	var stale := InventoryItem.new(ComponentInventory.PROTOTYPES, "pistol")
+	stale.get_prototree().clear()
+	assert_true(stale.get_prototree().is_empty())
+	var restored := ComponentRolls.create("pistol", 1, RandomNumberGenerator.new())
+	assert_true(restored.get_prototype() != null)
+	assert_eq(restored.get_prototype().get_prototype_id(), "pistol")
+
 func test_shared_affixes_are_retained_at_stronger_value() -> void:
 	var rng := RandomNumberGenerator.new()
 	var a := ComponentRolls.create("pistol", 3, rng)

@@ -70,8 +70,21 @@ static func ensure(item: InventoryItem) -> void:
 		# Deterministic old-save migration, never reroll on loading.
 		item.set_property("affixes", {"attack" if item.get_property("slot") == "weapon" else "mobility": 20})
 
+static func make_item(id: String) -> InventoryItem:
+	var prototype_id := "baton" if id == "initial_baton" else id
+	var item := InventoryItem.new(ComponentInventory.PROTOTYPES, prototype_id)
+	# Older scene transitions cleared GLoot's process-wide cached ProtoTree.
+	# Rebuild it before returning an item so already-authored pickups cannot
+	# retain a permanently null prototype after a hot reload or legacy swap.
+	if item.get_prototype() == null and ComponentInventory.PROTOTYPES.data.has(prototype_id):
+		item.get_prototree().deserialize(ComponentInventory.PROTOTYPES)
+		item = InventoryItem.new(ComponentInventory.PROTOTYPES, prototype_id)
+	return item
+
 static func create(id: String, tier: int, rng: RandomNumberGenerator) -> InventoryItem:
-	var item := InventoryItem.new(ComponentInventory.PROTOTYPES, "baton" if id == "initial_baton" else id)
+	var item := make_item(id)
+	if item.get_prototype() == null:
+		return item
 	item.set_property("instance_id", "%d-%d-%d" % [Time.get_ticks_usec(), item.get_instance_id(), rng.randi()])
 	if ordinary(item):
 		item.set_property("quality", clampi(tier, 1, 3))

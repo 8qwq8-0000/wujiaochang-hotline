@@ -18,14 +18,12 @@ var panel: CanvasLayer
 var allow_trial_equipment_changes := false
 var is_open := false
 var _owns_pause := false
-static var _active_users := 0
 var _serial := 0
 var _has_picked_up_weapon := false
 @onready var player: PlayerController = get_parent()
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	_active_users += 1
 	# The player scene also supports F6 without Bootstrap.
 	for action in {&"interact": KEY_E, &"inventory_toggle": KEY_TAB, &"pause": KEY_ESCAPE, &"weapon_switch": KEY_Q}:
 		if not InputMap.has_action(action):
@@ -141,10 +139,14 @@ func pickup(component_id: String, rolled_item: InventoryItem = null) -> bool:
 					return false
 	var is_weapon := str(PROTOTYPES.data[component_id].get("slot", "")) == "weapon"
 	var auto_secondary := is_weapon and not _has_picked_up_weapon and secondary_weapon_slot.get_item() == null
-	var item := rolled_item if rolled_item != null else InventoryItem.new(PROTOTYPES, component_id)
+	var item := rolled_item if rolled_item != null else ComponentRolls.make_item(component_id)
+	if item == null:
+		return false
 	if item.get_inventory() != null or item_location(item) != "":
 		return false
-	if item.get_prototype().get_prototype_id() != component_id:
+	var prototype := item.get_prototype()
+	if prototype == null or prototype.get_prototype_id() != component_id:
+		_notify("组件数据无效，请重新进入房间", &"full")
 		return false
 	ComponentRolls.ensure(item)
 	# The first weapon can go straight into a free reserve even if the bag is full.
@@ -489,10 +491,8 @@ func _notify(text: String, cue: StringName) -> void:
 
 func _exit_tree() -> void:
 	_release_pause()
-	_active_users -= 1
-	if _active_users == 0 and is_instance_valid(backpack):
-		# Break GLoot's prototype parent/child references when this catalog is unused.
-		backpack.get_prototree().clear()
+	# GLoot's ProtoTreeCache owns this shared catalog. Clearing it from one
+	# inventory invalidates pickups that are initialized during a scene swap.
 
 
 func export_run_state() -> Dictionary:

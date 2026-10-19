@@ -15,6 +15,8 @@ func run() -> void:
 		var player := get_first_node_in_group("player") as PlayerController
 		player.set_physics_process(false)
 		var inv := player.inventory
+		var malformed := InventoryItem.new()
+		check(not inv.pickup("pistol", malformed), "pickup rejects missing prototype without crashing")
 		root.get_node("RunManager").set_mandatory_enemy_count(1)
 		check(not inv.can_change_equipment(), "manual battle equipment remains locked")
 		if scenario == 2:
