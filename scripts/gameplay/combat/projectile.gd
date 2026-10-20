@@ -31,6 +31,16 @@ func setup(owner_node: Node, source_faction: CombatFaction.Id, heading: Vector2,
 
 func _physics_process(delta: float) -> void:
 	var next_position := global_position + direction * speed * delta
+	# Sweep the whole step so fast player shots cannot skip a thin barrier.
+	if faction == CombatFaction.Id.PLAYER:
+		var shield_query := PhysicsRayQueryParameters2D.create(global_position, next_position, EnemyBarrierSkill.COLLISION_LAYER)
+		shield_query.collide_with_areas = true
+		shield_query.collide_with_bodies = false
+		shield_query.hit_from_inside = true
+		var shield_hit := get_world_2d().direct_space_state.intersect_ray(shield_query)
+		if not shield_hit.is_empty():
+			queue_free()
+			return
 	var query := PhysicsRayQueryParameters2D.create(global_position, next_position, 1)
 	if not get_world_2d().direct_space_state.intersect_ray(query).is_empty():
 		queue_free()

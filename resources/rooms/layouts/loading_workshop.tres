@@ -1,7 +1,8 @@
-[gd_resource type="Resource" script_class="CombatLayoutData" load_steps=4 format=3]
+[gd_resource type="Resource" script_class="CombatLayoutData" load_steps=5 format=3]
 [ext_resource type="Script" path="res://scripts/gameplay/rooms/combat_layout_data.gd" id="1"]
 [ext_resource type="Resource" path="res://resources/enemies/melee_pressure.tres" id="melee"]
 [ext_resource type="Resource" path="res://resources/enemies/ranged_sightline.tres" id="ranged"]
+[ext_resource type="Resource" path="res://resources/enemies/heavy_anchor.tres" id="shield"]
 [resource]
 script = ExtResource("1")
 id = &"loading_workshop"
@@ -11,7 +12,7 @@ zones = Array[Rect2]([Rect2(16.000, 16.000, 135.111, 142.609), Rect2(16.000, 158
 doors = Array[Vector4]([Vector4(88.467, 158.609, 1.571, 76.000), Vector4(151.111, 68.678, 0.000, 76.000), Vector4(151.111, 209.213, 0.000, 76.000), Vector4(151.111, 301.217, 0.000, 75.565), Vector4(357.767, 115.826, 1.571, 76.000), Vector4(488.889, 67.296, 0.000, 76.000), Vector4(257.056, 258.435, 1.571, 76.000), Vector4(488.889, 167.317, 0.000, 76.000), Vector4(488.889, 301.217, 0.000, 75.565)])
 windows = Array[Rect2]([Rect2(485.889, 215.652, 6.000, 32.087)])
 enemy_positions = Array[Vector2]([Vector2(86.933, 87.304), Vector2(330.133, 75.896), Vector2(252.444, 184.991), Vector2(397.689, 212.087), Vector2(556.444, 140.783), Vector2(573.333, 276.261)])
-enemy_profiles = Array[Resource]([ExtResource("melee"), ExtResource("melee"), ExtResource("melee"), ExtResource("ranged"), ExtResource("ranged"), ExtResource("melee")])
+enemy_profiles = Array[Resource]([ExtResource("melee"), ExtResource("melee"), ExtResource("melee"), ExtResource("ranged"), ExtResource("ranged"), ExtResource("shield")])
 power_position = Vector2(62, 290)
 bomb_position = Vector2(100, 70)
 floor_color = Color(0.09, 0.13, 0.17, 1)

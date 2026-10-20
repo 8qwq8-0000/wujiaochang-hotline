@@ -85,6 +85,7 @@ func get_weapon_barrel_global_direction() -> Vector2:
 
 
 func set_dead(dead: bool) -> void:
+	guard_visual.set_disabled(dead)
 	if dead:
 		weapon_pivot.cancel_feedback()
 		body_sprite.stop()
