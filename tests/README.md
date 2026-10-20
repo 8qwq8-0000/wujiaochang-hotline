@@ -136,3 +136,20 @@ godot --headless --path . --script res://tests/integration/automatic_door_check.
 房间构型：`godot --headless --path . --script res://tests/integration/room_layouts_check.gd`，128 项检查覆盖正式 B/C 构型池、同层去重、种子复现、楼层重抽、跨区导航，以及全部 8 种房型的出生点/道具/出口可达和实际敌人绕墙追踪。去掉 `--headless` 会在 `/tmp/hotline-room-*.png` 输出实际构型截图。
 
 互通房间：`godot --headless --path . --script res://tests/integration/interlinked_rooms_check.gd`，48 项真实物理检查覆盖 B/C 六名敌人配置、全部 19 处门的实际穿越，以及观察窗挡人、通视与实际弹丸伤害。去掉 `--headless` 输出 `/tmp/hotline-bc-*.png` 实机截图。
+
+
+楼顶大肥鱼 Boss：
+
+```sh
+godot --headless --path . --script res://tests/integration/rooftop_boss_check.gd
+godot --headless --path . --script res://tests/integration/boss_patterns_check.gd
+godot --headless --path . --script res://tests/integration/boss_shortcut_check.gd
+```
+
+分别覆盖一阶段三名守卫合计三血、独立计数且不扣 Boss 血、保留推镜头和神像苏醒；二阶段三名三血守卫与 Boss 同时攻击、Boss 无敌、逐点联动损血、清完恰好留下 3/6 血、真实子弹命中与击杀；原本落点和十字激光、交点一次伤害、暂停／死亡取消；实际重开输入、仓库独立测试存档及往返。连续 Boss 血条只在二阶段显示，一阶段只显示守卫计数。
+
+贴身射击：`godot --headless --path . --script res://tests/integration/point_blank_shooting_check.gd`，使用真实玩家武器握点、枪口与子弹回调，覆盖制式手枪、散射器、轨道炮表现模板的八方向贴身命中、自身忽略及近距离墙体阻挡。轨道炮仅作为武器模板构造测试，不代表已加入正式装备池。
+
+激光炮正式掉落：`godot --headless --path . --script res://tests/integration/rail_cannon_loot_check.gd`，覆盖随机掉落、品质词条、实例序列化、实际拾取、副槽装备切换、炮身特效节点、射击伤害与热量；贴身命中检查使用正式激光炮资源。
+
+长条范围激光：`godot --headless --path . --script res://tests/integration/laser_beam_check.gd`，覆盖 1000×48 范围内多目标同时受伤、每发仅结算一次、范围外及自身免伤、墙体阻挡、显示与伤害长度一致、无普通子弹及光束回收，以及光束引爆油桶、墙后和范围外油桶保护。

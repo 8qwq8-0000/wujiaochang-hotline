@@ -15,11 +15,14 @@ enum Phase {
 const ROOM_SIZE := Vector2(960.0, 540.0)
 const ARENA_BOUNDS := Rect2(152.0, 192.0, 656.0, 312.0)
 const ORACLE_RADIUS := 28.0
+const OPENING_GUARD_COUNT := 3
+const PHASE_TWO_CAMERA_ZOOM := 0.8
 
 @export var attack_loop_enabled := true
 
 @onready var player: PlayerController = $Player
 @onready var boss: RooftopWhaleGoddess = $Boss
+@onready var support_spawner: EnemySpawner = $SupportSpawner
 @onready var spawner: EnemySpawner = $EnemySpawner
 @onready var telegraph: BossAttackTelegraph = $AttackTelegraph
 @onready var room_lighting: RooftopBossRoomLighting = $RoomLighting
@@ -29,7 +32,7 @@ const ORACLE_RADIUS := 28.0
 
 var phase := Phase.MINIONS
 var _attack_generation := 0
-var _laser_vertical := false
+var _support_remaining_health: Dictionary = {}
 var _test_mode := false
 var _test_player_state: Dictionary = {}
 
@@ -40,17 +43,36 @@ func _enter_tree() -> void:
 
 
 func _ready() -> void:
+	_configure_guard_awareness()
 	_configure_arena_camera()
 	room_lighting.reset_to_phase_one()
 	spawner.all_required_defeated.connect(_on_minions_cleared)
 	boss.health.health_changed.connect(_on_boss_health_changed)
 	boss.defeated.connect(_on_boss_defeated)
+	spawner.required_remaining_changed.connect(_on_opening_guards_remaining)
+	support_spawner.enemy_spawned.connect(_on_support_spawned)
+	support_spawner.all_required_defeated.connect(_on_supports_cleared)
+	support_spawner.required_remaining_changed.connect(_on_support_count_changed)
+	player.player_died.connect(_on_player_died)
 	exit_elevator.entered.connect(_on_exit_entered)
 	exit_elevator.set_enabled(false)
 	_set_phase(Phase.MINIONS)
 	_start_boss_music(1)
 	_on_boss_health_changed(boss.health.current_health, boss.health.max_health, 0)
-	_publish_notice(&"boss_phase_one", "第一阶段 · 清除神像守卫", Color(0.45, 0.9, 1.0), 2.4)
+	boss.set_opening_guards(OPENING_GUARD_COUNT, OPENING_GUARD_COUNT)
+	_publish_notice(&"boss_phase_one", "第一阶段 · 清除三名守卫，唤醒神像", Color(0.45, 0.9, 1.0), 2.4)
+
+
+func _configure_guard_awareness() -> void:
+	# Private profiles keep the arena override out of ordinary rooms and saves.
+	for marker in $EnemySpawnPoints.get_children() + $SupportSpawnPoints.get_children():
+		marker.profile = marker.profile.duplicate()
+		marker.profile.full_room_awareness = true
+		marker.profile.awareness_range = 1000.0
+		marker.profile.vision_angle_degrees = 360.0
+		marker.profile.hearing_range = 1000.0
+		marker.profile.ally_alert_range = 500.0
+		marker.profile.alert_memory_seconds = 10.0
 
 
 func _configure_arena_camera() -> void:
@@ -80,6 +102,7 @@ func receive_scene_payload(payload: Dictionary) -> void:
 func _on_minions_cleared() -> void:
 	if phase != Phase.MINIONS:
 		return
+	_clear_hostile_projectiles()
 	_set_phase(Phase.AWAKENING)
 	var run_manager := get_node_or_null("/root/RunManager")
 	if run_manager != null:
@@ -89,14 +112,15 @@ func _on_minions_cleared() -> void:
 	room_lighting.begin_awakening()
 	_push_camera_to_altar()
 	await boss.begin_awakening()
-	if phase != Phase.AWAKENING:
+	if phase != Phase.AWAKENING or player.health.is_dead():
 		player.set_physics_process(true)
 		return
 	_restore_player_camera()
 	player.set_physics_process(true)
 	_set_phase(Phase.BOSS_ACTIVE)
 	_start_boss_music(2)
-	_publish_notice(&"boss_phase_two", "第二阶段 · 回声定位已启动", Color(1.0, 0.42, 0.2), 2.4)
+	_spawn_support_guards()
+	_publish_notice(&"boss_phase_two", "第二阶段 · 神像苏醒 · 三名守卫加入战斗", Color(1.0, 0.42, 0.2), 2.4)
 	if attack_loop_enabled:
 		_attack_generation += 1
 		_run_attack_loop(_attack_generation)
@@ -107,7 +131,7 @@ func _run_attack_loop(generation: int) -> void:
 		telegraph.clear()
 		boss.play_echo_probe()
 		room_lighting.pulse_echo()
-		await get_tree().create_timer(0.35).timeout
+		await get_tree().create_timer(0.35, false).timeout
 		if not _attack_is_current(generation):
 			return
 		var snapshot := Vector2(
@@ -115,30 +139,109 @@ func _run_attack_loop(generation: int) -> void:
 			clampf(player.global_position.y, ARENA_BOUNDS.position.y, ARENA_BOUNDS.end.y)
 		)
 		telegraph.show_oracle(snapshot, 0.72)
-		await get_tree().create_timer(0.72).timeout
+		await get_tree().create_timer(0.72, false).timeout
 		if not _attack_is_current(generation):
 			return
 		telegraph.show_oracle(snapshot, 0.18, true)
 		_damage_player_in_circle(snapshot, ORACLE_RADIUS)
-		await get_tree().create_timer(0.36).timeout
+		await get_tree().create_timer(0.36, false).timeout
 		if not _attack_is_current(generation):
 			return
-		var laser := _make_laser_rect(snapshot)
-		telegraph.show_laser(laser, 0.78)
-		await get_tree().create_timer(0.78).timeout
+		var lasers := _make_cross_lasers(snapshot)
+		telegraph.show_cross(lasers, 0.78)
+		await get_tree().create_timer(0.78, false).timeout
 		if not _attack_is_current(generation):
 			return
-		telegraph.show_laser(laser, 0.22, true)
-		_damage_player_in_rect(laser)
-		await get_tree().create_timer(0.72).timeout
+		telegraph.show_cross(lasers, 0.22, true)
+		_damage_player_in_cross(lasers)
+		await get_tree().create_timer(0.72, false).timeout
 	telegraph.clear()
 
 
-func _make_laser_rect(snapshot: Vector2) -> Rect2:
-	_laser_vertical = not _laser_vertical
-	if _laser_vertical:
-		return Rect2(clampf(snapshot.x - 7.0, ARENA_BOUNDS.position.x, ARENA_BOUNDS.end.x - 14.0), ARENA_BOUNDS.position.y, 14.0, ARENA_BOUNDS.size.y)
-	return Rect2(ARENA_BOUNDS.position.x, clampf(snapshot.y - 7.0, ARENA_BOUNDS.position.y, ARENA_BOUNDS.end.y - 14.0), ARENA_BOUNDS.size.x, 14.0)
+func _make_cross_lasers(snapshot: Vector2) -> Array[Rect2]:
+	return [
+		Rect2(clampf(snapshot.x - 7, ARENA_BOUNDS.position.x, ARENA_BOUNDS.end.x - 14), ARENA_BOUNDS.position.y, 14, ARENA_BOUNDS.size.y),
+		Rect2(ARENA_BOUNDS.position.x, clampf(snapshot.y - 7, ARENA_BOUNDS.position.y, ARENA_BOUNDS.end.y - 14), ARENA_BOUNDS.size.x, 14),
+	]
+
+
+func _damage_player_in_cross(lasers: Array[Rect2]) -> void:
+	for rect in lasers:
+		if rect.has_point(player.global_position):
+			_damage_player(rect.get_center())
+			return
+
+
+func _on_opening_guards_remaining(remaining: int) -> void:
+	boss.set_opening_guards(remaining, OPENING_GUARD_COUNT)
+	_on_boss_health_changed(boss.health.current_health, boss.health.max_health, 0)
+
+
+func _spawn_support_guards() -> void:
+	if support_spawner._spawned:
+		return
+	boss.health.begin_guard_link()
+	boss.hurt_box.set_deferred("monitorable", false)
+	var candidates: Array[Vector2] = [Vector2(220,270), Vector2(740,270), Vector2(340,320), Vector2(620,320), Vector2(220,440), Vector2(740,440)]
+	candidates.sort_custom(func(a: Vector2, b: Vector2) -> bool:
+		return to_global(a).distance_squared_to(player.global_position) > to_global(b).distance_squared_to(player.global_position))
+	var markers := $SupportSpawnPoints.get_children()
+	for index in markers.size():
+		markers[index].position = candidates[index]
+		markers[index].profile = markers[index].profile.duplicate()
+		markers[index].profile.max_health = 3
+	support_spawner.spawn_all()
+
+
+func _on_support_spawned(enemy: EnemyController) -> void:
+	_support_remaining_health[enemy.get_instance_id()] = enemy.health.current_health
+	enemy.health.health_changed.connect(_on_support_health_changed.bind(enemy.get_instance_id()))
+
+
+func _on_support_health_changed(current: int, _maximum: int, _delta: int, enemy_id: int) -> void:
+	if not boss.health.guard_link_active:
+		return
+	# Retain entries after enemies disappear, and never count overkill twice.
+	_support_remaining_health[enemy_id] = mini(int(_support_remaining_health.get(enemy_id, 3)), maxi(current, 0))
+	var remaining := 0
+	for value: int in _support_remaining_health.values():
+		remaining += value
+	boss.health.set_guard_damage_progress(9 - remaining, 9)
+
+
+func _on_support_count_changed(_remaining: int) -> void:
+	_on_boss_health_changed(boss.health.current_health, boss.health.max_health, 0)
+
+
+func _on_supports_cleared() -> void:
+	if phase != Phase.BOSS_ACTIVE or not boss.health.guard_link_active:
+		return
+	boss.health.end_guard_link()
+	boss.hurt_box.set_deferred("monitorable", true)
+	_clear_hostile_projectiles()
+	_on_boss_health_changed(boss.health.current_health, boss.health.max_health, 0)
+	boss.queue_redraw()
+	_publish_notice(&"boss_shield_down", "守卫已清除 · 护罩解除 · 神像剩余半血", Color(1, 0.75, 0.3), 2.4)
+
+
+func _clear_support_guards() -> void:
+	for enemy in $SupportEnemies.get_children():
+		enemy.set_physics_process(false)
+		enemy.set_process(false)
+		enemy.queue_free()
+
+
+func _clear_hostile_projectiles() -> void:
+	for child in get_children():
+		if child is CombatProjectile and child.faction == CombatFaction.Id.ENEMY:
+			child.set_physics_process(false)
+			child.queue_free()
+
+
+func _on_player_died(_packet: DamagePacket) -> void:
+	_attack_generation += 1
+	telegraph.clear()
+	_clear_hostile_projectiles()
 
 
 func _push_camera_to_altar() -> void:
@@ -153,6 +256,7 @@ func _restore_player_camera() -> void:
 	var tween := create_tween()
 	tween.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	tween.tween_property(player.camera, "position", Vector2.ZERO, 0.45)
+	tween.parallel().tween_property(player.camera, "zoom", Vector2.ONE * PHASE_TWO_CAMERA_ZOOM, 0.45)
 
 
 func _damage_player_in_circle(center: Vector2, radius: float) -> void:
@@ -165,14 +269,14 @@ func _damage_player_in_rect(rect: Rect2) -> void:
 		_damage_player(rect.get_center())
 
 
-func _damage_player(source_position: Vector2) -> void:
-	if player.health.is_dead():
+func _damage_player(source_position: Vector2, damage_type: StringName = &"energy") -> void:
+	if get_tree().paused or phase != Phase.BOSS_ACTIVE or player.health.is_dead():
 		return
 	var packet := DamagePacket.new()
 	packet.base_damage = 1
 	packet.source = boss
 	packet.source_faction = CombatFaction.Id.ENEMY
-	packet.damage_type = &"energy"
+	packet.damage_type = damage_type
 	packet.source_position = source_position
 	packet.travel_direction = source_position.direction_to(player.global_position)
 	packet.blockable = false
@@ -180,18 +284,21 @@ func _damage_player(source_position: Vector2) -> void:
 	player.receive_damage(packet)
 
 
-func _on_boss_health_changed(current: int, maximum: int, _delta: int) -> void:
+func _on_boss_health_changed(_current: int, _maximum: int, _delta: int) -> void:
 	if not is_instance_valid(health_label):
 		return
-	if phase in [Phase.MINIONS, Phase.AWAKENING]:
-		health_label.text = "BOSS  ·  SIGNAL OFFLINE"
+	if phase == Phase.MINIONS:
+		health_label.text = "守卫 %d/%d · 清除守卫" % [boss.opening_guards_remaining, boss.opening_guards_total]
+		return
+	if phase == Phase.AWAKENING:
+		health_label.text = "守卫已清除 · 神像苏醒中"
 		return
 	if phase == Phase.CLEARED:
-		health_label.text = "BOSS  ·  CORE SILENT"
+		health_label.text = "BOSS DEFEATED"
 		return
-	var segments := maxi(current - 1, 0)
-	var core_text := "核心暴露" if current == 1 else "光环 %d/5" % segments
-	health_label.text = "BOSS  %d/%d  ·  %s" % [current, maximum, core_text]
+	health_label.text = "BOSS %s" % boss.health.get_health_text()
+	if boss.health.guard_link_active:
+		health_label.text += " · 无敌 · 守卫 %d/3" % support_spawner.required_remaining
 
 
 func _on_boss_defeated() -> void:
@@ -199,6 +306,8 @@ func _on_boss_defeated() -> void:
 		return
 	_attack_generation += 1
 	telegraph.clear()
+	_clear_support_guards()
+	_clear_hostile_projectiles()
 	_set_phase(Phase.CLEARED)
 	exit_elevator.set_enabled(true)
 	var run_manager := get_node_or_null("/root/RunManager")
@@ -220,8 +329,8 @@ func _set_phase(next_phase: Phase) -> void:
 	phase = next_phase
 	match phase:
 		Phase.MINIONS:
-			phase_label.text = "PHASE I  ·  DORMANT STATUE"
-			health_label.text = "BOSS  ·  SIGNAL OFFLINE"
+			phase_label.text = "PHASE I  ·  THREE STATUE GUARDS"
+			_on_boss_health_changed(boss.health.current_health, boss.health.max_health, 0)
 		Phase.AWAKENING:
 			phase_label.text = "TRANSITION  ·  AWAKENING"
 			health_label.text = "BOSS  ·  SIGNAL OFFLINE"
@@ -230,14 +339,14 @@ func _set_phase(next_phase: Phase) -> void:
 			_on_boss_health_changed(boss.health.current_health, boss.health.max_health, 0)
 		Phase.CLEARED:
 			phase_label.text = "BOSS DEFEATED"
-			health_label.text = "BOSS  ·  CORE SILENT"
+			health_label.text = "BOSS DEFEATED"
 	if _test_mode:
 		phase_label.text += "  ·  TEST"
 	phase_changed.emit(phase)
 
 
 func _attack_is_current(generation: int) -> bool:
-	return phase == Phase.BOSS_ACTIVE and generation == _attack_generation and is_instance_valid(player)
+	return phase == Phase.BOSS_ACTIVE and generation == _attack_generation and is_instance_valid(player) and not player.health.is_dead()
 
 
 func _start_boss_music(music_phase: int) -> void:
@@ -282,7 +391,7 @@ func _restart_boss_test() -> bool:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _test_mode and event.is_action_pressed("restart_room"):
+	if _test_mode and event.is_action_pressed("restart_room") and not event.is_echo():
 		get_viewport().set_input_as_handled()
 		_restart_boss_test()
 		return

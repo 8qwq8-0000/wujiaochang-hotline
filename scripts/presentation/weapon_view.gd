@@ -88,7 +88,7 @@ func get_muzzle_global_position() -> Vector2:
 func _play_projectile_feedback() -> void:
 	if body_root != null:
 		body_root.position = _body_position - Vector2(recoil_distance, 0.0)
-	if muzzle_flash != null:
+	if muzzle_flash != null and data.attack_kind != WeaponComponentData.AttackKind.BEAM:
 		muzzle_flash.visible = true
 		muzzle_flash.modulate = Color.WHITE
 	_feedback_tween = create_tween()

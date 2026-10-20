@@ -6,6 +6,7 @@ const WEAPON_PATHS := [
 	"res://resources/weapons/baton.tres",
 	"res://resources/weapons/service_pistol.tres",
 	"res://resources/weapons/scattergun.tres",
+	"res://resources/weapons/rail_cannon.tres",
 ]
 const COATING_SCRIPT := preload("res://scripts/presentation/procedural_coating_2d.gd")
 

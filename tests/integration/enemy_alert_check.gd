@@ -10,6 +10,8 @@ func check(value: bool, message: String) -> void:
 func enemy_at(parent: Node, location: Vector2) -> EnemyController:
 	var enemy: EnemyController = load("res://scenes/actors/enemies/enemy.tscn").instantiate()
 	enemy.profile = load("res://resources/enemies/melee_pressure.tres").duplicate()
+	# The surviving-hit assertion requires more than the runtime one-hit health.
+	enemy.profile.max_health = 2
 	enemy.profile.patrol_enabled = false
 	enemy.profile.awareness_range = 200
 	enemy.profile.hearing_range = 180
@@ -134,7 +136,8 @@ func run() -> void:
 	check(not player.weapons.try_attack(player.global_position, Vector2.UP, player), "cooldown rejects next shot")
 	check(emitted[0] == 1, "rejected shot emits no sound")
 	observer._forget_target()
-	player.weapons.select_weapon(0)
+	# Explicit melee fixture: the current starting loadout may be a pistol.
+	player.equip_weapon(load("res://resources/weapons/initial_baton.tres"))
 	player.weapons.reset_transient_state()
 	check(player.weapons.try_attack(player.global_position, Vector2.UP, player), "initial baton attacks")
 	check(not observer.is_alerted() and emitted[0] == 1, "quiet melee does not emit gunshot sound")

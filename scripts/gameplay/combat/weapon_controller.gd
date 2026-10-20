@@ -5,6 +5,7 @@ signal weapon_changed(index: int, data: WeaponComponentData)
 signal attack_performed(data: WeaponComponentData)
 
 const PROJECTILE_SCENE_PATH := "res://scenes/combat/projectile.tscn"
+const LASER_BEAM := preload("res://scripts/presentation/laser_beam.gd")
 const DEFAULT_WEAPON := preload("res://resources/weapons/service_pistol.tres")
 const DEBUG_WEAPONS := [
 	DEFAULT_WEAPON,
@@ -104,6 +105,8 @@ func try_attack(origin: Vector2, direction: Vector2, source_node: Node) -> bool:
 			_begin_melee(data, direction.normalized())
 		WeaponComponentData.AttackKind.PROJECTILE, WeaponComponentData.AttackKind.SPREAD:
 			_perform_projectiles(data, origin, direction.normalized(), source_node)
+		WeaponComponentData.AttackKind.BEAM:
+			_perform_beam(data, origin, direction.normalized(), source_node)
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null and data.noise_radius > 0.0:
 		events.publish_noise(source_node, origin, data.noise_radius)
@@ -118,12 +121,27 @@ func clamp_projectile_origin(actor_origin: Vector2, muzzle_origin: Vector2) -> V
 	var world := get_viewport().world_2d
 	if world == null:
 		return muzzle_origin
-	var query := PhysicsRayQueryParameters2D.create(actor_origin, muzzle_origin, 1)
+	# A long barrel can extend past a touching enemy. Treat that hurtbox like a
+	# muzzle obstruction, but ignore the shooter's own hurtbox and non-actor areas.
+	var query := PhysicsRayQueryParameters2D.create(actor_origin, muzzle_origin, 1 | 8 | 16)
+	query.collide_with_areas = true
 	query.hit_from_inside = true
-	var hit := world.direct_space_state.intersect_ray(query)
-	if hit.is_empty():
-		return muzzle_origin
-	return Vector2(hit.position) - delta.normalized() * 1.5
+	var excluded: Array[RID] = []
+	var shooter := get_parent()
+	var own_hurtbox := shooter.get_node_or_null("HurtBox") as HurtBox2DComponent
+	if own_hurtbox != null:
+		excluded.append(own_hurtbox.get_rid())
+	for attempt in 32:
+		query.exclude = excluded
+		var hit := world.direct_space_state.intersect_ray(query)
+		if hit.is_empty():
+			return muzzle_origin
+		var collider: Object = hit.collider
+		if collider is Area2D and not collider is HurtBox2DComponent:
+			excluded.append(collider.get_rid())
+			continue
+		return Vector2(hit.position) - delta.normalized() * 1.5
+	return actor_origin
 
 
 func get_melee_swing_angle_offset() -> float:
@@ -189,6 +207,55 @@ func _perform_projectiles(data: WeaponComponentData, origin: Vector2, direction:
 		projectile.setup(source_node, faction, direction.rotated(deg_to_rad(offset)), data.damage, data.projectile_speed)
 		projectile.damage_type = data.damage_type
 		projectile.status_tags = data.status_tags.duplicate()
+
+
+func _perform_beam(data: WeaponComponentData, origin: Vector2, direction: Vector2, source_node: Node) -> void:
+	var room := CombatProjectile.room_for_actor(source_node)
+	var space := get_world_2d().direct_space_state
+	# Sweep the full beam width against walls, then use that same length for
+	# both the visible light and its damage rectangle.
+	var front := RectangleShape2D.new()
+	front.size = Vector2(1.0, data.beam_width)
+	var sweep := PhysicsShapeQueryParameters2D.new()
+	sweep.shape = front
+	sweep.transform = Transform2D(direction.angle(), origin)
+	sweep.collision_mask = 1
+	sweep.margin = 0.0
+	var starts_in_wall := not space.intersect_shape(sweep, 1).is_empty()
+	sweep.motion = direction * data.attack_range
+	var length := 0.0 if starts_in_wall else data.attack_range * space.cast_motion(sweep)[0]
+	if length <= 0.0:
+		return
+	var shape := RectangleShape2D.new()
+	shape.size = Vector2(length, data.beam_width)
+	var query := PhysicsShapeQueryParameters2D.new()
+	query.shape = shape
+	query.transform = Transform2D(direction.angle(), origin + direction * length * 0.5)
+	query.collision_mask = 8 | 16
+	query.collide_with_areas = true
+	query.collide_with_bodies = false
+	query.margin = 0.0
+	var hit_actors := {}
+	for hit in space.intersect_shape(query, 256):
+		var area := hit.collider as Area2D
+		if area == null or not area.has_method("receive_hit"):
+			continue
+		var actor: Node = area.actor if area is HurtBox2DComponent else area
+		if not is_instance_valid(actor) or actor == source_node:
+			continue
+		if CombatProjectile.room_for_actor(actor) != room or hit_actors.has(actor.get_instance_id()):
+			continue
+		hit_actors[actor.get_instance_id()] = true
+		var packet := _make_packet(data, origin, direction, source_node)
+		packet.is_area_damage = true
+		area.receive_hit(packet)
+	var beam := Node2D.new()
+	beam.set_script(LASER_BEAM)
+	beam.set("beam_length", length)
+	beam.set("beam_width", data.beam_width)
+	room.add_child(beam)
+	beam.global_position = origin
+	beam.global_rotation = direction.angle()
 
 
 func _make_packet(data: WeaponComponentData, origin: Vector2, direction: Vector2, source_node: Node) -> DamagePacket:

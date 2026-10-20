@@ -36,3 +36,66 @@
 - Known failures remain: week1 room drop-count assertions (F6 and Main); b147f38 addresses post-door enemy pathing and is included. Some test exits still report ObjectDB/resource-use warnings; .NET/Windows export not checked.
 
 - Final user instruction: do not push parry training yet. Excluded its sandbox controls, enemy behavior, and guard_training_check from this commit; original desktop working copy retains them.
+
+## 2026-10-20 — Five-seal whale Boss and storm phase
+
+- User approved five independent halo hits, simultaneous cross lasers, five mandatory reinforcements shielding the core, whale-song waves, rain/lightning, and overhead segmented health. Implemented locally without committing or pushing; preserved the pre-existing project.godot window-mode edit.
+- Added shared per-activation damage identity for pellets/reactions and a Boss-only health gate. Added reachable physical core target, pause-safe hazard timing, guarded phase transitions, and a full-arena camera view. Existing Boss/art assets are reused; thunder is deterministically synthesized by tools/audio/build_boss_thunder.py, without external recordings.
+- Implementation, tuning and validation scope: docs/technical/楼顶Boss战斗实施说明.md. Checks cover real projectiles and scattergun, phase gates, wave/strike geometry, pause/death cancellation, isolated saves and actual restart input. Non-headless runtime screenshots checked; existing ObjectDB/resource-use warnings remain. No ordinary-floor Boss scheduling, reward changes, or .NET/Windows export claim.
+
+- Follow-up UI correction: overhead health is one continuous bar scaled to five halo hits (100/80/60/40/20/0 percent); the core is text-only status, not a sixth health slot. Removed the 6-point total from the arena HUD.
+
+## 2026-10-20 — Final Boss simplification and linked guard damage
+
+- Later user instructions supersede the earlier storm/core design: five opening guards each remove 20% halo; preserve the camera push, glow and awakening; phase two has six Boss health and three supports, each with three health, fighting simultaneously.
+- Boss is immune to direct damage while supports remain. Their nine health points proportionally consume half of Boss health; clearing them leaves exactly 3/6 health for the final direct fight. Kept original oracle strike and simultaneous horizontal/vertical lasers, continuous overhead bar and pause/restart fixes.
+- Removed the uncommitted storm controller, generated thunder assets/tool and per-activation weapon identity changes from the discarded design. Final rules and test scope: docs/technical/楼顶Boss战斗实施说明.md. No commits or pushes; original project.godot window-mode change preserved.
+
+- Final validation: rooftop_boss_check 73/73, boss_patterns_check 10/10, boss_shortcut_check 24/24, unit checks 62/62. Non-headless screenshots confirm the awakening camera push, linked shield damage and final 3/6 health display. Existing exit-time ObjectDB/resource-use warnings remain.
+
+## 2026-10-20 — Opening wave reduced independently
+
+- User explicitly limited this follow-up to phase one: three opening guards, one health each, no opening-guard/halo/Boss health linkage. The independent count reaches zero before the retained statue camera push and awakening animation. Hide the statue health bar until phase two.
+- Phase two is unchanged: six Boss health, three three-health supports, Boss directly immune while supports survive, their health losses leave exactly 3/6 Boss health for the remaining fight. No commits or pushes.
+
+- Opening-only follow-up validation: rooftop Boss flow 66/66, isolated shortcut/restart 24/24, unit checks 62/62; non-headless captures confirm exactly three opening guards, no opening statue-health display and the retained zoom toward the statue. Existing exit-time resource warnings remain.
+
+## 2026-10-20 — Arena guard awareness and teammate camera restoration
+
+- User requested maximum awareness for all Boss guards and the teammate-provided camera. Restored _configure_arena_camera, _push_camera_to_altar and _restore_player_camera from original Boss commit 8de1acd, removing the added zoom logic.
+- Boss-only cloned enemy profiles opt into full-room visual detection, 360-degree FOV and maximum awareness/hearing/ally-alert/memory parameters. The ordinary viewport cap and shared profiles remain unchanged; wall occlusion and room isolation remain active.
+
+## 2026-10-20 — Point-blank gunfire fix
+
+- User added the point-blank shooting bug to the camera/awareness request. Reproduced misses when a rendered barrel extends through an enemy before projectile creation. Muzzle obstruction query now includes actor hurtboxes, excludes the shooter's own hurtbox and skips non-actor areas, while keeping walls as first obstructions.
+- Added real firing checks for pistol/scattergun and the preview-only rail-cannon view across eight directions, plus self-ignore and wall blocking. The ordinary alert regression fixture now explicitly has enough HP to survive its test hit and explicitly equips a quiet baton; prior assumptions about runtime one-hit enemies and starter equipment caused that test to fail/hang independently of Boss overrides.
+
+- Camera/awareness and shooting validation: Boss flow/awareness 77/77, point-blank shooting 73/73, weapon wrist alignment 818/818, unit checks 62/62; ordinary alert and shooting-input regressions report zero failures. Three restored camera functions match teammate commit 8de1acd verbatim. Non-headless original-camera capture checked. Exit-time resource-use warnings remain.
+
+## 2026-10-20 — Slightly wider phase-two view
+
+- User requested a slightly wider phase-two view to see the overhead bar more easily. Keep phase one and the teammate statue cinematic at scale 1; blend to camera zoom 0.8 over the existing 0.45-second return to player. Visible width/height increase by 25%; does not force a full-arena view or guarantee the statue remains on screen at the far bottom.
+
+- Latest presentation adjustment: moved the phase-two Boss health bar and its status caption from above the head to immediately below the statue pedestal; health and combat rules are unchanged.
+
+## 2026-10-20 — Rail cannon enters ordinary loot
+
+- User requested making the preview cannon obtainable through normal drops. Added runtime rail_cannon weapon data, component catalog/icon and the ordinary floor drop pool; editor-authored pickups can also select it. Existing quality, affixes, equipment and serialization rules apply.
+- User clarified that the cannon must fire a long, wide area laser. Replaced the temporary projectile implementation with a dedicated BEAM attack: 1000 length, 48 width, 3 damage per target once per shot, 1.10-second cooldown and 35 heat. A full-width wall sweep clips both the damage rectangle and world-space beam to the same endpoint. The beam penetrates actors, ignores its source, uses the normal area damage pipeline and fades after 0.32 seconds. The weapon-mounted preview flash is suppressed for BEAM attacks.
+- Validation: beam area/length/width/multiple targets/single-hit/wall/cleanup checks 22/22, ordinary loot/pickup/equip/fire/serialization checks 11/11, actual runtime weapons across eight point-blank directions 73/73, weapon art 24/24 and unit checks 62/62. Non-headless beam capture visually checked. Existing ObjectDB/resource-use exit warnings remain.
+
+- User requested a slightly narrower beam: reduced visible and damage width from 64 to 48; length remains 1000.
+
+- Fixed beam hits filtering out environmental receive_hit areas: barrels now break and explode through the existing damage interface. Actor deduplication, source exclusion and room boundaries remain enforced. Beam regression 26/26 covers actual barrel explosion, wall protection and out-of-width exclusion.
+
+## 2026-10-20 — Restore dragon synthesist wiring
+
+- User reported the warehouse still showed Lao Zhou instead of the previously authored dragon character. Found the missing warehouse RefinedArt/gpt adapter and GPT workshop labels in preserved stash 0f45c20. Restored only those warehouse scene and panel changes; kept the stash and unrelated changes intact. Existing gpt_synthesist artwork and adapter are reused.
+- Synthesis NPC integration 40/40 and non-headless warehouse capture confirm the dragon character and GPT name are visible with working E interaction and upgrades. Shared refined-art regression reports 18/19: the hinged-door _pose expectation fails in untouched door-adapter code; this change does not alter that adapter. Existing exit resource warnings remain.
+
+## 2026-10-20 — Publish remaining integration fixes
+
+- User explicitly authorized pushing all remaining useful changes and canceled shield-parry training. No training toggle, stationary trainer behavior or training test is included. Retained historical stashes as backups without applying obsolete scenes, deleted tests or superseded difficulty code.
+- Restored the old editor/Git formatting and ignore rules, Windows environment-check script and current GPT art implementation note. Updated the existing wrist-weapon note instead of restoring the obsolete duplicate document. The local maximize-window preference remains outside the commit as before. Windows/PowerShell and .NET execution are not validated on this macOS session.
+
+- Pre-push validation: laser beam 26/26, loot/equipment 11/11, synthesis NPC 40/40, point-blank shooting 73/73 and unit checks 62/62 passed. git diff --check passed. Known shared hinged-door art regression and existing exit resource warnings remain as recorded above.
