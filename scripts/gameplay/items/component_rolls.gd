@@ -206,5 +206,5 @@ static func floor_drop(floor_number: int, rng: RandomNumberGenerator) -> Invento
 	var weights := floor_weights(floor_number)
 	var roll := rng.randi_range(1, 100)
 	var tier := 1 if roll <= weights[0] else (2 if roll <= weights[0] + weights[1] else 3)
-	var pool := ["baton", "pistol", "scattergun", "wheel", "armor"]
+	var pool := ["baton", "pistol", "scattergun", "rail_cannon", "wheel", "armor"]
 	return create(pool[rng.randi_range(0, pool.size() - 1)], tier, rng)

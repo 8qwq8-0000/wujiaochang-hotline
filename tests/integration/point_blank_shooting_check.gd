@@ -28,15 +28,7 @@ func run() -> void:
 	room.add_child(enemy)
 	enemy.set_physics_process(false)
 	for weapon_id in ["service_pistol", "scattergun", "rail_cannon"]:
-		var weapon: WeaponComponentData
-		if weapon_id == "rail_cannon":
-			weapon = WeaponComponentData.new()
-			weapon.id = &"rail_cannon"
-			weapon.view_scene = load("res://scenes/weapons/rail_cannon.tscn")
-			weapon.attack_kind = WeaponComponentData.AttackKind.PROJECTILE
-			weapon.projectile_speed = 520
-		else:
-			weapon = load("res://resources/weapons/" + weapon_id + ".tres")
+		var weapon: WeaponComponentData = load("res://resources/weapons/" + weapon_id + ".tres")
 		player.equip_weapon(weapon)
 		for index in 8:
 			var heading := Vector2.RIGHT.rotated(index * PI / 4)

@@ -77,3 +77,25 @@
 - User requested a slightly wider phase-two view to see the overhead bar more easily. Keep phase one and the teammate statue cinematic at scale 1; blend to camera zoom 0.8 over the existing 0.45-second return to player. Visible width/height increase by 25%; does not force a full-arena view or guarantee the statue remains on screen at the far bottom.
 
 - Latest presentation adjustment: moved the phase-two Boss health bar and its status caption from above the head to immediately below the statue pedestal; health and combat rules are unchanged.
+
+## 2026-10-20 — Rail cannon enters ordinary loot
+
+- User requested making the preview cannon obtainable through normal drops. Added runtime rail_cannon weapon data, component catalog/icon and the ordinary floor drop pool; editor-authored pickups can also select it. Existing quality, affixes, equipment and serialization rules apply.
+- User clarified that the cannon must fire a long, wide area laser. Replaced the temporary projectile implementation with a dedicated BEAM attack: 1000 length, 48 width, 3 damage per target once per shot, 1.10-second cooldown and 35 heat. A full-width wall sweep clips both the damage rectangle and world-space beam to the same endpoint. The beam penetrates actors, ignores its source, uses the normal area damage pipeline and fades after 0.32 seconds. The weapon-mounted preview flash is suppressed for BEAM attacks.
+- Validation: beam area/length/width/multiple targets/single-hit/wall/cleanup checks 22/22, ordinary loot/pickup/equip/fire/serialization checks 11/11, actual runtime weapons across eight point-blank directions 73/73, weapon art 24/24 and unit checks 62/62. Non-headless beam capture visually checked. Existing ObjectDB/resource-use exit warnings remain.
+
+- User requested a slightly narrower beam: reduced visible and damage width from 64 to 48; length remains 1000.
+
+- Fixed beam hits filtering out environmental receive_hit areas: barrels now break and explode through the existing damage interface. Actor deduplication, source exclusion and room boundaries remain enforced. Beam regression 26/26 covers actual barrel explosion, wall protection and out-of-width exclusion.
+
+## 2026-10-20 — Restore dragon synthesist wiring
+
+- User reported the warehouse still showed Lao Zhou instead of the previously authored dragon character. Found the missing warehouse RefinedArt/gpt adapter and GPT workshop labels in preserved stash 0f45c20. Restored only those warehouse scene and panel changes; kept the stash and unrelated changes intact. Existing gpt_synthesist artwork and adapter are reused.
+- Synthesis NPC integration 40/40 and non-headless warehouse capture confirm the dragon character and GPT name are visible with working E interaction and upgrades. Shared refined-art regression reports 18/19: the hinged-door _pose expectation fails in untouched door-adapter code; this change does not alter that adapter. Existing exit resource warnings remain.
+
+## 2026-10-20 — Publish remaining integration fixes
+
+- User explicitly authorized pushing all remaining useful changes and canceled shield-parry training. No training toggle, stationary trainer behavior or training test is included. Retained historical stashes as backups without applying obsolete scenes, deleted tests or superseded difficulty code.
+- Restored the old editor/Git formatting and ignore rules, Windows environment-check script and current GPT art implementation note. Updated the existing wrist-weapon note instead of restoring the obsolete duplicate document. The local maximize-window preference remains outside the commit as before. Windows/PowerShell and .NET execution are not validated on this macOS session.
+
+- Pre-push validation: laser beam 26/26, loot/equipment 11/11, synthesis NPC 40/40, point-blank shooting 73/73 and unit checks 62/62 passed. git diff --check passed. Known shared hinged-door art regression and existing exit resource warnings remain as recorded above.

@@ -20,6 +20,13 @@
     "image": "res://assets/art/weapons/placeholder/placeholder_scattergun_unpainted.png",
     "maximum_stack_size": 1
   },
+  "rail_cannon": {
+    "name": "腕锁激光炮",
+    "slot": "weapon",
+    "effect": "res://resources/weapons/rail_cannon.tres",
+    "image": "res://assets/art/weapons/placeholder/arm_lock_rail_cannon.png",
+    "maximum_stack_size": 1
+  },
   "wheel": {
     "name": "轮式推进组件",
     "slot": "mobility",

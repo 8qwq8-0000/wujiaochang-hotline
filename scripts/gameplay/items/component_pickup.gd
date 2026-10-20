@@ -1,7 +1,7 @@
 class_name ComponentPickup
 extends Node2D
 
-@export_enum("pistol", "scattergun", "wheel", "armor") var component_id := "pistol"
+@export_enum("pistol", "scattergun", "rail_cannon", "wheel", "armor") var component_id := "pistol"
 var rolled_item: InventoryItem
 var _picked := false
 var _label: Label

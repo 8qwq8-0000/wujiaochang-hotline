@@ -14,6 +14,7 @@ muzzle_flash_hold_seconds = 0.24
 muzzle_flash_fade_seconds = 0.08
 [node name="BodyRoot" type="Node2D" parent="."]
 [node name="BodySprite" type="Sprite2D" parent="BodyRoot"]
+texture_filter = 1
 position = Vector2(24, 0)
 texture = ExtResource("2")
 [node name="Coating" type="Node2D" parent="BodyRoot"]

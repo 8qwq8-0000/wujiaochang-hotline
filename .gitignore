@@ -5,3 +5,13 @@
 builds/
 exports/
 /addons/.godot_ai_update/
+
+# Local build output and credentials
+**/bin/
+**/obj/
+export_credentials.cfg
+.env
+.env.*
+.DS_Store
+.dotnet/
+/.dotnet

@@ -51,7 +51,7 @@ func _ready() -> void:
 	margin.add_child(column)
 	var header := HBoxContainer.new()
 	column.add_child(header)
-	var title := _label("老周的合成工坊", 21, CYAN)
+	var title := _label("GPT 的合成工坊", 21, CYAN)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
 	var close_button := Button.new()
@@ -193,7 +193,7 @@ func refresh() -> void:
 			if ComponentRolls.synthesizable(item) and (_filter == "all" or item.get_property("slot") == _filter):
 				_add_item(item, location)
 	if _list.get_child_count() == 0:
-		_list.add_child(_label("暂无可合成组件\n出击收集后再来找老周", 12))
+		_list.add_child(_label("暂无可合成组件\n出击收集后再来找 GPT", 12))
 	_refresh_preview()
 
 func _add_item(item: InventoryItem, location: String) -> void:

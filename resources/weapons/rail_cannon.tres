@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="WeaponComponentData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/combat/weapon_data.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/rail_cannon.tscn" id="2_view"]
+
+[resource]
+script = ExtResource("1")
+id = &"rail_cannon"
+display_name = "腕锁激光炮"
+view_scene = ExtResource("2_view")
+attack_kind = 3
+damage = 3
+cooldown = 1.10
+heat_per_attack = 35.0
+attack_range = 1000.0
+beam_width = 48.0
+noise_radius = 400.0

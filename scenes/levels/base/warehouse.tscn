@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://b8jvjbjdywf3i" path="res://scripts/gameplay/warehouse/warehouse_room.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/actors/player/player.tscn" id="2"]
 [ext_resource type="Script" uid="uid://cn4ot8870c81i" path="res://scripts/gameplay/warehouse/warehouse_interactable.gd" id="3"]
+[ext_resource type="Script" path="res://scripts/presentation/refined_environment_art.gd" id="refined_art"]
 
 [sub_resource type="RectangleShape2D" id="WallHorizontal"]
 size = Vector2(640, 24)
@@ -180,7 +181,7 @@ offset_left = -70.0
 offset_top = -54.0
 offset_right = 70.0
 theme_override_font_sizes/font_size = 14
-text = "合成师 · 老周"
+text = "合成师 · GPT"
 horizontal_alignment = 1
 mouse_filter = 2
 
@@ -192,3 +193,9 @@ theme_override_font_sizes/font_size = 13
 text = "[E] 合成 / 升级武器"
 horizontal_alignment = 1
 mouse_filter = 2
+
+[node name="RefinedArt" type="Node2D" parent="SynthesisNPC"]
+script = ExtResource("refined_art")
+kind = "gpt"
+draw_size = Vector2(52, 64)
+draw_offset = Vector2(0, -6)
