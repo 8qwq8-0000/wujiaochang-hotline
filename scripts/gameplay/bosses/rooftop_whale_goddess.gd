@@ -20,11 +20,13 @@ enum State {
 @onready var glow_sprite: Sprite2D = $GlowSprite
 @onready var echo_probe_audio: AudioStreamPlayer2D = $EchoProbeAudio
 @onready var hurt_box: HurtBox2DComponent = $HurtBox
-@onready var health: HealthComponent = $HealthComponent
+@onready var health: RooftopBossHealth = $HealthComponent
 
 var state := State.DORMANT
 var halo_segments_remaining := 5
 var _anger_remaining := 0.0
+var opening_guards_remaining := 3
+var opening_guards_total := 3
 
 
 func _ready() -> void:
@@ -67,6 +69,7 @@ func begin_awakening() -> void:
 	if state != State.AWAKENING:
 		return
 	state = State.ACTIVE
+	health.damage_enabled = true
 	hurt_box.set_deferred("monitorable", true)
 	queue_redraw()
 	awakened.emit()
@@ -76,6 +79,7 @@ func activate_immediately() -> void:
 	if state == State.DEFEATED:
 		return
 	state = State.ACTIVE
+	health.damage_enabled = true
 	body_sprite.texture = dormant_texture
 	glow_sprite.visible = true
 	glow_sprite.modulate = Color(1.0, 1.0, 1.0, 0.75)
@@ -96,15 +100,13 @@ func get_halo_segments_remaining() -> int:
 	return halo_segments_remaining
 
 
-func is_core_exposed() -> bool:
-	return state == State.ACTIVE and health.current_health == 1
+func set_opening_guards(remaining: int, total: int) -> void:
+	opening_guards_total = maxi(total, 1)
+	opening_guards_remaining = clampi(remaining, 0, opening_guards_total)
+	queue_redraw()
 
 
-func _on_health_changed(current: int, _maximum: int, _delta: int) -> void:
-	var next_segments := clampi(current - 1, 0, halo_segment_count)
-	if next_segments != halo_segments_remaining:
-		halo_segments_remaining = next_segments
-		halo_segments_changed.emit(halo_segments_remaining, halo_segment_count)
+func _on_health_changed(_current: int, _maximum: int, _delta: int) -> void:
 	queue_redraw()
 
 
@@ -117,6 +119,7 @@ func _on_died(_packet: DamagePacket) -> void:
 	if state == State.DEFEATED:
 		return
 	state = State.DEFEATED
+	health.damage_enabled = false
 	hurt_box.set_deferred("monitorable", false)
 	var tween := create_tween()
 	tween.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
@@ -126,7 +129,8 @@ func _on_died(_packet: DamagePacket) -> void:
 
 
 func _draw() -> void:
-	if state not in [State.ACTIVE, State.DEFEATED]:
+	# Opening guards have their own counter; no statue health bar before awakening.
+	if state in [State.DORMANT, State.AWAKENING]:
 		return
 	var center := Vector2(0.0, -78.0)
 	var radius := 54.0
@@ -135,5 +139,19 @@ func _draw() -> void:
 		var angle := deg_to_rad(216.0 + index * 27.0)
 		var color := Color(0.25, 0.95, 1.0, 0.9) if index < halo_segments_remaining else Color(0.12, 0.16, 0.22, 0.55)
 		draw_arc(center, radius, angle - arc_span * 0.5, angle + arc_span * 0.5, 10, color, 3.0)
-	if is_core_exposed():
-		draw_circle(Vector2(0.0, -20.0), 7.0, Color(1.0, 0.32, 0.12, 0.85), false, 2.0)
+	var remaining := health.get_precise_health()
+	var maximum := health.max_health
+	var ratio := clampf(float(remaining) / maximum, 0.0, 1.0)
+	# Place the health bar just below the statue pedestal.
+	var bar_y := 136.0
+	var bar := Rect2(-87, bar_y, 174, 9)
+	draw_rect(bar.grow(3), Color(0.025, 0.045, 0.075, 0.94), true)
+	draw_rect(bar, Color(0.12, 0.18, 0.23), true)
+	if ratio > 0.0:
+		draw_rect(Rect2(bar.position, Vector2(bar.size.x * ratio, bar.size.y)), Color(0.18, 0.85, 0.95), true)
+	var caption := "BOSS %s" % health.get_health_text()
+	if state == State.ACTIVE and health.guard_link_active:
+		caption = "SHIELD - %s" % health.get_health_text()
+	if state == State.DEFEATED:
+		caption = "BOSS DEFEATED"
+	draw_string(ThemeDB.fallback_font, Vector2(-87, bar_y + 25), caption, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.85, 0.95, 1.0))

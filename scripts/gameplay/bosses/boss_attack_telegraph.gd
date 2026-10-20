@@ -14,6 +14,7 @@ var mode := Mode.NONE
 var origin := Vector2.ZERO
 var target := Vector2.ZERO
 var laser_rect := Rect2()
+var cross_lasers: Array[Rect2] = []
 var elapsed := 0.0
 var duration := 1.0
 
@@ -38,10 +39,19 @@ func show_oracle(world_target: Vector2, seconds: float, striking: bool = false) 
 func show_laser(world_rect: Rect2, seconds: float, active: bool = false) -> void:
 	_begin(Mode.LASER_ACTIVE if active else Mode.LASER_WARNING, seconds)
 	laser_rect = Rect2(to_local(world_rect.position), world_rect.size)
+	cross_lasers = [laser_rect]
+
+
+func show_cross(world_rects: Array[Rect2], seconds: float, active: bool = false) -> void:
+	_begin(Mode.LASER_ACTIVE if active else Mode.LASER_WARNING, seconds)
+	cross_lasers.clear()
+	for rect in world_rects:
+		cross_lasers.append(Rect2(to_local(rect.position), rect.size))
 
 
 func clear() -> void:
 	mode = Mode.NONE
+	cross_lasers.clear()
 	queue_redraw()
 
 
@@ -74,11 +84,13 @@ func _draw() -> void:
 			draw_circle(target, 28.0, Color(0.72, 0.28, 1.0, 0.28 * (1.0 - progress)))
 			draw_arc(target, lerpf(10.0, 31.0, progress), 0.0, TAU, 32, Color(1.0, 0.9, 1.0, 1.0 - progress), 2.0)
 		Mode.LASER_WARNING:
-			var center_line := _laser_center_line(laser_rect, 2.0)
-			draw_rect(center_line, Color(1.0, 0.32, 0.12, 0.34 + progress * 0.48), true)
+			for rect in cross_lasers:
+				draw_rect(rect, Color(1.0, 0.32, 0.12, 0.12), true)
+				draw_rect(_laser_center_line(rect, 2.0), Color(1.0, 0.32, 0.12, 0.34 + progress * 0.48), true)
 		Mode.LASER_ACTIVE:
-			draw_rect(laser_rect, Color(1.0, 0.16, 0.06, 0.52), true)
-			draw_rect(_laser_center_line(laser_rect, 4.0), Color(1.0, 0.88, 0.58, 0.94), true)
+			for rect in cross_lasers:
+				draw_rect(rect, Color(1.0, 0.16, 0.06, 0.52), true)
+				draw_rect(_laser_center_line(rect, 4.0), Color(1.0, 0.88, 0.58, 0.94), true)
 
 
 func _laser_center_line(rect: Rect2, thickness: float) -> Rect2:

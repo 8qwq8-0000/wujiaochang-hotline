@@ -14,6 +14,7 @@ enum Role {
 @export var role: Role = Role.MELEE_PRESSURE
 @export_range(1, 20, 1) var max_health: int = 2
 @export_range(1.0, 500.0, 1.0) var move_speed: float = 76.0
+@export var full_room_awareness := false
 @export_range(10.0, 1000.0, 1.0) var awareness_range: float = 240.0
 @export_range(10.0, 1000.0, 1.0) var attack_range: float = 34.0
 @export_range(0.1, 5.0, 0.1) var attack_cooldown: float = 1.13

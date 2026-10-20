@@ -25,7 +25,7 @@ func test_runtime_textures_share_pixel_canvas() -> void:
 	assert_eq(room.get_size(), Vector2(960.0, 540.0))
 
 
-func test_boss_scene_has_six_step_weakpoint_health() -> void:
+func test_boss_scene_has_six_health_and_separate_opening_counter() -> void:
 	var boss := track(BOSS_SCENE.instantiate()) as RooftopWhaleGoddess
 	assert_true(boss != null)
 	assert_eq(boss.get_node("HealthComponent").max_health, 6)
@@ -33,7 +33,7 @@ func test_boss_scene_has_six_step_weakpoint_health() -> void:
 	assert_eq(boss.get_node("HurtBox").collision_layer, 16)
 	assert_false(boss.get_node("HurtBox").monitorable)
 	assert_true(boss.has_method("begin_awakening"))
-	assert_true(boss.has_method("is_core_exposed"))
+	assert_true(boss.has_method("set_opening_guards"))
 	assert_true(boss.has_method("play_echo_probe"))
 	var echo_audio := boss.get_node_or_null("EchoProbeAudio") as AudioStreamPlayer2D
 	assert_true(echo_audio != null)
@@ -54,6 +54,9 @@ func test_arena_authors_phase_one_and_phase_two_contract() -> void:
 	assert_true(arena.get_node("Boss").z_index < arena.get_node("Player").z_index)
 	assert_eq(arena.get_node("Player").position, Vector2(480.0, 486.0))
 	assert_eq(arena.get_node("EnemySpawnPoints").get_child_count(), 3)
+	assert_eq(arena.get_node("SupportSpawnPoints").get_child_count(), 3)
+	assert_false(arena.get_node("SupportSpawner").auto_spawn)
+	assert_false(arena.get_node("SupportSpawner").report_to_run_manager)
 	assert_true(arena.has_signal("room_cleared"))
 	assert_true(arena.has_method("_damage_player_in_circle"))
 	assert_true(arena.has_method("_damage_player_in_rect"))

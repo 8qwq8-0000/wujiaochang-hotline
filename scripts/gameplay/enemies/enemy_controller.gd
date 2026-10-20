@@ -832,7 +832,7 @@ func can_see_target() -> bool:
 	var settings: Node = get_node_or_null("/root/GameSettings")
 	var visual_scale: float = float(settings.get_visual_range_scale()) if settings != null and settings.has_method("get_visual_range_scale") else 1.0
 	var half_extents := viewport_size * 0.5 * visual_scale
-	if absf(offset.x) > half_extents.x or absf(offset.y) > half_extents.y:
+	if not profile.full_room_awareness and (absf(offset.x) > half_extents.x or absf(offset.y) > half_extents.y):
 		return false
 	# The legacy range remains a useful profile/test limiter. Runtime profiles
 	# set it above the viewport diagonal, so the rectangle is the real cap.

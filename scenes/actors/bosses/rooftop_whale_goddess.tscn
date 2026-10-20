@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://scripts/gameplay/bosses/rooftop_whale_goddess.gd" id="1_boss"]
 [ext_resource type="Texture2D" path="res://assets/art/characters/bosses/rooftop_whale_goddess/rooftop_boss_dormant.png" id="2_dormant"]
 [ext_resource type="Texture2D" path="res://assets/art/characters/bosses/rooftop_whale_goddess/rooftop_boss_glow.png" id="4_glow"]
-[ext_resource type="Script" path="res://scripts/gameplay/combat/health_component.gd" id="5_health"]
+[ext_resource type="Script" path="res://scripts/gameplay/bosses/rooftop_boss_health.gd" id="5_health"]
 [ext_resource type="Script" path="res://scripts/gameplay/combat/hurt_box.gd" id="6_hurtbox"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/bosses/rooftop_whale_echo_probe.wav" id="7_echo_probe"]
 
@@ -14,7 +14,7 @@ blend_mode = 1
 size = Vector2(126, 30)
 
 [sub_resource type="RectangleShape2D" id="HurtShape"]
-size = Vector2(130, 190)
+size = Vector2(130, 230)
 
 [node name="RooftopWhaleGoddess" type="StaticBody2D"]
 texture_filter = 1
@@ -58,5 +58,5 @@ health_path = NodePath("../HealthComponent")
 actor_path = NodePath("..")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="HurtBox"]
-position = Vector2(0, -2)
+position = Vector2(0, 18)
 shape = SubResource("HurtShape")

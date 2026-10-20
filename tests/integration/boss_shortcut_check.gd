@@ -74,6 +74,29 @@ func run_checks() -> void:
 	check(bool(arena.get("_test_mode")), "shortcut enables isolated boss test mode")
 	check(not root.get_node("RunManager").persistent_run, "boss shortcut does not create a persistent action")
 	check(store.get_profile() == saved_before, "entering boss test does not mutate warehouse profile")
+	var initial_health := arena.player.health.current_health
+	var previous_arena := arena.get_instance_id()
+	arena.attack_loop_enabled = false
+	arena.boss.activate_immediately()
+	arena._set_phase(RooftopBossArena.Phase.BOSS_ACTIVE)
+	arena.boss.health.set_current_health(1)
+	await create_timer(1.3).timeout
+	arena._spawn_support_guards()
+	check(arena.get_node("SupportEnemies").get_child_count() == 3 and arena.boss.health.guard_link_active, "restart test reaches shielded boss with three supports")
+	var restart := InputEventAction.new()
+	restart.action = &"restart_room"
+	restart.pressed = true
+	root.push_input(restart, true)
+	await process_frame
+	arena = await wait_scene_path(main, "res://scenes/levels/bosses/rooftop_boss_arena.tscn") as RooftopBossArena
+	check(arena != null and arena.get_instance_id() != previous_arena, "real restart input replaces boss scene")
+	check(arena.phase == RooftopBossArena.Phase.MINIONS and arena.boss.health.current_health == 6, "restart restores six boss health and opening phase")
+	check(arena.telegraph.mode == BossAttackTelegraph.Mode.NONE, "restart removes pending attacks")
+	check(arena.get_node("SupportEnemies").get_child_count() == 0 and not arena.support_spawner._spawned, "restart resets second phase supports")
+	check(not arena.boss.health.guard_link_active and arena.boss.health.get_health_ratio() == 1, "restart resets linked damage and shield state")
+	check(arena.boss.opening_guards_remaining == 3, "restart restores three opening guards")
+	check(arena.player.health.current_health == initial_health, "restart restores entry player snapshot")
+	check(store.get_profile() == saved_before, "boss phase and restart preserve warehouse save")
 	check(arena._return_to_warehouse(), "boss test return uses the existing scene flow")
 	warehouse = await wait_scene_path(main, "res://scenes/levels/base/warehouse.tscn")
 	check(warehouse != null and warehouse.is_in_group("warehouse"), "boss test returns to warehouse")

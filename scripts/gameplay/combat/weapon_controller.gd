@@ -118,12 +118,27 @@ func clamp_projectile_origin(actor_origin: Vector2, muzzle_origin: Vector2) -> V
 	var world := get_viewport().world_2d
 	if world == null:
 		return muzzle_origin
-	var query := PhysicsRayQueryParameters2D.create(actor_origin, muzzle_origin, 1)
+	# A long barrel can extend past a touching enemy. Treat that hurtbox like a
+	# muzzle obstruction, but ignore the shooter's own hurtbox and non-actor areas.
+	var query := PhysicsRayQueryParameters2D.create(actor_origin, muzzle_origin, 1 | 8 | 16)
+	query.collide_with_areas = true
 	query.hit_from_inside = true
-	var hit := world.direct_space_state.intersect_ray(query)
-	if hit.is_empty():
-		return muzzle_origin
-	return Vector2(hit.position) - delta.normalized() * 1.5
+	var excluded: Array[RID] = []
+	var shooter := get_parent()
+	var own_hurtbox := shooter.get_node_or_null("HurtBox") as HurtBox2DComponent
+	if own_hurtbox != null:
+		excluded.append(own_hurtbox.get_rid())
+	for attempt in 32:
+		query.exclude = excluded
+		var hit := world.direct_space_state.intersect_ray(query)
+		if hit.is_empty():
+			return muzzle_origin
+		var collider: Object = hit.collider
+		if collider is Area2D and not collider is HurtBox2DComponent:
+			excluded.append(collider.get_rid())
+			continue
+		return Vector2(hit.position) - delta.normalized() * 1.5
+	return actor_origin
 
 
 func get_melee_swing_angle_offset() -> float:
