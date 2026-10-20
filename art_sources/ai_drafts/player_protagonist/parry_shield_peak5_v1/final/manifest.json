@@ -1,0 +1,30 @@
+{
+  "frames": 9,
+  "frameSize": [
+    418,
+    418
+  ],
+  "grid": [
+    3,
+    3
+  ],
+  "peakFrame": 5,
+  "visibleHeights": [
+    115,
+    197,
+    257,
+    342,
+    350,
+    343,
+    263,
+    164,
+    106
+  ],
+  "pngFps": 12,
+  "gifDurationMs": 720,
+  "frame5Source": "../../parry_shield_v1/parry_shield_right_static_v1.png",
+  "frame5SourceSha256": "9df9b673dd2e0f0c2b5f0c32a74a1398c558b0890a92aaa36857b4206a0778c7",
+  "generator": "built-in image_gen; approved original inserted as frame 5",
+  "splitter": "FrameRonin skill local process",
+  "playOnceInGame": true
+}

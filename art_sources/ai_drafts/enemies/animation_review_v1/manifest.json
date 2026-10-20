@@ -1,0 +1,3007 @@
+{
+  "cell_size": 192,
+  "foot_anchor": [
+    96,
+    168
+  ],
+  "animations": [
+    "walk_down",
+    "walk_left",
+    "walk_up",
+    "walk_right",
+    "attack_down",
+    "attack_left",
+    "attack_up",
+    "attack_right"
+  ],
+  "roles": {
+    "melee": {
+      "sources": {
+        "art_sources/ai_drafts/enemies/melee_sprite_sheet_v1/melee_sprite_sheet_v1.png": "22c10930f9ee0382cf393f59a45230111714abbbda653dd629e7ec3f50e43f7d",
+        "art_sources/ai_drafts/enemies/animation_supplements_v1/melee.png": "d71c790da0e1e32733d2f6c764eb284b94248bdaf4d44566f2593a61d3d91b41"
+      },
+      "frames": {
+        "walk_down": [
+          {
+            "source_anchor": [
+              67.5,
+              275
+            ],
+            "source_body_height": 181,
+            "scale": 0.451613,
+            "offset": [
+              66,
+              44
+            ],
+            "alpha_bounds": [
+              69,
+              87,
+              136,
+              170
+            ]
+          },
+          {
+            "source_anchor": [
+              68.0,
+              279
+            ],
+            "source_body_height": 186,
+            "scale": 0.451613,
+            "offset": [
+              65,
+              42
+            ],
+            "alpha_bounds": [
+              68,
+              84,
+              133,
+              170
+            ]
+          },
+          {
+            "source_anchor": [
+              69.0,
+              283
+            ],
+            "source_body_height": 188,
+            "scale": 0.451613,
+            "offset": [
+              65,
+              40
+            ],
+            "alpha_bounds": [
+              68,
+              83,
+              132,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              73.7,
+              283
+            ],
+            "source_body_height": 188,
+            "scale": 0.451613,
+            "offset": [
+              63,
+              40
+            ],
+            "alpha_bounds": [
+              67,
+              83,
+              131,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              66.0,
+              281
+            ],
+            "source_body_height": 186,
+            "scale": 0.451613,
+            "offset": [
+              66,
+              41
+            ],
+            "alpha_bounds": [
+              69,
+              84,
+              135,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              63.0,
+              281
+            ],
+            "source_body_height": 186,
+            "scale": 0.451613,
+            "offset": [
+              68,
+              41
+            ],
+            "alpha_bounds": [
+              71,
+              84,
+              134,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              75.28,
+              279
+            ],
+            "source_body_height": 184,
+            "scale": 0.451613,
+            "offset": [
+              62,
+              42
+            ],
+            "alpha_bounds": [
+              66,
+              85,
+              130,
+              170
+            ]
+          },
+          {
+            "source_anchor": [
+              68.5,
+              283
+            ],
+            "source_body_height": 188,
+            "scale": 0.451613,
+            "offset": [
+              65,
+              40
+            ],
+            "alpha_bounds": [
+              68,
+              83,
+              133,
+              168
+            ]
+          }
+        ],
+        "walk_left": [
+          {
+            "source_anchor": [
+              81.3,
+              251
+            ],
+            "source_body_height": 194,
+            "scale": 0.451613,
+            "offset": [
+              59,
+              55
+            ],
+            "alpha_bounds": [
+              66,
+              81,
+              125,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              90.5,
+              248
+            ],
+            "source_body_height": 191,
+            "scale": 0.451613,
+            "offset": [
+              55,
+              56
+            ],
+            "alpha_bounds": [
+              59,
+              82,
+              121,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              99.0,
+              251
+            ],
+            "source_body_height": 194,
+            "scale": 0.451613,
+            "offset": [
+              51,
+              55
+            ],
+            "alpha_bounds": [
+              55,
+              81,
+              117,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              63.0,
+              251
+            ],
+            "source_body_height": 194,
+            "scale": 0.451613,
+            "offset": [
+              68,
+              55
+            ],
+            "alpha_bounds": [
+              73,
+              81,
+              136,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              109.5,
+              252
+            ],
+            "source_body_height": 195,
+            "scale": 0.451613,
+            "offset": [
+              47,
+              54
+            ],
+            "alpha_bounds": [
+              53,
+              80,
+              112,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              88.0,
+              249
+            ],
+            "source_body_height": 192,
+            "scale": 0.451613,
+            "offset": [
+              56,
+              56
+            ],
+            "alpha_bounds": [
+              61,
+              82,
+              123,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              77.0,
+              253
+            ],
+            "source_body_height": 196,
+            "scale": 0.451613,
+            "offset": [
+              61,
+              54
+            ],
+            "alpha_bounds": [
+              65,
+              80,
+              126,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              65.85,
+              251
+            ],
+            "source_body_height": 194,
+            "scale": 0.451613,
+            "offset": [
+              66,
+              55
+            ],
+            "alpha_bounds": [
+              71,
+              81,
+              133,
+              169
+            ]
+          }
+        ],
+        "walk_up": [
+          {
+            "source_anchor": [
+              63.0,
+              245
+            ],
+            "source_body_height": 199,
+            "scale": 0.451613,
+            "offset": [
+              68,
+              57
+            ],
+            "alpha_bounds": [
+              74,
+              78,
+              139,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              85.65,
+              242
+            ],
+            "source_body_height": 196,
+            "scale": 0.451613,
+            "offset": [
+              57,
+              59
+            ],
+            "alpha_bounds": [
+              61,
+              80,
+              124,
+              170
+            ]
+          },
+          {
+            "source_anchor": [
+              87.5,
+              243
+            ],
+            "source_body_height": 197,
+            "scale": 0.451613,
+            "offset": [
+              56,
+              58
+            ],
+            "alpha_bounds": [
+              60,
+              79,
+              123,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              88.0,
+              239
+            ],
+            "source_body_height": 194,
+            "scale": 0.451613,
+            "offset": [
+              56,
+              60
+            ],
+            "alpha_bounds": [
+              60,
+              80,
+              123,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              84.67,
+              244
+            ],
+            "source_body_height": 198,
+            "scale": 0.451613,
+            "offset": [
+              58,
+              58
+            ],
+            "alpha_bounds": [
+              62,
+              79,
+              126,
+              170
+            ]
+          },
+          {
+            "source_anchor": [
+              85.0,
+              247
+            ],
+            "source_body_height": 201,
+            "scale": 0.451613,
+            "offset": [
+              58,
+              56
+            ],
+            "alpha_bounds": [
+              61,
+              77,
+              124,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              87.5,
+              244
+            ],
+            "source_body_height": 198,
+            "scale": 0.451613,
+            "offset": [
+              56,
+              58
+            ],
+            "alpha_bounds": [
+              61,
+              79,
+              127,
+              170
+            ]
+          },
+          {
+            "source_anchor": [
+              79.5,
+              243
+            ],
+            "source_body_height": 197,
+            "scale": 0.451613,
+            "offset": [
+              60,
+              58
+            ],
+            "alpha_bounds": [
+              62,
+              79,
+              124,
+              169
+            ]
+          }
+        ],
+        "walk_right": [
+          {
+            "source_anchor": [
+              141.0,
+              196
+            ],
+            "source_body_height": 161,
+            "scale": 0.518519,
+            "offset": [
+              23,
+              66
+            ],
+            "alpha_bounds": [
+              65,
+              84,
+              130,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              122.0,
+              196
+            ],
+            "source_body_height": 162,
+            "scale": 0.518519,
+            "offset": [
+              33,
+              66
+            ],
+            "alpha_bounds": [
+              64,
+              84,
+              125,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              121.5,
+              194
+            ],
+            "source_body_height": 160,
+            "scale": 0.518519,
+            "offset": [
+              33,
+              67
+            ],
+            "alpha_bounds": [
+              65,
+              85,
+              131,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              124.15,
+              196
+            ],
+            "source_body_height": 162,
+            "scale": 0.518519,
+            "offset": [
+              32,
+              66
+            ],
+            "alpha_bounds": [
+              63,
+              84,
+              127,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              116.5,
+              196
+            ],
+            "source_body_height": 162,
+            "scale": 0.518519,
+            "offset": [
+              36,
+              66
+            ],
+            "alpha_bounds": [
+              69,
+              84,
+              130,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              121.5,
+              196
+            ],
+            "source_body_height": 162,
+            "scale": 0.518519,
+            "offset": [
+              33,
+              66
+            ],
+            "alpha_bounds": [
+              63,
+              84,
+              136,
+              168
+            ]
+          }
+        ],
+        "attack_down": [
+          {
+            "source_anchor": [
+              140.62,
+              190
+            ],
+            "source_body_height": 158,
+            "scale": 0.518519,
+            "offset": [
+              23,
+              69
+            ],
+            "alpha_bounds": [
+              52,
+              86,
+              135,
+              167
+            ]
+          },
+          {
+            "source_anchor": [
+              137.0,
+              189
+            ],
+            "source_body_height": 157,
+            "scale": 0.518519,
+            "offset": [
+              25,
+              70
+            ],
+            "alpha_bounds": [
+              51,
+              87,
+              135,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              121.5,
+              189
+            ],
+            "source_body_height": 175,
+            "scale": 0.518519,
+            "offset": [
+              33,
+              70
+            ],
+            "alpha_bounds": [
+              48,
+              77,
+              135,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              134.0,
+              186
+            ],
+            "source_body_height": 154,
+            "scale": 0.518519,
+            "offset": [
+              27,
+              72
+            ],
+            "alpha_bounds": [
+              48,
+              89,
+              139,
+              170
+            ]
+          },
+          {
+            "source_anchor": [
+              156.0,
+              189
+            ],
+            "source_body_height": 157,
+            "scale": 0.518519,
+            "offset": [
+              15,
+              70
+            ],
+            "alpha_bounds": [
+              32,
+              87,
+              135,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              131.0,
+              189
+            ],
+            "source_body_height": 157,
+            "scale": 0.518519,
+            "offset": [
+              28,
+              70
+            ],
+            "alpha_bounds": [
+              52,
+              87,
+              133,
+              168
+            ]
+          }
+        ],
+        "attack_left": [
+          {
+            "source_anchor": [
+              153.0,
+              177
+            ],
+            "source_body_height": 158,
+            "scale": 0.518519,
+            "offset": [
+              17,
+              76
+            ],
+            "alpha_bounds": [
+              51,
+              86,
+              130,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              131.4,
+              181
+            ],
+            "source_body_height": 163,
+            "scale": 0.518519,
+            "offset": [
+              28,
+              74
+            ],
+            "alpha_bounds": [
+              58,
+              83,
+              136,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              114.85,
+              177
+            ],
+            "source_body_height": 165,
+            "scale": 0.518519,
+            "offset": [
+              36,
+              76
+            ],
+            "alpha_bounds": [
+              59,
+              82,
+              128,
+              170
+            ]
+          },
+          {
+            "source_anchor": [
+              114.9,
+              181
+            ],
+            "source_body_height": 156,
+            "scale": 0.518519,
+            "offset": [
+              36,
+              74
+            ],
+            "alpha_bounds": [
+              56,
+              87,
+              148,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              138.0,
+              181
+            ],
+            "source_body_height": 158,
+            "scale": 0.518519,
+            "offset": [
+              24,
+              74
+            ],
+            "alpha_bounds": [
+              40,
+              86,
+              147,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              132.72,
+              181
+            ],
+            "source_body_height": 162,
+            "scale": 0.518519,
+            "offset": [
+              27,
+              74
+            ],
+            "alpha_bounds": [
+              55,
+              84,
+              130,
+              168
+            ]
+          }
+        ],
+        "attack_up": [
+          {
+            "source_anchor": [
+              135.93,
+              192
+            ],
+            "source_body_height": 164,
+            "scale": 0.518519,
+            "offset": [
+              26,
+              68
+            ],
+            "alpha_bounds": [
+              58,
+              83,
+              143,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              118.02,
+              192
+            ],
+            "source_body_height": 164,
+            "scale": 0.518519,
+            "offset": [
+              35,
+              68
+            ],
+            "alpha_bounds": [
+              56,
+              83,
+              141,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              115.0,
+              191
+            ],
+            "source_body_height": 181,
+            "scale": 0.518519,
+            "offset": [
+              36,
+              69
+            ],
+            "alpha_bounds": [
+              56,
+              74,
+              139,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              122.05,
+              192
+            ],
+            "source_body_height": 174,
+            "scale": 0.518519,
+            "offset": [
+              33,
+              68
+            ],
+            "alpha_bounds": [
+              58,
+              77,
+              146,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              121.0,
+              192
+            ],
+            "source_body_height": 164,
+            "scale": 0.518519,
+            "offset": [
+              33,
+              68
+            ],
+            "alpha_bounds": [
+              57,
+              83,
+              165,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              97.5,
+              192
+            ],
+            "source_body_height": 164,
+            "scale": 0.518519,
+            "offset": [
+              45,
+              68
+            ],
+            "alpha_bounds": [
+              59,
+              83,
+              141,
+              168
+            ]
+          }
+        ],
+        "attack_right": [
+          {
+            "source_anchor": [
+              141.85,
+              181
+            ],
+            "source_body_height": 165,
+            "scale": 0.518519,
+            "offset": [
+              22,
+              74
+            ],
+            "alpha_bounds": [
+              63,
+              82,
+              136,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              125.53,
+              181
+            ],
+            "source_body_height": 173,
+            "scale": 0.518519,
+            "offset": [
+              31,
+              74
+            ],
+            "alpha_bounds": [
+              59,
+              78,
+              132,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              112.5,
+              181
+            ],
+            "source_body_height": 173,
+            "scale": 0.518519,
+            "offset": [
+              38,
+              74
+            ],
+            "alpha_bounds": [
+              60,
+              78,
+              134,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              156.0,
+              181
+            ],
+            "source_body_height": 161,
+            "scale": 0.518519,
+            "offset": [
+              15,
+              74
+            ],
+            "alpha_bounds": [
+              39,
+              84,
+              147,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              134.5,
+              181
+            ],
+            "source_body_height": 161,
+            "scale": 0.518519,
+            "offset": [
+              26,
+              74
+            ],
+            "alpha_bounds": [
+              44,
+              84,
+              153,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              112.0,
+              181
+            ],
+            "source_body_height": 165,
+            "scale": 0.518519,
+            "offset": [
+              38,
+              74
+            ],
+            "alpha_bounds": [
+              53,
+              82,
+              124,
+              168
+            ]
+          }
+        ]
+      }
+    },
+    "ranged": {
+      "sources": {
+        "art_sources/ai_drafts/enemies/ranged_sprite_sheet_v1/ranged_sprite_sheet_v1.png": "0fdec1c9bd2ea0f3afe90720fda9174e85dba07e4bc0cf945a14a001e921670e",
+        "art_sources/ai_drafts/enemies/animation_supplements_v1/ranged.png": "1c038385624e4c6ca7387be7cd6741ef52765cf16e153a33337daca38cd1223d"
+      },
+      "frames": {
+        "walk_down": [
+          {
+            "source_anchor": [
+              69.0,
+              307
+            ],
+            "source_body_height": 206,
+            "scale": 0.4,
+            "offset": [
+              68,
+              45
+            ],
+            "alpha_bounds": [
+              74,
+              85,
+              131,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              62.0,
+              307
+            ],
+            "source_body_height": 211,
+            "scale": 0.4,
+            "offset": [
+              71,
+              45
+            ],
+            "alpha_bounds": [
+              74,
+              83,
+              129,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              63.0,
+              308
+            ],
+            "source_body_height": 207,
+            "scale": 0.4,
+            "offset": [
+              71,
+              45
+            ],
+            "alpha_bounds": [
+              75,
+              85,
+              130,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              61.5,
+              307
+            ],
+            "source_body_height": 210,
+            "scale": 0.4,
+            "offset": [
+              71,
+              45
+            ],
+            "alpha_bounds": [
+              74,
+              84,
+              130,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              93.5,
+              307
+            ],
+            "source_body_height": 209,
+            "scale": 0.4,
+            "offset": [
+              59,
+              45
+            ],
+            "alpha_bounds": [
+              62,
+              84,
+              118,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              88.5,
+              307
+            ],
+            "source_body_height": 210,
+            "scale": 0.4,
+            "offset": [
+              61,
+              45
+            ],
+            "alpha_bounds": [
+              64,
+              84,
+              120,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              63.5,
+              308
+            ],
+            "source_body_height": 214,
+            "scale": 0.4,
+            "offset": [
+              71,
+              45
+            ],
+            "alpha_bounds": [
+              75,
+              83,
+              130,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              60.67,
+              308
+            ],
+            "source_body_height": 210,
+            "scale": 0.4,
+            "offset": [
+              72,
+              45
+            ],
+            "alpha_bounds": [
+              76,
+              84,
+              129,
+              169
+            ]
+          }
+        ],
+        "walk_left": [
+          {
+            "source_anchor": [
+              52.92,
+              245
+            ],
+            "source_body_height": 202,
+            "scale": 0.4,
+            "offset": [
+              75,
+              70
+            ],
+            "alpha_bounds": [
+              79,
+              87,
+              135,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              82.0,
+              245
+            ],
+            "source_body_height": 201,
+            "scale": 0.4,
+            "offset": [
+              63,
+              70
+            ],
+            "alpha_bounds": [
+              65,
+              87,
+              120,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              63.0,
+              245
+            ],
+            "source_body_height": 201,
+            "scale": 0.4,
+            "offset": [
+              71,
+              70
+            ],
+            "alpha_bounds": [
+              74,
+              88,
+              134,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              49.0,
+              248
+            ],
+            "source_body_height": 204,
+            "scale": 0.4,
+            "offset": [
+              76,
+              69
+            ],
+            "alpha_bounds": [
+              77,
+              87,
+              136,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              92.27,
+              245
+            ],
+            "source_body_height": 199,
+            "scale": 0.4,
+            "offset": [
+              59,
+              70
+            ],
+            "alpha_bounds": [
+              61,
+              88,
+              121,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              64.5,
+              248
+            ],
+            "source_body_height": 205,
+            "scale": 0.4,
+            "offset": [
+              70,
+              69
+            ],
+            "alpha_bounds": [
+              72,
+              86,
+              131,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              82.5,
+              245
+            ],
+            "source_body_height": 202,
+            "scale": 0.4,
+            "offset": [
+              63,
+              70
+            ],
+            "alpha_bounds": [
+              65,
+              87,
+              125,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              60.32,
+              248
+            ],
+            "source_body_height": 205,
+            "scale": 0.4,
+            "offset": [
+              72,
+              69
+            ],
+            "alpha_bounds": [
+              74,
+              86,
+              130,
+              169
+            ]
+          }
+        ],
+        "walk_up": [
+          {
+            "source_anchor": [
+              65.5,
+              251
+            ],
+            "source_body_height": 207,
+            "scale": 0.4,
+            "offset": [
+              70,
+              68
+            ],
+            "alpha_bounds": [
+              77,
+              86,
+              133,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              84.5,
+              255
+            ],
+            "source_body_height": 211,
+            "scale": 0.4,
+            "offset": [
+              62,
+              66
+            ],
+            "alpha_bounds": [
+              66,
+              84,
+              121,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              82.83,
+              255
+            ],
+            "source_body_height": 209,
+            "scale": 0.4,
+            "offset": [
+              63,
+              66
+            ],
+            "alpha_bounds": [
+              66,
+              84,
+              123,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              58.5,
+              257
+            ],
+            "source_body_height": 211,
+            "scale": 0.4,
+            "offset": [
+              73,
+              65
+            ],
+            "alpha_bounds": [
+              75,
+              83,
+              132,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              58.1,
+              257
+            ],
+            "source_body_height": 215,
+            "scale": 0.4,
+            "offset": [
+              73,
+              65
+            ],
+            "alpha_bounds": [
+              76,
+              82,
+              132,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              87.0,
+              253
+            ],
+            "source_body_height": 208,
+            "scale": 0.4,
+            "offset": [
+              61,
+              67
+            ],
+            "alpha_bounds": [
+              65,
+              85,
+              120,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              83.0,
+              257
+            ],
+            "source_body_height": 215,
+            "scale": 0.4,
+            "offset": [
+              63,
+              65
+            ],
+            "alpha_bounds": [
+              66,
+              82,
+              121,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              85.5,
+              257
+            ],
+            "source_body_height": 212,
+            "scale": 0.4,
+            "offset": [
+              62,
+              65
+            ],
+            "alpha_bounds": [
+              65,
+              83,
+              121,
+              169
+            ]
+          }
+        ],
+        "walk_right": [
+          {
+            "source_anchor": [
+              108.95,
+              220
+            ],
+            "source_body_height": 177,
+            "scale": 0.474576,
+            "offset": [
+              44,
+              64
+            ],
+            "alpha_bounds": [
+              68,
+              84,
+              142,
+              170
+            ]
+          },
+          {
+            "source_anchor": [
+              85.62,
+              221
+            ],
+            "source_body_height": 176,
+            "scale": 0.474576,
+            "offset": [
+              55,
+              63
+            ],
+            "alpha_bounds": [
+              71,
+              84,
+              150,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              95.5,
+              220
+            ],
+            "source_body_height": 177,
+            "scale": 0.474576,
+            "offset": [
+              51,
+              64
+            ],
+            "alpha_bounds": [
+              68,
+              84,
+              143,
+              170
+            ]
+          },
+          {
+            "source_anchor": [
+              98.5,
+              221
+            ],
+            "source_body_height": 178,
+            "scale": 0.474576,
+            "offset": [
+              49,
+              63
+            ],
+            "alpha_bounds": [
+              66,
+              83,
+              143,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              100.33,
+              221
+            ],
+            "source_body_height": 178,
+            "scale": 0.474576,
+            "offset": [
+              48,
+              63
+            ],
+            "alpha_bounds": [
+              62,
+              83,
+              142,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              85.0,
+              220
+            ],
+            "source_body_height": 177,
+            "scale": 0.474576,
+            "offset": [
+              56,
+              64
+            ],
+            "alpha_bounds": [
+              70,
+              84,
+              150,
+              170
+            ]
+          }
+        ],
+        "attack_down": [
+          {
+            "source_anchor": [
+              125.5,
+              193
+            ],
+            "source_body_height": 172,
+            "scale": 0.474576,
+            "offset": [
+              36,
+              76
+            ],
+            "alpha_bounds": [
+              63,
+              86,
+              126,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              117.57,
+              195
+            ],
+            "source_body_height": 174,
+            "scale": 0.474576,
+            "offset": [
+              40,
+              75
+            ],
+            "alpha_bounds": [
+              63,
+              85,
+              126,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              110.0,
+              193
+            ],
+            "source_body_height": 172,
+            "scale": 0.474576,
+            "offset": [
+              44,
+              76
+            ],
+            "alpha_bounds": [
+              66,
+              86,
+              128,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              110.5,
+              192
+            ],
+            "source_body_height": 171,
+            "scale": 0.474576,
+            "offset": [
+              44,
+              77
+            ],
+            "alpha_bounds": [
+              66,
+              87,
+              129,
+              170
+            ]
+          },
+          {
+            "source_anchor": [
+              114.62,
+              193
+            ],
+            "source_body_height": 172,
+            "scale": 0.474576,
+            "offset": [
+              42,
+              76
+            ],
+            "alpha_bounds": [
+              63,
+              86,
+              126,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              118.0,
+              193
+            ],
+            "source_body_height": 172,
+            "scale": 0.474576,
+            "offset": [
+              40,
+              76
+            ],
+            "alpha_bounds": [
+              63,
+              86,
+              126,
+              169
+            ]
+          }
+        ],
+        "attack_left": [
+          {
+            "source_anchor": [
+              139.0,
+              187
+            ],
+            "source_body_height": 163,
+            "scale": 0.474576,
+            "offset": [
+              30,
+              79
+            ],
+            "alpha_bounds": [
+              45,
+              90,
+              128,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              134.5,
+              187
+            ],
+            "source_body_height": 163,
+            "scale": 0.474576,
+            "offset": [
+              32,
+              79
+            ],
+            "alpha_bounds": [
+              43,
+              90,
+              127,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              135.8,
+              187
+            ],
+            "source_body_height": 164,
+            "scale": 0.474576,
+            "offset": [
+              32,
+              79
+            ],
+            "alpha_bounds": [
+              44,
+              90,
+              127,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              142.0,
+              187
+            ],
+            "source_body_height": 163,
+            "scale": 0.474576,
+            "offset": [
+              29,
+              79
+            ],
+            "alpha_bounds": [
+              41,
+              90,
+              128,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              138.0,
+              189
+            ],
+            "source_body_height": 165,
+            "scale": 0.474576,
+            "offset": [
+              31,
+              78
+            ],
+            "alpha_bounds": [
+              43,
+              89,
+              127,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              134.5,
+              187
+            ],
+            "source_body_height": 163,
+            "scale": 0.474576,
+            "offset": [
+              32,
+              79
+            ],
+            "alpha_bounds": [
+              46,
+              90,
+              127,
+              169
+            ]
+          }
+        ],
+        "attack_up": [
+          {
+            "source_anchor": [
+              124.42,
+              215
+            ],
+            "source_body_height": 196,
+            "scale": 0.474576,
+            "offset": [
+              37,
+              66
+            ],
+            "alpha_bounds": [
+              66,
+              75,
+              130,
+              170
+            ]
+          },
+          {
+            "source_anchor": [
+              111.0,
+              218
+            ],
+            "source_body_height": 198,
+            "scale": 0.474576,
+            "offset": [
+              43,
+              65
+            ],
+            "alpha_bounds": [
+              66,
+              74,
+              130,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              105.95,
+              218
+            ],
+            "source_body_height": 199,
+            "scale": 0.474576,
+            "offset": [
+              46,
+              65
+            ],
+            "alpha_bounds": [
+              66,
+              74,
+              131,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              112.0,
+              217
+            ],
+            "source_body_height": 201,
+            "scale": 0.474576,
+            "offset": [
+              43,
+              65
+            ],
+            "alpha_bounds": [
+              66,
+              73,
+              131,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              112.0,
+              215
+            ],
+            "source_body_height": 196,
+            "scale": 0.474576,
+            "offset": [
+              43,
+              66
+            ],
+            "alpha_bounds": [
+              65,
+              75,
+              130,
+              170
+            ]
+          },
+          {
+            "source_anchor": [
+              107.5,
+              215
+            ],
+            "source_body_height": 196,
+            "scale": 0.474576,
+            "offset": [
+              45,
+              66
+            ],
+            "alpha_bounds": [
+              66,
+              75,
+              131,
+              170
+            ]
+          }
+        ],
+        "attack_right": [
+          {
+            "source_anchor": [
+              115.0,
+              189
+            ],
+            "source_body_height": 166,
+            "scale": 0.474576,
+            "offset": [
+              41,
+              78
+            ],
+            "alpha_bounds": [
+              64,
+              89,
+              149,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              94.5,
+              188
+            ],
+            "source_body_height": 165,
+            "scale": 0.474576,
+            "offset": [
+              51,
+              79
+            ],
+            "alpha_bounds": [
+              63,
+              90,
+              149,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              94.5,
+              189
+            ],
+            "source_body_height": 169,
+            "scale": 0.474576,
+            "offset": [
+              51,
+              78
+            ],
+            "alpha_bounds": [
+              63,
+              88,
+              147,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              92.32,
+              189
+            ],
+            "source_body_height": 169,
+            "scale": 0.474576,
+            "offset": [
+              52,
+              78
+            ],
+            "alpha_bounds": [
+              64,
+              88,
+              150,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              91.5,
+              189
+            ],
+            "source_body_height": 168,
+            "scale": 0.474576,
+            "offset": [
+              53,
+              78
+            ],
+            "alpha_bounds": [
+              64,
+              88,
+              148,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              92.1,
+              188
+            ],
+            "source_body_height": 166,
+            "scale": 0.474576,
+            "offset": [
+              52,
+              79
+            ],
+            "alpha_bounds": [
+              63,
+              89,
+              145,
+              169
+            ]
+          }
+        ]
+      }
+    },
+    "shield": {
+      "sources": {
+        "art_sources/ai_drafts/enemies/shield_robot_v1/shield_sprite_sheet_v1.png": "1cae99a1505feeabe3aec87220c6980b0e746ee2b1efe218015e505e8190447e",
+        "art_sources/ai_drafts/enemies/animation_supplements_v1/shield.png": "de6b2e75ada895d96db02388cf2eefff22db971d10467118d97ae201e3b4ff35"
+      },
+      "frames": {
+        "walk_down": [
+          {
+            "source_anchor": [
+              63.5,
+              330
+            ],
+            "source_body_height": 221,
+            "scale": 0.407407,
+            "offset": [
+              70,
+              34
+            ],
+            "alpha_bounds": [
+              73,
+              78,
+              135,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              59.27,
+              322
+            ],
+            "source_body_height": 210,
+            "scale": 0.407407,
+            "offset": [
+              72,
+              37
+            ],
+            "alpha_bounds": [
+              73,
+              83,
+              134,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              62.0,
+              330
+            ],
+            "source_body_height": 216,
+            "scale": 0.407407,
+            "offset": [
+              71,
+              34
+            ],
+            "alpha_bounds": [
+              72,
+              80,
+              136,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              71.0,
+              318
+            ],
+            "source_body_height": 211,
+            "scale": 0.407407,
+            "offset": [
+              67,
+              38
+            ],
+            "alpha_bounds": [
+              68,
+              82,
+              130,
+              167
+            ]
+          },
+          {
+            "source_anchor": [
+              54.5,
+              324
+            ],
+            "source_body_height": 217,
+            "scale": 0.407407,
+            "offset": [
+              74,
+              36
+            ],
+            "alpha_bounds": [
+              75,
+              80,
+              137,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              84.5,
+              330
+            ],
+            "source_body_height": 216,
+            "scale": 0.407407,
+            "offset": [
+              62,
+              34
+            ],
+            "alpha_bounds": [
+              63,
+              80,
+              126,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              59.47,
+              318
+            ],
+            "source_body_height": 211,
+            "scale": 0.407407,
+            "offset": [
+              72,
+              38
+            ],
+            "alpha_bounds": [
+              72,
+              82,
+              135,
+              167
+            ]
+          },
+          {
+            "source_anchor": [
+              57.5,
+              330
+            ],
+            "source_body_height": 216,
+            "scale": 0.407407,
+            "offset": [
+              73,
+              34
+            ],
+            "alpha_bounds": [
+              74,
+              80,
+              135,
+              168
+            ]
+          }
+        ],
+        "walk_left": [
+          {
+            "source_anchor": [
+              74.5,
+              247
+            ],
+            "source_body_height": 214,
+            "scale": 0.407407,
+            "offset": [
+              66,
+              67
+            ],
+            "alpha_bounds": [
+              70,
+              80,
+              129,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              73.92,
+              247
+            ],
+            "source_body_height": 214,
+            "scale": 0.407407,
+            "offset": [
+              66,
+              67
+            ],
+            "alpha_bounds": [
+              68,
+              80,
+              130,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              75.5,
+              248
+            ],
+            "source_body_height": 215,
+            "scale": 0.407407,
+            "offset": [
+              65,
+              67
+            ],
+            "alpha_bounds": [
+              66,
+              80,
+              130,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              75.0,
+              248
+            ],
+            "source_body_height": 217,
+            "scale": 0.407407,
+            "offset": [
+              65,
+              67
+            ],
+            "alpha_bounds": [
+              66,
+              80,
+              129,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              70.0,
+              248
+            ],
+            "source_body_height": 215,
+            "scale": 0.407407,
+            "offset": [
+              67,
+              67
+            ],
+            "alpha_bounds": [
+              68,
+              80,
+              127,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              47.5,
+              248
+            ],
+            "source_body_height": 217,
+            "scale": 0.407407,
+            "offset": [
+              77,
+              67
+            ],
+            "alpha_bounds": [
+              79,
+              80,
+              137,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              80.5,
+              248
+            ],
+            "source_body_height": 214,
+            "scale": 0.407407,
+            "offset": [
+              63,
+              67
+            ],
+            "alpha_bounds": [
+              67,
+              80,
+              129,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              67.97,
+              252
+            ],
+            "source_body_height": 221,
+            "scale": 0.407407,
+            "offset": [
+              68,
+              65
+            ],
+            "alpha_bounds": [
+              68,
+              78,
+              128,
+              168
+            ]
+          }
+        ],
+        "walk_up": [
+          {
+            "source_anchor": [
+              77.0,
+              255
+            ],
+            "source_body_height": 211,
+            "scale": 0.407407,
+            "offset": [
+              65,
+              64
+            ],
+            "alpha_bounds": [
+              69,
+              82,
+              132,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              71.0,
+              254
+            ],
+            "source_body_height": 204,
+            "scale": 0.407407,
+            "offset": [
+              67,
+              65
+            ],
+            "alpha_bounds": [
+              69,
+              85,
+              130,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              79.0,
+              245
+            ],
+            "source_body_height": 206,
+            "scale": 0.407407,
+            "offset": [
+              64,
+              68
+            ],
+            "alpha_bounds": [
+              66,
+              84,
+              127,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              66.0,
+              252
+            ],
+            "source_body_height": 209,
+            "scale": 0.407407,
+            "offset": [
+              69,
+              65
+            ],
+            "alpha_bounds": [
+              70,
+              83,
+              130,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              72.5,
+              257
+            ],
+            "source_body_height": 212,
+            "scale": 0.407407,
+            "offset": [
+              66,
+              63
+            ],
+            "alpha_bounds": [
+              68,
+              81,
+              130,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              85.5,
+              245
+            ],
+            "source_body_height": 199,
+            "scale": 0.407407,
+            "offset": [
+              61,
+              68
+            ],
+            "alpha_bounds": [
+              63,
+              87,
+              125,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              69.0,
+              254
+            ],
+            "source_body_height": 215,
+            "scale": 0.407407,
+            "offset": [
+              68,
+              65
+            ],
+            "alpha_bounds": [
+              69,
+              81,
+              129,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              69.5,
+              252
+            ],
+            "source_body_height": 210,
+            "scale": 0.407407,
+            "offset": [
+              68,
+              65
+            ],
+            "alpha_bounds": [
+              69,
+              82,
+              130,
+              168
+            ]
+          }
+        ],
+        "walk_right": [
+          {
+            "source_anchor": [
+              141.5,
+              240
+            ],
+            "source_body_height": 193,
+            "scale": 0.455959,
+            "offset": [
+              31,
+              59
+            ],
+            "alpha_bounds": [
+              56,
+              80,
+              127,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              130.5,
+              239
+            ],
+            "source_body_height": 192,
+            "scale": 0.455959,
+            "offset": [
+              36,
+              59
+            ],
+            "alpha_bounds": [
+              58,
+              80,
+              131,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              120.5,
+              239
+            ],
+            "source_body_height": 192,
+            "scale": 0.455959,
+            "offset": [
+              41,
+              59
+            ],
+            "alpha_bounds": [
+              59,
+              80,
+              127,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              128.5,
+              241
+            ],
+            "source_body_height": 194,
+            "scale": 0.455959,
+            "offset": [
+              37,
+              58
+            ],
+            "alpha_bounds": [
+              54,
+              79,
+              126,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              127.0,
+              240
+            ],
+            "source_body_height": 193,
+            "scale": 0.455959,
+            "offset": [
+              38,
+              59
+            ],
+            "alpha_bounds": [
+              58,
+              80,
+              126,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              126.0,
+              240
+            ],
+            "source_body_height": 193,
+            "scale": 0.455959,
+            "offset": [
+              39,
+              59
+            ],
+            "alpha_bounds": [
+              58,
+              80,
+              123,
+              169
+            ]
+          }
+        ],
+        "attack_down": [
+          {
+            "source_anchor": [
+              115.0,
+              204
+            ],
+            "source_body_height": 183,
+            "scale": 0.455959,
+            "offset": [
+              44,
+              75
+            ],
+            "alpha_bounds": [
+              62,
+              85,
+              135,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              108.5,
+              204
+            ],
+            "source_body_height": 182,
+            "scale": 0.455959,
+            "offset": [
+              47,
+              75
+            ],
+            "alpha_bounds": [
+              61,
+              85,
+              147,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              102.5,
+              200
+            ],
+            "source_body_height": 185,
+            "scale": 0.455959,
+            "offset": [
+              49,
+              77
+            ],
+            "alpha_bounds": [
+              60,
+              84,
+              143,
+              170
+            ]
+          },
+          {
+            "source_anchor": [
+              62.0,
+              198
+            ],
+            "source_body_height": 157,
+            "scale": 0.455959,
+            "offset": [
+              68,
+              78
+            ],
+            "alpha_bounds": [
+              78,
+              97,
+              166,
+              171
+            ]
+          },
+          {
+            "source_anchor": [
+              103.65,
+              202
+            ],
+            "source_body_height": 161,
+            "scale": 0.455959,
+            "offset": [
+              49,
+              76
+            ],
+            "alpha_bounds": [
+              59,
+              95,
+              136,
+              171
+            ]
+          },
+          {
+            "source_anchor": [
+              109.67,
+              204
+            ],
+            "source_body_height": 183,
+            "scale": 0.455959,
+            "offset": [
+              46,
+              75
+            ],
+            "alpha_bounds": [
+              60,
+              85,
+              133,
+              168
+            ]
+          }
+        ],
+        "attack_left": [
+          {
+            "source_anchor": [
+              128.5,
+              202
+            ],
+            "source_body_height": 179,
+            "scale": 0.455959,
+            "offset": [
+              37,
+              76
+            ],
+            "alpha_bounds": [
+              58,
+              86,
+              131,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              134.88,
+              203
+            ],
+            "source_body_height": 179,
+            "scale": 0.455959,
+            "offset": [
+              35,
+              75
+            ],
+            "alpha_bounds": [
+              50,
+              86,
+              132,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              101.12,
+              202
+            ],
+            "source_body_height": 193,
+            "scale": 0.455959,
+            "offset": [
+              50,
+              76
+            ],
+            "alpha_bounds": [
+              61,
+              80,
+              132,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              168.97,
+              198
+            ],
+            "source_body_height": 146,
+            "scale": 0.455959,
+            "offset": [
+              19,
+              78
+            ],
+            "alpha_bounds": [
+              32,
+              102,
+              124,
+              170
+            ]
+          },
+          {
+            "source_anchor": [
+              125.8,
+              203
+            ],
+            "source_body_height": 147,
+            "scale": 0.455959,
+            "offset": [
+              39,
+              75
+            ],
+            "alpha_bounds": [
+              49,
+              101,
+              134,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              106.0,
+              203
+            ],
+            "source_body_height": 180,
+            "scale": 0.455959,
+            "offset": [
+              48,
+              75
+            ],
+            "alpha_bounds": [
+              58,
+              85,
+              130,
+              168
+            ]
+          }
+        ],
+        "attack_up": [
+          {
+            "source_anchor": [
+              113.0,
+              201
+            ],
+            "source_body_height": 176,
+            "scale": 0.455959,
+            "offset": [
+              44,
+              76
+            ],
+            "alpha_bounds": [
+              59,
+              87,
+              131,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              110.0,
+              201
+            ],
+            "source_body_height": 182,
+            "scale": 0.455959,
+            "offset": [
+              46,
+              76
+            ],
+            "alpha_bounds": [
+              62,
+              85,
+              143,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              129.5,
+              201
+            ],
+            "source_body_height": 192,
+            "scale": 0.455959,
+            "offset": [
+              37,
+              76
+            ],
+            "alpha_bounds": [
+              48,
+              80,
+              130,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              112.0,
+              201
+            ],
+            "source_body_height": 189,
+            "scale": 0.455959,
+            "offset": [
+              45,
+              76
+            ],
+            "alpha_bounds": [
+              59,
+              81,
+              129,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              127.57,
+              202
+            ],
+            "source_body_height": 161,
+            "scale": 0.455959,
+            "offset": [
+              38,
+              76
+            ],
+            "alpha_bounds": [
+              56,
+              95,
+              131,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              113.4,
+              201
+            ],
+            "source_body_height": 176,
+            "scale": 0.455959,
+            "offset": [
+              44,
+              76
+            ],
+            "alpha_bounds": [
+              59,
+              87,
+              131,
+              168
+            ]
+          }
+        ],
+        "attack_right": [
+          {
+            "source_anchor": [
+              108.0,
+              207
+            ],
+            "source_body_height": 183,
+            "scale": 0.455959,
+            "offset": [
+              47,
+              74
+            ],
+            "alpha_bounds": [
+              64,
+              85,
+              135,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              109.5,
+              207
+            ],
+            "source_body_height": 183,
+            "scale": 0.455959,
+            "offset": [
+              46,
+              74
+            ],
+            "alpha_bounds": [
+              61,
+              85,
+              141,
+              169
+            ]
+          },
+          {
+            "source_anchor": [
+              109.0,
+              210
+            ],
+            "source_body_height": 196,
+            "scale": 0.455959,
+            "offset": [
+              46,
+              72
+            ],
+            "alpha_bounds": [
+              57,
+              78,
+              133,
+              168
+            ]
+          },
+          {
+            "source_anchor": [
+              78.5,
+              204
+            ],
+            "source_body_height": 155,
+            "scale": 0.455959,
+            "offset": [
+              60,
+              75
+            ],
+            "alpha_bounds": [
+              72,
+              97,
+              168,
+              171
+            ]
+          },
+          {
+            "source_anchor": [
+              105.5,
+              203
+            ],
+            "source_body_height": 142,
+            "scale": 0.455959,
+            "offset": [
+              48,
+              75
+            ],
+            "alpha_bounds": [
+              56,
+              103,
+              144,
+              170
+            ]
+          },
+          {
+            "source_anchor": [
+              93.0,
+              208
+            ],
+            "source_body_height": 184,
+            "scale": 0.455959,
+            "offset": [
+              54,
+              73
+            ],
+            "alpha_bounds": [
+              65,
+              84,
+              136,
+              168
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

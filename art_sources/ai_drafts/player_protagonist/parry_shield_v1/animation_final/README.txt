@@ -1,0 +1,1 @@
+Right-facing single-sided parry shield. 9 frames in row-major order, 3x3 sheet, 418x418 RGBA per frame. Play once; GIF loops only for review. Built-in image generation + FrameRonin local splitting. PNG alpha preserves translucent edges; GIF transparency is binary. Art draft only; not integrated into gameplay.
