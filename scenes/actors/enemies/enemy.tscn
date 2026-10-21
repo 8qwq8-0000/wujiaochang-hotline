@@ -1,35 +1,31 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene format=3 uid="uid://ccix582rdk56x"]
 
-[ext_resource type="Script" path="res://scripts/gameplay/enemies/enemy_controller.gd" id="1"]
-[ext_resource type="Script" path="res://scripts/gameplay/combat/health_component.gd" id="2"]
-[ext_resource type="Script" path="res://scripts/gameplay/combat/hurt_box.gd" id="3"]
-
-[ext_resource type="Script" path="res://scripts/gameplay/player/status_component.gd" id="4_status"]
-
-[ext_resource type="Script" path="res://scripts/presentation/status_indicator.gd" id="status_indicator"]
+[ext_resource type="Script" uid="uid://hktlhifyilas" path="res://scripts/gameplay/enemies/enemy_controller.gd" id="1"]
+[ext_resource type="Script" uid="uid://dvf0vif2eetq2" path="res://scripts/gameplay/combat/health_component.gd" id="2"]
+[ext_resource type="Script" uid="uid://bsn70jo45ko2r" path="res://scripts/gameplay/combat/hurt_box.gd" id="3"]
+[ext_resource type="Script" uid="uid://iekd5ex3oxsj" path="res://scripts/gameplay/player/status_component.gd" id="4_status"]
+[ext_resource type="Script" uid="uid://l0hycqi8fyxu" path="res://scripts/presentation/status_indicator.gd" id="status_indicator"]
 
 [sub_resource type="CircleShape2D" id="BodyShape"]
 radius = 11.0
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_visual"]
 
-[node name="Enemy" type="CharacterBody2D"]
+[node name="Enemy" type="CharacterBody2D" unique_id=304851087]
 collision_layer = 4
 collision_mask = 129
 script = ExtResource("1")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1644466150]
 shape = SubResource("BodyShape")
 
-[node name="Sprite2D" type="Sprite2D" parent="."]
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1988408625]
 texture_filter = 1
 
-[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
-libraries = {
-&"": SubResource("AnimationLibrary_visual")
-}
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1457117893]
+libraries/ = SubResource("AnimationLibrary_visual")
 
-[node name="NavigationAgent2D" type="NavigationAgent2D" parent="."]
+[node name="NavigationAgent2D" type="NavigationAgent2D" parent="." unique_id=1461536566]
 path_desired_distance = 8.0
 target_desired_distance = 22.0
 avoidance_enabled = true
@@ -39,24 +35,22 @@ max_neighbors = 6
 time_horizon_agents = 0.5
 time_horizon_obstacles = 0.35
 
-[node name="HealthComponent" type="Node" parent="."]
+[node name="HealthComponent" type="Node" parent="." unique_id=866514733]
 script = ExtResource("2")
 
-[node name="HurtBox" type="Area2D" parent="."]
+[node name="HurtBox" type="Area2D" parent="." unique_id=1351578233]
 collision_layer = 16
 collision_mask = 0
 monitoring = false
-monitorable = true
 script = ExtResource("3")
 faction = 2
 health_path = NodePath("../HealthComponent")
-actor_path = NodePath("..")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="HurtBox"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HurtBox" unique_id=222288322]
 shape = SubResource("BodyShape")
 
-[node name="StatusComponent" type="Node" parent="."]
+[node name="StatusComponent" type="Node" parent="." unique_id=1329837078]
 script = ExtResource("4_status")
 
-[node name="StatusIndicator" type="Node2D" parent="."]
+[node name="StatusIndicator" type="Node2D" parent="." unique_id=1222656068]
 script = ExtResource("status_indicator")

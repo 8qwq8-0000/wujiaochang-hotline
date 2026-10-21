@@ -227,11 +227,26 @@ func _try_operator_low_pressure_notice(player: PlayerController) -> void:
 		return
 	run.operator_hack_announced = true
 	var lines := {
-		TalentCoreController.ASSAULT_PROTOCOL: "敌方火控链路已被我压低。先手窗口开放。",
-		TalentCoreController.DEFENSE_PROTOCOL: "敌方警戒通信已受抑制。稳住阵线。",
-		TalentCoreController.MOBILITY_PROTOCOL: "敌方定位回传被我延迟。移动窗口开放。",
+		TalentCoreController.DEEP_NINJA: [
+			"猎痕已锁定。别让目标离开我的视野。",
+			"猎痕已锁定。你选猎物，我替你封死退路。",
+			"猎痕已锁定。我们都知道下一具躯壳会倒在哪里。",
+		],
+		TalentCoreController.LEGENDARY_MASTER: [
+			"招式样本已收录。先观察，再拆解。",
+			"样本交给我。你只需决定何时验证。",
+			"无需提示。你的判断已经与模型重合。",
+		],
+		TalentCoreController.ROCK_VIGILANTE: [
+			"线路已经热场。让整栋楼听见返场。",
+			"拍子归你，失真归我。把这一层叫醒。",
+			"线路归我们。接线员只是还没承认。",
+		],
 	}
-	events.publish_operator_communication(lines.get(player.talent_core.current_protocol_id, lines[TalentCoreController.DEFENSE_PROTOCOL]))
+	var persona_id := player.talent_core.current_persona_id
+	var persona_lines: Array = lines.get(persona_id, lines[TalentCoreController.LEGENDARY_MASTER])
+	var relationship_stage := clampi(player.talent_core.get_relationship_stage(persona_id), 0, persona_lines.size() - 1)
+	events.publish_operator_communication(String(persona_lines[relationship_stage]))
 
 
 func _place_barrel() -> void:

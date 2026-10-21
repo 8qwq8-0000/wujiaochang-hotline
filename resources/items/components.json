@@ -1,66 +1,101 @@
 {
-  "baton": {
-    "name": "警棍",
-    "slot": "weapon",
-    "effect": "res://resources/weapons/baton.tres",
-    "image": "res://assets/art/items/baton.svg",
-    "maximum_stack_size": 1
-  },
-  "pistol": {
-    "name": "制式手枪",
-    "slot": "weapon",
-    "effect": "res://resources/weapons/service_pistol.tres",
-    "image": "res://assets/art/weapons/placeholder/placeholder_service_pistol_unpainted.png",
-    "maximum_stack_size": 1
-  },
-  "scattergun": {
-    "name": "散射武装",
-    "slot": "weapon",
-    "effect": "res://resources/weapons/scattergun.tres",
-    "image": "res://assets/art/weapons/placeholder/placeholder_scattergun_unpainted.png",
-    "maximum_stack_size": 1
-  },
-  "rail_cannon": {
-    "name": "腕锁激光炮",
-    "slot": "weapon",
-    "effect": "res://resources/weapons/rail_cannon.tres",
-    "image": "res://assets/art/weapons/placeholder/arm_lock_rail_cannon.png",
-    "maximum_stack_size": 1
-  },
-  "wheel": {
-    "name": "轮式推进组件",
-    "slot": "mobility",
-    "effect": "res://resources/mobility/wheel.tres",
-    "image": "res://assets/art/items/wheel.svg",
-    "maximum_stack_size": 1
-  },
-  "circuit_breaker": {
-    "name": "断路保险核心",
-    "slot": "insurance",
-    "image": "res://assets/art/items/circuit_breaker.svg",
-    "maximum_stack_size": 1,
-    "circuit_breaker_used": false
-  },
-  "test_conductive_pistol": {
-    "name": "试验·导电枪",
-    "slot": "weapon",
-    "effect": "res://resources/debug/conductive_pistol.tres",
-    "image": "res://assets/art/weapons/placeholder/placeholder_service_pistol_unpainted.png",
-    "maximum_stack_size": 1,
-    "debug_only": true
-  },
-  "test_electric_pistol": {
-    "name": "试验·电击枪",
-    "slot": "weapon",
-    "effect": "res://resources/debug/electric_pistol.tres",
-    "image": "res://assets/art/weapons/placeholder/placeholder_service_pistol_unpainted.png",
-    "maximum_stack_size": 1,
-    "debug_only": true
-  },
-  "armor": {
-    "name": "缓冲装甲",
-    "slot": "defense",
-    "image": "res://assets/art/items/armor.svg",
-    "maximum_stack_size": 1
-  }
+	"baton": {
+		"name": "警棍",
+		"slot": "weapon",
+		"effect": "res://resources/weapons/baton.tres",
+		"image": "res://assets/art/items/baton.svg",
+		"maximum_stack_size": 1.0
+	},
+	"pistol": {
+		"name": "制式手枪",
+		"slot": "weapon",
+		"effect": "res://resources/weapons/service_pistol.tres",
+		"image": "res://assets/art/weapons/placeholder/placeholder_service_pistol_unpainted.png",
+		"maximum_stack_size": 1.0
+	},
+	"scattergun": {
+		"name": "散射武装",
+		"slot": "weapon",
+		"effect": "res://resources/weapons/scattergun.tres",
+		"image": "res://assets/art/weapons/placeholder/placeholder_scattergun_unpainted.png",
+		"maximum_stack_size": 1.0
+	},
+	"rail_cannon": {
+		"name": "腕锁激光炮",
+		"slot": "weapon",
+		"effect": "res://resources/weapons/rail_cannon.tres",
+		"image": "res://assets/art/weapons/placeholder/arm_lock_rail_cannon.png",
+		"maximum_stack_size": 1.0
+	},
+	"smart_fire": {
+		"name": "智能火控",
+		"slot": "cyberware",
+		"effect": "res://resources/cyberware/smart_fire.tres",
+		"image": "res://assets/art/items/wheel.svg",
+		"maximum_stack_size": 1.0
+	},
+	"explosive_magazine": {
+		"name": "爆裂弹仓",
+		"slot": "cyberware",
+		"effect": "res://resources/cyberware/explosive_magazine.tres",
+		"image": "res://assets/art/items/wheel.svg",
+		"maximum_stack_size": 1.0
+	},
+	"tactical_coprocessor": {
+		"name": "战术协处理器",
+		"slot": "cyberware",
+		"effect": "res://resources/cyberware/tactical_coprocessor.tres",
+		"image": "res://assets/art/items/wheel.svg",
+		"maximum_stack_size": 1.0
+	},
+	"optical_intruder": {
+		"name": "光学入侵器",
+		"slot": "cyberware",
+		"effect": "res://resources/cyberware/optical_intruder.tres",
+		"image": "res://assets/art/items/wheel.svg",
+		"maximum_stack_size": 1.0
+	},
+	"kill_heat_sink": {
+		"name": "击破散热器",
+		"slot": "cyberware",
+		"effect": "res://resources/cyberware/kill_heat_sink.tres",
+		"image": "res://assets/art/items/wheel.svg",
+		"maximum_stack_size": 1.0
+	},
+	"heat_threshold_pulser": {
+		"name": "热阈震荡器",
+		"slot": "cyberware",
+		"effect": "res://resources/cyberware/heat_threshold_pulser.tres",
+		"image": "res://assets/art/items/wheel.svg",
+		"maximum_stack_size": 1.0
+	},
+	"circuit_breaker": {
+		"name": "断路保险核心",
+		"slot": "insurance",
+		"image": "res://assets/art/items/circuit_breaker.svg",
+		"maximum_stack_size": 1.0,
+		"circuit_breaker_used": false
+	},
+	"test_conductive_pistol": {
+		"name": "试验·导电枪",
+		"slot": "weapon",
+		"effect": "res://resources/debug/conductive_pistol.tres",
+		"image": "res://assets/art/weapons/placeholder/placeholder_service_pistol_unpainted.png",
+		"maximum_stack_size": 1.0,
+		"debug_only": true
+	},
+	"test_electric_pistol": {
+		"name": "试验·电击枪",
+		"slot": "weapon",
+		"effect": "res://resources/debug/electric_pistol.tres",
+		"image": "res://assets/art/weapons/placeholder/placeholder_service_pistol_unpainted.png",
+		"maximum_stack_size": 1.0,
+		"debug_only": true
+	},
+	"armor": {
+		"name": "缓冲装甲",
+		"slot": "defense",
+		"image": "res://assets/art/items/armor.svg",
+		"maximum_stack_size": 1.0
+	}
 }

@@ -91,6 +91,7 @@ var _self_destruct_remaining := 0.0
 var _defeat_finalized := false
 var shield_charges := 0
 var _shield_hit_flash_remaining := 0.0
+var _optical_disruption_remaining := 0.0
 const ATTACK_WARNING := preload("res://assets/audio/sfx/enemy_ui/enemy_attack.wav")
 
 @onready var navigation_agent: NavigationAgent2D = $NavigationAgent2D
@@ -175,6 +176,7 @@ func _physics_process(delta: float) -> void:
 		_tick_self_destruct(delta)
 		return
 	_tick_navigation_state(delta)
+	_optical_disruption_remaining = maxf(_optical_disruption_remaining - delta, 0.0)
 	_attack_cooldown_remaining = maxf(_attack_cooldown_remaining - delta, 0.0)
 	if _stagger_remaining > 0.0:
 		_cancel_precharge()
@@ -189,7 +191,18 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector2.ZERO
 		queue_redraw()
 		return
-	if not is_instance_valid(_target) or not _same_room(_target):
+	if _optical_disruption_remaining > 0.0 and state != State.WINDUP:
+		_target = null
+		_alerted = true
+		_cancel_precharge()
+		state = State.CHASE
+		var search_velocity := _direction_to_position(_last_known_position) * profile.move_speed if global_position.distance_to(_last_known_position) > 12.0 else Vector2.ZERO
+		if not search_velocity.is_zero_approx():
+			facing = search_velocity.normalized()
+		_submit_navigation_velocity(search_velocity)
+		queue_redraw()
+		return
+	if (not is_instance_valid(_target) or not _same_room(_target)) and _optical_disruption_remaining <= 0.0:
 		_target = null
 		for candidate in get_tree().get_nodes_in_group("player"):
 			if candidate is Node2D and _same_room(candidate):
@@ -788,6 +801,8 @@ func _finalize_defeat() -> void:
 func _draw() -> void:
 	if _alerted and state not in [State.DEAD, State.SELF_DESTRUCT]:
 		draw_circle(Vector2(0, -22), 3.0, Color(1.0, 0.8, 0.2))
+	if _optical_disruption_remaining > 0.0 and state not in [State.DEAD, State.SELF_DESTRUCT]:
+		draw_arc(Vector2(0, -22), 7.0, 0.0, TAU, 16, Color(0.3, 0.95, 1.0, 0.9), 2.0)
 	var color := profile.body_color if profile != null else Color.RED
 	if state == State.SELF_DESTRUCT and int(_self_destruct_remaining * 16.0) % 2 == 0:
 		color = Color.WHITE
@@ -822,6 +837,8 @@ func is_alerted() -> bool:
 
 
 func can_see_target() -> bool:
+	if _optical_disruption_remaining > 0.0:
+		return false
 	if not is_instance_valid(_target) or not _same_room(_target):
 		return false
 	var offset := _target.global_position - global_position
@@ -841,6 +858,20 @@ func can_see_target() -> bool:
 	if not offset.is_zero_approx() and facing.dot(offset.normalized()) < cos(deg_to_rad(profile.vision_angle_degrees * 0.5)):
 		return false
 	return _has_line_of_sight()
+
+
+func apply_optical_disruption(last_observed_position: Vector2, duration: float) -> void:
+	if state in [State.DEAD, State.SELF_DESTRUCT]:
+		return
+	_last_known_position = last_observed_position
+	_memory_remaining = maxf(_memory_remaining, duration)
+	_optical_disruption_remaining = maxf(_optical_disruption_remaining, duration)
+	_alerted = true
+	if state != State.WINDUP:
+		_target = null
+		_cancel_precharge()
+		state = State.CHASE
+	queue_redraw()
 
 
 func _clear_path_to(location: Vector2) -> bool:

@@ -69,21 +69,21 @@ func run_checks() -> void:
 	check(room.chest.get_items()[0] == pistol, "deposit moves same item instance")
 	check(player.weapons.weapons[1] == null, "deposit synchronizes weapon controller")
 	check(not room.transfer(pistol, true), "repeated deposit cannot duplicate an item")
-	var foreign := InventoryItem.new(ComponentInventory.PROTOTYPES, "wheel")
+	var foreign := InventoryItem.new(ComponentInventory.PROTOTYPES, "armor")
 	check(not room.transfer(foreign, false), "cannot withdraw an item absent from chest")
 	check(room.transfer(pistol, false), "withdrawal goes into backpack")
 	check(inventory.backpack.has_item(pistol), "withdraw does not auto-equip or replace weapons")
 	check(pistol.get_property("instance_id") == id and pistol.get_property("quality") == 3 and pistol.get_property("heat") == 37.5, "instance id and custom properties survive transfer")
 	check(room.transfer(pistol, true), "backpack item can be deposited")
 	for index in 6:
-		check(inventory.pickup("wheel"), "fill all six bag cells")
+		check(inventory.pickup("armor"), "fill all six bag cells")
 	check(not room.transfer(pistol, false), "full bag rejects withdrawal")
 	check(room.chest.get_item_count() == 1 and inventory.backpack.get_item_count() == 6, "full bag rejection leaves both inventories unchanged")
 	# Force a real I/O failure, then verify both disk and runtime ownership roll back.
 	var prior_profile: Dictionary = store.get_profile()
 	store.save_path = "user://missing-warehouse-directory/profile.json"
-	var wheel := inventory.backpack.get_items()[0]
-	check(not room.transfer(wheel, true), "save failure cancels transfer")
+	var armor := inventory.backpack.get_items()[0]
+	check(not room.transfer(armor, true), "save failure cancels transfer")
 	check(inventory.backpack.get_item_count() == 6 and room.chest.get_item_count() == 1, "save failure restores both inventories")
 	check(store.get_profile() == prior_profile, "failed save leaves committed profile unchanged")
 	store.save_path = TEST_PATH
@@ -124,11 +124,11 @@ func run_checks() -> void:
 	player = room.player
 	player.set_physics_process(false)
 	check(room.chest.get_item_count() == 2 and player.inventory.backpack.get_item_count() == 5, "new warehouse restores chest and safe loadout without duplicates")
-	check(player.inventory.equip(0), "warehouse supports existing mobility equip flow")
+	check(player.inventory.equip(0), "warehouse supports existing defense equip flow")
 	await process_frame
 	await process_frame
-	check(not store.get_profile().loadout.inventory.mobility.is_empty(), "warehouse equipment changes automatically persist")
-	check(player.inventory.unequip("mobility"), "restore mobility fixture into bag")
+	check(not store.get_profile().loadout.inventory.defense.is_empty(), "warehouse equipment changes automatically persist")
+	check(player.inventory.unequip("defense"), "restore defense fixture into bag")
 	await process_frame
 	player.circuit_breaker.circuit_breaker_used = true
 	player.talent_core.takeover_charges = 0
@@ -138,6 +138,9 @@ func run_checks() -> void:
 	check(not battle.is_in_group("warehouse") and get_nodes_in_group("enemies").size() > 0, "departure loads real combat floor")
 	check(battle.scene_file_path == "res://scenes/levels/floors/combat_prototype.tscn", "departure enables the procedural combat floor")
 	player = battle.get_node("Player")
+	var rest := main.get_node("PersonaRestFlow") as PersonaRestFlow
+	check(paused and rest.is_open, "persistent departure opens mandatory persona rest")
+	check(rest.choose_persona(TalentCoreController.LEGENDARY_MASTER) and rest.close(), "warehouse flow consumes first-floor persona authorization")
 	check(player.inventory.backpack.get_item_count() == 5, "departure preserves chosen backpack")
 	check(not player.circuit_breaker.circuit_breaker_used and player.talent_core.takeover_charges == player.talent_core.takeover_charge_max, "new run refreshes per-run insurance and takeover resources")
 	await preload("res://tests/integration/combat_test_flow.gd").clear_floor(self)

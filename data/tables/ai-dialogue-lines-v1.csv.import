@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://ckxq2lgi5wm0n"
+
+[deps]
+
+files=["res://data/tables/ai-dialogue-lines-v1.persona.translation", "res://data/tables/ai-dialogue-lines-v1.event.translation", "res://data/tables/ai-dialogue-lines-v1.bond.translation", "res://data/tables/ai-dialogue-lines-v1.tier.translation", "res://data/tables/ai-dialogue-lines-v1.intensity.translation", "res://data/tables/ai-dialogue-lines-v1.cooldown.translation", "res://data/tables/ai-dialogue-lines-v1.text.translation"]
+
+source_file="res://data/tables/ai-dialogue-lines-v1.csv"
+dest_files=["res://data/tables/ai-dialogue-lines-v1.persona.translation", "res://data/tables/ai-dialogue-lines-v1.event.translation", "res://data/tables/ai-dialogue-lines-v1.bond.translation", "res://data/tables/ai-dialogue-lines-v1.tier.translation", "res://data/tables/ai-dialogue-lines-v1.intensity.translation", "res://data/tables/ai-dialogue-lines-v1.cooldown.translation", "res://data/tables/ai-dialogue-lines-v1.text.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

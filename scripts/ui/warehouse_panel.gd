@@ -110,7 +110,7 @@ func refresh() -> void:
 			child.queue_free()
 	var inventory: ComponentInventory = room.player.inventory
 	_count.text = "背包 %d / 6    储物箱 %d 件    已装备物品不占背包格" % [inventory.backpack.get_item_count(), room.chest.get_item_count()]
-	for entry in [{"slot": inventory.weapon_slot, "name": "主武器"}, {"slot": inventory.secondary_weapon_slot, "name": "副武器"}, {"slot": inventory.mobility_slot, "name": "机动"}, {"slot": inventory.defense_slot, "name": "防御"}, {"slot": inventory.blackbox_slot, "name": "黑匣"}]:
+	for entry in [{"slot": inventory.weapon_slot, "name": "主武器"}, {"slot": inventory.secondary_weapon_slot, "name": "副武器"}, {"slot": inventory.cyberware_slot, "name": "义体"}, {"slot": inventory.defense_slot, "name": "防御"}, {"slot": inventory.blackbox_slot, "name": "黑匣"}]:
 		var item: InventoryItem = entry.slot.get_item()
 		if item != null:
 			_add_item(_bag_list, item, entry.name + " · ", true)

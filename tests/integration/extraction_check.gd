@@ -43,10 +43,10 @@ func run_checks() -> void:
 	check(not paused, "uncleared floor cannot open exit")
 	check(not run.finish_extraction(player), "uncleared run cannot settle")
 	player.inventory.pickup("pistol")
-	player.inventory.pickup("wheel")
+	player.inventory.pickup("armor")
 	player.inventory.pickup("scattergun")
 	await clear_floor()
-	check(player.inventory.equip(0), "equip mobility after clear")
+	check(player.inventory.equip(0), "equip defense after clear")
 	var before := player.export_run_state()
 	var exit: ExitElevator = main.find_child("FloorAssembler", true, false).generated_rooms.back().exit_elevator
 	player.global_position = exit.global_position
@@ -86,7 +86,7 @@ func run_checks() -> void:
 	if not run.run_finished:
 		quit(1)
 		return
-	check(run.extraction_result.items.size() == 5, "both weapons, mobility and spare bag extracted once")
+	check(run.extraction_result.items.size() == 5, "both weapons, defense and spare bag extracted once")
 	check(run.extraction_result.player_state == before, "extraction retains full serialized state")
 	var result: Dictionary = run.extraction_result.duplicate(true)
 	ui.extract()
@@ -101,7 +101,10 @@ func run_checks() -> void:
 	check(player.inventory.get_extraction_items().size() == 5, "warehouse retains extracted equipment")
 	check(warehouse.depart(), "warehouse can start the next run")
 	player = await wait_floor(flow)
-	check(not paused and not run.run_finished and run.floor_index == 0, "new run resumes fresh floor")
+	var rest := main.get_node("PersonaRestFlow") as PersonaRestFlow
+	check(paused and rest.is_open and not run.run_finished and run.floor_index == 0, "new run starts at mandatory first-floor persona rest")
+	check(rest.choose_persona(TalentCoreController.DEEP_NINJA) and rest.close(), "new run consumes its first-floor persona authorization")
+	check(not paused, "leaving mandatory rest resumes the fresh floor")
 	check(player.inventory.get_extraction_items().size() == 5, "new run carries chosen equipment")
 	await clear_floor()
 	player.set_circuit_breaker_equipped(false)

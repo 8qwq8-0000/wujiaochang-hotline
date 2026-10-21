@@ -1,7 +1,9 @@
 extends CanvasLayer
 
 const FLOOR_PATH := "res://scenes/levels/floors/combat_prototype.tscn"
+const BOSS_PATH := "res://scenes/levels/bosses/rooftop_boss_arena.tscn"
 var _player: PlayerController
+var _bound_scene: Node
 var _owns_pause := false
 var _settled := false
 var _active_exit: ExitElevator
@@ -65,6 +67,7 @@ func _build_panel() -> void:
 func _bind_floor(scene: Node, _payload: Dictionary) -> void:
 	close_exit()
 	_active_exit = null
+	_bound_scene = scene
 	_player = scene.get_node_or_null("Player") as PlayerController
 	if _player != null and not scene.is_in_group("warehouse"):
 		_player.player_died.connect(_on_player_died)
@@ -119,6 +122,16 @@ func open_exit(exit: ExitElevator = null) -> void:
 	_settled = false
 	_active_exit = exit
 	_set_layout(false)
+	if _bound_scene is RooftopBossArena:
+		var arena := _bound_scene as RooftopBossArena
+		if not run.persistent_run or arena.phase != RooftopBossArena.Phase.CLEARED:
+			return
+		_title.text = "完整通关 · 遗产记录待铸造"
+		_details.text = "本次人格、三级天赋与战斗特征将被封存为一瓶遗产饮料。\n此记录只在楼顶 Boss 被完整击败后生成。"
+		_clear_buttons()
+		_add_button("铸造遗产饮料", complete_victory)
+		_overlay.show()
+		return
 	_title.text = "本层已清理"
 	_details.text = "撤离带出物品，继续保留配装。\n走出出口范围即可关闭。"
 	_clear_buttons()
@@ -172,12 +185,55 @@ func continue_floor() -> void:
 	if _settled or not is_instance_valid(_player) or _player.health.is_dead():
 		return
 	var snapshot: Dictionary = _player.export_run_state()
-	if not flow.request_scene(FLOOR_PATH, {"player_state": snapshot}):
+	var destination := BOSS_PATH if run.floor_index >= 3 else FLOOR_PATH
+	if not flow.request_scene(destination, {"player_state": snapshot}):
 		_details.text = "下一层加载请求失败，请重试或返回搜刮。"
 		return
 	run.set_player_state(snapshot)
 	run.floor_index += 1
 	close_exit()
+
+
+func complete_victory() -> void:
+	if _settled or not is_instance_valid(_player) or not (_bound_scene is RooftopBossArena):
+		return
+	var arena := _bound_scene as RooftopBossArena
+	if arena.phase != RooftopBossArena.Phase.CLEARED or not run.finish_victory(_player):
+		return
+	var store := get_node("/root/WarehouseStore")
+	var profile: Dictionary = store.get_profile()
+	var record: Dictionary = run.victory_result.record
+	if not store.commit(profile.chest, run.victory_result.player_state, "", record):
+		run.run_finished = false
+		run.victory_result.clear()
+		run.set_player_state(_player.export_run_state())
+		_details.text = store.error_message + "，遗产记录尚未生成，请重试。"
+		return
+	_settled = true
+	_set_layout(true)
+	_owns_pause = not get_tree().paused
+	get_tree().paused = true
+	_player.set_input_enabled(false)
+	_title.text = "遗产饮料已铸造 · 完整通关"
+	var persona_lines := PackedStringArray()
+	for entry: Dictionary in record.get("personas", []):
+		var talent := String(entry.get("tier_3_talent", ""))
+		persona_lines.append("%s Lv.%d%s" % [
+			entry.get("name", "未知人格"),
+			int(entry.get("level", 0)),
+			" · " + talent if not talent.is_empty() else "",
+		])
+	_details.text = "瓶号 %s\n通关用时 %.1f 秒\n\n%s\n\n最高连续标记击杀 %d · 手动完美格挡 %d\n摇滚峰值 %.1f · 摇滚攻击 %d" % [
+		record.get("id", "--"),
+		float(record.get("clear_seconds", 0.0)),
+		"\n".join(persona_lines) if not persona_lines.is_empty() else "未记录到人格副本",
+		int(record.get("highest_marked_kill_chain", 0)),
+		int(record.get("manual_perfect_guards", 0)),
+		float(record.get("peak_rock_feedback", 0.0)),
+		int(record.get("rock_attacks", 0)),
+	]
+	_clear_buttons()
+	_add_button("返回仓库", return_to_warehouse)
 
 
 func close_exit() -> void:

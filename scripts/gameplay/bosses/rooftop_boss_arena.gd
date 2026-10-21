@@ -35,6 +35,7 @@ var _attack_generation := 0
 var _support_remaining_health: Dictionary = {}
 var _test_mode := false
 var _test_player_state: Dictionary = {}
+var _optical_disruption_remaining := 0.0
 
 
 func _enter_tree() -> void:
@@ -61,6 +62,17 @@ func _ready() -> void:
 	_on_boss_health_changed(boss.health.current_health, boss.health.max_health, 0)
 	boss.set_opening_guards(OPENING_GUARD_COUNT, OPENING_GUARD_COUNT)
 	_publish_notice(&"boss_phase_one", "第一阶段 · 清除三名守卫，唤醒神像", Color(0.45, 0.9, 1.0), 2.4)
+
+
+func _process(delta: float) -> void:
+	_optical_disruption_remaining = maxf(_optical_disruption_remaining - delta, 0.0)
+
+
+func apply_optical_disruption(_last_observed_position: Vector2, duration: float) -> void:
+	if phase != Phase.BOSS_ACTIVE:
+		return
+	_optical_disruption_remaining = maxf(_optical_disruption_remaining, duration)
+	_publish_notice(&"boss_optical_intruder", "神像火控失锁 · 正在重建索敌", Color(0.35, 0.95, 1.0), 0.9)
 
 
 func _configure_guard_awareness() -> void:
@@ -128,6 +140,10 @@ func _on_minions_cleared() -> void:
 
 func _run_attack_loop(generation: int) -> void:
 	while phase == Phase.BOSS_ACTIVE and generation == _attack_generation:
+		while _optical_disruption_remaining > 0.0:
+			await get_tree().process_frame
+			if not _attack_is_current(generation):
+				return
 		telegraph.clear()
 		boss.play_echo_probe()
 		room_lighting.pulse_echo()

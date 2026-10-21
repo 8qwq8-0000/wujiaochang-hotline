@@ -15,6 +15,7 @@ var _circuit_value: Label
 var _circuit_protection_active := false
 var _health_meter: SegmentMeter
 var _takeover_meter: SegmentMeter
+var _persona_value: Label
 var _heat_meter: SegmentMeter
 var _mobility_value: Label
 var _weapon_value: Label
@@ -27,6 +28,7 @@ var _operator_label: Label
 var _operator_scanlines: Control
 var _operator_audio: AudioStreamPlayer
 var _operator_tween: Tween
+var _heat_flash_tween: Tween
 
 
 func _ready() -> void:
@@ -56,7 +58,7 @@ func _process(_delta: float) -> void:
 	var heat_state := _player.get_heat_state()
 	health_label.text = "耐久  %d / %d" % [health_state.current, health_state.maximum]
 	heat_label.text = "热量  %03d / %03d%s" % [roundi(heat_state.current), roundi(heat_state.maximum), "  过热" if heat_state.overheated else ""]
-	mobility_label.text = "机动  %s" % _player.get_mobility_display_name()
+	mobility_label.text = "义体  %s" % _player.get_cyberware_display_name()
 	weapon_label.text = "武装 %d/2  %s [Q/滚轮]" % [_player.weapons.current_index + 1, _player.get_weapon_display_name()]
 	guard_label.text = "格挡  %s" % _guard_state_name(_player.get_guard_state())
 	_health_meter.segments = int(health_state.maximum)
@@ -64,19 +66,21 @@ func _process(_delta: float) -> void:
 	_update_circuit_status()
 	_heat_meter.meter_color = CyberUITheme.DANGER if heat_state.overheated else CyberUITheme.WARNING
 	_heat_meter.set_meter(float(heat_state.current), float(heat_state.maximum))
-	var mobility_hint := "SPACE"
-	if _player.mobility.get_current_mode() is WheelMobilityMode:
-		mobility_hint = "冲撞 %.1fs" % _player.mobility.ability_cooldown_remaining if _player.mobility.ability_cooldown_remaining > 0.0 else "冲撞 SPACE"
-	_mobility_value.text = "%s  // %s\n%s" % [_player.get_mobility_display_name(), mobility_hint, _player.get_node("DefenseComponent").display_state()]
+	var dash_hint := "突进 %.1fs" % _player.dash.cooldown_remaining if _player.dash.cooldown_remaining > 0.0 else "突进 SPACE"
+	_mobility_value.text = "%s  // %s\n义体：%s\n%s" % [_player.get_dash_display_name(), dash_hint, _player.get_cyberware_display_name(), _player.get_node("DefenseComponent").display_state()]
 	_weapon_value.text = "> %s  %s\n  Q/滚轮 切换" % ["A" if _player.weapons.current_index == 0 else "B", _player.get_weapon_display_name()]
 	_guard_value.text = "格挡协议  %s" % _guard_state_name(_player.get_guard_state())
 	if is_instance_valid(_player.talent_core):
 		_takeover_meter.set_meter(float(_player.talent_core.takeover_charges), float(_player.talent_core.takeover_charge_max))
+		_update_persona_runtime_state()
 
 
 func _bind_player(player: PlayerController) -> void:
 	_circuit_protection_active = false
 	player.circuit_breaker.circuit_breaker_triggered.connect(_on_circuit_protection_triggered)
+	player.cyberware_triggered.connect(_on_cyberware_triggered)
+	player.talent_core.persona_changed.connect(_on_persona_changed)
+	_on_persona_changed(player.talent_core.current_persona_id)
 	player.tree_exiting.connect(func() -> void:
 		_player = null
 		buff_label.hide()
@@ -145,6 +149,10 @@ func _build_cyber_hud() -> void:
 	_takeover_meter = _make_meter("接管", 1.0, 1.0, 3, CyberUITheme.HIGHLIGHT)
 	status_stack.add_child(_health_meter)
 	status_stack.add_child(_takeover_meter)
+	_persona_value = Label.new()
+	_persona_value.text = "人格  未装载"
+	_persona_value.clip_text = true
+	status_stack.add_child(_persona_value)
 	_circuit_value = Label.new()
 	_circuit_value.text = "断路保险  就绪"
 	status_stack.add_child(_circuit_value)
@@ -158,9 +166,9 @@ func _build_cyber_hud() -> void:
 	_objective_value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	objective.add_child(_objective_value)
 
-	var mobility := _make_panel("机动 / 防御", Rect2(8, 274, 175, 78))
+	var mobility := _make_panel("突进 / 义体 / 防御", Rect2(8, 256, 190, 96))
 	_mobility_value = Label.new()
-	_mobility_value.text = "步行（无套件）"
+	_mobility_value.text = "固有突进  // SPACE\n义体：无义体"
 	_mobility_value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	mobility.add_child(_mobility_value)
 
@@ -234,6 +242,28 @@ func _show_operator_communication(text: String) -> void:
 	_operator_tween.tween_callback(_operator_panel.hide)
 
 
+func _on_persona_changed(_persona_id: StringName) -> void:
+	if is_instance_valid(_player) and is_instance_valid(_operator_panel):
+		_operator_panel.title = _player.talent_core.get_operator_title()
+
+
+func _update_persona_runtime_state() -> void:
+	if not is_instance_valid(_persona_value) or not is_instance_valid(_player.persona_combat):
+		return
+	var core := _player.talent_core
+	if core.get_persona_level(core.current_persona_id) <= 0:
+		_persona_value.text = "人格  未装载"
+		return
+	var state := _player.persona_combat.get_runtime_snapshot()
+	match core.current_persona_id:
+		TalentCoreController.DEEP_NINJA:
+			_persona_value.text = "猎痕  %s" % ("锁定" if int(state.marked_target_id) != 0 else "搜索")
+		TalentCoreController.LEGENDARY_MASTER:
+			_persona_value.text = "演算  %d 已解析" % int(state.analyzed_attack_count)
+		TalentCoreController.ROCK_VIGILANTE:
+			_persona_value.text = "反馈  %03d%%" % roundi(float(state.rock_feedback))
+
+
 func _make_radio_static() -> AudioStreamWAV:
 	var stream := AudioStreamWAV.new()
 	stream.format = AudioStreamWAV.FORMAT_8_BITS
@@ -290,6 +320,16 @@ func _on_area_progress(index: int, total: int, remaining: int, cleared: bool) ->
 
 func _on_circuit_protection_triggered() -> void:
 	_circuit_protection_active = true
+
+
+func _on_cyberware_triggered(module_id: StringName) -> void:
+	if module_id != CyberwareController.KILL_HEAT_SINK or not is_instance_valid(_heat_meter):
+		return
+	if _heat_flash_tween != null and _heat_flash_tween.is_valid():
+		_heat_flash_tween.kill()
+	_heat_meter.modulate = Color(0.35, 1.35, 1.2)
+	_heat_flash_tween = create_tween()
+	_heat_flash_tween.tween_property(_heat_meter, "modulate", Color.WHITE, 0.28)
 
 
 func _update_circuit_status() -> void:

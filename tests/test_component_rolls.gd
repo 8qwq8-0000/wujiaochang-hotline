@@ -12,17 +12,44 @@ func test_floor_weights_raise_quality_and_clamp() -> void:
 		var weights := ComponentRolls.floor_weights(floor_number)
 		assert_eq(weights[0] + weights[1] + weights[2], 100)
 
-func test_rolls_have_unique_ids_and_no_ineffective_mobility_attack() -> void:
+func test_rolls_have_unique_ids_and_no_legacy_attack_affix() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 127
 	var ids := {}
 	for index in 80:
-		var item := ComponentRolls.create("wheel", 3, rng)
+		var item := ComponentRolls.create("armor", 3, rng)
 		var id: String = item.get_property("instance_id")
 		assert_false(ids.has(id))
 		ids[id] = true
 		assert_false(ComponentRolls.affixes(item).has("attack"))
 		assert_true(ComponentRolls.affixes(item).size() >= 1 and ComponentRolls.affixes(item).size() <= 3)
+
+
+func test_cyberware_fusion_is_order_independent_module_union() -> void:
+	var rng := RandomNumberGenerator.new()
+	var smart := ComponentRolls.create("smart_fire", 3, rng)
+	var explosive := ComponentRolls.create("explosive_magazine", 1, rng)
+	var duplicate := ComponentRolls.create("smart_fire", 1, rng)
+	assert_eq(ComponentRolls.quality(smart), 0)
+	assert_true(ComponentRolls.affixes(smart).is_empty())
+	assert_true(ComponentRolls.compatible(smart, explosive))
+	assert_false(ComponentRolls.compatible(smart, duplicate))
+	var forward := ComponentRolls.fuse(smart, explosive, rng)
+	var reverse := ComponentRolls.fuse(explosive, smart, rng)
+	assert_eq(ComponentRolls.cyberware_modules(forward), ComponentRolls.cyberware_modules(reverse))
+	assert_eq(ComponentRolls.cyberware_modules(forward), PackedStringArray(["explosive_magazine", "smart_fire"]))
+	assert_eq(ComponentRolls.title(forward), "复合义体 [2/4]")
+
+
+func test_cyberware_fusion_rejects_a_fifth_distinct_module() -> void:
+	var rng := RandomNumberGenerator.new()
+	var compound := ComponentRolls.create("smart_fire", 1, rng)
+	for prototype_id in ["explosive_magazine", "tactical_coprocessor", "optical_intruder"]:
+		compound = ComponentRolls.fuse(compound, ComponentRolls.create(prototype_id, 1, rng), rng)
+	assert_eq(ComponentRolls.cyberware_modules(compound).size(), 4)
+	var fifth := ComponentRolls.create("kill_heat_sink", 1, rng)
+	assert_false(ComponentRolls.compatible(compound, fifth))
+	assert_true(ComponentRolls.fuse(compound, fifth, rng) == null)
 
 func test_item_creation_restores_cleared_prototype_catalog() -> void:
 	var stale := InventoryItem.new(ComponentInventory.PROTOTYPES, "pistol")

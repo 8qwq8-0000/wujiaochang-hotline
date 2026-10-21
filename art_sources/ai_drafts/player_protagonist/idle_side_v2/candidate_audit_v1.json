@@ -1,0 +1,119 @@
+{
+  "ok": true,
+  "errors": [],
+  "warnings": [],
+  "frames": [
+    {
+      "frame": 1,
+      "size": [
+        128,
+        256
+      ],
+      "bbox": [
+        33,
+        80,
+        106,
+        244
+      ],
+      "visibleArea": 11972,
+      "footY": 243,
+      "colors": 95,
+      "opaque": false
+    },
+    {
+      "frame": 2,
+      "size": [
+        128,
+        256
+      ],
+      "bbox": [
+        34,
+        80,
+        107,
+        244
+      ],
+      "visibleArea": 11972,
+      "footY": 243,
+      "colors": 96,
+      "opaque": false
+    },
+    {
+      "frame": 3,
+      "size": [
+        128,
+        256
+      ],
+      "bbox": [
+        35,
+        80,
+        108,
+        244
+      ],
+      "visibleArea": 11972,
+      "footY": 243,
+      "colors": 96,
+      "opaque": false
+    },
+    {
+      "frame": 4,
+      "size": [
+        128,
+        256
+      ],
+      "bbox": [
+        34,
+        80,
+        107,
+        244
+      ],
+      "visibleArea": 11972,
+      "footY": 243,
+      "colors": 96,
+      "opaque": false
+    },
+    {
+      "frame": 5,
+      "size": [
+        128,
+        256
+      ],
+      "bbox": [
+        34,
+        80,
+        107,
+        244
+      ],
+      "visibleArea": 11972,
+      "footY": 243,
+      "colors": 96,
+      "opaque": false
+    },
+    {
+      "frame": 6,
+      "size": [
+        128,
+        256
+      ],
+      "bbox": [
+        33,
+        80,
+        106,
+        244
+      ],
+      "visibleArea": 11972,
+      "footY": 243,
+      "colors": 96,
+      "opaque": false
+    }
+  ],
+  "input": "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\idle_side_v2\\candidate_frames_v1",
+  "sources": [
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\idle_side_v2\\candidate_frames_v1\\frame-001.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\idle_side_v2\\candidate_frames_v1\\frame-002.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\idle_side_v2\\candidate_frames_v1\\frame-003.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\idle_side_v2\\candidate_frames_v1\\frame-004.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\idle_side_v2\\candidate_frames_v1\\frame-005.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\idle_side_v2\\candidate_frames_v1\\frame-006.png"
+  ],
+  "count": 6
+}

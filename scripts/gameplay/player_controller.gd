@@ -4,7 +4,9 @@ extends CharacterBody2D
 signal health_changed(current: int, maximum: int, delta: int)
 signal heat_changed(current: float, maximum: float)
 signal weapon_changed(data: WeaponComponentData)
-signal mobility_changed(mode: MobilityMode)
+signal dash_state_changed(active: bool, cooldown_remaining: float)
+signal cyberware_changed(modules: PackedStringArray)
+signal cyberware_triggered(module_id: StringName)
 signal guard_state_changed(state: GuardComponent.State)
 signal input_enabled_changed(enabled: bool)
 signal interaction_requested(target: Node)
@@ -12,7 +14,6 @@ signal combat_feedback_requested(cue: StringName, world_position: Vector2)
 signal player_died(packet: DamagePacket)
 
 const DEFAULT_CONFIG := preload("res://resources/player/default_player_config.tres")
-const FLIGHT_LOOP := preload("res://assets/audio/sfx/mobility/flight_loop.wav")
 const AFTERIMAGE_INTERVAL := 0.05
 const MOVEMENT_NOISE_INTERVAL := 0.35
 const MOBILITY_BURST_NOISE_RADIUS := 220.0
@@ -23,10 +24,12 @@ const MOBILITY_BURST_NOISE_RADIUS := 220.0
 @onready var health: HealthComponent = $HealthComponent
 @onready var heat: HeatComponent = $HeatComponent
 @onready var guard: GuardComponent = $GuardComponent
-@onready var mobility: MobilityController = $MobilityController
+@onready var dash: DashController = $DashController
+@onready var cyberware: CyberwareController = $CyberwareController
 @onready var weapons: WeaponController = $WeaponController
 @onready var statuses: StatusComponent = $StatusComponent
 @onready var talent_core: TalentCoreController = $TalentCoreController
+@onready var persona_combat: PersonaCombatController = $PersonaCombatController
 @onready var circuit_breaker: CircuitBreakerComponent = $CircuitBreakerComponent
 @onready var interactor: InteractorComponent = $InteractionDetector
 @onready var hurt_box: HurtBox2DComponent = $HurtBox
@@ -57,7 +60,6 @@ func _ready() -> void:
 	hurt_box.damage_invulnerability_seconds = config.damage_invulnerability_seconds
 	weapons.configure(config.default_weapon, config.debug_loadout_enabled)
 	visuals.set_weapon(weapons.get_current_weapon())
-	mobility.configure(config.default_mobility, config.debug_loadout_enabled)
 	guard.heat_refund_requested.connect(heat.reduce_heat)
 	guard.state_changed.connect(_on_guard_state_changed)
 	health.health_changed.connect(_on_health_changed)
@@ -67,8 +69,11 @@ func _ready() -> void:
 	heat.recovered.connect(_on_heat_recovered)
 	weapons.weapon_changed.connect(_on_weapon_changed)
 	weapons.attack_performed.connect(_on_attack_performed)
-	mobility.mode_changed.connect(_on_mobility_changed)
-	mobility.ability_activated.connect(_on_mobility_activated)
+	dash.dash_started.connect(_on_dash_started)
+	dash.dash_ended.connect(_on_dash_ended)
+	dash.cooldown_changed.connect(_on_dash_cooldown_changed)
+	cyberware.cyberware_changed.connect(_on_cyberware_changed)
+	cyberware.module_triggered.connect(_on_cyberware_triggered)
 	hurt_box.hit_resolved.connect(_on_hit_resolved)
 	interactor.interaction_requested.connect(_on_interaction_requested)
 	circuit_breaker.circuit_breaker_triggered.connect(_on_circuit_breaker_triggered)
@@ -80,26 +85,23 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if _dead or not _input_enabled or inventory.is_open or event.is_echo():
 		return
+	persona_combat.notify_player_input(event)
 	if event.is_action_pressed("attack"):
 		_attack_pressed = true
 		_attack_held = true
 	if event.is_action_released("attack"):
 		_attack_released = true
 		_attack_held = false
-	if event.is_action_pressed("guard") and mobility.can_guard():
+	if event.is_action_pressed("guard") and dash.can_guard():
 		guard.begin_guard(aim_direction)
 	if event.is_action_pressed("mobility_ability"):
-		mobility.activate_ability(self, aim_direction, Input.get_vector("move_left", "move_right", "move_up", "move_down"))
+		dash.start_dash(self, aim_direction, Input.get_vector("move_left", "move_right", "move_up", "move_down"))
 	if InputMap.has_action("interact") and event.is_action_pressed("interact"):
 		interactor.request_interaction(self)
 	if event.is_action_pressed("weapon_switch") or event.is_action_pressed("weapon_next"):
 		weapons.cycle_weapon(1)
 	if event.is_action_pressed("weapon_previous"):
 		weapons.cycle_weapon(-1)
-	if config.debug_loadout_enabled:
-		for index in 4:
-			if event.is_action_pressed("mobility_%d" % (index + 1)):
-				mobility.set_mode(index)
 
 
 func _physics_process(delta: float) -> void:
@@ -112,13 +114,13 @@ func _physics_process(delta: float) -> void:
 		visuals.update_visual(aim_direction, Vector2.ZERO, guard.state, guard.guard_arc_degrees)
 		return
 	var input_vector := Input.get_vector("move_left", "move_right", "move_up", "move_down") if _input_enabled else Vector2.ZERO
-	mobility.tick(self, input_vector, aim_direction, delta, _external_velocity)
+	dash.tick(self, input_vector, aim_direction, delta, _external_velocity)
 	_tick_movement_noise(delta, input_vector)
 	_external_velocity = _external_velocity.move_toward(Vector2.ZERO, config.knockback_recovery * delta)
 	weapons.update_attack_pose(global_position, aim_direction, self)
 	# The muzzle must use this frame's aim before an attack is spawned.
 	visuals.update_visual(aim_direction, velocity, guard.state, guard.guard_arc_degrees, weapons.get_melee_swing_angle_offset(), get_global_mouse_position())
-	if _input_enabled and guard.can_attack() and mobility.can_attack() and _should_attack_this_frame():
+	if _input_enabled and guard.can_attack() and dash.can_attack() and _should_attack_this_frame():
 		var attack := _get_attack_transform()
 		weapons.try_attack(attack.origin, attack.x.normalized(), self)
 	_attack_pressed = false
@@ -156,28 +158,41 @@ func equip_weapon(data: WeaponComponentData) -> void:
 	weapons.equip_weapon(data)
 
 
-func equip_mobility(data: MobilityMode) -> void:
-	mobility.equip_mode(data)
+func equip_cyberware(item: InventoryItem) -> void:
+	cyberware.set_equipped_item(item)
 
 
-func unequip_mobility() -> void:
-	mobility.unequip_mode()
+func unequip_cyberware() -> void:
+	cyberware.clear()
 
 
 func set_circuit_breaker_equipped(equipped: bool) -> void:
 	circuit_breaker.set_equipped(equipped)
 
 
+func consume_persona_drink(persona_id: StringName) -> bool:
+	return talent_core.consume_persona_drink(persona_id)
+
+
+func set_persona_talent(persona_id: StringName, tier: int, talent_id: StringName) -> bool:
+	return talent_core.set_talent_choice(persona_id, tier, talent_id)
+
+
+func respec_persona(persona_id: StringName) -> bool:
+	return talent_core.respec_persona(persona_id)
+
+
+# Compatibility wrappers for prototype callers.
 func set_combat_protocol(protocol_id: StringName) -> bool:
 	return talent_core.set_protocol(protocol_id)
 
 
 func set_protocol_talent(protocol_id: StringName, tier: int, talent_id: StringName) -> bool:
-	return talent_core.set_talent_choice(protocol_id, tier, talent_id)
+	return set_persona_talent(protocol_id, tier, talent_id)
 
 
 func respec_protocol(protocol_id: StringName) -> bool:
-	return talent_core.respec_protocol(protocol_id)
+	return respec_persona(protocol_id)
 
 
 func refill_ai_takeover_charges() -> void:
@@ -185,7 +200,7 @@ func refill_ai_takeover_charges() -> void:
 
 
 func apply_knockback(force: Vector2) -> void:
-	_external_velocity += force * mobility.get_knockback_multiplier()
+	_external_velocity += force * dash.get_knockback_multiplier()
 
 
 func repair(amount: int) -> int:
@@ -194,6 +209,26 @@ func repair(amount: int) -> int:
 
 func receive_damage(packet: DamagePacket) -> DamageResult:
 	return hurt_box.receive_hit(packet)
+
+
+func try_persona_guard(packet: DamagePacket) -> bool:
+	return persona_combat.try_proxy_guard(packet)
+
+
+func perform_persona_attack(direction: Vector2, forced: bool = false, damage_multiplier: float = 1.0) -> bool:
+	if _dead or direction.is_zero_approx():
+		return false
+	aim_direction = direction.normalized()
+	visuals.update_visual(
+		aim_direction,
+		velocity,
+		guard.state,
+		guard.guard_arc_degrees,
+		weapons.get_melee_swing_angle_offset(),
+		global_position + aim_direction * 64.0
+	)
+	var attack := _get_attack_transform()
+	return weapons.try_forced_attack(attack.origin, attack.x.normalized(), self, damage_multiplier) if forced else weapons.try_attack(attack.origin, attack.x.normalized(), self)
 
 
 func get_health_state() -> Dictionary:
@@ -209,9 +244,12 @@ func get_weapon_display_name() -> String:
 	return data.display_name if data != null else "无"
 
 
-func get_mobility_display_name() -> String:
-	var mode := mobility.get_current_mode()
-	return mode.display_name if mode != null else "步行（无套件）"
+func get_dash_display_name() -> String:
+	return "固有突进"
+
+
+func get_cyberware_display_name() -> String:
+	return ComponentRolls.cyberware_title(cyberware.modules)
 
 
 func get_guard_state() -> GuardComponent.State:
@@ -220,12 +258,10 @@ func get_guard_state() -> GuardComponent.State:
 
 func export_run_state() -> Dictionary:
 	var weapon := weapons.get_current_weapon()
-	var mode := mobility.get_current_mode()
 	return {
 		"inventory": inventory.export_run_state(),
 		"current_health": health.current_health,
 		"weapon_id": String(weapon.id) if weapon != null else "",
-		"mobility_id": String(mode.id) if mode != null else "walk",
 		"talent_core": talent_core.export_state(),
 		"circuit_breaker": circuit_breaker.export_state(),
 	}
@@ -238,8 +274,6 @@ func import_run_state(state: Dictionary) -> void:
 		inventory.import_run_state(state["inventory"])
 	elif state.has("weapon_id"):
 		weapons.equip_weapon_by_id(StringName(state["weapon_id"]))
-	if not state.has("inventory") and state.has("mobility_id"):
-		mobility.equip_mode_by_id(StringName(state["mobility_id"]))
 	if state.has("talent_core") and state["talent_core"] is Dictionary:
 		talent_core.import_state(state["talent_core"])
 	if state.has("circuit_breaker") and state["circuit_breaker"] is Dictionary:
@@ -264,11 +298,30 @@ func import_run_state(state: Dictionary) -> void:
 
 
 func export_recovery_state() -> Dictionary:
+	return export_settlement_state(false)
+
+
+func export_settlement_state(preserve_inventory: bool) -> Dictionary:
 	var state := export_run_state()
-	state.inventory = inventory.export_recovery_inventory()
+	var archive := (state.talent_core as Dictionary).duplicate(true)
+	if _has_persona_archive_content(archive):
+		state["persona_archive"] = archive
+	state.talent_core = talent_core.export_fresh_run_state()
+	if not preserve_inventory:
+		state.inventory = inventory.export_recovery_inventory()
 	state.current_health = config.max_health
 	state.circuit_breaker.equipped = inventory.blackbox_slot.get_item() != null and inventory.blackbox_slot.get_item().get_property("slot", "") == "insurance"
 	return state
+
+
+func _has_persona_archive_content(archive: Dictionary) -> bool:
+	for level: Variant in archive.get("persona_levels", {}).values():
+		if int(level) > 0:
+			return true
+	for leaked: Variant in archive.get("semantic_leaks", {}).values():
+		if bool(leaked):
+			return true
+	return not (archive.get("run_metrics", {}) as Dictionary).is_empty()
 
 
 func reset_transient_state() -> void:
@@ -279,8 +332,9 @@ func reset_transient_state() -> void:
 	heat.is_overheated = false
 	statuses.clear_all()
 	guard.reset_to_idle()
-	mobility.reset_transient_state()
+	dash.reset_transient_state()
 	weapons.reset_transient_state()
+	persona_combat.reset_transient_state()
 	hurt_box.clear_invulnerability()
 	_external_velocity = Vector2.ZERO
 	_attack_pressed = false
@@ -317,19 +371,10 @@ func _configure_movement_audio() -> void:
 
 
 func _update_movement_audio() -> void:
-	var mode := mobility.get_current_mode()
-	var desired_stream: AudioStream
-	if mode != null and mode.id == &"flight":
-		desired_stream = FLIGHT_LOOP
-	if movement_loop.stream != desired_stream:
+	# The retired flight loop must never leak into the fixed walk/dash model.
+	if movement_loop.playing:
 		movement_loop.stop()
-		movement_loop.stream = desired_stream
-	var should_play := not _dead and _input_enabled and velocity.length_squared() > 64.0
-	if desired_stream != null and should_play:
-		if not movement_loop.playing:
-			movement_loop.play()
-	elif movement_loop.playing:
-		movement_loop.stop()
+	movement_loop.stream = null
 
 
 func _get_attack_transform() -> Transform2D:
@@ -355,7 +400,7 @@ func _should_attack_this_frame() -> bool:
 		WeaponComponentData.TriggerMode.CHARGE:
 			return _attack_released
 		_:
-			return _attack_pressed
+			return _attack_held if cyberware.supports_automatic_fire(data) else _attack_pressed
 
 
 func _try_prevent_fatal_damage(_amount: int, _packet: DamagePacket) -> bool:
@@ -392,10 +437,12 @@ func _on_weapon_changed(_index: int, data: WeaponComponentData) -> void:
 	weapon_changed.emit(data)
 
 
-func _on_mobility_changed(_index: int, mode: MobilityMode) -> void:
-	_afterimage_active_remaining = 0.0
-	_afterimage_emit_remaining = 0.0
-	mobility_changed.emit(mode)
+func _on_cyberware_changed(modules: PackedStringArray) -> void:
+	cyberware_changed.emit(modules)
+
+
+func _on_cyberware_triggered(module_id: StringName) -> void:
+	cyberware_triggered.emit(module_id)
 
 
 func _on_guard_state_changed(state: GuardComponent.State) -> void:
@@ -407,12 +454,22 @@ func _on_attack_performed(_data: WeaponComponentData) -> void:
 	combat_feedback_requested.emit(&"attack", global_position)
 
 
-func _on_mobility_activated(mode: MobilityMode) -> void:
-	if mode != null and mode.id != &"walk" and mode.ability_active_seconds > 0.0:
-		_afterimage_active_remaining = mode.ability_active_seconds
-		_afterimage_emit_remaining = 0.0
-		_publish_movement_noise(MOBILITY_BURST_NOISE_RADIUS)
-	combat_feedback_requested.emit(&"mobility", global_position)
+func _on_dash_started(_direction: Vector2) -> void:
+	_afterimage_active_remaining = dash.config.dash_duration
+	_afterimage_emit_remaining = 0.0
+	_publish_movement_noise(MOBILITY_BURST_NOISE_RADIUS)
+	cyberware.on_dash_started(global_position)
+	dash_state_changed.emit(true, dash.cooldown_remaining)
+	combat_feedback_requested.emit(&"dash", global_position)
+
+
+func _on_dash_ended(_cancelled: bool) -> void:
+	_afterimage_active_remaining = 0.0
+	dash_state_changed.emit(false, dash.cooldown_remaining)
+
+
+func _on_dash_cooldown_changed(remaining: float, _total: float) -> void:
+	dash_state_changed.emit(dash.is_dashing(), remaining)
 
 
 func _tick_movement_noise(delta: float, input_vector: Vector2) -> void:
@@ -428,18 +485,7 @@ func _tick_movement_noise(delta: float, input_vector: Vector2) -> void:
 
 
 func get_movement_noise_radius() -> float:
-	var mode := mobility.get_current_mode()
-	if mode == null:
-		return 90.0
-	match mode.id:
-		&"flight":
-			return 0.0
-		&"quadruped":
-			return 140.0
-		&"wheel":
-			return 180.0
-		_:
-			return 90.0
+	return 90.0
 
 
 func _publish_movement_noise(radius: float) -> void:
@@ -503,7 +549,8 @@ func _emit_public_state() -> void:
 	health_changed.emit(health.current_health, health.max_health, 0)
 	heat_changed.emit(heat.current_heat, heat.effective_max())
 	weapon_changed.emit(weapons.get_current_weapon())
-	mobility_changed.emit(mobility.get_current_mode())
+	dash_state_changed.emit(dash.is_dashing(), dash.cooldown_remaining)
+	cyberware_changed.emit(cyberware.modules.duplicate())
 	guard_state_changed.emit(guard.state)
 
 

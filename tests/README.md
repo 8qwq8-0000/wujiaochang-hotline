@@ -10,7 +10,7 @@
 
 黑匣与死亡保护：`godot --headless --path . --script res://tests/integration/blackbox_check.gd`，覆盖独立格、保险核心实例与唯一性、背包入口、暂停换装、满包交换、伤害结算期间禁止切换、旧状态迁移、保存失败回滚、死亡重试、回仓、核心丢失、已触发核心保护及 R 放弃行动。使用独立测试存档。
 
-背包拖放：`godot --headless --path . --script res://tests/integration/inventory_drag_check.gd`，用真实鼠标事件触发原生 drag/drop，验证主副武器、机动与黑匣交换、空位、满包、背包排序、无效目标、拖出取消、关闭时取消、异物/过期实例拒绝，以及写入失败时保留实例与冷却。
+背包拖放：旧 `inventory_drag_check.gd` 保留 v1.4 主副武器/机动回归记录，不再作为 v1.5 义体槽验收证据。现行义体装备、卸下、黑匣拒绝与生命周期由 `cyberware_check.gd` 覆盖。
 
 放置 `test_*.gd` 测试脚本。优先覆盖：
 
@@ -64,7 +64,7 @@ Week 1 队友房间已作为正式“仓库出击”和“继续下一层”场�
 
 首次武器自动装副槽：`godot --headless --path . --script res://tests/integration/first_weapon_pickup_check.gd`，覆盖战斗中拾取、满包、副槽占用、仅首次触发、当前武器保留、立即使用和重复拾取保护。
 
-装备不占格与开局配置：`godot --headless --path . --script res://tests/integration/backpack_weapon_capacity_check.gd`，覆盖初始 0/6、独立主副武器与机动槽、满包拒绝卸下、满包安全替换、卸下后占格和实例不重复。
+装备不占格与开局配置：旧 `backpack_weapon_capacity_check.gd` 保留 v1.4 机动槽记录；v1.5 义体槽的独立装备与局内生命周期改由 `cyberware_check.gd` 覆盖。
 
 Week 1 房间已接入当前玩法接口；`week1_room_check.gd` 的 SKIP 不计为通过。
 
@@ -131,7 +131,9 @@ godot --headless --path . --script res://tests/integration/automatic_door_check.
 
 启动与角色确认：`godot --headless --path . --script res://tests/integration/start_menu_check.gd`，26 项检查覆盖透明立绘、无存档、真实鼠标选择角色、取消无副作用、继续保留装备实例、重开前原文件备份、损坏存档恢复、写入失败回滚及实际进入仓库。使用独立测试存档；去掉 `--headless` 还会在 `/tmp/hotline-start-*.png` 保存界面截图。
 
-机动品质与背包丢弃：`godot --headless --path . --script res://tests/integration/mobility_and_discard_check.gd`，30 项检查覆盖品质冲撞伤害/冷却、资源克隆、合成预览、真实右键菜单、同实例丢弃与拾回、存档失败回滚。`dual_area_check.gd` 现包含 40 项检查，进入第二房间后回路永久封闭，包括真实反向移动碰撞验证。
+固有突进：`godot --headless --path . --script res://tests/integration/dash_check.gd` 覆盖方向优先级、锁向、约 84 px 位移、命中去重、攻击打断、冷却、低物理频率路径扫描、撞墙与隔墙；`dash_invulnerability_check.gd` 覆盖 0.15 秒无敌及独立无敌来源。旧机动品质检查仅保留历史记录，不再作为现行验收。
+
+义体系统：`godot --headless --path . --script res://tests/integration/cyberware_check.gd` 覆盖专用槽、黑匣拒绝、四模块复合上限、追踪/爆炸弹丸快照、直击叠加范围伤害、持续射击兼容边界、突进脱锁、击破散热的归属/限频/过热恢复、热阈震荡的范围/无伤/防换装刷新和行动生命周期。
 
 房间构型：`godot --headless --path . --script res://tests/integration/room_layouts_check.gd`，128 项检查覆盖正式 B/C 构型池、同层去重、种子复现、楼层重抽、跨区导航，以及全部 8 种房型的出生点/道具/出口可达和实际敌人绕墙追踪。去掉 `--headless` 会在 `/tmp/hotline-room-*.png` 输出实际构型截图。
 
@@ -153,3 +155,7 @@ godot --headless --path . --script res://tests/integration/boss_shortcut_check.g
 激光炮正式掉落：`godot --headless --path . --script res://tests/integration/rail_cannon_loot_check.gd`，覆盖随机掉落、品质词条、实例序列化、实际拾取、副槽装备切换、炮身特效节点、射击伤害与热量；贴身命中检查使用正式激光炮资源。
 
 长条范围激光：`godot --headless --path . --script res://tests/integration/laser_beam_check.gd`，覆盖 1000×48 范围内多目标同时受伤、每发仅结算一次、范围外及自身免伤、墙体阻挡、显示与伤害长度一致、无普通子弹及光束回收，以及光束引爆油桶、墙后和范围外油桶保护。
+
+人格永久档案：`godot --headless --path . --script res://tests/integration/persona_archive_check.gd`，覆盖普通结算收录人格与三级语义泄漏、下一局人格清零、临时档案载荷剥离、完整胜利记录与重复结算拒绝。
+
+完整通关与遗产酒谱：`godot --headless --path . --script res://tests/integration/victory_flow_check.gd`，覆盖第四层转入生产楼顶、胜利入口唯一铸造、回仓、酒谱显示和最后人格瓶型。仓库 BOSS 测试捷径仍由 `boss_shortcut_check.gd` 验证，不会生成遗产记录。

@@ -5,6 +5,8 @@ extends Node2D
 @export var wrist_socket_path: NodePath
 @export var weapon_pivot_path: NodePath
 @export var guard_visual_path: NodePath
+@export_range(0.1, 60.0, 0.1) var idle_gesture_min_delay := 6.0
+@export_range(0.1, 60.0, 0.1) var idle_gesture_max_delay := 10.0
 
 @onready var body_sprite: AnimatedSprite2D = get_node(body_sprite_path)
 @onready var wrist_socket: PlayerWristSocket = get_node(wrist_socket_path) as PlayerWristSocket
@@ -13,6 +15,21 @@ extends Node2D
 
 var _last_animation := ""
 var _hurt_tween: Tween
+var _idle_gesture_timer: Timer
+var _idle_gesture_active := false
+var _moving := false
+var _dead := false
+var _idle_rng := RandomNumberGenerator.new()
+
+
+func _ready() -> void:
+	_idle_rng.randomize()
+	_idle_gesture_timer = Timer.new()
+	_idle_gesture_timer.one_shot = true
+	add_child(_idle_gesture_timer)
+	_idle_gesture_timer.timeout.connect(_on_idle_gesture_timeout)
+	body_sprite.animation_finished.connect(_on_body_animation_finished)
+	_schedule_idle_gesture()
 
 
 func update_visual(
@@ -24,16 +41,19 @@ func update_visual(
 	aim_target: Vector2 = Vector2.INF
 ) -> void:
 	var moving := velocity.length_squared() > 64.0
+	if moving != _moving:
+		_moving = moving
+		if moving:
+			_cancel_idle_gesture()
+		else:
+			_schedule_idle_gesture()
 	var direction_name := _direction_name(aim_direction)
 	var animation := _body_animation(direction_name, moving)
-	if body_sprite.sprite_frames.has_animation(animation) and (animation != _last_animation or (moving and not body_sprite.is_playing())):
+	if not moving and _idle_gesture_active:
+		animation = &"idle_gesture"
+	if body_sprite.sprite_frames.has_animation(animation) and (animation != _last_animation or not body_sprite.is_playing()):
 		body_sprite.play(animation)
 		_last_animation = animation
-	# Use the same authored direction and wrist pose while standing and walking.
-	# Freeze a planted frame at rest; resume the clip when movement starts.
-	if not moving:
-		body_sprite.pause()
-		body_sprite.frame = 0
 	body_sprite.flip_h = false
 	wrist_socket.sync_pose(body_sprite, StringName(animation), body_sprite.frame)
 	weapon_pivot.position = wrist_socket.position
@@ -85,7 +105,9 @@ func get_weapon_barrel_global_direction() -> Vector2:
 
 
 func set_dead(dead: bool) -> void:
+	_dead = dead
 	if dead:
+		_cancel_idle_gesture()
 		weapon_pivot.cancel_feedback()
 		body_sprite.stop()
 		rotation = deg_to_rad(90.0)
@@ -93,6 +115,38 @@ func set_dead(dead: bool) -> void:
 	else:
 		rotation = 0.0
 		modulate = Color.WHITE
+		_schedule_idle_gesture()
+
+
+func _schedule_idle_gesture() -> void:
+	if _idle_gesture_timer == null or _dead or _moving or _idle_gesture_active:
+		return
+	var minimum := minf(idle_gesture_min_delay, idle_gesture_max_delay)
+	var maximum := maxf(idle_gesture_min_delay, idle_gesture_max_delay)
+	_idle_gesture_timer.start(_idle_rng.randf_range(minimum, maximum))
+
+
+func _cancel_idle_gesture() -> void:
+	_idle_gesture_active = false
+	if _idle_gesture_timer != null:
+		_idle_gesture_timer.stop()
+
+
+func _on_idle_gesture_timeout() -> void:
+	if _dead or _moving or not body_sprite.sprite_frames.has_animation(&"idle_gesture"):
+		return
+	_idle_gesture_active = true
+	body_sprite.play(&"idle_gesture")
+	_last_animation = &"idle_gesture"
+
+
+func _on_body_animation_finished() -> void:
+	if body_sprite.animation != &"idle_gesture":
+		return
+	_idle_gesture_active = false
+	body_sprite.play(&"idle")
+	_last_animation = &"idle"
+	_schedule_idle_gesture()
 
 
 func _direction_name(direction: Vector2) -> String:
@@ -101,7 +155,9 @@ func _direction_name(direction: Vector2) -> String:
 	return "left" if direction.x < 0.0 else "right"
 
 
-func _body_animation(direction_name: String, _moving: bool) -> StringName:
+func _body_animation(direction_name: String, moving: bool) -> StringName:
+	if not moving:
+		return &"idle"
 	return StringName("walk_" + direction_name)
 
 

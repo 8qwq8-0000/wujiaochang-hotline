@@ -42,7 +42,7 @@ func _on_contact(body: Node2D) -> void:
 	var direction := -normal if side > 0 else normal
 	opened = true
 	set_physics_process(false)
-	slammed = body is PlayerController and body.mobility.is_ability_active() and body.velocity.dot(direction) > 80.0
+	slammed = body is PlayerController and body.dash.is_dashing() and body.velocity.dot(direction) > 80.0
 	$Body/Shape.set_deferred("disabled",true)
 	if body is EnemyController:
 		# Release a navigation agent that reached the leaf before its deferred

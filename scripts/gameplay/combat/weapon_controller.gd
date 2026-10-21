@@ -26,6 +26,7 @@ var _swing_duration: float = 0.0
 var _swing_direction := Vector2.RIGHT
 var _swing_sign: float = -1.0
 var _swing_hits: Dictionary = {}
+var _swing_damage_multiplier := 1.0
 
 @onready var heat_component: HeatComponent = get_node(heat_component_path)
 
@@ -99,19 +100,54 @@ func try_attack(origin: Vector2, direction: Vector2, source_node: Node) -> bool:
 		return false
 	if not heat_component.try_add_heat(data.heat_per_attack):
 		return false
+	_perform_attack(data, origin, direction.normalized(), source_node, 1.0)
+	return true
+
+
+func try_forced_attack(
+	origin: Vector2,
+	direction: Vector2,
+	source_node: Node,
+	damage_multiplier: float = 1.0
+) -> bool:
+	var data := _current_weapon
+	if data == null or direction.is_zero_approx():
+		return false
+	_perform_attack(data, origin, direction.normalized(), source_node, maxf(damage_multiplier, 0.0))
+	return true
+
+
+func get_cooldown_remaining() -> float:
+	return _cooldown_remaining
+
+
+func set_cooldown_remaining(value: float) -> void:
+	_cooldown_remaining = maxf(value, 0.0)
+
+
+func reduce_cooldown(amount: float) -> void:
+	set_cooldown_remaining(_cooldown_remaining - maxf(amount, 0.0))
+
+
+func _perform_attack(
+	data: WeaponComponentData,
+	origin: Vector2,
+	direction: Vector2,
+	source_node: Node,
+	damage_multiplier: float
+) -> void:
 	_cooldown_remaining = data.cooldown / maxf(attack_speed_multiplier, 0.01)
 	match data.attack_kind:
 		WeaponComponentData.AttackKind.MELEE:
-			_begin_melee(data, direction.normalized())
+			_begin_melee(data, direction.normalized(), damage_multiplier)
 		WeaponComponentData.AttackKind.PROJECTILE, WeaponComponentData.AttackKind.SPREAD:
-			_perform_projectiles(data, origin, direction.normalized(), source_node)
+			_perform_projectiles(data, origin, direction.normalized(), source_node, damage_multiplier)
 		WeaponComponentData.AttackKind.BEAM:
-			_perform_beam(data, origin, direction.normalized(), source_node)
+			_perform_beam(data, origin, direction.normalized(), source_node, damage_multiplier)
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null and data.noise_radius > 0.0:
 		events.publish_noise(source_node, origin, data.noise_radius)
 	attack_performed.emit(data)
-	return true
 
 
 func clamp_projectile_origin(actor_origin: Vector2, muzzle_origin: Vector2) -> Vector2:
@@ -157,10 +193,11 @@ func reset_transient_state() -> void:
 	_cancel_swing()
 
 
-func _begin_melee(data: WeaponComponentData, direction: Vector2) -> void:
+func _begin_melee(data: WeaponComponentData, direction: Vector2, damage_multiplier: float = 1.0) -> void:
 	_swing_direction = direction
 	_swing_duration = data.melee_active_seconds
 	_swing_remaining = _swing_duration
+	_swing_damage_multiplier = damage_multiplier
 	_swing_sign *= -1.0
 	_swing_hits.clear()
 
@@ -186,14 +223,20 @@ func _perform_melee_tick(data: WeaponComponentData, origin: Vector2, direction: 
 		if _swing_hits.has(instance_id):
 			continue
 		_swing_hits[instance_id] = true
-		var packet := _make_packet(data, origin, sweep_direction, source_node)
+		var packet := _make_packet(data, origin, sweep_direction, source_node, _swing_damage_multiplier)
 		packet.is_melee = true
 		packet.stagger_seconds = 0.75
 		packet.knockback = sweep_direction * 120.0
 		area.receive_hit(packet)
 
 
-func _perform_projectiles(data: WeaponComponentData, origin: Vector2, direction: Vector2, source_node: Node) -> void:
+func _perform_projectiles(
+	data: WeaponComponentData,
+	origin: Vector2,
+	direction: Vector2,
+	source_node: Node,
+	damage_multiplier: float = 1.0
+) -> void:
 	# Resolve after actor/room scripts finish loading to avoid a cyclic scene preload.
 	var projectile_scene := load(PROJECTILE_SCENE_PATH) as PackedScene
 	var count := maxi(data.projectile_count, 1)
@@ -204,12 +247,27 @@ func _perform_projectiles(data: WeaponComponentData, origin: Vector2, direction:
 		var projectile: CombatProjectile = projectile_scene.instantiate()
 		CombatProjectile.room_for_actor(source_node).add_child(projectile)
 		projectile.global_position = origin
-		projectile.setup(source_node, faction, direction.rotated(deg_to_rad(offset)), data.damage, data.projectile_speed)
+		projectile.setup(
+			source_node,
+			faction,
+			direction.rotated(deg_to_rad(offset)),
+			maxi(int(round(data.damage * damage_multiplier)), 0),
+			data.projectile_speed
+		)
 		projectile.damage_type = data.damage_type
 		projectile.status_tags = data.status_tags.duplicate()
+		var cyberware := source_node.get_node_or_null("CyberwareController") as CyberwareController
+		if cyberware != null:
+			cyberware.configure_projectile(projectile, direction)
 
 
-func _perform_beam(data: WeaponComponentData, origin: Vector2, direction: Vector2, source_node: Node) -> void:
+func _perform_beam(
+	data: WeaponComponentData,
+	origin: Vector2,
+	direction: Vector2,
+	source_node: Node,
+	damage_multiplier: float = 1.0
+) -> void:
 	var room := CombatProjectile.room_for_actor(source_node)
 	var space := get_world_2d().direct_space_state
 	# Sweep the full beam width against walls, then use that same length for
@@ -246,7 +304,7 @@ func _perform_beam(data: WeaponComponentData, origin: Vector2, direction: Vector
 		if CombatProjectile.room_for_actor(actor) != room or hit_actors.has(actor.get_instance_id()):
 			continue
 		hit_actors[actor.get_instance_id()] = true
-		var packet := _make_packet(data, origin, direction, source_node)
+		var packet := _make_packet(data, origin, direction, source_node, damage_multiplier)
 		packet.is_area_damage = true
 		area.receive_hit(packet)
 	var beam := Node2D.new()
@@ -258,9 +316,15 @@ func _perform_beam(data: WeaponComponentData, origin: Vector2, direction: Vector
 	beam.global_rotation = direction.angle()
 
 
-func _make_packet(data: WeaponComponentData, origin: Vector2, direction: Vector2, source_node: Node) -> DamagePacket:
+func _make_packet(
+	data: WeaponComponentData,
+	origin: Vector2,
+	direction: Vector2,
+	source_node: Node,
+	damage_multiplier: float = 1.0
+) -> DamagePacket:
 	var packet := DamagePacket.new()
-	packet.base_damage = data.damage
+	packet.base_damage = maxi(int(round(data.damage * damage_multiplier)), 0)
 	packet.source = source_node
 	packet.source_faction = faction
 	packet.damage_type = data.damage_type
@@ -273,6 +337,7 @@ func _make_packet(data: WeaponComponentData, origin: Vector2, direction: Vector2
 func _cancel_swing() -> void:
 	_swing_remaining = 0.0
 	_swing_duration = 0.0
+	_swing_damage_multiplier = 1.0
 	_swing_hits.clear()
 
 

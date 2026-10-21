@@ -9,4 +9,3 @@ extends Resource
 @export_range(0.1, 30.0, 0.1) var camera_look_ahead_response: float = 4.0
 @export var debug_loadout_enabled: bool = false
 @export var default_weapon: WeaponComponentData
-@export var default_mobility: MobilityMode

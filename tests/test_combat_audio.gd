@@ -14,6 +14,7 @@ func test_main_registers_combat_and_hotline_audio() -> void:
 	assert_true(audio.block_sound != null)
 	assert_true(audio.hit_sound != null)
 	assert_true(audio.enemy_death_sound != null)
+	assert_true(audio.weapon_cues.has(&"cyberware:thermal_pulse"))
 	assert_true(audio.reinforcement_approach_sound != null)
 	assert_eq(audio.hotline_dial_sounds.size(), 2)
 	assert_true(audio.hotline_connect_sound != null)
