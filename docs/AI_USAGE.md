@@ -125,3 +125,9 @@
 - User requested fan placement and explicitly clarified that bullet speed should be fixed with its slider removed. Three stationary robots now occupy the player's forward 120-degree arc; the floor guide uses the same fan geometry.
 - Removed speed from sliders and reset payloads; every training projectile uses the fixed 260 px/s constant. Interval and robot HP remain adjustable. Updated the existing integration assertions, player instructions and runtime screenshot.
 - Headless and rendered training checks both pass 50/50, including actual reflected hits on all three shooters, fixed projectile speed, removed speed control and R reset. Existing exit-time resource warnings remain.
+
+## 2026-10-21 — Four authored directions for the player parry shield
+
+- User reported the parry animation only had one direction and requested all four. Kept the approved right-facing nine-frame atlas, generated independent up/down/left views with built-in imagegen and preserved their selected sources, exact prompts and import manifest. The importer aligns and packs transparent frames without painting or rotating source pixels.
+- GuardArcVisual selects the authored atlas by aim, with residual rotation for diagonals. Upward drawing now uses body-level Z and sibling ordering rather than negative world Z, which could put the shield below the floor. Startup, perfect window, normal block, recovery, damage and reflection rules remain unchanged.
+- Validation: four-direction art checks expanded to 78/78, including separate atlas selection, complete state sequences, depth, reflection, pause and engine callbacks; training 50/50 and unit 62/62 passed. Four non-headless screenshots inspected on a normal-Z background. Editor's first scan reported not-yet-imported textures; after import the final editor pass had no script or resource-load errors. Existing exit-time ObjectDB/resource-use warnings remain.
