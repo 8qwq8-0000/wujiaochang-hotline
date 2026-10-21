@@ -1,0 +1,1 @@
+9-frame right-facing parry shield. Frames 1-4 build up; frame 5 is the user-approved original, proportionally resized; frames 6-9 recede. All frames 418x418 RGBA. 3x3 sheet, row-major order. Suggested playback: 12 FPS, once. GIF loops for review and uses binary transparency; PNG retains original alpha. Not integrated into gameplay.
