@@ -24,6 +24,8 @@ func run() -> void:
 	check(menu.find_children("*", "HSlider", true, false).size() == 3, "settings expose Master, Music and SFX sliders")
 	check(menu.get("_mute") != null, "settings expose global mute")
 	check(menu.get("_continuous_precharge") != null, "AI test switch remains available")
+	check(menu.get("_hud_scale") != null and (menu.get("_hud_scale") as OptionButton).item_count == 3, "settings expose 100, 125 and 150 percent HUD scales")
+	check(menu.get("_reduced_flashes") != null, "settings expose reduced-flashes accessibility toggle")
 	menu._show_settings_page()
 	await process_frame
 	var settings_page := menu.get("_settings_page") as VBoxContainer
@@ -32,6 +34,11 @@ func run() -> void:
 	check(settings_page.size.y > 200.0 and settings_scroll != null and settings_scroll.size.y > 100.0, "settings page receives usable height instead of clipping its options")
 	check(menu.get("_resolution").is_visible_in_tree(), "resolution control is actually visible after opening settings")
 	check((menu.get("_crt_strength") as OptionButton).item_count == 3, "settings expose Off, Low and Standard CRT levels")
+	menu._show_history_page()
+	await process_frame
+	check((menu.get("_history_page") as VBoxContainer).visible, "pause menu exposes the recent communication page")
+	check((menu.get("_history_label") as Label).text == "暂无通讯记录", "communication history has a clear empty state")
+	menu._show_settings_page()
 	for button in menu.find_children("*", "CheckButton", true, false):
 		check(button.text != "高压难度", "pause menu no longer changes save difficulty")
 	var game_settings := root.get_node("GameSettings")

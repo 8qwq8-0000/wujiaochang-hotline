@@ -84,11 +84,13 @@ Week 1 房间已接入当前玩法接口；`week1_room_check.gd` 的 SKIP 不计
 
 敌人战斗升级：`godot --headless --path . --script res://tests/integration/enemy_combat_upgrade_check.gd`，覆盖摄像机尺寸视野、两档警戒共享、预蓄力、狙击手脚步调查和重型延迟自爆。
 
-暂停设置：`godot --headless --path . --script res://tests/integration/settings_menu_check.gd`，覆盖 Esc 暂停、视频/音频控件，以及两项互不绑定的 AI 测试开关。
+暂停设置：`godot --headless --path . --script res://tests/integration/settings_menu_check.gd`，覆盖 Esc 暂停、视频/音频控件、HUD 缩放、降低闪烁、最近通讯页，以及两项互不绑定的 AI 测试开关。
 
 赛博终端 UI 样板：`godot --headless --path . --script res://tests/integration/cyber_ui_showcase_check.gd`，覆盖统一主题、切角面板、分段仪表、三条消息、设置工作区和三级 CRT 效果。
 
-战斗提示与机动残影：`godot --headless --path . --script res://tests/integration/presentation_systems_check.gd`，覆盖暂停时提示寿命冻结但仍可入队、恢复后的过期，以及步行不出残影、套件能力残影池与按来源清理。
+战斗 HUD 与表现：`godot --headless --path . --script res://tests/integration/presentation_systems_check.gd`，覆盖左上最小状态区、AI 全息通讯、右上暂停、右下半透明武器、隐藏旧提示队列，以及关闭伤害数字。
+
+战斗 AI 通讯：`godot --headless --path . --script res://tests/integration/combat_comms_check.gd`，覆盖首次展开接通音、关键消息中断、普通消息单条待播、同类合并、自动收缩、两行拆分和最近十条历史。
 
 正式出生巡逻检查：`godot --headless --path . --script res://tests/integration/spawned_patrol_check.gd`，通过 Main 的真实生成器检查出生坐标、墙体平行轨迹，以及带偏移房间的世界坐标。
 
@@ -150,7 +152,7 @@ godot --headless --path . --script res://tests/integration/boss_patterns_check.g
 godot --headless --path . --script res://tests/integration/boss_shortcut_check.gd
 ```
 
-分别覆盖一阶段三名守卫合计三血、独立计数且不扣 Boss 血、保留推镜头和神像苏醒；二阶段三名三血守卫与 Boss 同时攻击、Boss 无敌、逐点联动损血、清完恰好留下 3/6 血、真实子弹命中与击杀；原本落点和十字激光、交点一次伤害、暂停／死亡取消；实际重开输入、仓库独立测试存档及往返。连续 Boss 血条只在二阶段显示，一阶段只显示守卫计数。
+分别覆盖一阶段三名守卫合计三血、独立计数且不扣 Boss 血、保留推镜头和神像苏醒；二阶段三名三血守卫与 Boss 同时攻击、Boss 无敌、逐点联动损血、清完恰好留下 3/6 血、真实子弹命中与击杀；原本落点和十字激光、交点一次伤害、暂停／死亡取消；实际重开输入、仓库独立测试存档及往返。战斗界面不显示 Boss 连续血条或阶段标签，神像光环分段与 AI 通讯承担状态反馈。
 
 贴身射击：`godot --headless --path . --script res://tests/integration/point_blank_shooting_check.gd`，使用真实玩家武器握点、枪口与子弹回调，覆盖制式手枪、散射器、轨道炮表现模板的八方向贴身命中、自身忽略及近距离墙体阻挡。轨道炮仅作为武器模板构造测试，不代表已加入正式装备池。
 

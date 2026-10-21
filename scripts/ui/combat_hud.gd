@@ -1,53 +1,55 @@
 extends CanvasLayer
 
+const CONNECT_SOUND := preload("res://assets/audio/ui/hotline_connect.wav")
+const PORTRAIT_JOHNNY := preload("res://assets/art/ui/start_menu/persona_johnny_ghost.png")
+const PORTRAIT_NARAKU := preload("res://assets/art/ui/start_menu/persona_naraku_ghost.png")
+const PORTRAIT_XIANGSHAN := preload("res://assets/art/ui/start_menu/persona_xiangshan_ghost.png")
+
+const PERSONA_PRESENTATION := {
+	TalentCoreController.DEEP_NINJA: {"name": "奈落 / NARAKU", "color": Color("ff4b55"), "portrait": PORTRAIT_NARAKU},
+	TalentCoreController.LEGENDARY_MASTER: {"name": "相山 / XIANGSHAN", "color": Color("55d9ff"), "portrait": PORTRAIT_XIANGSHAN},
+	TalentCoreController.ROCK_VIGILANTE: {"name": "强尼 / JOHNNY", "color": Color("ffe34a"), "portrait": PORTRAIT_JOHNNY},
+}
+
 @onready var overlay: Control = $Overlay
-@onready var health_label: Label = $Overlay/TopLeft/Health
-@onready var heat_label: Label = $Overlay/TopLeft/Heat
-@onready var mobility_label: Label = $Overlay/TopLeft/Mobility
-@onready var weapon_label: Label = $Overlay/TopLeft/Weapon
-@onready var guard_label: Label = $Overlay/TopLeft/Guard
-@onready var buff_label: Label = $Overlay/TopLeft/RoomBuff
-@onready var objective_label: Label = $Overlay/Objective
 @onready var notice_queue: CombatNoticeQueue = $Overlay/NoticeQueue
 
 var _player: PlayerController
+var _top_left: Control
+var _health_meter: SegmentMeter
+var _heat_meter: SegmentMeter
+var _heat_warning: Label
+var _weapon_name: Label
+var _weapon_preview: TextureRect
+var _pause_button: Button
+var _operator_panel: HoloCommsPanel
+var _operator_audio: AudioStreamPlayer
+var _comms: CombatCommsController
 var _circuit_value: Label
 var _circuit_protection_active := false
-var _health_meter: SegmentMeter
-var _takeover_meter: SegmentMeter
-var _persona_value: Label
-var _heat_meter: SegmentMeter
-var _mobility_value: Label
-var _weapon_value: Label
-var _guard_value: Label
-var _buff_value: Label
-var _objective_value: Label
-var _crt_overlay: CRTOverlay
-var _operator_panel: TerminalPanel
-var _operator_label: Label
-var _operator_scanlines: Control
-var _operator_audio: AudioStreamPlayer
-var _operator_tween: Tween
+var _health_pulse_time := 0.0
 var _heat_flash_tween: Tween
+var _weapon_name_tween: Tween
 
 
 func _ready() -> void:
-	_build_cyber_hud()
+	add_to_group(&"combat_hud")
+	_build_minimal_hud()
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null:
 		events.combat_message_requested.connect(show_message)
 		events.combat_notice_requested.connect(_on_notice_requested)
 		events.operator_communication_requested.connect(_show_operator_communication)
 		events.combat_area_progress.connect(_on_area_progress)
-		events.floor_cleared.connect(func() -> void: _set_objective_text("本层已清理：前往出口"))
 	var run_manager := get_node_or_null("/root/RunManager")
 	if run_manager != null:
 		run_manager.mandatory_enemy_count_changed.connect(_on_enemy_count_changed)
 	set_process(true)
 
 
-func _process(_delta: float) -> void:
-	$Overlay.visible = get_tree().get_nodes_in_group("warehouse").is_empty()
+func _process(delta: float) -> void:
+	_health_pulse_time += delta
+	overlay.visible = get_tree().get_nodes_in_group("warehouse").is_empty()
 	if not is_instance_valid(_player):
 		_player = get_tree().get_first_node_in_group("player") as PlayerController
 		if is_instance_valid(_player):
@@ -56,266 +58,273 @@ func _process(_delta: float) -> void:
 		return
 	var health_state := _player.get_health_state()
 	var heat_state := _player.get_heat_state()
-	health_label.text = "耐久  %d / %d" % [health_state.current, health_state.maximum]
-	heat_label.text = "热量  %03d / %03d%s" % [roundi(heat_state.current), roundi(heat_state.maximum), "  过热" if heat_state.overheated else ""]
-	mobility_label.text = "义体  %s" % _player.get_cyberware_display_name()
-	weapon_label.text = "武装 %d/2  %s [Q/滚轮]" % [_player.weapons.current_index + 1, _player.get_weapon_display_name()]
-	guard_label.text = "格挡  %s" % _guard_state_name(_player.get_guard_state())
 	_health_meter.segments = int(health_state.maximum)
 	_health_meter.set_meter(float(health_state.current), float(health_state.maximum))
 	_update_circuit_status()
-	_heat_meter.meter_color = CyberUITheme.DANGER if heat_state.overheated else CyberUITheme.WARNING
+	if int(health_state.current) == 1 and not _circuit_protection_active:
+		_health_meter.meter_color = CyberUITheme.DANGER
+		_health_meter.modulate.a = 0.68 + sin(_health_pulse_time * 3.2) * 0.24
+	else:
+		_health_meter.modulate.a = 1.0
+	var heat_ratio := float(heat_state.current) / maxf(float(heat_state.maximum), 1.0)
+	_heat_meter.meter_color = CyberUITheme.DANGER if heat_state.overheated else (CyberUITheme.WARNING if heat_ratio >= 0.7 else Color("79d8bf"))
 	_heat_meter.set_meter(float(heat_state.current), float(heat_state.maximum))
-	var dash_hint := "突进 %.1fs" % _player.dash.cooldown_remaining if _player.dash.cooldown_remaining > 0.0 else "突进 SPACE"
-	_mobility_value.text = "%s  // %s\n义体：%s\n%s" % [_player.get_dash_display_name(), dash_hint, _player.get_cyberware_display_name(), _player.get_node("DefenseComponent").display_state()]
-	_weapon_value.text = "> %s  %s\n  Q/滚轮 切换" % ["A" if _player.weapons.current_index == 0 else "B", _player.get_weapon_display_name()]
-	_guard_value.text = "格挡协议  %s" % _guard_state_name(_player.get_guard_state())
+	_heat_warning.visible = heat_state.overheated
 	if is_instance_valid(_player.talent_core):
-		_takeover_meter.set_meter(float(_player.talent_core.takeover_charges), float(_player.talent_core.takeover_charge_max))
-		_update_persona_runtime_state()
+		_operator_panel.set_takeover_state(_player.talent_core.takeover_charges, _player.talent_core.takeover_armed)
 
 
 func _bind_player(player: PlayerController) -> void:
 	_circuit_protection_active = false
-	player.circuit_breaker.circuit_breaker_triggered.connect(_on_circuit_protection_triggered)
-	player.cyberware_triggered.connect(_on_cyberware_triggered)
-	player.talent_core.persona_changed.connect(_on_persona_changed)
+	if not player.circuit_breaker.circuit_breaker_triggered.is_connected(_on_circuit_protection_triggered):
+		player.circuit_breaker.circuit_breaker_triggered.connect(_on_circuit_protection_triggered)
+	if not player.cyberware_triggered.is_connected(_on_cyberware_triggered):
+		player.cyberware_triggered.connect(_on_cyberware_triggered)
+	if not player.talent_core.persona_changed.is_connected(_on_persona_changed):
+		player.talent_core.persona_changed.connect(_on_persona_changed)
+	if not player.weapons.weapon_changed.is_connected(_on_weapon_changed):
+		player.weapons.weapon_changed.connect(_on_weapon_changed)
 	_on_persona_changed(player.talent_core.current_persona_id)
-	player.tree_exiting.connect(func() -> void:
-		_player = null
-		buff_label.hide()
-		if is_instance_valid(_buff_value):
-			_buff_value.hide()
-	)
-	var room_buffs := player.get_node_or_null("RoomBuffComponent") as RoomBuffComponent
-	if room_buffs != null and not room_buffs.changed.is_connected(_update_room_buff):
-		room_buffs.changed.connect(_update_room_buff)
-	_update_room_buff()
+	_set_weapon_preview(player.weapons.get_current_weapon(), false)
+	player.tree_exiting.connect(func() -> void: _player = null, CONNECT_ONE_SHOT)
 
 
-func _update_room_buff(_id: StringName = &"") -> void:
-	if not is_instance_valid(_player):
-		buff_label.hide()
-		if is_instance_valid(_buff_value):
-			_buff_value.hide()
+func _build_minimal_hud() -> void:
+	overlay.theme = CyberUITheme.create_theme()
+	notice_queue.hide()
+	_top_left = Control.new()
+	_top_left.name = "MinimalStatus"
+	_top_left.position = Vector2(8.0, 8.0)
+	_top_left.size = Vector2(312.0, 126.0)
+	_top_left.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(_top_left)
+
+	_health_meter = SegmentMeter.new()
+	_health_meter.name = "HealthLights"
+	_health_meter.position = Vector2.ZERO
+	_health_meter.size = Vector2(70.0, 20.0)
+	_health_meter.custom_minimum_size = _health_meter.size
+	_health_meter.caption = "耐久"
+	_health_meter.segments = 3
+	_health_meter.show_caption = false
+	_health_meter.show_numeric = false
+	_health_meter.square_segments = true
+	_health_meter.empty_alpha = 0.08
+	_top_left.add_child(_health_meter)
+
+	_heat_meter = SegmentMeter.new()
+	_heat_meter.name = "HeatStrip"
+	_heat_meter.position = Vector2(0.0, 24.0)
+	_heat_meter.size = Vector2(112.0, 14.0)
+	_heat_meter.custom_minimum_size = _heat_meter.size
+	_heat_meter.caption = "热量"
+	_heat_meter.segments = 10
+	_heat_meter.show_caption = false
+	_heat_meter.show_numeric = false
+	_heat_meter.empty_alpha = 0.09
+	_top_left.add_child(_heat_meter)
+
+	_heat_warning = Label.new()
+	_heat_warning.position = Vector2(118.0, 21.0)
+	_heat_warning.size = Vector2(48.0, 18.0)
+	_heat_warning.text = "过热"
+	_heat_warning.add_theme_font_size_override("font_size", 11)
+	_heat_warning.add_theme_color_override("font_color", CyberUITheme.DANGER)
+	_heat_warning.hide()
+	_top_left.add_child(_heat_warning)
+
+	_weapon_name = Label.new()
+	_weapon_name.position = Vector2(118.0, 21.0)
+	_weapon_name.size = Vector2(154.0, 18.0)
+	_weapon_name.add_theme_font_size_override("font_size", 11)
+	_weapon_name.add_theme_color_override("font_color", CyberUITheme.MUTED)
+	_weapon_name.modulate.a = 0.0
+	_top_left.add_child(_weapon_name)
+
+	_operator_panel = HoloCommsPanel.new()
+	_operator_panel.name = "AICommsPanel"
+	_operator_panel.position = Vector2(0.0, 44.0)
+	_top_left.add_child(_operator_panel)
+
+	_comms = CombatCommsController.new()
+	_comms.name = "CombatCommsController"
+	_comms.message_started.connect(_on_comms_message_started)
+	_comms.collapsed.connect(_on_comms_collapsed)
+	add_child(_comms)
+
+	_operator_audio = AudioStreamPlayer.new()
+	_operator_audio.name = "HotlineConnectAudio"
+	_operator_audio.bus = &"SFX"
+	_operator_audio.volume_db = -12.0
+	_operator_audio.stream = CONNECT_SOUND
+	add_child(_operator_audio)
+	_build_pause_button()
+	_build_weapon_preview()
+	_circuit_value = Label.new()
+	_apply_hud_scale(_saved_hud_scale())
+
+
+func _build_pause_button() -> void:
+	_pause_button = Button.new()
+	_pause_button.name = "PauseButton"
+	_pause_button.text = "Ⅱ"
+	_pause_button.focus_mode = Control.FOCUS_NONE
+	_pause_button.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_pause_button.position = Vector2(-36.0, 8.0)
+	_pause_button.size = Vector2(28.0, 28.0)
+	# Scale inward from the safe top-right corner instead of growing off-screen.
+	_pause_button.pivot_offset = Vector2(_pause_button.size.x, 0.0)
+	_pause_button.tooltip_text = "暂停"
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = Color("071017", 0.58)
+	normal.border_color = Color("55d9ff", 0.78)
+	normal.set_border_width_all(1)
+	var hover := normal.duplicate() as StyleBoxFlat
+	hover.bg_color = Color("12313b", 0.82)
+	hover.border_color = Color("8deaff")
+	_pause_button.add_theme_stylebox_override("normal", normal)
+	_pause_button.add_theme_stylebox_override("hover", hover)
+	_pause_button.add_theme_stylebox_override("pressed", hover)
+	_pause_button.add_theme_color_override("font_color", Color("79e8ff"))
+	_pause_button.add_theme_font_size_override("font_size", 16)
+	_pause_button.pressed.connect(_on_pause_pressed)
+	overlay.add_child(_pause_button)
+
+
+func _build_weapon_preview() -> void:
+	_weapon_preview = TextureRect.new()
+	_weapon_preview.name = "CurrentWeaponPreview"
+	_weapon_preview.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	_weapon_preview.position = Vector2(-158.0, -54.0)
+	_weapon_preview.size = Vector2(150.0, 46.0)
+	_weapon_preview.pivot_offset = _weapon_preview.size
+	_weapon_preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_weapon_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_weapon_preview.modulate = Color(0.8, 0.95, 1.0, 0.5)
+	_weapon_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(_weapon_preview)
+
+
+func _on_pause_pressed() -> void:
+	var menu := get_node_or_null("../PauseSettingsMenu") as PauseSettingsMenu
+	if menu != null:
+		menu.open_menu()
+
+
+func _on_weapon_changed(_index: int, data: WeaponComponentData) -> void:
+	_set_weapon_preview(data, true)
+
+
+func _set_weapon_preview(data: WeaponComponentData, announce: bool) -> void:
+	_weapon_preview.texture = _extract_weapon_texture(data)
+	_weapon_preview.visible = _weapon_preview.texture != null
+	if not announce or data == null:
 		return
-	var buffs := _player.get_node_or_null("RoomBuffComponent") as RoomBuffComponent
-	var has_buff := buffs != null and not buffs.active_buff.is_empty()
-	var buff_text := "增益  %s" % RoomBuffComponent.TITLES.get(buffs.active_buff, "") if has_buff else ""
-	buff_label.visible = has_buff
-	buff_label.text = buff_text
-	if is_instance_valid(_buff_value):
-		_buff_value.visible = has_buff
-		_buff_value.text = "房间%s" % buff_text
+	_weapon_name.text = data.display_name
+	_weapon_name.show()
+	_weapon_name.modulate.a = 1.0
+	if _weapon_name_tween != null and _weapon_name_tween.is_valid():
+		_weapon_name_tween.kill()
+	_weapon_name_tween = create_tween()
+	_weapon_name_tween.tween_interval(0.75)
+	_weapon_name_tween.tween_property(_weapon_name, "modulate:a", 0.0, 0.25)
 
 
+func _extract_weapon_texture(data: WeaponComponentData) -> Texture2D:
+	if data == null or data.view_scene == null:
+		return null
+	var instance := data.view_scene.instantiate()
+	var result: Texture2D
+	for node in instance.find_children("*", "Sprite2D", true, false):
+		var sprite := node as Sprite2D
+		if sprite != null and sprite.texture != null and sprite.visible:
+			result = sprite.texture
+			break
+	instance.free()
+	return result
 
-func _on_enemy_count_changed(remaining: int) -> void:
-	_set_objective_text("必杀目标剩余：%d" % remaining if remaining > 0 else "区域清理完成")
 
-
-func show_message(text: String, color: Color = Color.WHITE) -> void:
-	notice_queue.push_legacy(text, color)
+func show_message(_text: String, _color: Color = Color.WHITE) -> void:
+	pass
 
 
 func _on_notice_requested(notice: CombatNotice) -> void:
-	notice_queue.push_notice(notice)
-
-
-func _guard_state_name(state: GuardComponent.State) -> String:
-	match state:
-		GuardComponent.State.STARTUP:
-			return "起手"
-		GuardComponent.State.PERFECT:
-			return "完美窗口"
-		GuardComponent.State.NORMAL:
-			return "普通窗口"
-		GuardComponent.State.RECOVERY:
-			return "后摇"
+	match notice.id:
+		&"persona_takeover", &"player_defeated":
+			_push_ai_message(notice.text, CombatCommsController.Priority.CRITICAL, notice.display_seconds)
+		&"shared_hunt", &"attack_analyzed":
+			_push_ai_message(notice.text, CombatCommsController.Priority.HIGH, notice.display_seconds)
+		&"boss_phase_one", &"boss_phase_two", &"boss_shield_down":
+			_push_ai_message(_boss_line(notice.id), CombatCommsController.Priority.HIGH, notice.display_seconds)
+		&"weapon_overheated":
+			_heat_warning.show()
 		_:
-			return "就绪"
-
-
-func _build_cyber_hud() -> void:
-	overlay.theme = CyberUITheme.create_theme()
-	health_label.get_parent().hide()
-	objective_label.hide()
-
-	var status := _make_panel("机体状态 / UNIT", Rect2(8, 31, 175, 100))
-	var status_stack := VBoxContainer.new()
-	status_stack.add_theme_constant_override("separation", 2)
-	status.add_child(status_stack)
-	_health_meter = _make_meter("耐久", 3.0, 3.0, 3, CyberUITheme.PHOSPHOR)
-	_takeover_meter = _make_meter("接管", 1.0, 1.0, 3, CyberUITheme.HIGHLIGHT)
-	status_stack.add_child(_health_meter)
-	status_stack.add_child(_takeover_meter)
-	_persona_value = Label.new()
-	_persona_value.text = "人格  未装载"
-	_persona_value.clip_text = true
-	status_stack.add_child(_persona_value)
-	_circuit_value = Label.new()
-	_circuit_value.text = "断路保险  就绪"
-	status_stack.add_child(_circuit_value)
-	_buff_value = Label.new()
-	_buff_value.hide()
-	status_stack.add_child(_buff_value)
-
-	var objective := _make_panel("任务 / OBJECTIVE", Rect2(457, 31, 175, 66))
-	_objective_value = Label.new()
-	_objective_value.text = objective_label.text
-	_objective_value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	objective.add_child(_objective_value)
-
-	var mobility := _make_panel("突进 / 义体 / 防御", Rect2(8, 256, 190, 96))
-	_mobility_value = Label.new()
-	_mobility_value.text = "固有突进  // SPACE\n义体：无义体"
-	_mobility_value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	mobility.add_child(_mobility_value)
-
-	var weapons := _make_panel("火控 / WEAPON", Rect2(457, 256, 175, 96))
-	var weapon_stack := VBoxContainer.new()
-	weapon_stack.add_theme_constant_override("separation", 2)
-	weapons.add_child(weapon_stack)
-	_weapon_value = Label.new()
-	_weapon_value.text = "> SLOT-A  武装链路"
-	_weapon_value.custom_minimum_size.y = 28.0
-	_weapon_value.autowrap_mode = TextServer.AUTOWRAP_OFF
-	_weapon_value.clip_text = true
-	_weapon_value.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	weapon_stack.add_child(_weapon_value)
-	_heat_meter = _make_meter("热量", 0.0, 100.0, 10, CyberUITheme.WARNING)
-	weapon_stack.add_child(_heat_meter)
-	_guard_value = Label.new()
-	_guard_value.text = "格挡协议  就绪"
-	weapon_stack.add_child(_guard_value)
-
-	notice_queue.position = Vector2(225, 244)
-	notice_queue.size = Vector2(190, 108)
-	notice_queue.add_theme_constant_override("separation", 3)
-
-	_crt_overlay = CRTOverlay.new()
-	_crt_overlay.name = "CRTOverlay"
-	_crt_overlay.strength = _saved_crt_strength()
-	overlay.add_child(_crt_overlay)
-	_build_operator_overlay()
-
-
-func _build_operator_overlay() -> void:
-	_operator_panel = _make_panel("接线员 / PERSONAL AI", Rect2(170, 112, 300, 76))
-	_operator_panel.hide()
-	_operator_label = Label.new()
-	_operator_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_operator_label.modulate = Color("b9f8d2")
-	_operator_panel.add_child(_operator_label)
-	_operator_scanlines = Control.new()
-	_operator_scanlines.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_operator_scanlines.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_operator_scanlines.hide()
-	_operator_panel.add_child(_operator_scanlines)
-	for y in range(4, 72, 6):
-		var line := ColorRect.new()
-		line.position = Vector2(0, y)
-		line.size = Vector2(300, 1)
-		line.color = Color(0.25, 1.0, 0.62, 0.14)
-		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_operator_scanlines.add_child(line)
-	_operator_audio = AudioStreamPlayer.new()
-	_operator_audio.bus = &"SFX"
-	_operator_audio.volume_db = -18.0
-	_operator_audio.stream = _make_radio_static()
-	add_child(_operator_audio)
+			pass
 
 
 func _show_operator_communication(text: String) -> void:
-	if _operator_tween != null and _operator_tween.is_valid():
-		_operator_tween.kill()
-	_operator_label.text = text
-	_operator_panel.modulate = Color.WHITE
-	_operator_panel.show()
-	_operator_scanlines.show()
-	_operator_audio.play()
-	_operator_tween = create_tween()
-	_operator_tween.tween_interval(0.25)
-	_operator_tween.tween_callback(_operator_scanlines.hide)
-	_operator_tween.tween_interval(1.55)
-	_operator_tween.tween_property(_operator_panel, "modulate:a", 0.0, 0.2)
-	_operator_tween.tween_callback(_operator_panel.hide)
+	_push_ai_message(text, CombatCommsController.Priority.NORMAL)
 
 
-func _on_persona_changed(_persona_id: StringName) -> void:
-	if is_instance_valid(_player) and is_instance_valid(_operator_panel):
-		_operator_panel.title = _player.talent_core.get_operator_title()
+func _push_ai_message(text: String, priority: CombatCommsController.Priority, seconds: float = -1.0) -> void:
+	var persona_id := _player.talent_core.current_persona_id if is_instance_valid(_player) else TalentCoreController.LEGENDARY_MASTER
+	var presentation: Dictionary = PERSONA_PRESENTATION.get(persona_id, PERSONA_PRESENTATION[TalentCoreController.LEGENDARY_MASTER])
+	_comms.push_message(text, priority, persona_id, String(presentation.name), seconds)
 
 
-func _update_persona_runtime_state() -> void:
-	if not is_instance_valid(_persona_value) or not is_instance_valid(_player.persona_combat):
-		return
-	var core := _player.talent_core
-	if core.get_persona_level(core.current_persona_id) <= 0:
-		_persona_value.text = "人格  未装载"
-		return
-	var state := _player.persona_combat.get_runtime_snapshot()
-	match core.current_persona_id:
-		TalentCoreController.DEEP_NINJA:
-			_persona_value.text = "猎痕  %s" % ("锁定" if int(state.marked_target_id) != 0 else "搜索")
-		TalentCoreController.LEGENDARY_MASTER:
-			_persona_value.text = "演算  %d 已解析" % int(state.analyzed_attack_count)
-		TalentCoreController.ROCK_VIGILANTE:
-			_persona_value.text = "反馈  %03d%%" % roundi(float(state.rock_feedback))
+func _on_comms_message_started(entry: Dictionary, connection_started: bool) -> void:
+	var persona_id := StringName(entry.get("persona_id", TalentCoreController.LEGENDARY_MASTER))
+	var presentation: Dictionary = PERSONA_PRESENTATION.get(persona_id, PERSONA_PRESENTATION[TalentCoreController.LEGENDARY_MASTER])
+	_operator_panel.set_persona(presentation.portrait, String(presentation.name), presentation.color)
+	_operator_panel.set_message(String(entry.text))
+	_operator_panel.set_expanded(true)
+	if connection_started:
+		_operator_audio.play()
 
 
-func _make_radio_static() -> AudioStreamWAV:
-	var stream := AudioStreamWAV.new()
-	stream.format = AudioStreamWAV.FORMAT_8_BITS
-	stream.mix_rate = 12000
-	stream.stereo = false
-	var samples := PackedByteArray()
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 0xC0DE51
-	for index in 1800:
-		var envelope := 1.0 - float(index) / 1800.0
-		samples.append(clampi(128 + roundi(float(rng.randi_range(-48, 48)) * envelope), 0, 255))
-	stream.data = samples
-	return stream
+func _on_comms_collapsed() -> void:
+	_operator_panel.set_expanded(false)
 
 
-func _make_panel(title_text: String, rect: Rect2) -> TerminalPanel:
-	var panel := TerminalPanel.new()
-	panel.title = title_text
-	panel.panel_color = Color(CyberUITheme.PANEL, 0.68)
-	panel.position = rect.position
-	panel.size = rect.size
-	overlay.add_child(panel)
-	return panel
+func _on_persona_changed(persona_id: StringName) -> void:
+	var presentation: Dictionary = PERSONA_PRESENTATION.get(persona_id, PERSONA_PRESENTATION[TalentCoreController.LEGENDARY_MASTER])
+	_operator_panel.set_persona(presentation.portrait, String(presentation.name), presentation.color)
 
 
-func _make_meter(caption: String, value: float, maximum: float, segments: int, color: Color) -> SegmentMeter:
-	var meter := SegmentMeter.new()
-	meter.custom_minimum_size = Vector2(145.0, 16.0)
-	meter.caption = caption
-	meter.value = value
-	meter.maximum = maximum
-	meter.segments = segments
-	meter.meter_color = color
-	return meter
+func _boss_line(id: StringName) -> String:
+	var persona_id := _player.talent_core.current_persona_id if is_instance_valid(_player) else TalentCoreController.LEGENDARY_MASTER
+	var lines := {
+		TalentCoreController.DEEP_NINJA: {&"boss_phase_one": "守卫是锁。先割断他们。", &"boss_phase_two": "链路还在。别打本体。", &"boss_shield_down": "链路断了。现在动手。"},
+		TalentCoreController.LEGENDARY_MASTER: {&"boss_phase_one": "先处理护卫链路。", &"boss_phase_two": "现在打本体没有意义。", &"boss_shield_down": "链路解除，可以攻击本体。"},
+		TalentCoreController.ROCK_VIGILANTE: {&"boss_phase_one": "先砸掉护卫，主唱最后登场。", &"boss_phase_two": "护卫还连着，别浪费火力。", &"boss_shield_down": "伴奏停了，轮到本体。"},
+	}
+	return String((lines.get(persona_id, lines[TalentCoreController.LEGENDARY_MASTER]) as Dictionary).get(id, ""))
 
 
-func _set_objective_text(text: String) -> void:
-	objective_label.text = text
-	if is_instance_valid(_objective_value):
-		_objective_value.text = text
+func _on_enemy_count_changed(_remaining: int) -> void:
+	pass
 
 
-func _saved_crt_strength() -> CRTOverlay.Strength:
-	var saved := int(PlayerConfig.get_config(&"UISettings", &"CRTStrength", CRTOverlay.Strength.LOW))
-	return clampi(saved, CRTOverlay.Strength.OFF, CRTOverlay.Strength.STANDARD) as CRTOverlay.Strength
+func _on_area_progress(_index: int, _total: int, _remaining: int, _cleared: bool) -> void:
+	pass
 
 
-func _on_area_progress(index: int, total: int, remaining: int, cleared: bool) -> void:
-	if cleared and index < total:
-		_set_objective_text("区域 %d/%d 已清场\n前往下一区 →" % [index, total])
-	else:
-		_set_objective_text("区域 %d/%d\n必杀目标剩余：%d" % [index, total, remaining])
+func get_communication_history() -> Array[Dictionary]:
+	return _comms.get_history()
+
+
+func set_hud_scale(value: float) -> void:
+	_apply_hud_scale(clampf(value, 1.0, 1.5))
+
+
+func _apply_hud_scale(value: float) -> void:
+	_top_left.scale = Vector2.ONE * value
+	_pause_button.scale = Vector2.ONE * value
+	_weapon_preview.scale = Vector2.ONE * value
+
+
+func _saved_hud_scale() -> float:
+	return clampf(float(PlayerConfig.get_config(&"UISettings", &"HUDScale", 1.0)), 1.0, 1.5)
 
 
 func _on_circuit_protection_triggered() -> void:
@@ -323,7 +332,7 @@ func _on_circuit_protection_triggered() -> void:
 
 
 func _on_cyberware_triggered(module_id: StringName) -> void:
-	if module_id != CyberwareController.KILL_HEAT_SINK or not is_instance_valid(_heat_meter):
+	if module_id != CyberwareController.KILL_HEAT_SINK:
 		return
 	if _heat_flash_tween != null and _heat_flash_tween.is_valid():
 		_heat_flash_tween.kill()
@@ -336,19 +345,17 @@ func _update_circuit_status() -> void:
 	var circuit := _player.circuit_breaker
 	if _circuit_protection_active and not _player.hurt_box.is_invulnerable():
 		_circuit_protection_active = false
-	var tint := CyberUITheme.PHOSPHOR
 	_health_meter.caption = "耐久"
 	if _circuit_protection_active:
 		_health_meter.caption = "保护中"
-		tint = CyberUITheme.WARNING
+		_health_meter.meter_color = CyberUITheme.WARNING
 		_circuit_value.text = "断路保险触发 · 保护中"
 	elif not circuit.equipped:
+		_health_meter.meter_color = CyberUITheme.PHOSPHOR
 		_circuit_value.text = "断路保险  未装备"
-		tint = CyberUITheme.MUTED
 	elif circuit.circuit_breaker_used:
+		_health_meter.meter_color = CyberUITheme.WARNING
 		_circuit_value.text = "断路保险  已消耗"
-		tint = CyberUITheme.MUTED
 	else:
+		_health_meter.meter_color = CyberUITheme.PHOSPHOR
 		_circuit_value.text = "断路保险  就绪"
-	_circuit_value.add_theme_color_override("font_color", tint)
-	_health_meter.meter_color = CyberUITheme.WARNING if _circuit_protection_active or circuit.circuit_breaker_used else CyberUITheme.PHOSPHOR

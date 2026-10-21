@@ -145,19 +145,3 @@ func _draw() -> void:
 		var angle := deg_to_rad(216.0 + index * 27.0)
 		var color := Color(0.25, 0.95, 1.0, 0.9) if index < halo_segments_remaining else Color(0.12, 0.16, 0.22, 0.55)
 		draw_arc(center, radius, angle - arc_span * 0.5, angle + arc_span * 0.5, 10, color, 3.0)
-	var remaining := health.get_precise_health()
-	var maximum := health.max_health
-	var ratio := clampf(float(remaining) / maximum, 0.0, 1.0)
-	# Place the health bar just below the statue pedestal.
-	var bar_y := 136.0
-	var bar := Rect2(-87, bar_y, 174, 9)
-	draw_rect(bar.grow(3), Color(0.025, 0.045, 0.075, 0.94), true)
-	draw_rect(bar, Color(0.12, 0.18, 0.23), true)
-	if ratio > 0.0:
-		draw_rect(Rect2(bar.position, Vector2(bar.size.x * ratio, bar.size.y)), Color(0.18, 0.85, 0.95), true)
-	var caption := "BOSS %s" % health.get_health_text()
-	if state == State.ACTIVE and health.guard_link_active:
-		caption = "SHIELD - %s" % health.get_health_text()
-	if state == State.DEFEATED:
-		caption = "BOSS DEFEATED"
-	draw_string(ThemeDB.fallback_font, Vector2(-87, bar_y + 25), caption, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.85, 0.95, 1.0))

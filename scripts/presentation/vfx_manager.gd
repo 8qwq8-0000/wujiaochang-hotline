@@ -29,7 +29,6 @@ func _ready() -> void:
 	_attach_stain_layer(_current_scene_host())
 	for _index in prewarm_count:
 		_available.append(_create_effect())
-		_available_numbers.append(_create_damage_number())
 	for _index in afterimage_budget:
 		_available_afterimages.append(_create_afterimage())
 	var events := get_node_or_null("/root/CombatEvents")
@@ -228,11 +227,11 @@ func _on_damage_resolved(result: DamageResult) -> void:
 	if not is_instance_valid(result.target):
 		return
 	var target := result.target as Node2D
+	var reduced_flashes := bool(PlayerConfig.get_config(&"UISettings", &"ReducedFlashes", false))
 	match result.outcome:
 		DamageResult.Outcome.REFLECTED, DamageResult.Outcome.PERFECT_BLOCKED:
-			spawn_flash(target.global_position, Color(1.0, 0.75, 0.15), 21.0, 0.24)
+			spawn_flash(target.global_position, Color(1.0, 0.75, 0.15, 0.62 if reduced_flashes else 1.0), 16.0 if reduced_flashes else 21.0, 0.18 if reduced_flashes else 0.24)
 		DamageResult.Outcome.BLOCKED:
-			spawn_flash(target.global_position, Color(0.25, 0.8, 1.0), 15.0)
+			spawn_flash(target.global_position, Color(0.25, 0.8, 1.0, 0.58 if reduced_flashes else 1.0), 12.0 if reduced_flashes else 15.0)
 		DamageResult.Outcome.DAMAGED:
-			spawn_flash(target.global_position, Color(1.0, 0.25, 0.2), 11.0, 0.14)
-			_spawn_damage_number(target.global_position, result.final_damage)
+			spawn_flash(target.global_position, Color(1.0, 0.25, 0.2, 0.52 if reduced_flashes else 1.0), 8.0 if reduced_flashes else 11.0, 0.11 if reduced_flashes else 0.14)

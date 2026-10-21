@@ -27,18 +27,6 @@ size = Vector2(688, 16)
 [sub_resource type="RectangleShape2D" id="ElevatorShape"]
 size = Vector2(50, 34)
 
-[sub_resource type="StyleBoxFlat" id="PhasePanel"]
-bg_color = Color(0.025, 0.035, 0.055, 0.88)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.76, 0.54, 0.2, 0.75)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
-
 [node name="RooftopBossArena" type="Node2D" unique_id=2095464680 groups=["combat_rooms"]]
 script = ExtResource("1_arena")
 
@@ -153,35 +141,6 @@ theme_override_constants/outline_size = 3
 theme_override_font_sizes/font_size = 11
 text = "清除必杀目标"
 horizontal_alignment = 1
-
-[node name="Interface" type="CanvasLayer" parent="." unique_id=881529274]
-layer = 30
-
-[node name="Panel" type="Panel" parent="Interface" unique_id=345325099]
-offset_left = 14.0
-offset_top = 12.0
-offset_right = 228.0
-offset_bottom = 60.0
-mouse_filter = 2
-theme_override_styles/panel = SubResource("PhasePanel")
-
-[node name="PhaseLabel" type="Label" parent="Interface" unique_id=364986268]
-offset_left = 24.0
-offset_top = 17.0
-offset_right = 220.0
-offset_bottom = 37.0
-theme_override_colors/font_color = Color(0.92, 0.72, 0.32, 1)
-theme_override_font_sizes/font_size = 11
-text = "PHASE I  ·  DORMANT STATUE"
-
-[node name="HealthLabel" type="Label" parent="Interface" unique_id=2042125445]
-offset_left = 24.0
-offset_top = 37.0
-offset_right = 220.0
-offset_bottom = 55.0
-theme_override_colors/font_color = Color(1, 0.76, 0.3, 1)
-theme_override_font_sizes/font_size = 11
-text = "守卫 3/3 · 清除守卫"
 
 [node name="SupportEnemies" type="Node2D" parent="."]
 

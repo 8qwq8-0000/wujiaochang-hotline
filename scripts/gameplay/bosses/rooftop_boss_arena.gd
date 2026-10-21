@@ -27,8 +27,6 @@ const PHASE_TWO_CAMERA_ZOOM := 0.8
 @onready var telegraph: BossAttackTelegraph = $AttackTelegraph
 @onready var room_lighting: RooftopBossRoomLighting = $RoomLighting
 @onready var exit_elevator: ExitElevator = $ExitElevator
-@onready var phase_label: Label = $Interface/PhaseLabel
-@onready var health_label: Label = $Interface/HealthLabel
 
 var phase := Phase.MINIONS
 var _attack_generation := 0
@@ -59,7 +57,6 @@ func _ready() -> void:
 	exit_elevator.set_enabled(false)
 	_set_phase(Phase.MINIONS)
 	_start_boss_music(1)
-	_on_boss_health_changed(boss.health.current_health, boss.health.max_health, 0)
 	boss.set_opening_guards(OPENING_GUARD_COUNT, OPENING_GUARD_COUNT)
 	_publish_notice(&"boss_phase_one", "第一阶段 · 清除三名守卫，唤醒神像", Color(0.45, 0.9, 1.0), 2.4)
 
@@ -194,7 +191,6 @@ func _damage_player_in_cross(lasers: Array[Rect2]) -> void:
 
 func _on_opening_guards_remaining(remaining: int) -> void:
 	boss.set_opening_guards(remaining, OPENING_GUARD_COUNT)
-	_on_boss_health_changed(boss.health.current_health, boss.health.max_health, 0)
 
 
 func _spawn_support_guards() -> void:
@@ -230,7 +226,7 @@ func _on_support_health_changed(current: int, _maximum: int, _delta: int, enemy_
 
 
 func _on_support_count_changed(_remaining: int) -> void:
-	_on_boss_health_changed(boss.health.current_health, boss.health.max_health, 0)
+	pass
 
 
 func _on_supports_cleared() -> void:
@@ -239,7 +235,6 @@ func _on_supports_cleared() -> void:
 	boss.health.end_guard_link()
 	boss.hurt_box.set_deferred("monitorable", true)
 	_clear_hostile_projectiles()
-	_on_boss_health_changed(boss.health.current_health, boss.health.max_health, 0)
 	boss.queue_redraw()
 	_publish_notice(&"boss_shield_down", "守卫已清除 · 护罩解除 · 神像剩余半血", Color(1, 0.75, 0.3), 2.4)
 
@@ -305,20 +300,9 @@ func _damage_player(source_position: Vector2, damage_type: StringName = &"energy
 
 
 func _on_boss_health_changed(_current: int, _maximum: int, _delta: int) -> void:
-	if not is_instance_valid(health_label):
-		return
-	if phase == Phase.MINIONS:
-		health_label.text = "守卫 %d/%d · 清除守卫" % [boss.opening_guards_remaining, boss.opening_guards_total]
-		return
-	if phase == Phase.AWAKENING:
-		health_label.text = "守卫已清除 · 神像苏醒中"
-		return
-	if phase == Phase.CLEARED:
-		health_label.text = "BOSS DEFEATED"
-		return
-	health_label.text = "BOSS %s" % boss.health.get_health_text()
-	if boss.health.guard_link_active:
-		health_label.text += " · 无敌 · 守卫 %d/3" % support_spawner.required_remaining
+	# Boss state is communicated in-world by the statue halo and through AI comms.
+	# The combat HUD deliberately has no boss health or phase label.
+	pass
 
 
 func _on_boss_defeated() -> void:
@@ -347,21 +331,6 @@ func _on_boss_defeated() -> void:
 
 func _set_phase(next_phase: Phase) -> void:
 	phase = next_phase
-	match phase:
-		Phase.MINIONS:
-			phase_label.text = "PHASE I  ·  THREE STATUE GUARDS"
-			_on_boss_health_changed(boss.health.current_health, boss.health.max_health, 0)
-		Phase.AWAKENING:
-			phase_label.text = "TRANSITION  ·  AWAKENING"
-			health_label.text = "BOSS  ·  SIGNAL OFFLINE"
-		Phase.BOSS_ACTIVE:
-			phase_label.text = "PHASE II  ·  ORACLE ONLINE"
-			_on_boss_health_changed(boss.health.current_health, boss.health.max_health, 0)
-		Phase.CLEARED:
-			phase_label.text = "BOSS DEFEATED"
-			health_label.text = "BOSS DEFEATED"
-	if _test_mode:
-		phase_label.text += "  ·  TEST"
 	phase_changed.emit(phase)
 
 

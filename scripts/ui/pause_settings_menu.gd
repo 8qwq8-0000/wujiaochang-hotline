@@ -10,14 +10,21 @@ const RESOLUTIONS: Array[Vector2i] = [
 const DISPLAY_CONFIRM_SECONDS := 10.0
 const UI_SECTION := &"UISettings"
 const CRT_STRENGTH_SETTING := &"CRTStrength"
+const HUD_SCALE_SETTING := &"HUDScale"
+const REDUCED_FLASHES_SETTING := &"ReducedFlashes"
+const HUD_SCALES := [1.0, 1.25, 1.5]
 
 var _owns_pause := false
 var _settings_visible := false
 var _overlay: ColorRect
 var _menu_page: VBoxContainer
 var _settings_page: VBoxContainer
+var _history_page: VBoxContainer
+var _history_label: Label
 var _resolution: OptionButton
 var _crt_strength: OptionButton
+var _hud_scale: OptionButton
+var _reduced_flashes: CheckButton
 var _fullscreen: CheckButton
 var _mute: CheckButton
 var _continuous_precharge: CheckButton
@@ -54,7 +61,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if visible:
 		if _display_change_pending:
 			_revert_display_change()
-		elif _settings_visible:
+		elif _settings_visible or (_history_page != null and _history_page.visible):
 			_show_main_page()
 		else:
 			close_menu()
@@ -102,6 +109,8 @@ func _build_ui() -> void:
 	pages.add_child(_menu_page)
 	_settings_page = _build_settings_page()
 	pages.add_child(_settings_page)
+	_history_page = _build_history_page()
+	pages.add_child(_history_page)
 	_crt_overlay = CRTOverlay.new()
 	_crt_overlay.name = "CRTOverlay"
 	_crt_overlay.strength = _get_saved_crt_strength()
@@ -128,6 +137,10 @@ func _build_main_page() -> VBoxContainer:
 	settings.text = "设置"
 	settings.pressed.connect(_show_settings_page)
 	page.add_child(settings)
+	var history := Button.new()
+	history.text = "最近通讯"
+	history.pressed.connect(_show_history_page)
+	page.add_child(history)
 	page.set_meta("focus", resume)
 	return page
 
@@ -163,6 +176,15 @@ func _build_settings_page() -> VBoxContainer:
 		_crt_strength.add_item(label)
 	_crt_strength.item_selected.connect(_on_crt_strength_selected)
 	_add_labeled_control(content, "显像管效果", _crt_strength)
+	_hud_scale = OptionButton.new()
+	for label in ["100%", "125%", "150%"]:
+		_hud_scale.add_item(label)
+	_hud_scale.item_selected.connect(_on_hud_scale_selected)
+	_add_labeled_control(content, "战斗 HUD 缩放", _hud_scale)
+	_reduced_flashes = CheckButton.new()
+	_reduced_flashes.text = "降低闪烁"
+	_reduced_flashes.toggled.connect(_on_reduced_flashes_toggled)
+	content.add_child(_reduced_flashes)
 	_confirm_row = HBoxContainer.new()
 	_confirm_row.add_theme_constant_override("separation", 10)
 	_confirm_label = Label.new()
@@ -199,6 +221,31 @@ func _build_settings_page() -> VBoxContainer:
 	return page
 
 
+func _build_history_page() -> VBoxContainer:
+	var page := VBoxContainer.new()
+	page.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	page.add_theme_constant_override("separation", 10)
+	var title := Label.new()
+	title.text = "最近通讯"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 16)
+	page.add_child(title)
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	page.add_child(scroll)
+	_history_label = Label.new()
+	_history_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_history_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_history_label.add_theme_constant_override("line_spacing", 5)
+	scroll.add_child(_history_label)
+	var back := Button.new()
+	back.text = "返回"
+	back.pressed.connect(_show_main_page)
+	page.add_child(back)
+	page.set_meta("focus", back)
+	return page
+
+
 func _add_section_title(parent: VBoxContainer, text: String) -> void:
 	var label := Label.new()
 	label.text = text
@@ -232,6 +279,7 @@ func _add_volume_slider(parent: VBoxContainer, text: String, bus_index: int) -> 
 func _show_main_page() -> void:
 	_settings_visible = false
 	_settings_page.hide()
+	_history_page.hide()
 	_menu_page.show()
 	(_menu_page.get_meta("focus") as Control).grab_focus()
 
@@ -240,6 +288,7 @@ func _show_settings_page() -> void:
 	_sync_settings_controls()
 	_settings_visible = true
 	_menu_page.hide()
+	_history_page.hide()
 	_settings_page.show()
 	(_settings_page.get_meta("focus") as Control).grab_focus()
 
@@ -252,9 +301,31 @@ func _sync_settings_controls() -> void:
 	_resolution.disabled = _fullscreen.button_pressed
 	_mute.set_pressed_no_signal(AppSettings.is_muted())
 	_crt_strength.select(int(_get_saved_crt_strength()))
+	var saved_scale := clampf(float(PlayerConfig.get_config(UI_SECTION, HUD_SCALE_SETTING, 1.0)), 1.0, 1.5)
+	var scale_index := 0
+	for index in HUD_SCALES.size():
+		if absf(float(HUD_SCALES[index]) - saved_scale) < absf(float(HUD_SCALES[scale_index]) - saved_scale):
+			scale_index = index
+	_hud_scale.select(scale_index)
+	_reduced_flashes.set_pressed_no_signal(bool(PlayerConfig.get_config(UI_SECTION, REDUCED_FLASHES_SETTING, false)))
 	var settings := get_node_or_null("/root/GameSettings")
 	if settings != null:
 		_continuous_precharge.set_pressed_no_signal(bool(settings.continuous_precharge))
+
+
+func _show_history_page() -> void:
+	_settings_visible = false
+	_menu_page.hide()
+	_settings_page.hide()
+	_history_page.show()
+	var hud := get_tree().get_first_node_in_group(&"combat_hud")
+	var lines := PackedStringArray()
+	if hud != null and hud.has_method("get_communication_history"):
+		var history: Array[Dictionary] = hud.get_communication_history()
+		for entry in history:
+			lines.append("【%s】%s" % [String(entry.get("persona_name", "AI")), String(entry.get("text", ""))])
+	_history_label.text = "暂无通讯记录" if lines.is_empty() else "\n\n".join(lines)
+	(_history_page.get_meta("focus") as Control).grab_focus()
 
 
 func _begin_display_change() -> void:
@@ -330,6 +401,20 @@ func _on_crt_strength_selected(index: int) -> void:
 	for overlay_node in get_tree().get_nodes_in_group(&"crt_overlay"):
 		if overlay_node is CRTOverlay:
 			(overlay_node as CRTOverlay).set_strength(next_strength)
+
+
+func _on_hud_scale_selected(index: int) -> void:
+	if index < 0 or index >= HUD_SCALES.size():
+		return
+	var value := float(HUD_SCALES[index])
+	PlayerConfig.set_config(UI_SECTION, HUD_SCALE_SETTING, value)
+	for hud in get_tree().get_nodes_in_group(&"combat_hud"):
+		if hud.has_method("set_hud_scale"):
+			hud.set_hud_scale(value)
+
+
+func _on_reduced_flashes_toggled(enabled: bool) -> void:
+	PlayerConfig.set_config(UI_SECTION, REDUCED_FLASHES_SETTING, enabled)
 
 
 func _on_continuous_precharge_toggled(enabled: bool) -> void:
