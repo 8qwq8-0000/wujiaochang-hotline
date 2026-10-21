@@ -61,9 +61,10 @@ func seal_return() -> void:
 
 
 func _draw() -> void:
-	draw_rect(Rect2(0, -48, length, 96), Color("172934"))
-	for y in [-48.0, 40.0]:
-		draw_rect(Rect2(0, y, length, 8), Color("45596c"))
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	WorkshopArt.draw_floor_tiles(self, Rect2(0, -40, length, 80))
+	CombatArchitecture.wall(self, Rect2(0, -60, length, 20), "north")
+	CombatArchitecture.wall(self, Rect2(0, 40, length, 14), "south")
 	if not unlocked or return_sealed:
 		draw_line(Vector2(length / 2, -40), Vector2(length / 2, 40), Color("e37662"), 5)
 	else:

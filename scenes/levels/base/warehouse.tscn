@@ -1,9 +1,19 @@
 [gd_scene format=3 uid="uid://c7dmsywy6kjfe"]
 
 [ext_resource type="Script" uid="uid://b8jvjbjdywf3i" path="res://scripts/gameplay/warehouse/warehouse_room.gd" id="1"]
-[ext_resource type="PackedScene" path="res://scenes/actors/player/player.tscn" id="2"]
+[ext_resource type="PackedScene" uid="uid://ciqhwcfj4cd4n" path="res://scenes/actors/player/player.tscn" id="2"]
 [ext_resource type="Script" uid="uid://cn4ot8870c81i" path="res://scripts/gameplay/warehouse/warehouse_interactable.gd" id="3"]
-[ext_resource type="Script" path="res://scripts/presentation/refined_environment_art.gd" id="refined_art"]
+[ext_resource type="Texture2D" uid="uid://cubkyvsvop1y7" path="res://assets/art/environment/warehouse/chest_v2.png" id="art_chest"]
+[ext_resource type="Texture2D" uid="uid://bnhgabjomimqk" path="res://assets/art/environment/warehouse/crates_v2.png" id="art_crates"]
+[ext_resource type="Texture2D" uid="uid://cgw8e3jf3rmep" path="res://assets/art/environment/warehouse/elevator_east_v3.png" id="art_elevator"]
+[ext_resource type="Texture2D" uid="uid://dhb6pyrhyesn1" path="res://assets/art/environment/warehouse/lamp.png" id="art_lamp"]
+[ext_resource type="Texture2D" uid="uid://dvcv47n7jflv7" path="res://assets/art/environment/refined/gpt_synthesist.png" id="art_mechanic"]
+[ext_resource type="Texture2D" uid="uid://w46cttp8jx7u" path="res://assets/art/environment/warehouse/parts_rack_v2.png" id="art_parts_rack"]
+[ext_resource type="Texture2D" uid="uid://dyaqeq11d0uta" path="res://assets/art/environment/warehouse/terminal_v2.png" id="art_terminal"]
+[ext_resource type="Texture2D" uid="uid://0a1qhu4reypg" path="res://assets/art/environment/warehouse/training_door_v2.png" id="art_training_door"]
+[ext_resource type="Texture2D" uid="uid://bkyqt2t67fbat" path="res://assets/art/environment/warehouse/workbench_v2.png" id="art_workbench"]
+[ext_resource type="Script" uid="uid://c1ls7u113nbfr" path="res://scripts/presentation/warehouse_foreground_art.gd" id="foreground_art"]
+[ext_resource type="Script" uid="uid://cc7c83bgiq7kp" path="res://scripts/presentation/warehouse_art.gd" id="warehouse_art"]
 
 [sub_resource type="RectangleShape2D" id="WallHorizontal"]
 size = Vector2(640, 24)
@@ -14,8 +24,56 @@ size = Vector2(24, 360)
 [sub_resource type="RectangleShape2D" id="ChestShape"]
 size = Vector2(64, 40)
 
+[sub_resource type="AtlasTexture" id="Art_chest"]
+atlas = ExtResource("art_chest")
+region = Rect2(221, 170, 1227, 612)
+
 [sub_resource type="RectangleShape2D" id="DoorShape"]
 size = Vector2(48, 64)
+
+[sub_resource type="AtlasTexture" id="Art_elevator"]
+atlas = ExtResource("art_elevator")
+region = Rect2(148, 75, 652, 1717)
+
+[sub_resource type="AtlasTexture" id="Art_training_door"]
+atlas = ExtResource("art_training_door")
+region = Rect2(74, 107, 1010, 1115)
+
+[sub_resource type="AtlasTexture" id="Art_mechanic"]
+atlas = ExtResource("art_mechanic")
+region = Rect2(100, 12, 1017, 1376)
+
+[sub_resource type="AtlasTexture" id="Art_workbench"]
+atlas = ExtResource("art_workbench")
+region = Rect2(183, 76, 1163, 873)
+
+[sub_resource type="RectangleShape2D" id="WorkbenchFootprint"]
+size = Vector2(72, 22)
+
+[sub_resource type="AtlasTexture" id="Art_terminal"]
+atlas = ExtResource("art_terminal")
+region = Rect2(137, 208, 1021, 844)
+
+[sub_resource type="AtlasTexture" id="Art_lamp"]
+atlas = ExtResource("art_lamp")
+region = Rect2(56, 118, 2060, 439)
+
+[sub_resource type="AtlasTexture" id="Art_parts_rack"]
+atlas = ExtResource("art_parts_rack")
+region = Rect2(164, 138, 1046, 872)
+
+[sub_resource type="RectangleShape2D" id="RackFootprint"]
+size = Vector2(48, 16)
+
+[sub_resource type="AtlasTexture" id="Art_crates"]
+atlas = ExtResource("art_crates")
+region = Rect2(96, 152, 1493, 635)
+
+[sub_resource type="RectangleShape2D" id="CrateFootprint"]
+size = Vector2(58, 20)
+
+[sub_resource type="RectangleShape2D" id="SmallCrateFootprint"]
+size = Vector2(44, 16)
 
 [node name="Warehouse" type="Node2D" unique_id=1773257163]
 script = ExtResource("1")
@@ -23,14 +81,14 @@ script = ExtResource("1")
 [node name="Title" type="Label" parent="." unique_id=235046294]
 offset_left = 24.0
 offset_top = 12.0
-theme_override_font_sizes/font_size = 22
-text = "五角场 / 整备仓库"
+theme_override_font_sizes/font_size = 18
+text = "五角场 / 地下整备站"
 
 [node name="Instructions" type="Label" parent="." unique_id=1709399595]
-offset_left = 24.0
-offset_top = 42.0
-theme_override_font_sizes/font_size = 13
-text = "WASD 移动 · E 开箱 / 升级 / 档案 / 出击 / 试验 / 盾反 / BOSS测试 · Tab 整理配装"
+offset_left = 26.0
+offset_top = 341.0
+theme_override_font_sizes/font_size = 10
+text = "WASD 移动   E 交互   Tab 配装   Esc 设置"
 
 [node name="Player" parent="." unique_id=1256717005 instance=ExtResource("2")]
 position = Vector2(270, 238)
@@ -54,10 +112,12 @@ position = Vector2(616, 180)
 shape = SubResource("WallVertical")
 
 [node name="Chest" type="Area2D" parent="." unique_id=493334881]
-position = Vector2(270, 175)
+self_modulate = Color(1, 1, 1, 0)
+position = Vector2(193, 120)
 collision_layer = 32
 collision_mask = 0
 script = ExtResource("3")
+metadata/_edit_group_ = true
 
 [node name="Shape" type="CollisionShape2D" parent="Chest" unique_id=1995489733]
 shape = SubResource("ChestShape")
@@ -68,191 +128,385 @@ shape = SubResource("ChestShape")
 shape = SubResource("ChestShape")
 
 [node name="Name" type="Label" parent="Chest" unique_id=1330786753]
-offset_left = -60.0
-offset_top = -48.0
+z_index = 20
+offset_left = 40.0
+offset_top = -14.0
 offset_right = 60.0
-theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.72, 0.8, 0.82, 1)
+theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.08, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 10
 text = "装备储物箱"
-horizontal_alignment = 1
 
 [node name="Prompt" type="Label" parent="Chest" unique_id=444875079]
-offset_left = -80.0
-offset_top = 26.0
+visible = false
+z_index = 25
+offset_left = 40.0
+offset_top = 5.0
 offset_right = 80.0
-theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.72, 0.8, 0.82, 1)
+theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.08, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 10
 text = "[E] 存入 / 取出"
-horizontal_alignment = 1
+
+[node name="Art" type="Sprite2D" parent="Chest" unique_id=2018653989]
+texture_filter = 1
+scale = Vector2(0.052159738, 0.052159738)
+texture = SubResource("Art_chest")
 
 [node name="Deploy" type="Area2D" parent="." unique_id=1565954999]
-position = Vector2(540, 194)
+self_modulate = Color(1, 1, 1, 0)
+position = Vector2(568, 194)
 collision_layer = 32
 collision_mask = 0
 script = ExtResource("3")
 kind = "deploy"
+metadata/_edit_group_ = true
 
 [node name="Shape" type="CollisionShape2D" parent="Deploy" unique_id=698609488]
 shape = SubResource("DoorShape")
 
 [node name="Name" type="Label" parent="Deploy" unique_id=156461949]
+z_index = 20
 offset_left = -60.0
-offset_top = -56.0
+offset_top = -57.0
 offset_right = 60.0
-theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.72, 0.8, 0.82, 1)
+theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.08, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 10
 text = "行动入口"
 horizontal_alignment = 1
 
 [node name="Prompt" type="Label" parent="Deploy" unique_id=1512152541]
+visible = false
+z_index = 25
 offset_left = -60.0
-offset_top = 40.0
+offset_top = 34.0
 offset_right = 60.0
-theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.72, 0.8, 0.82, 1)
+theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.08, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 10
 text = "[E] 开始出击"
 horizontal_alignment = 1
 
-[node name="Trial" type="Area2D" parent="."]
-position = Vector2(420,110)
+[node name="Art" type="Sprite2D" parent="Deploy" unique_id=1818584237]
+texture_filter = 1
+position = Vector2(19.3, -6)
+scale = Vector2(0.051252183, 0.051252183)
+texture = SubResource("Art_elevator")
+
+[node name="Trial" type="Area2D" parent="." unique_id=1663611196]
+self_modulate = Color(1, 1, 1, 0)
+position = Vector2(386, 62)
 collision_layer = 32
 collision_mask = 0
 script = ExtResource("3")
 kind = "trial"
+metadata/_edit_group_ = true
 
-[node name="Shape" type="CollisionShape2D" parent="Trial"]
+[node name="Shape" type="CollisionShape2D" parent="Trial" unique_id=825953245]
 shape = SubResource("DoorShape")
 
-[node name="Name" type="Label" parent="Trial"]
+[node name="Name" type="Label" parent="Trial" unique_id=1366157119]
+z_index = 20
 offset_left = -60.0
-offset_top = -40.0
+offset_top = -45.0
 offset_right = 60.0
-theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.72, 0.8, 0.82, 1)
+theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.08, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 10
 text = "试验场入口"
 horizontal_alignment = 1
-mouse_filter = 2
 
-[node name="Prompt" type="Label" parent="Trial"]
+[node name="Prompt" type="Label" parent="Trial" unique_id=902800596]
+visible = false
+z_index = 25
 offset_left = -80.0
-offset_top = 35.0
+offset_top = 34.0
 offset_right = 80.0
-theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.72, 0.8, 0.82, 1)
+theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.08, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 10
 text = "[E] 测试环境交互"
 horizontal_alignment = 1
-mouse_filter = 2
 
-[node name="BossTest" type="Area2D" parent="."]
-position = Vector2(420, 270)
+[node name="Art" type="Sprite2D" parent="Trial" unique_id=1881579983]
+modulate = Color(0.84, 1, 0.93, 1)
+texture_filter = 1
+scale = Vector2(0.053465348, 0.053465348)
+texture = SubResource("Art_training_door")
+
+[node name="BossTest" type="Area2D" parent="." unique_id=697322043]
+self_modulate = Color(1, 1, 1, 0)
+position = Vector2(485, 62)
 collision_layer = 32
 collision_mask = 0
 script = ExtResource("3")
 kind = "boss_test"
+metadata/_edit_group_ = true
 
-[node name="Shape" type="CollisionShape2D" parent="BossTest"]
+[node name="Shape" type="CollisionShape2D" parent="BossTest" unique_id=1732263213]
 shape = SubResource("DoorShape")
 
-[node name="Name" type="Label" parent="BossTest"]
+[node name="Name" type="Label" parent="BossTest" unique_id=278089877]
+z_index = 20
 offset_left = -72.0
-offset_top = -50.0
+offset_top = -45.0
 offset_right = 72.0
-theme_override_colors/font_color = Color(0.82, 0.67, 1, 1)
-theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.72, 0.8, 0.82, 1)
+theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.08, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 10
 text = "BOSS 测试入口"
 horizontal_alignment = 1
-mouse_filter = 2
 
-[node name="Prompt" type="Label" parent="BossTest"]
+[node name="Prompt" type="Label" parent="BossTest" unique_id=1191546031]
+visible = false
+z_index = 25
 offset_left = -80.0
-offset_top = 38.0
+offset_top = 34.0
 offset_right = 80.0
-theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.72, 0.8, 0.82, 1)
+theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.08, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 10
 text = "[E] 直达楼顶"
 horizontal_alignment = 1
-mouse_filter = 2
 
-[node name="SynthesisNPC" type="Area2D" parent="."]
-position = Vector2(90, 180)
+[node name="Art" type="Sprite2D" parent="BossTest" unique_id=420945419]
+modulate = Color(0.85, 0.72, 1, 1)
+texture_filter = 1
+scale = Vector2(0.053465348, 0.053465348)
+texture = SubResource("Art_training_door")
+
+[node name="SynthesisNPC" type="Area2D" parent="." unique_id=256862902]
+self_modulate = Color(1, 1, 1, 0)
+position = Vector2(117, 110)
 collision_layer = 32
 collision_mask = 0
 script = ExtResource("3")
 kind = "synthesis"
+metadata/_edit_group_ = true
 
-[node name="Shape" type="CollisionShape2D" parent="SynthesisNPC"]
+[node name="Shape" type="CollisionShape2D" parent="SynthesisNPC" unique_id=1049293373]
 shape = SubResource("DoorShape")
 
-[node name="Name" type="Label" parent="SynthesisNPC"]
-offset_left = -70.0
-offset_top = -54.0
+[node name="Name" type="Label" parent="SynthesisNPC" unique_id=951849182]
+z_index = 20
+offset_left = -95.0
+offset_top = 40.0
 offset_right = 70.0
-theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.72, 0.8, 0.82, 1)
+theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.08, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 10
 text = "合成师 · GPT"
 horizontal_alignment = 1
-mouse_filter = 2
 
-[node name="Prompt" type="Label" parent="SynthesisNPC"]
+[node name="Prompt" type="Label" parent="SynthesisNPC" unique_id=145803590]
+visible = false
+z_index = 25
 offset_left = -70.0
-offset_top = 38.0
+offset_top = 34.0
 offset_right = 70.0
-theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.72, 0.8, 0.82, 1)
+theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.08, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 10
 text = "[E] 合成 / 升级武器"
 horizontal_alignment = 1
-mouse_filter = 2
 
-[node name="RefinedArt" type="Node2D" parent="SynthesisNPC"]
-script = ExtResource("refined_art")
-kind = "gpt"
-draw_size = Vector2(52, 64)
-draw_offset = Vector2(0, -6)
+[node name="RefinedArt" type="Sprite2D" parent="SynthesisNPC" unique_id=266293597]
+texture_filter = 1
+position = Vector2(-7, 5)
+scale = Vector2(0.036337208, 0.036337208)
+texture = SubResource("Art_mechanic")
 
-[node name="ArchiveTerminal" type="Area2D" parent="."]
-position = Vector2(90, 270)
+[node name="Workbench" type="Node2D" parent="SynthesisNPC" unique_id=1787592393]
+position = Vector2(-25, -45)
+
+[node name="Art" type="Sprite2D" parent="SynthesisNPC/Workbench" unique_id=1550950859]
+texture_filter = 1
+scale = Vector2(0.061908856, 0.061908856)
+texture = SubResource("Art_workbench")
+
+[node name="Body" type="StaticBody2D" parent="SynthesisNPC/Workbench" unique_id=266114966]
+
+[node name="Shape" type="CollisionShape2D" parent="SynthesisNPC/Workbench/Body" unique_id=1834786380]
+position = Vector2(0, 18)
+shape = SubResource("WorkbenchFootprint")
+
+[node name="ArchiveTerminal" type="Area2D" parent="." unique_id=933868662]
+self_modulate = Color(1, 1, 1, 0)
+position = Vector2(61, 280)
 collision_layer = 32
 collision_mask = 0
 script = ExtResource("3")
 kind = "archive"
+metadata/_edit_group_ = true
 
-[node name="Shape" type="CollisionShape2D" parent="ArchiveTerminal"]
+[node name="Shape" type="CollisionShape2D" parent="ArchiveTerminal" unique_id=1731289563]
 shape = SubResource("DoorShape")
 
-[node name="Name" type="Label" parent="ArchiveTerminal"]
-offset_left = -72.0
-offset_top = -52.0
+[node name="Name" type="Label" parent="ArchiveTerminal" unique_id=338922314]
+z_index = 20
+offset_left = 40.0
+offset_top = -14.0
 offset_right = 72.0
-theme_override_colors/font_color = Color(0.5, 0.88, 0.85, 1)
-theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.72, 0.8, 0.82, 1)
+theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.08, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 10
 text = "人格档案 / 遗产酒谱"
-horizontal_alignment = 1
-mouse_filter = 2
 
-[node name="Prompt" type="Label" parent="ArchiveTerminal"]
-offset_left = -72.0
-offset_top = 38.0
+[node name="Prompt" type="Label" parent="ArchiveTerminal" unique_id=1760265591]
+visible = false
+z_index = 25
+offset_left = 40.0
+offset_top = 5.0
 offset_right = 72.0
-theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.72, 0.8, 0.82, 1)
+theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.08, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 10
 text = "[E] 查阅永久记录"
-horizontal_alignment = 1
-mouse_filter = 2
 
-[node name="ParryTraining" type="Area2D" parent="."]
-position = Vector2(270, 100)
+[node name="Art" type="Sprite2D" parent="ArchiveTerminal" unique_id=345408663]
+texture_filter = 1
+scale = Vector2(0.048971597, 0.048971597)
+texture = SubResource("Art_terminal")
+
+[node name="ParryTraining" type="Area2D" parent="." unique_id=1264935420]
+self_modulate = Color(1, 1, 1, 0)
+position = Vector2(288, 62)
 collision_layer = 32
 collision_mask = 0
 script = ExtResource("3")
 kind = "parry_training"
+metadata/_edit_group_ = true
 
-[node name="Shape" type="CollisionShape2D" parent="ParryTraining"]
+[node name="Shape" type="CollisionShape2D" parent="ParryTraining" unique_id=156352078]
 shape = SubResource("DoorShape")
 
-[node name="Name" type="Label" parent="ParryTraining"]
+[node name="Name" type="Label" parent="ParryTraining" unique_id=1352870628]
+z_index = 20
 offset_left = -70.0
-offset_top = -28.0
+offset_top = -45.0
 offset_right = 70.0
+theme_override_colors/font_color = Color(0.72, 0.8, 0.82, 1)
+theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.08, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 10
 text = "盾反训练营"
-theme_override_font_sizes/font_size = 13
 horizontal_alignment = 1
-mouse_filter = 2
 
-[node name="Prompt" type="Label" parent="ParryTraining"]
+[node name="Prompt" type="Label" parent="ParryTraining" unique_id=677442713]
+visible = false
+z_index = 25
 offset_left = -70.0
-offset_top = 35.0
+offset_top = 34.0
 offset_right = 70.0
+theme_override_colors/font_color = Color(0.72, 0.8, 0.82, 1)
+theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.08, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 10
 text = "[E] 练习完美盾反"
-theme_override_font_sizes/font_size = 12
 horizontal_alignment = 1
-mouse_filter = 2
+
+[node name="Art" type="Sprite2D" parent="ParryTraining" unique_id=552890099]
+texture_filter = 1
+scale = Vector2(0.053465348, 0.053465348)
+texture = SubResource("Art_training_door")
+
+[node name="WarehouseArt" type="Node2D" parent="." unique_id=161272953]
+z_index = -10
+texture_filter = 1
+script = ExtResource("warehouse_art")
+
+[node name="WallLamp1" type="Sprite2D" parent="WarehouseArt" unique_id=529149842]
+texture_filter = 1
+position = Vector2(120, 56)
+scale = Vector2(0.020501139, 0.020501139)
+texture = SubResource("Art_lamp")
+
+[node name="WallLamp2" type="Sprite2D" parent="WarehouseArt" unique_id=1407494819]
+texture_filter = 1
+position = Vector2(350, 56)
+scale = Vector2(0.020501139, 0.020501139)
+texture = SubResource("Art_lamp")
+
+[node name="WallLamp3" type="Sprite2D" parent="WarehouseArt" unique_id=39616610]
+texture_filter = 1
+position = Vector2(548, 56)
+scale = Vector2(0.020501139, 0.020501139)
+texture = SubResource("Art_lamp")
+
+[node name="FrontParapet" type="Node2D" parent="WarehouseArt" unique_id=428254511]
+z_index = 8
+z_as_relative = false
+script = ExtResource("foreground_art")
+
+[node name="PartsRack" type="Node2D" parent="." unique_id=65600750]
+position = Vector2(194, 74)
+metadata/_edit_group_ = true
+
+[node name="Art" type="Sprite2D" parent="PartsRack" unique_id=35398519]
+texture_filter = 1
+scale = Vector2(0.041284405, 0.041284405)
+texture = SubResource("Art_parts_rack")
+
+[node name="Body" type="StaticBody2D" parent="PartsRack" unique_id=529357087]
+
+[node name="Shape" type="CollisionShape2D" parent="PartsRack/Body" unique_id=211319847]
+position = Vector2(0, 10)
+shape = SubResource("RackFootprint")
+
+[node name="CratesLeft" type="Node2D" parent="." unique_id=1043832307]
+position = Vector2(190, 304)
+metadata/_edit_group_ = true
+
+[node name="Art" type="Sprite2D" parent="CratesLeft" unique_id=810129280]
+texture_filter = 1
+scale = Vector2(0.038847957, 0.038847957)
+texture = SubResource("Art_crates")
+
+[node name="Body" type="StaticBody2D" parent="CratesLeft" unique_id=1454336516]
+
+[node name="Shape" type="CollisionShape2D" parent="CratesLeft/Body" unique_id=1933125839]
+position = Vector2(0, 4)
+shape = SubResource("CrateFootprint")
+
+[node name="CratesRight" type="Node2D" parent="." unique_id=1104781867]
+position = Vector2(567, 307)
+metadata/_edit_group_ = true
+
+[node name="Art" type="Sprite2D" parent="CratesRight" unique_id=128066802]
+modulate = Color(0.7, 0.75, 0.8, 1)
+texture_filter = 1
+scale = Vector2(0.029470865, 0.029470865)
+texture = SubResource("Art_crates")
+
+[node name="Body" type="StaticBody2D" parent="CratesRight" unique_id=8175790]
+
+[node name="Shape" type="CollisionShape2D" parent="CratesRight/Body" unique_id=325542917]
+position = Vector2(0, 1)
+shape = SubResource("SmallCrateFootprint")

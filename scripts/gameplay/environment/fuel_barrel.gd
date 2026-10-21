@@ -22,6 +22,9 @@ func receive_hit(packet: DamagePacket) -> DamageResult:
 func _spill() -> void:
 	if not is_inside_tree() or is_queued_for_deletion():
 		return
+	var debris := BombDebrisEffect.new()
+	debris.name = "BombDebris"
+	add_child(debris)
 	patch = FuelPatch.new()
 	EnvironmentArea.for_actor(self).add_child(patch)
 	patch.global_position = global_position

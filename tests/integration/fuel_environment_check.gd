@@ -136,12 +136,27 @@ func run_checks() -> void:
 	player.weapons.try_attack(Vector2(100,300),Vector2.RIGHT,player)
 	await create_timer(0.35).timeout
 	check(second.broken and is_instance_valid(second.patch) and second.patch.burning,"real kinetic shot directly explodes bomb")
+	var explosion := second.patch.get_node_or_null("ExplosionAnimation") as FuelExplosionEffect
+	check(explosion != null, "real box explosion starts its multi-stage animation")
+	var authored := explosion.get_node("AuthoredExplosion") as AnimatedSprite2D
+	check(authored.sprite_frames.get_frame_count("explode") == 8, "explosion plays all eight authored art frames")
+	var debris := second.get_node("BombDebris") as BombDebrisEffect
+	check(debris.get_child_count() == 8, "crate releases eight distinct textured material fragments")
+	var effect_time := explosion.elapsed
+	paused = true
+	await create_timer(0.08, true).timeout
+	check(explosion.elapsed == effect_time, "pause freezes explosion animation")
+	paused = false
 	var fire_weapon: WeaponComponentData = load("res://resources/weapons/service_pistol.tres").duplicate()
 	fire_weapon.damage_type = &"fire"
 	player.weapons.set_equipped_weapon(fire_weapon)
 	player.weapons.try_attack(Vector2(100,300),Vector2.RIGHT,player)
 	await create_timer(0.3).timeout
 	check(second.patch.burning and second.patch.explosion_count == 1,"further fire shot cannot explode spent bomb twice")
+	check(second.patch.find_children("ExplosionAnimation*", "", true, false).size() == 1, "repeated hits do not duplicate explosion animation")
+	await create_timer(0.9).timeout
+	check(not is_instance_valid(explosion), "short explosion animation cleans up while burning patch persists")
+	check(debris.settled_count == 8 and debris.get_children().all(func(piece: Node2D) -> bool: return piece.z_index == -1), "all textured fragments settle on the ground and persist below actors")
 	room.queue_free()
 	other_room.queue_free()
 	await process_frame

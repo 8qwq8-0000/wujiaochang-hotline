@@ -8,7 +8,7 @@ const ENTRY := Vector2(74, 180)
 const EXIT := Vector2(592, 180)
 
 
-static func choose_barrel_position(enemies: Array[Vector2], blockers: Array[Rect2], doors: Array[Vector4], power: Vector2, seed_value: int, fallback: Vector2, windows: Array[Rect2] = []) -> Vector2:
+static func choose_barrel_position(enemies: Array[Vector2], blockers: Array[Rect2], doors: Array[Vector4], power: Vector2, seed_value: int, fallback: Vector2, windows: Array[Rect2] = [], room_size := Vector2(640, 360)) -> Vector2:
 	if enemies.is_empty():
 		return fallback
 	var random := RandomNumberGenerator.new()
@@ -35,7 +35,7 @@ static func choose_barrel_position(enemies: Array[Vector2], blockers: Array[Rect
 	var viable: Array[Vector2] = []
 	var distances: Array[float] = []
 	for point in candidates:
-		if not is_safe(point, enemies, blockers, doors, power):
+		if not is_safe(point, enemies, blockers, doors, power, room_size):
 			continue
 		var count := 0
 		var distance := 0.0
@@ -61,13 +61,23 @@ static func choose_barrel_position(enemies: Array[Vector2], blockers: Array[Rect
 			finalists.append(viable[index])
 	if not finalists.is_empty():
 		return finalists[random.randi_range(0, finalists.size() - 1)]
+	if is_safe(fallback, enemies, blockers, doors, power, room_size):
+		return fallback
+	# A dense room may have no viable enemy-adjacent anchor left. Search the
+	# walkable footprint deterministically rather than overlap a previous box.
+	for y in range(48, int(room_size.y) - 38, 24):
+		for x in range(48, int(room_size.x) - 38, 24):
+			var point := Vector2(x, y)
+			if is_safe(point, enemies, blockers, doors, power, room_size):
+				return point
 	return fallback
 
 
-static func is_safe(point: Vector2, enemies: Array[Vector2], blockers: Array[Rect2], doors: Array[Vector4], power: Vector2) -> bool:
-	if not Rect2(38, 38, 564, 284).has_point(point):
+static func is_safe(point: Vector2, enemies: Array[Vector2], blockers: Array[Rect2], doors: Array[Vector4], power: Vector2, room_size := Vector2(640, 360)) -> bool:
+	if not Rect2(Vector2(38, 38), room_size - Vector2(76, 76)).has_point(point):
 		return false
-	if point.distance_to(ENTRY) < 112 or point.distance_to(EXIT) < 52 or point.distance_to(power) < 48:
+	var scale_factor := room_size / Vector2(640, 360)
+	if point.distance_to(ENTRY * scale_factor) < 112 or point.distance_to(EXIT * scale_factor) < 52 or point.distance_to(power) < 48:
 		return false
 	for rect in blockers:
 		if rect.grow(CLEARANCE).has_point(point):

@@ -6,6 +6,7 @@ var burning := false
 var remaining := 8.0
 var explosion_count := 0
 var _pulse := 0.0
+static var _flame_texture: Texture2D
 
 func _ready() -> void:
 	collision_layer = 16
@@ -49,6 +50,9 @@ func _explode() -> void:
 	if explosion_count > 0 or not is_inside_tree() or is_queued_for_deletion():
 		return
 	explosion_count += 1
+	var animation := FuelExplosionEffect.new()
+	animation.name = "ExplosionAnimation"
+	add_child(animation)
 	_affect_actors(96.0, true)
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null:
@@ -71,11 +75,24 @@ func _affect_actors(reach: float, deal_damage: bool) -> void:
 			actor.get_node("StatusComponent").add_status(&"oiled",6,["negative","oil"])
 
 func _draw() -> void:
-	var color := Color("d96625") if burning else Color("574d2a")
-	color.a = 0.65
-	draw_circle(Vector2.ZERO,radius,color)
-	draw_arc(Vector2.ZERO,radius,0,TAU,40,Color("f5b74d") if burning else Color("b8a24f"),2)
-	if burning:
-		for index in 7:
-			var point := Vector2.from_angle(index*TAU/7)*radius*0.55
-			draw_colored_polygon(PackedVector2Array([point+Vector2(-5,5),point+Vector2(1,-12),point+Vector2(6,5)]),Color("ffdc75"))
+	if not burning:
+		draw_circle(Vector2.ZERO, radius, Color(0.34, 0.3, 0.16, 0.4))
+		return
+	# Scorched floor and flickering tongues keep the lingering hazard readable
+	# without covering the explosion animation in an opaque orange disk.
+	draw_set_transform(Vector2.ZERO, 0, Vector2(1, 0.55))
+	draw_circle(Vector2.ZERO, radius, Color(0.2, 0.1, 0.06, 0.25))
+	draw_arc(Vector2.ZERO, radius, 0, TAU, 40, Color(0.95, 0.48, 0.12, 0.35), 1)
+	draw_set_transform(Vector2.ZERO)
+	if _flame_texture == null:
+		var source := load(FuelExplosionEffect.SHEET) as Texture2D
+		var cell := source.get_size() / Vector2(4, 2)
+		var atlas := AtlasTexture.new()
+		atlas.atlas = source
+		atlas.region = Rect2(Vector2(cell.x * 3, 0), cell)
+		_flame_texture = atlas
+	for index in 11:
+		var angle := index * TAU / 11.0
+		var point := Vector2(cos(angle) * radius * 0.65, sin(angle) * radius * 0.36)
+		var height := 11 + sin(remaining * 13 + index * 1.9) * 4
+		draw_texture_rect(_flame_texture, Rect2(point + Vector2(-8, -height), Vector2(16, height)), false, Color(1, 1, 1, 0.85))

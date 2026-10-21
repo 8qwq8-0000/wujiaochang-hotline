@@ -35,21 +35,36 @@ func run() -> void:
 			check(world_rect.is_equal_approx(Rect2(initial_rect.position + enemy.global_position, initial_rect.size)), profile_id + " body follows movement without a flip offset")
 		enemy.queue_free()
 		await process_frame
-	for id in ["loading_workshop", "interlinked_apartment"]:
+	for horizontal: bool in [true, false]:
+		var door := CombatArchitecture.door_texture(horizontal) as AtlasTexture
+		check(Rect2(Vector2.ZERO, door.atlas.get_size()).encloses(door.region), "directional doorway crop stays in source image")
+		check(door.get_width() > door.get_height() if horizontal else door.get_height() > door.get_width(), "doorway uses its authored world orientation")
+	for id in ["loading_workshop", "interlinked_apartment", "central_server", "storage_lanes", "cross_checkpoint", "offset_workshop", "split_office"]:
 		var room: CombatRoom = load("res://scenes/levels/rooms/variants/"+id+".tscn").instantiate()
 		room.configure_stage(0,2)
 		root.add_child(room)
 		current_scene = room
 		check(room.has_node("WorkshopFloor") and room.has_node("WorkshopForeground"),id + " wires runtime art")
+		check(room.small_obstacles.size() == 6, id + " adds six varied physical obstacles")
+		check(room.small_obstacles[0].size != room.small_obstacles[1].size and room.small_obstacles[1].size != room.small_obstacles[2].size, "small obstacles use varied footprints")
+		check(room.layout.windows.is_empty() and room.find_children("ObservationWindow*", "", true, false).is_empty(), "all former observation windows are solid walls")
+		if id == "loading_workshop":
+			await physics_frame
+			await physics_frame
+			var former_window := Vector2(488.889, 231.6955) * CombatRoom.ROOM_SCALE
+			var ray := PhysicsRayQueryParameters2D.create(former_window - Vector2(20, 0), former_window + Vector2(20, 0), 1)
+			check(not room.get_world_2d().direct_space_state.intersect_ray(ray).is_empty(), "sealed observation window blocks world-layer projectile and sight rays")
 		var floor_art: WorkshopArt = room.get_node("WorkshopFloor")
 		var foreground: WorkshopArt = room.get_node("WorkshopForeground")
 		check(floor_art.z_index<foreground.z_index and not room.get_node("Floor").visible,"art replaces debug floor below actors")
+		check(room.y_sort_enabled and foreground.y_sort_enabled and room.get_node("LayoutGeometry").y_sort_enabled and room.get_node("Enemies").y_sort_enabled, "architecture and actors share ground-contact depth sorting")
+		check(foreground.get_child_count() >= room.layout.covers.size() + 8, "four walls, corners and every cover have independent depth pieces")
 		var collider_count := 0
 		for body in room.get_node("LayoutGeometry").get_children():
 			if body is StaticBody2D:
 				collider_count += 1
 		check(collider_count==room.layout.covers.size()+room.layout.windows.size(),"rendering retains all authored obstacle colliders")
-		check(room.spawner.remaining_objectives()==6,"art retains six pending enemies")
+		check(room.spawner.remaining_objectives()==room.spawner.planned_positions(room).size(),"art preserves authored pending enemies")
 		room.open_side("Left")
 		room.open_side("Right")
 		check(foreground.left_open and foreground.right_open,"rendered walls track real passage openings")

@@ -74,6 +74,8 @@ func run() -> void:
 		check(skill.try_cast(target), "cardinal cast starts " + direction_name)
 		check(skill.visual.animation == StringName("cast_barrier_" + direction_name), "body animation follows actual heading")
 		check(skill.flight_visual.animation == StringName("flight_" + direction_name), "detached effect follows actual heading")
+		check(skill.flight_visual.flip_v == (heading == Vector2.UP), "upward barrier reverses source arc and trail; other headings retain native art")
+		check(is_zero_approx(skill.flight_visual.global_rotation), "directional artwork stays upright independently of collider rotation")
 		check(skill.visual.sprite_frames.get_frame_count(skill.visual.animation) == 8, "each direction has eight casting frames")
 		check(skill.barrier.collision_layer == 0, "windup has no invisible blocking")
 		skill.tick(0.4)
