@@ -155,3 +155,5 @@ godot --headless --path . --script res://tests/integration/boss_shortcut_check.g
 激光炮正式掉落：`godot --headless --path . --script res://tests/integration/rail_cannon_loot_check.gd`，覆盖随机掉落、品质词条、实例序列化、实际拾取、副槽装备切换、炮身特效节点、射击伤害与热量；贴身命中检查使用正式激光炮资源。
 
 长条范围激光：`godot --headless --path . --script res://tests/integration/laser_beam_check.gd`，覆盖 1000×48 范围内多目标同时受伤、每发仅结算一次、范围外及自身免伤、墙体阻挡、显示与伤害长度一致、无普通子弹及光束回收，以及光束引爆油桶、墙后和范围外油桶保护。
+
+盾兵飞行屏障与远程配合：`godot --headless --path . --script res://tests/integration/shield_support_check.gd`，61 项覆盖四方向、独立移动、墙体、干净身体、初始冷却、提前一秒跑位及友伤。带窗口追加 `-- --capture` 输出四方向截图。
