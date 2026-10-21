@@ -1,0 +1,302 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/art/characters/enemies/shield_barrier_cast_v2/atlas.png" id="1"]
+
+[sub_resource type="AtlasTexture" id="F1"]
+
+atlas = ExtResource("1")
+
+region = Rect2(0, 0, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F2"]
+
+atlas = ExtResource("1")
+
+region = Rect2(384, 0, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F3"]
+
+atlas = ExtResource("1")
+
+region = Rect2(768, 0, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F4"]
+
+atlas = ExtResource("1")
+
+region = Rect2(1152, 0, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F5"]
+
+atlas = ExtResource("1")
+
+region = Rect2(1536, 0, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F6"]
+
+atlas = ExtResource("1")
+
+region = Rect2(1920, 0, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F7"]
+
+atlas = ExtResource("1")
+
+region = Rect2(2304, 0, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F8"]
+
+atlas = ExtResource("1")
+
+region = Rect2(2688, 0, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F9"]
+
+atlas = ExtResource("1")
+
+region = Rect2(0, 1536, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F10"]
+
+atlas = ExtResource("1")
+
+region = Rect2(384, 1536, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F11"]
+
+atlas = ExtResource("1")
+
+region = Rect2(768, 1536, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F12"]
+
+atlas = ExtResource("1")
+
+region = Rect2(1152, 1536, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F13"]
+
+atlas = ExtResource("1")
+
+region = Rect2(0, 384, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F14"]
+
+atlas = ExtResource("1")
+
+region = Rect2(384, 384, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F15"]
+
+atlas = ExtResource("1")
+
+region = Rect2(768, 384, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F16"]
+
+atlas = ExtResource("1")
+
+region = Rect2(1152, 384, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F17"]
+
+atlas = ExtResource("1")
+
+region = Rect2(1536, 384, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F18"]
+
+atlas = ExtResource("1")
+
+region = Rect2(1920, 384, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F19"]
+
+atlas = ExtResource("1")
+
+region = Rect2(2304, 384, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F20"]
+
+atlas = ExtResource("1")
+
+region = Rect2(2688, 384, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F21"]
+
+atlas = ExtResource("1")
+
+region = Rect2(1536, 1536, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F22"]
+
+atlas = ExtResource("1")
+
+region = Rect2(1920, 1536, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F23"]
+
+atlas = ExtResource("1")
+
+region = Rect2(2304, 1536, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F24"]
+
+atlas = ExtResource("1")
+
+region = Rect2(2688, 1536, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F25"]
+
+atlas = ExtResource("1")
+
+region = Rect2(0, 768, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F26"]
+
+atlas = ExtResource("1")
+
+region = Rect2(384, 768, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F27"]
+
+atlas = ExtResource("1")
+
+region = Rect2(768, 768, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F28"]
+
+atlas = ExtResource("1")
+
+region = Rect2(1152, 768, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F29"]
+
+atlas = ExtResource("1")
+
+region = Rect2(1536, 768, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F30"]
+
+atlas = ExtResource("1")
+
+region = Rect2(1920, 768, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F31"]
+
+atlas = ExtResource("1")
+
+region = Rect2(2304, 768, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F32"]
+
+atlas = ExtResource("1")
+
+region = Rect2(2688, 768, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F33"]
+
+atlas = ExtResource("1")
+
+region = Rect2(0, 1920, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F34"]
+
+atlas = ExtResource("1")
+
+region = Rect2(384, 1920, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F35"]
+
+atlas = ExtResource("1")
+
+region = Rect2(768, 1920, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F36"]
+
+atlas = ExtResource("1")
+
+region = Rect2(1152, 1920, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F37"]
+
+atlas = ExtResource("1")
+
+region = Rect2(0, 1152, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F38"]
+
+atlas = ExtResource("1")
+
+region = Rect2(384, 1152, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F39"]
+
+atlas = ExtResource("1")
+
+region = Rect2(768, 1152, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F40"]
+
+atlas = ExtResource("1")
+
+region = Rect2(1152, 1152, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F41"]
+
+atlas = ExtResource("1")
+
+region = Rect2(1536, 1152, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F42"]
+
+atlas = ExtResource("1")
+
+region = Rect2(1920, 1152, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F43"]
+
+atlas = ExtResource("1")
+
+region = Rect2(2304, 1152, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F44"]
+
+atlas = ExtResource("1")
+
+region = Rect2(2688, 1152, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F45"]
+
+atlas = ExtResource("1")
+
+region = Rect2(1536, 1920, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F46"]
+
+atlas = ExtResource("1")
+
+region = Rect2(1920, 1920, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F47"]
+
+atlas = ExtResource("1")
+
+region = Rect2(2304, 1920, 384, 384)
+
+[sub_resource type="AtlasTexture" id="F48"]
+
+atlas = ExtResource("1")
+
+region = Rect2(2688, 1920, 384, 384)
+
+[resource]
+
+animations = [{"frames": [{"duration": 1.0, "texture": SubResource("F1")},{"duration": 1.0, "texture": SubResource("F2")},{"duration": 1.0, "texture": SubResource("F3")},{"duration": 1.0, "texture": SubResource("F4")},{"duration": 1.0, "texture": SubResource("F5")},{"duration": 1.0, "texture": SubResource("F6")},{"duration": 1.0, "texture": SubResource("F7")},{"duration": 1.0, "texture": SubResource("F8")}], "loop": false, "name": &"cast_barrier_down", "speed": 10.0},
+{"frames": [{"duration": 1.0, "texture": SubResource("F9")},{"duration": 1.0, "texture": SubResource("F10")},{"duration": 1.0, "texture": SubResource("F11")},{"duration": 1.0, "texture": SubResource("F12")}], "loop": true, "name": &"flight_down", "speed": 9.0},
+{"frames": [{"duration": 1.0, "texture": SubResource("F13")},{"duration": 1.0, "texture": SubResource("F14")},{"duration": 1.0, "texture": SubResource("F15")},{"duration": 1.0, "texture": SubResource("F16")},{"duration": 1.0, "texture": SubResource("F17")},{"duration": 1.0, "texture": SubResource("F18")},{"duration": 1.0, "texture": SubResource("F19")},{"duration": 1.0, "texture": SubResource("F20")}], "loop": false, "name": &"cast_barrier_up", "speed": 10.0},
+{"frames": [{"duration": 1.0, "texture": SubResource("F21")},{"duration": 1.0, "texture": SubResource("F22")},{"duration": 1.0, "texture": SubResource("F23")},{"duration": 1.0, "texture": SubResource("F24")}], "loop": true, "name": &"flight_up", "speed": 9.0},
+{"frames": [{"duration": 1.0, "texture": SubResource("F25")},{"duration": 1.0, "texture": SubResource("F26")},{"duration": 1.0, "texture": SubResource("F27")},{"duration": 1.0, "texture": SubResource("F28")},{"duration": 1.0, "texture": SubResource("F29")},{"duration": 1.0, "texture": SubResource("F30")},{"duration": 1.0, "texture": SubResource("F31")},{"duration": 1.0, "texture": SubResource("F32")}], "loop": false, "name": &"cast_barrier_left", "speed": 10.0},
+{"frames": [{"duration": 1.0, "texture": SubResource("F33")},{"duration": 1.0, "texture": SubResource("F34")},{"duration": 1.0, "texture": SubResource("F35")},{"duration": 1.0, "texture": SubResource("F36")}], "loop": true, "name": &"flight_left", "speed": 9.0},
+{"frames": [{"duration": 1.0, "texture": SubResource("F37")},{"duration": 1.0, "texture": SubResource("F38")},{"duration": 1.0, "texture": SubResource("F39")},{"duration": 1.0, "texture": SubResource("F40")},{"duration": 1.0, "texture": SubResource("F41")},{"duration": 1.0, "texture": SubResource("F42")},{"duration": 1.0, "texture": SubResource("F43")},{"duration": 1.0, "texture": SubResource("F44")}], "loop": false, "name": &"cast_barrier_right", "speed": 10.0},
+{"frames": [{"duration": 1.0, "texture": SubResource("F45")},{"duration": 1.0, "texture": SubResource("F46")},{"duration": 1.0, "texture": SubResource("F47")},{"duration": 1.0, "texture": SubResource("F48")}], "loop": true, "name": &"flight_right", "speed": 9.0}]
