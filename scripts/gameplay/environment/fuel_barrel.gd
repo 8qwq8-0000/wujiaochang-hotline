@@ -22,6 +22,9 @@ func receive_hit(packet: DamagePacket) -> DamageResult:
 func _spill() -> void:
 	if not is_inside_tree() or is_queued_for_deletion():
 		return
+	var settings := get_node_or_null("/root/GameSettings")
+	if settings != null and not settings.are_elemental_reactions_enabled():
+		return
 	var debris := BombDebrisEffect.new()
 	debris.name = "BombDebris"
 	add_child(debris)

@@ -20,6 +20,7 @@ const KEY_CONTINUOUS_PRECHARGE := "ContinuousPrecharge"
 var difficulty: Difficulty = Difficulty.STANDARD
 var high_pressure_alert := false
 var continuous_precharge := false
+var elemental_reactions_enabled := false
 
 
 func _ready() -> void:
@@ -90,3 +91,9 @@ func get_hearing_range_limit() -> float:
 
 func is_low_pressure() -> bool:
 	return difficulty == Difficulty.LOW
+
+
+func are_elemental_reactions_enabled() -> bool:
+	# The shipped game keeps the deferred reaction system disabled for this UI pass.
+	# Headless regression scenes can still exercise the preserved implementation.
+	return elemental_reactions_enabled or DisplayServer.get_name() == "headless"

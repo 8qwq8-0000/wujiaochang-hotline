@@ -8,6 +8,9 @@ const ROCK_FEEDBACK_MAX := 100.0
 const ROCK_FEEDBACK_DECAY := 18.0
 const ROCK_DECAY_DELAY := 0.65
 const MASTER_ANALYSIS_SAMPLES := 2
+const TAKEOVER_LANDING_RADII := [42.0, 56.0, 70.0]
+const TAKEOVER_LANDING_ANGLES := [0.0, PI / 4.0, -PI / 4.0, PI / 2.0, -PI / 2.0, PI]
+const TAKEOVER_ESCAPE_PROBE := 14.0
 
 @onready var player: PlayerController = get_parent() as PlayerController
 @onready var core: TalentCoreController = player.get_node("TalentCoreController")
@@ -520,17 +523,50 @@ func _execute_deep_takeover() -> void:
 		_set_mark(_select_execution_target())
 	if not _is_live_enemy(marked_target):
 		return
-	var enemy_facing := marked_target.facing.normalized()
-	if enemy_facing.is_zero_approx():
-		enemy_facing = marked_target.global_position.direction_to(player.global_position)
-	var destination := marked_target.global_position - enemy_facing * 28.0
-	var motion := destination - player.global_position
-	if player.test_move(player.global_transform, motion):
+	var landing := _find_safe_takeover_landing(marked_target)
+	if landing.is_empty():
 		return
-	player.global_position = destination
+	# An emergency relocation can trigger during an ordinary or talent dash.
+	# End that locked-direction motion before moving, otherwise the next physics
+	# frame can drive the player back into a partition or narrow doorway.
+	dash.cancel_dash()
+	_cancel_soft_takeover()
+	player.velocity = Vector2.ZERO
+	player.global_position = landing.position
 	player.aim_direction = player.global_position.direction_to(marked_target.global_position)
 	hurt_box.set_invulnerable(0.8)
 	_complete_takeover("夺身猎步：安全位移完成")
+
+
+func _find_safe_takeover_landing(target: EnemyController) -> Dictionary:
+	var enemy_facing := target.facing.normalized()
+	if enemy_facing.is_zero_approx():
+		enemy_facing = target.global_position.direction_to(player.global_position)
+	if enemy_facing.is_zero_approx():
+		enemy_facing = Vector2.RIGHT
+	var preferred_direction := -enemy_facing
+	for radius: float in TAKEOVER_LANDING_RADII:
+		for angle: float in TAKEOVER_LANDING_ANGLES:
+			var destination := target.global_position + preferred_direction.rotated(angle) * radius
+			if _is_safe_takeover_landing(destination):
+				return {"position": destination}
+	return {}
+
+
+func _is_safe_takeover_landing(destination: Vector2) -> bool:
+	var room := CombatProjectile.room_for_actor(player)
+	if room is CombatRoom and not (room as CombatRoom).contains_world_point(destination):
+		return false
+	var motion := destination - player.global_position
+	if motion.is_zero_approx() or player.test_move(player.global_transform, motion, null, 0.08, true):
+		return false
+	var landing_transform := player.global_transform
+	landing_transform.origin = destination
+	var up_blocked := player.test_move(landing_transform, Vector2.UP * TAKEOVER_ESCAPE_PROBE, null, 0.08, true)
+	var down_blocked := player.test_move(landing_transform, Vector2.DOWN * TAKEOVER_ESCAPE_PROBE, null, 0.08, true)
+	var left_blocked := player.test_move(landing_transform, Vector2.LEFT * TAKEOVER_ESCAPE_PROBE, null, 0.08, true)
+	var right_blocked := player.test_move(landing_transform, Vector2.RIGHT * TAKEOVER_ESCAPE_PROBE, null, 0.08, true)
+	return not (up_blocked and down_blocked) and not (left_blocked and right_blocked)
 
 
 func _execute_rock_takeover() -> void:

@@ -43,7 +43,7 @@ func run() -> void:
 	player.hurt_box.clear_invulnerability()
 	hud._process(0.0)
 	check(hud._health_meter.caption == "耐久" and hud._circuit_value.text == "断路保险  已消耗", "protection expiry retains consumed status")
-	check(hud._health_meter.meter_color == CyberUITheme.WARNING, "consumed insurance keeps health yellow after protection expires")
+	check(hud._health_meter.meter_color == CyberUITheme.DANGER, "last health light takes precedence with the critical danger color")
 	player.circuit_breaker.set_equipped(false)
 	hud._process(0.0)
 	check(hud._circuit_value.text == "断路保险  未装备", "unequipped core status")
@@ -53,6 +53,8 @@ func run() -> void:
 	hud._process(0.0)
 	check(hud._health_meter.segments == 5 and hud._circuit_value.text == "断路保险  就绪", "maximum health and reset update HUD")
 	check(hud._health_meter.meter_color == CyberUITheme.PHOSPHOR, "resetting insurance restores green health")
+	check(not hud._health_meter.show_numeric and not hud._health_meter.show_caption, "health lights stay icon-only")
+	check(not hud._heat_meter.show_numeric and hud._heat_meter.segments == 10, "heat uses a numberless ten-segment strip")
 	room.queue_free()
 	await process_frame
 	print("Health HUD checks: %d; failures: %d" % [checks, failures])

@@ -36,6 +36,9 @@ func receive_hit(packet: DamagePacket) -> DamageResult:
 	var result := DamageResult.new()
 	result.packet = packet
 	result.target = self
+	var settings := get_node_or_null("/root/GameSettings")
+	if settings != null and not settings.are_elemental_reactions_enabled():
+		return result
 	if packet.base_damage > 0 and packet.damage_type in [&"fire", &"thermal"] and not burning and not get_tree().paused:
 		# Reserve the transition before callbacks, including overlapping projectiles.
 		burning = true
@@ -60,6 +63,9 @@ func _explode() -> void:
 		events.fuel_explosion_requested.emit(global_position,96.0)
 
 func _affect_actors(reach: float, deal_damage: bool) -> void:
+	var settings := get_node_or_null("/root/GameSettings")
+	if settings != null and not settings.are_elemental_reactions_enabled():
+		return
 	for actor in EnvironmentArea.visible_actors(self,reach):
 		var hurt := actor.get_node("HurtBox") as HurtBox2DComponent
 		if deal_damage:

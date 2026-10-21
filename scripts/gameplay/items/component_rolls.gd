@@ -241,7 +241,9 @@ static func floor_drop(floor_number: int, rng: RandomNumberGenerator) -> Invento
 	var weights := floor_weights(floor_number)
 	var roll := rng.randi_range(1, 100)
 	var tier := 1 if roll <= weights[0] else (2 if roll <= weights[0] + weights[1] else 3)
-	var pool := ["baton", "pistol", "scattergun", "rail_cannon", "smart_fire", "explosive_magazine", "tactical_coprocessor", "optical_intruder", "kill_heat_sink", "heat_threshold_pulser", "armor"]
+	# Keep the former baton's pistol weight without routing a formal drop through
+	# create_issued_pistol(), which intentionally creates a bound, affixless item.
+	var pool := ["pistol", "pistol", "scattergun", "rail_cannon", "smart_fire", "explosive_magazine", "tactical_coprocessor", "optical_intruder", "kill_heat_sink", "heat_threshold_pulser", "armor"]
 	return create(pool[rng.randi_range(0, pool.size() - 1)], tier, rng)
 
 

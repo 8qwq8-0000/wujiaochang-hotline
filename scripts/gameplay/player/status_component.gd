@@ -106,6 +106,9 @@ func handle_hit(packet: DamagePacket) -> void:
 	var actor := get_parent() as Node2D
 	if actor == null:
 		return
+	var settings := get_node_or_null("/root/GameSettings")
+	if settings != null and not settings.are_elemental_reactions_enabled():
+		return
 	# Consume existing conductivity before applying this hit's new status tags.
 	var consumed_conductive := false
 	if packet.allow_status_reactions and packet.damage_type == &"electric" and has_status(CONDUCTIVE) and packet.electric_event.get("conductive_ids", {}).has(actor.get_instance_id()):

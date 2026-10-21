@@ -29,42 +29,22 @@ func run() -> void:
 		quit(1)
 		return
 	var hud := scene.get_node("CombatHUD")
-	check(hud.find_children("*", "TerminalPanel", true, false).size() >= 4, "main game uses the cyber terminal HUD panels")
-	check(hud.find_children("*", "SegmentMeter", true, false).size() >= 3, "main game uses live segmented instruments")
-	check(hud.find_children("CRTOverlay", "CRTOverlay", true, false).size() == 1, "main game applies one shared CRT overlay")
+	check(hud.find_children("*", "TerminalPanel", true, false).is_empty(), "combat removes the four large terminal panels")
+	check(hud.find_children("*", "SegmentMeter", true, false).size() == 2, "combat exposes only health and heat instruments")
+	check(hud.find_children("*", "HoloCommsPanel", true, false).size() == 1, "AI communications use one collapsible holographic panel")
+	check(hud.find_children("CRTOverlay", "CRTOverlay", true, false).is_empty(), "CRT treatment no longer covers the whole combat screen")
+	check(hud.get("_pause_button") != null and hud.get("_weapon_preview") != null, "minimal HUD includes pause and current-weapon affordances")
+	hud.set_hud_scale(1.5)
+	await process_frame
+	var viewport_rect := (hud.get("overlay") as Control).get_global_rect()
+	check(viewport_rect.encloses((hud.get("_pause_button") as Button).get_global_rect()), "150 percent pause control stays inside the viewport")
+	check(viewport_rect.encloses((hud.get("_weapon_preview") as TextureRect).get_global_rect()), "150 percent weapon preview stays inside the viewport")
+	hud.set_hud_scale(1.0)
 	var queue_rect := queue.get_global_rect()
 	check(queue_rect.end.y <= 360.0, "combat notices remain inside the 640 by 360 viewport")
-	check(queue_rect.size.x <= 190.0 and queue_rect.size.y <= 108.0, "combat notices use the compact non-obstructive layout")
-	var terminal_panels := hud.find_children("*", "TerminalPanel", true, false)
-	check(terminal_panels.all(func(panel: TerminalPanel) -> bool: return panel.size.x <= 175.0 and panel.panel_color.a <= 0.681), "combat panels stay compact and translucent")
+	check(not queue.visible and queue.get_visible_notices().is_empty(), "legacy notice queue stays non-rendering")
 
-	# New notices can arrive while paused, while their lifetime remains frozen.
-	root.get_node("CombatEvents").publish_notice(&"pause_a", "暂停前", Color.WHITE, CombatNotice.Priority.NORMAL, 0.0, 0.15)
-	paused = true
-	root.get_node("CombatEvents").publish_notice(&"pause_b", "暂停中", Color.WHITE, CombatNotice.Priority.HIGH, 0.0, 0.15)
-	await create_timer(0.25, true).timeout
-	check(queue.get_visible_notices().size() == 2, "pause freezes notice lifetime but accepts new inventory-time messages")
-	paused = false
-	await create_timer(0.3).timeout
-	check(queue.get_visible_notices().is_empty(), "notices resume expiry after pause closes")
-
-	# Walking emits nothing; an active mobility ability emits pooled body-only images.
-	player.set_physics_process(false)
-	player.unequip_mobility()
-	player._tick_afterimages(0.1)
-	check((vfx.get("_active_afterimages") as Array).is_empty(), "walking without a mobility kit emits no afterimage")
-	player.equip_mobility(load("res://resources/mobility/wheel.tres"))
-	check(player.mobility.activate_ability(player, Vector2.RIGHT), "wheel ability activates")
-	for _index in 12:
-		player._tick_afterimages(0.05)
-	var active := vfx.get("_active_afterimages") as Array
-	check(active.size() > 0 and active.size() <= vfx.afterimage_budget, "active mobility emits afterimages without exceeding the six-item pool")
-	player.unequip_mobility()
-	var count_after_switch := active.size()
-	player._tick_afterimages(0.2)
-	check((vfx.get("_active_afterimages") as Array).size() == count_after_switch, "switching to walking stops new emission without abruptly deleting existing images")
-	root.get_node("CombatEvents").clear_afterimages(player)
-	check((vfx.get("_active_afterimages") as Array).is_empty(), "death/restart/scene cleanup can clear all images for one source")
+	check((vfx.get("_active_numbers") as Array).is_empty(), "damage-number pool stays unused in the minimal presentation")
 
 	scene.queue_free()
 	await process_frame
