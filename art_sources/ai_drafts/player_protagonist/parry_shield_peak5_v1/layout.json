@@ -1,0 +1,128 @@
+[
+  {
+    "frame": 1,
+    "visibleBounds": [
+      185,
+      152,
+      233,
+      267
+    ],
+    "source": "generated",
+    "layoutOffset": [
+      -7,
+      -34
+    ]
+  },
+  {
+    "frame": 2,
+    "visibleBounds": [
+      166,
+      111,
+      252,
+      308
+    ],
+    "source": "generated",
+    "layoutOffset": [
+      -30,
+      -36
+    ]
+  },
+  {
+    "frame": 3,
+    "visibleBounds": [
+      125,
+      81,
+      294,
+      338
+    ],
+    "source": "generated",
+    "layoutOffset": [
+      -14,
+      -24
+    ]
+  },
+  {
+    "frame": 4,
+    "visibleBounds": [
+      104,
+      38,
+      314,
+      380
+    ],
+    "source": "generated",
+    "layoutOffset": [
+      -22,
+      -8
+    ]
+  },
+  {
+    "frame": 5,
+    "visibleBounds": [
+      102,
+      34,
+      317,
+      384
+    ],
+    "source": "/Users/yangjiayao/Desktop/wujiaochang-hotline/art_sources/ai_drafts/player_protagonist/parry_shield_v1/parry_shield_right_static_v1.png",
+    "layoutOffset": [
+      2,
+      21
+    ]
+  },
+  {
+    "frame": 6,
+    "visibleBounds": [
+      104,
+      38,
+      314,
+      381
+    ],
+    "source": "generated",
+    "layoutOffset": [
+      -19,
+      -8
+    ]
+  },
+  {
+    "frame": 7,
+    "visibleBounds": [
+      123,
+      77,
+      295,
+      340
+    ],
+    "source": "generated",
+    "layoutOffset": [
+      -26,
+      8
+    ]
+  },
+  {
+    "frame": 8,
+    "visibleBounds": [
+      176,
+      127,
+      243,
+      291
+    ],
+    "source": "generated",
+    "layoutOffset": [
+      -18,
+      1
+    ]
+  },
+  {
+    "frame": 9,
+    "visibleBounds": [
+      186,
+      156,
+      232,
+      262
+    ],
+    "source": "generated",
+    "layoutOffset": [
+      -6,
+      6
+    ]
+  }
+]

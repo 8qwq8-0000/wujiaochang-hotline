@@ -1,5 +1,7 @@
 # Tests
 
+盾兵屏障：`godot --headless --path . --script res://tests/integration/enemy_barrier_skill_check.gd`，覆盖施放动画、展开时机、正面及高速挡弹、背后受伤、到期恢复、冷却、硬直与死亡清理、四方向判定和 AI 触发。
+
 双战斗区域：`godot --headless --path . --script res://tests/integration/dual_area_check.gd`，覆盖真实通道碰撞、清场解锁、按进入激活第二区、全层目标累计、生命/热量/装备保留、各区增益失效、一次性补给和最终出口限制。
 
 射击输入与方向：`godot --headless --path . --script res://tests/integration/shooting_input_check.gd`，覆盖 HUD 点击透传、上下左右子弹方向与实际物理帧移动，防止向上子弹碰到发射者自身而消失。

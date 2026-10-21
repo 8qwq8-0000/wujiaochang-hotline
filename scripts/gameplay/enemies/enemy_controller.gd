@@ -50,6 +50,7 @@ var _returning_to_patrol := false
 var mandatory: bool = true
 var state: State = State.IDLE
 var _attack_cooldown_remaining: float = 0.0
+var barrier_skill: EnemyBarrierSkill
 var stationary_test_target := false
 var _stagger_remaining: float = 0.0
 var _target: Node2D
@@ -89,16 +90,15 @@ var _attack_precharged := false
 var _initial_precharge_consumed := false
 var _self_destruct_remaining := 0.0
 var _defeat_finalized := false
-var shield_charges := 0
-var _shield_hit_flash_remaining := 0.0
 var _optical_disruption_remaining := 0.0
 const ATTACK_WARNING := preload("res://assets/audio/sfx/enemy_ui/enemy_attack.wav")
 
 @onready var navigation_agent: NavigationAgent2D = $NavigationAgent2D
 @onready var health: HealthComponent = $HealthComponent
 @onready var hurt_box: HurtBox2DComponent = $HurtBox
-@onready var sprite: Sprite2D = $Sprite2D
+@onready var sprite: AnimatedSprite2D = $BodyVisual
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
+@onready var visuals: EnemySpriteAnimator = $EnemyVisuals
 
 
 func _ready() -> void:
@@ -117,6 +117,9 @@ func _ready() -> void:
 	# It is only a preference: path validation can still choose the other side.
 	_tactical_side = -1.0 if get_tree().get_nodes_in_group("enemies").size() % 2 == 0 else 1.0
 	apply_profile(profile)
+	barrier_skill = EnemyBarrierSkill.new()
+	add_child(barrier_skill)
+	barrier_skill.configure(self)
 	navigation_agent.velocity_computed.connect(_on_navigation_velocity_computed)
 	_patrol_anchor = global_position
 	_motion_sample_position = global_position
@@ -132,7 +135,6 @@ func apply_profile(value: EnemyProfile) -> void:
 	profile = value
 	if profile != null:
 		tactical_brain.configure(profile.decision_interval, _tactical_side)
-		shield_charges = 1 if profile.role == EnemyProfile.Role.HEAVY_ANCHOR else 0
 	if is_node_ready():
 		health.configure_max_health(profile.max_health)
 		_configure_sprite()
@@ -142,31 +144,7 @@ func apply_profile(value: EnemyProfile) -> void:
 func _configure_sprite() -> void:
 	if not is_instance_valid(sprite) or profile == null:
 		return
-	var key := "ranged" if profile.role == EnemyProfile.Role.RANGED_SIGHTLINE else "melee"
-	var texture := WorkshopArt.asset(key)
-	var size := texture.get_size()
-	var visual_scale := minf(38.0 / size.x, 38.0 / size.y)
-	sprite.texture = texture
-	sprite.scale = Vector2.ONE * visual_scale
-	# The source art is centered, while the actor origin stays at its feet.
-	sprite.position = Vector2(0.0, 10.0 - size.y * visual_scale * 0.5)
-	_sync_sprite_state()
-
-
-func _sync_sprite_state() -> void:
-	if not is_instance_valid(sprite):
-		return
-	sprite.flip_h = facing.x > 0.1
-	sprite.modulate = Color(1.7, 1.5, 1.2) if (
-		state == State.SELF_DESTRUCT and int(_self_destruct_remaining * 16.0) % 2 == 0
-	) else Color.WHITE
-
-
-func _process(delta: float) -> void:
-	_sync_sprite_state()
-	if _shield_hit_flash_remaining > 0.0:
-		_shield_hit_flash_remaining = maxf(_shield_hit_flash_remaining - delta, 0.0)
-		queue_redraw()
+	visuals.configure(self, sprite)
 
 
 func _physics_process(delta: float) -> void:
@@ -174,6 +152,9 @@ func _physics_process(delta: float) -> void:
 		return
 	if state == State.SELF_DESTRUCT:
 		_tick_self_destruct(delta)
+		return
+	if is_instance_valid(barrier_skill) and barrier_skill.tick(delta):
+		_stop_navigation_motion()
 		return
 	_tick_navigation_state(delta)
 	_optical_disruption_remaining = maxf(_optical_disruption_remaining - delta, 0.0)
@@ -241,6 +222,10 @@ func _physics_process(delta: float) -> void:
 		_windup_remaining = 0.0
 		_tick_patrol(delta)
 		queue_redraw()
+		return
+	if sees_target and is_instance_valid(barrier_skill) and barrier_skill.try_cast(_target):
+		_cancel_precharge()
+		_stop_navigation_motion()
 		return
 	_tick_precharge(delta, sees_target)
 	if state == State.WINDUP:
@@ -682,6 +667,7 @@ func perform_attack() -> void:
 	var direction := _attack_direction
 	if not is_instance_valid(_target):
 		return
+	visuals.play_impact(direction)
 	if profile.role == EnemyProfile.Role.RANGED_SIGHTLINE:
 		var projectile: CombatProjectile = PROJECTILE_SCENE.instantiate()
 		CombatProjectile.room_for_actor(self).add_child(projectile)
@@ -712,7 +698,10 @@ func apply_stagger(seconds: float) -> void:
 	if state in [State.DEAD, State.SELF_DESTRUCT]:
 		return
 	_cancel_precharge()
+	if is_instance_valid(barrier_skill):
+		barrier_skill.cancel()
 	state = State.STAGGERED
+	visuals.cancel_attack()
 	_windup_remaining = 0.0
 	_attack_cooldown_remaining = profile.attack_cooldown
 	_stagger_remaining = maxf(_stagger_remaining, seconds)
@@ -728,6 +717,8 @@ func apply_knockback(force: Vector2) -> void:
 func _on_died(packet: DamagePacket) -> void:
 	if state in [State.DEAD, State.SELF_DESTRUCT] or _defeat_finalized:
 		return
+	if is_instance_valid(barrier_skill):
+		barrier_skill.cancel()
 	death_motion_direction = velocity.normalized() if not velocity.is_zero_approx() else Vector2.ZERO
 	if packet != null:
 		if not packet.travel_direction.is_zero_approx():
@@ -803,16 +794,9 @@ func _draw() -> void:
 		draw_circle(Vector2(0, -22), 3.0, Color(1.0, 0.8, 0.2))
 	if _optical_disruption_remaining > 0.0 and state not in [State.DEAD, State.SELF_DESTRUCT]:
 		draw_arc(Vector2(0, -22), 7.0, 0.0, TAU, 16, Color(0.3, 0.95, 1.0, 0.9), 2.0)
-	var color := profile.body_color if profile != null else Color.RED
-	if state == State.SELF_DESTRUCT and int(_self_destruct_remaining * 16.0) % 2 == 0:
-		color = Color.WHITE
 	draw_set_transform(Vector2(0, 7), 0, Vector2(1, 0.35))
 	draw_circle(Vector2.ZERO, 11, Color(0, 0, 0, 0.32))
 	draw_set_transform(Vector2.ZERO)
-	draw_line(Vector2(0, 7), Vector2(0, 7) + facing * 13, Color(0.65, 0.9, 1, 0.45), 1)
-	if profile != null and profile.role == EnemyProfile.Role.HEAVY_ANCHOR:
-		draw_rect(Rect2(-8.0, -8.0, 16.0, 16.0), color.darkened(0.25), false, 3.0)
-		_draw_heavy_shield()
 
 	if state == State.WINDUP:
 		var progress := 1.0 - _windup_remaining / profile.attack_windup
@@ -1012,39 +996,11 @@ func _cancel_investigation() -> void:
 
 
 func _on_damaged(_amount: int, packet: DamagePacket) -> void:
+	visuals.flash_hit()
 	if state in [State.DEAD, State.SELF_DESTRUCT] or health.is_dead():
 		return
 	if is_instance_valid(packet.source) and _same_room(packet.source):
 		_alert_to(packet.source_position, false)
-
-
-func try_absorb_hit(_packet: DamagePacket) -> bool:
-	if shield_charges <= 0 or profile == null or profile.role != EnemyProfile.Role.HEAVY_ANCHOR:
-		return false
-	shield_charges -= 1
-	_shield_hit_flash_remaining = 0.16
-	var events := get_node_or_null("/root/CombatEvents")
-	if events != null:
-		events.request_effect(global_position, Color(0.35, 0.88, 1.0), 24.0, 0.16)
-	queue_redraw()
-	return true
-
-
-func _draw_heavy_shield() -> void:
-	if shield_charges <= 0 and _shield_hit_flash_remaining <= 0.0:
-		return
-	var points := PackedVector2Array()
-	for index in 6:
-		points.append(Vector2.RIGHT.rotated(PI / 6.0 + TAU * float(index) / 6.0) * 20.0)
-	points.append(points[0])
-	var alpha := 0.52 if shield_charges > 0 else clampf(_shield_hit_flash_remaining / 0.16, 0.0, 1.0)
-	var shield_color := Color(0.28, 0.82, 1.0, alpha)
-	if shield_charges > 0:
-		draw_polyline(points, shield_color, 1.5, true)
-	else:
-		for index in 6:
-			if index % 2 == 0:
-				draw_line(points[index], points[index + 1].lerp(points[index], 0.35), shield_color, 2.0)
 
 
 func _forget_target() -> void:

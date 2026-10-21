@@ -85,6 +85,10 @@ func _configure_guard_awareness() -> void:
 		marker.profile.hearing_range = 1000.0
 		marker.profile.ally_alert_range = 500.0
 		marker.profile.alert_memory_seconds = 10.0
+	# The opening is a scripted three-health guard wave, independent of the
+	# ordinary shield soldier's higher health. Support guards are configured below.
+	for marker in $EnemySpawnPoints.get_children():
+		marker.profile.max_health = 1
 
 
 func _configure_arena_camera() -> void:
