@@ -205,6 +205,11 @@ func test_persona_authorization_is_single_use_per_floor() -> void:
 	assert_false(manager.prepare_persona_rest(0))
 	assert_true(manager.prepare_persona_rest(1))
 	assert_true(manager.has_persona_authorization(1))
+	assert_true(manager.consume_persona_authorization(1))
+	assert_true(manager.prepare_persona_rest(2))
+	assert_true(manager.has_persona_authorization(2))
+	assert_false(manager.prepare_persona_rest(3))
+	assert_false(manager.consume_persona_rest_refill(3))
 	manager.free()
 
 

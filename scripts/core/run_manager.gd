@@ -1,5 +1,7 @@
 extends Node
 
+const NORMAL_FLOOR_COUNT := 3
+
 signal run_started(seed: int)
 signal scene_payload_changed(payload: Dictionary)
 signal mandatory_enemy_count_changed(remaining: int)
@@ -69,7 +71,7 @@ func get_player_state() -> Dictionary:
 
 
 func prepare_persona_rest(floor_value: int = floor_index) -> bool:
-	if not persistent_run or floor_value < 0 or floor_value > 3:
+	if not persistent_run or floor_value < 0 or floor_value >= NORMAL_FLOOR_COUNT:
 		return false
 	if persona_authorization_floor != floor_value:
 		persona_authorization_floor = floor_value
@@ -91,7 +93,7 @@ func consume_persona_authorization(floor_value: int = floor_index) -> bool:
 
 
 func consume_persona_rest_refill(floor_value: int = floor_index) -> bool:
-	if not persistent_run or floor_value < 0 or floor_value > 3 or persona_rest_refilled_floor == floor_value:
+	if not persistent_run or floor_value < 0 or floor_value >= NORMAL_FLOOR_COUNT or persona_rest_refilled_floor == floor_value:
 		return false
 	persona_rest_refilled_floor = floor_value
 	return true
@@ -117,7 +119,7 @@ func finish_victory(player: PlayerController) -> bool:
 	if (
 		run_finished
 		or not persistent_run
-		or floor_index < 4
+		or floor_index < NORMAL_FLOOR_COUNT
 		or mandatory_enemies_remaining > 0
 		or not is_instance_valid(player)
 		or player.health.is_dead()

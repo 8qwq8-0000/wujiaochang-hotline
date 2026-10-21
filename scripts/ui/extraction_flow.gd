@@ -185,7 +185,7 @@ func continue_floor() -> void:
 	if _settled or not is_instance_valid(_player) or _player.health.is_dead():
 		return
 	var snapshot: Dictionary = _player.export_run_state()
-	var destination := BOSS_PATH if run.floor_index >= 3 else FLOOR_PATH
+	var destination := BOSS_PATH if run.floor_index >= run.NORMAL_FLOOR_COUNT - 1 else FLOOR_PATH
 	if not flow.request_scene(destination, {"player_state": snapshot}):
 		_details.text = "下一层加载请求失败，请重试或返回搜刮。"
 		return
