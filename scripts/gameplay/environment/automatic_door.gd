@@ -98,7 +98,9 @@ func _knock_down(direction: Vector2, source: Node2D) -> void:
 
 
 func _spawn_break_fragments(direction: Vector2) -> void:
-	var source := RefinedEnvironmentArt.art_texture("bulkhead_closed.png")
+	var horizontal := absf(sin(global_rotation)) > 0.5
+	var source := CombatArchitecture.door_texture(horizontal)
+	var art_rect := CombatArchitecture.door_rect(horizontal, opening_width)
 	var source_size := source.get_size()
 	if source_size.x <= 0.0 or source_size.y <= 0.0:
 		return
@@ -106,30 +108,44 @@ func _spawn_break_fragments(direction: Vector2) -> void:
 	var run_seed := int(run.run_seed) if run != null else 1
 	var rng := RandomNumberGenerator.new()
 	rng.seed = run_seed ^ hash(str(get_path()))
-	var fragment_count := rng.randi_range(4, 6)
+	var fragment_count := rng.randi_range(10, 14)
 	var cursor := 0.0
 	for index in fragment_count:
-		var remaining := source_size.x - cursor
+		var source_length := source_size.x if horizontal else source_size.y
+		var remaining := source_length - cursor
 		var pieces_left := fragment_count - index
-		var width := remaining if pieces_left == 1 else clampf(remaining / float(pieces_left) * rng.randf_range(0.72, 1.28), source_size.x * 0.08, remaining - float(pieces_left - 1))
-		var region := Rect2(cursor, 0.0, width, source_size.y)
+		var width := remaining if pieces_left == 1 else clampf(remaining / float(pieces_left) * rng.randf_range(0.72, 1.28), source_length * 0.025, remaining - float(pieces_left - 1))
+		var region := Rect2(cursor, 0.0, width, source_size.y) if horizontal else Rect2(0.0, cursor, source_size.x, width)
 		var fragment_texture := AtlasTexture.new()
 		fragment_texture.atlas = source
 		fragment_texture.region = region
 		var fragment := Sprite2D.new()
 		fragment.name = "DoorFragment%d" % index
 		fragment.texture = fragment_texture
-		fragment.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-		fragment.scale = Vector2(40.0 / source_size.x, 72.0 / source_size.y)
-		fragment.position = Vector2((cursor + width * 0.5) / source_size.x * 40.0 - 20.0, 0.0)
+		fragment.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		fragment.scale = art_rect.size / source_size
+		fragment.rotation = -global_rotation
+		var progress := (cursor + width * 0.5) / source_length
+		var world_offset := Vector2(art_rect.position.x + progress * art_rect.size.x, art_rect.get_center().y) if horizontal else Vector2(art_rect.get_center().x, art_rect.position.y + progress * art_rect.size.y)
+		fragment.position = world_offset.rotated(-global_rotation)
 		fragment.z_index = 4
 		add_child(fragment)
-		var burst := direction * rng.randf_range(8.0, 18.0) + Vector2.from_angle(rng.randf_range(0.0, TAU)) * rng.randf_range(2.0, 8.0)
-		var tween := fragment.create_tween().set_parallel(true)
-		tween.tween_property(fragment, "position", fragment.position + burst, 0.12)
-		tween.tween_property(fragment, "rotation", rng.randf_range(-0.22, 0.22), 0.12)
-		tween.tween_property(fragment, "modulate:a", 0.0, 0.12)
-		tween.chain().tween_callback(fragment.queue_free)
+		var burst := (direction * rng.randf_range(14.0, 34.0) + Vector2.from_angle(rng.randf_range(0.0, TAU)) * rng.randf_range(4.0, 14.0)).rotated(-global_rotation)
+		var landing := fragment.position + burst
+		var air_point := fragment.position + burst * 0.6 + Vector2(0, -12).rotated(-global_rotation)
+		var tween := fragment.create_tween()
+		tween.set_parallel(true)
+		tween.tween_property(fragment, "position", air_point, 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.tween_property(fragment, "rotation", -global_rotation + rng.randf_range(-0.8, 0.8), 0.32)
+		tween.tween_property(fragment, "scale", fragment.scale * Vector2(0.55, 0.32), 0.32)
+		tween.chain().tween_property(fragment, "position", landing, 0.20).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		tween.tween_callback(func() -> void:
+			# Settled chips belong to the ground and persist until room unload.
+			fragment.z_as_relative = false
+			fragment.z_index = -1
+			fragment.modulate = Color(0.62, 0.68, 0.73)
+			fragment.set_meta("ground_debris", true)
+		)
 		cursor += width
 	for index in 5:
 		var spark := Polygon2D.new()
@@ -137,7 +153,7 @@ func _spawn_break_fragments(direction: Vector2) -> void:
 		spark.color = Color("e6bc73") if index < 3 else Color(0.45, 0.48, 0.5, 0.7)
 		spark.z_index = 5
 		add_child(spark)
-		var spark_target := direction * rng.randf_range(8.0, 20.0) + Vector2.from_angle(rng.randf_range(0.0, TAU)) * rng.randf_range(3.0, 10.0)
+		var spark_target := (direction * rng.randf_range(8.0, 20.0) + Vector2.from_angle(rng.randf_range(0.0, TAU)) * rng.randf_range(3.0, 10.0)).rotated(-global_rotation)
 		var spark_tween := spark.create_tween().set_parallel(true)
 		spark_tween.tween_property(spark, "position", spark_target, 0.12)
 		spark_tween.tween_property(spark, "modulate:a", 0.0, 0.12)

@@ -68,6 +68,9 @@ func try_cast(target: Node2D) -> bool:
 	barrier.rotation = direction.angle() - PI / 2.0
 	flight_visual.rotation = -barrier.rotation
 	flight_visual.scale = Vector2(0.25, 0.25)
+	# The upward source frames share the downward arc/trail orientation.
+	# Flip only the artwork so the convex edge leads and the trail follows.
+	flight_visual.flip_v = heading == "up"
 	flight_visual.play("flight_" + heading)
 	actor.sprite.visible = false
 	visual.visible = true

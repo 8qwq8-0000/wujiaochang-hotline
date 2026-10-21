@@ -84,14 +84,29 @@ func run_checks() -> void:
 	await physics_frame
 	box.receive_hit(DamagePacket.new())
 	await process_frame
-	await process_frame
-	check(arcs.size() == 3,"one box event has a shared three-hop budget")
+	check(box.state == PowerBox.State.READY and box.discharge_count == 0 and arcs.is_empty(), "charging station never starts an electric event when attacked")
+	check(player.health.current_health == 3 and targets[0].get_node("HealthComponent").current_health == 10, "immune station does not hurt nearby actors")
+	# Electric weapons still share a chain budget independently of stations.
+	var event := ElectricReaction.begin_event(box)
+	for actor in EnvironmentArea.visible_actors(box, 120):
+		var packet := DamagePacket.new()
+		packet.base_damage = 1
+		packet.source = box
+		packet.source_faction = CombatFaction.Id.ENVIRONMENT
+		packet.damage_type = &"electric"
+		packet.status_tags = ["conductive"]
+		packet.electric_event = event
+		packet.is_area_damage = true
+		packet.blockable = false
+		packet.source_position = box.global_position
+		actor.get_node("HurtBox").receive_hit(packet)
+	check(arcs.size() == 3,"independent electric event has a shared three-hop budget")
 	for index in 4:
 		check(targets[index].get_node("HealthComponent").current_health == 9,"overlapping blast and arcs damage each target once")
 	check(targets[4].get_node("HealthComponent").current_health == 10,"global hop budget stops farther chain")
 	check(fresh.get_node("HealthComponent").current_health == 9 and fresh.get_node("StatusComponent").has_status(&"conductive"),"newly conductive target cannot trigger in same discharge")
 	check(player.health.current_health == 2 and player.statuses.has_status(&"conductive"),"actual floor-level player receives scoped environment shock")
-	check(isolated.get_node("HealthComponent").current_health == 10 and isolated.get_node("StatusComponent").has_status(&"conductive"),"same floor different area is isolated despite nearby actor world position")
+	check(isolated.get_node("HealthComponent").current_health == 10 and isolated.get_node("StatusComponent").has_status(&"conductive"),"same floor different area is isolated")
 	check(not targets[0].get_node("StatusComponent").has_status(&"conductive"),"consumed origin status is not re-added by same packet")
 	player.hurt_box.clear_invulnerability()
 	player.health.set_current_health(3)
@@ -129,7 +144,7 @@ func run_checks() -> void:
 			elif child is AutomaticDoor:
 				doors += 1
 		check(boxes == 1,"actual generation has exactly one power box per area")
-		check(bombs == 1 and doors == 0,"actual level has one bomb and no doors per area")
+		check(bombs == 3 and not generated_area.find_children("*", "AutomaticDoor", true, false).is_empty(),"actual level has three bombs and interior doors per area")
 	actual.queue_free()
 	await process_frame
 	print("Environment electric checks: ",checks,"; failures: ",failures)

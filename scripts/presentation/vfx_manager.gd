@@ -44,7 +44,6 @@ func _ready() -> void:
 		events.afterimages_clear_requested.connect(clear_afterimages)
 		events.effect_requested.connect(spawn_flash)
 		events.electric_arc_requested.connect(_spawn_arc)
-		events.fuel_explosion_requested.connect(func(point: Vector2, radius: float) -> void: spawn_flash(point, Color("ff9446"), radius, 0.3))
 		events.environment_discharge_requested.connect(func(point: Vector2, radius: float) -> void: spawn_flash(point, Color("69d6ec"), radius, 0.3))
 		events.entity_defeated.connect(_on_entity_defeated)
 	var scene_flow := get_node_or_null("../SceneFlow")

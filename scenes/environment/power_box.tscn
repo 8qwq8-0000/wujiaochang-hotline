@@ -1,10 +1,11 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 [ext_resource type="Script" path="res://scripts/gameplay/environment/power_box.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/presentation/refined_environment_art.gd" id="refined_art"]
+[ext_resource type="Script" path="res://scripts/presentation/charging_sigil.gd" id="sigil"]
 [sub_resource type="RectangleShape2D" id="Shape"]
 size = Vector2(28,40)
 [node name="PowerBox" type="Area2D"]
-collision_layer = 48
+collision_layer = 32
 collision_mask = 0
 monitoring = false
 script = ExtResource("1")
@@ -15,3 +16,6 @@ shape = SubResource("Shape")
 script = ExtResource("refined_art")
 kind = "power"
 draw_size = Vector2(30, 42)
+
+[node name="ActiveSigil" type="Node2D" parent="."]
+script = ExtResource("sigil")
