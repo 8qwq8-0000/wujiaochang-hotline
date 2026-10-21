@@ -47,7 +47,10 @@ func run() -> void:
 	current_scene = room
 	enemy = ENEMY.instantiate() as EnemyController
 	enemy.profile = preload("res://resources/enemies/heavy_anchor.tres").duplicate()
+	enemy.profile.barrier_initial_cooldown = 0.0
 	enemy.profile.self_destruct_enabled = false
+	enemy.profile.barrier_speed = 0.0
+	enemy.profile.barrier_duration = 3.0
 	enemy.position = Vector2(200, 200)
 	room.add_child(enemy)
 	enemy.set_physics_process(false)
@@ -65,7 +68,7 @@ func run() -> void:
 		seen[skill.visual.frame] = true
 	check(seen.size() >= 3, "cast plays through distinct authored frames")
 	skill.tick(0.4)
-	check(skill.deployed and skill.visual.frame >= 4, "physics deployment matches shield expansion pose")
+	check(skill.deployed and not skill.visual.visible and skill.flight_visual.visible and enemy.sprite.visible, "deployment shows detached shield and clean idle body")
 	await wait_physics(2)
 	await capture("deployed")
 	var hp := enemy.health.current_health
@@ -109,6 +112,8 @@ func run() -> void:
 	for heading in [Vector2.UP, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT]:
 		var directional := ENEMY.instantiate() as EnemyController
 		directional.profile = preload("res://resources/enemies/heavy_anchor.tres").duplicate()
+		directional.profile.barrier_initial_cooldown = 0.0
+		directional.profile.barrier_speed = 0.0
 		directional.position = Vector2(400, 200)
 		room.add_child(directional)
 		directional.set_physics_process(false)
@@ -124,6 +129,7 @@ func run() -> void:
 	# Also exercise real AI acquisition rather than only the component API.
 	var auto_enemy := ENEMY.instantiate() as EnemyController
 	auto_enemy.profile = preload("res://resources/enemies/heavy_anchor.tres").duplicate()
+	auto_enemy.profile.barrier_initial_cooldown = 0.0
 	auto_enemy.position = Vector2(400, 200)
 	auto_enemy.initial_facing = Vector2.DOWN
 	room.add_child(auto_enemy)
