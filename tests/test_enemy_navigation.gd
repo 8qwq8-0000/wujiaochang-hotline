@@ -19,9 +19,9 @@ func test_enemy_scene_enables_bounded_soft_avoidance() -> void:
 func test_enemy_scene_owns_sprite_and_animation_player() -> void:
 	var enemy := track(load("res://scenes/actors/enemies/enemy.tscn").instantiate()) as EnemyController
 	(Engine.get_main_loop() as SceneTree).root.add_child(enemy)
-	var sprite := enemy.get_node("Sprite2D") as Sprite2D
+	var sprite := enemy.get_node("BodyVisual") as AnimatedSprite2D
 	assert_true(sprite != null)
-	assert_true(sprite.texture != null)
+	assert_true(sprite.sprite_frames != null)
 	assert_true((enemy.get_node("AnimationPlayer") as AnimationPlayer) != null)
 
 

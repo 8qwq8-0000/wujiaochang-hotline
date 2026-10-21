@@ -21,17 +21,17 @@ func run() -> void:
 		enemy.profile = load("res://resources/enemies/" + profile_id + ".tres")
 		root.add_child(enemy)
 		enemy.set_physics_process(false)
-		var body := enemy.get_node("Sprite2D") as Sprite2D
-		var initial_rect: Rect2 = body.transform * body.get_rect()
-		check(is_equal_approx(initial_rect.get_center().x, 0.0) and is_equal_approx(initial_rect.end.y, 10.0), profile_id + " body is centered on its foot anchor")
+		var body := enemy.get_node("BodyVisual") as AnimatedSprite2D
+		var initial_rect: Rect2 = body.transform * Rect2(body.offset, Vector2(EnemySpriteAnimator.CELL_SIZE, EnemySpriteAnimator.CELL_SIZE))
+		check(body.position.is_equal_approx(Vector2(0, 10)) and body.offset == -EnemySpriteAnimator.FOOT_ANCHOR, profile_id + " body uses the common boot anchor")
 		for frame in range(8):
 			enemy.position += Vector2(3, 2)
 			enemy.facing = Vector2.LEFT if frame % 2 == 0 else Vector2.RIGHT
 			await process_frame
 			# process_frame fires before node _process; wait for the visual update.
 			await process_frame
-			var world_rect: Rect2 = body.global_transform * body.get_rect()
-			check(body.flip_h == (frame % 2 == 1), profile_id + " follows horizontal facing")
+			var world_rect: Rect2 = body.global_transform * Rect2(body.offset, Vector2(EnemySpriteAnimator.CELL_SIZE, EnemySpriteAnimator.CELL_SIZE))
+			check(not body.flip_h and enemy.visuals.current_animation.ends_with("left" if frame % 2 == 0 else "right"), profile_id + " selects an authored direction without swapping weapon hands")
 			check(world_rect.is_equal_approx(Rect2(initial_rect.position + enemy.global_position, initial_rect.size)), profile_id + " body follows movement without a flip offset")
 		enemy.queue_free()
 		await process_frame

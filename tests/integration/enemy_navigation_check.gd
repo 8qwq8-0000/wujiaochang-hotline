@@ -4,6 +4,7 @@ const ENEMY_SCENE := preload("res://scenes/actors/enemies/enemy.tscn")
 const MELEE_PROFILE := preload("res://resources/enemies/melee_pressure.tres")
 
 var failures := 0
+var blocking_rects: Array[Rect2] = []
 
 
 func _initialize() -> void:
@@ -17,13 +18,11 @@ func check(value: bool, message: String) -> void:
 
 
 func _inside_blocking_geometry(position: Vector2) -> bool:
-	if position.x < 19.0 or position.x > 621.0 or position.y < 19.0 or position.y > 341.0:
+	if position.x < 19.0 or position.x > CombatRoom.ROOM_SIZE.x - 19.0 or position.y < 19.0 or position.y > CombatRoom.ROOM_SIZE.y - 19.0:
 		return true
 	# Check the authored collider interiors. Touching the navigation polygon's
 	# baked 12 px clearance is not equivalent to passing through a wall.
-	var cover_a := Rect2(Vector2(254, 71), Vector2(32, 94))
-	var cover_b := Rect2(Vector2(379, 195), Vector2(32, 94))
-	return cover_a.has_point(position) or cover_b.has_point(position)
+	return blocking_rects.any(func(rect: Rect2) -> bool: return rect.has_point(position))
 
 
 func run() -> void:
@@ -32,6 +31,12 @@ func run() -> void:
 	current_scene = room
 	await process_frame
 	await physics_frame
+	# CombatRoom expands/repositions the authored shell at runtime. Query the
+	# real collider transforms instead of testing obsolete 640x360 coordinates.
+	for path in ["CoverA/CollisionShape2D", "CoverB/CollisionShape2D"]:
+		var collider := room.get_node(path) as CollisionShape2D
+		var shape := collider.shape as RectangleShape2D
+		blocking_rects.append(collider.global_transform * Rect2(-shape.size * 0.5, shape.size))
 	for spawned in get_nodes_in_group("enemies"):
 		spawned.queue_free()
 	await process_frame
