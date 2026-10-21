@@ -56,10 +56,11 @@ func run() -> void:
 	var remaining := 3
 	for enemy: EnemyController in arena.get_node("Enemies").get_children():
 		check(enemy.profile.full_room_awareness and enemy.profile.awareness_range == 1000 and enemy.profile.vision_angle_degrees == 360, "opening guard has full arena awareness")
+		check(enemy.health.max_health == (3 if enemy.profile.role == EnemyProfile.Role.HEAVY_ANCHOR else 1), "opening shields retain three health while other guards have one")
 	var total_opening_health := 0
 	for enemy: EnemyController in arena.get_node("Enemies").get_children():
 		total_opening_health += enemy.health.max_health
-	check(total_opening_health == 3, "opening guards have exactly three health in total")
+	check(total_opening_health == 5, "opening melee and ranged have one health, shield has three")
 	for enemy: EnemyController in arena.get_node("Enemies").get_children():
 		if enemy.profile.self_destruct_enabled:
 			heavy = enemy
@@ -94,7 +95,8 @@ func run() -> void:
 	for enemy: EnemyController in arena.get_node("SupportEnemies").get_children():
 		check(enemy.profile.full_room_awareness and enemy.profile.awareness_range == 1000 and enemy.profile.vision_angle_degrees == 360, "second phase guard has full arena awareness")
 		check(enemy.is_physics_processing() and not enemy.health.is_dead(), "support fights alongside boss")
-		check(enemy.health.max_health == 3 and enemy.health.current_health == 3, "each second phase guard has three health")
+		var expected_health := 3 if enemy.profile.role == EnemyProfile.Role.HEAVY_ANCHOR else 1
+		check(enemy.health.max_health == expected_health and enemy.health.current_health == expected_health, "both waves use three-health shields and one-health other guards")
 		if enemy.profile.self_destruct_enabled:
 			support_heavy = enemy
 		else:
@@ -111,10 +113,9 @@ func run() -> void:
 	var roles := {0: 0, 1: 0, 2: 0}
 	for enemy in supports:
 		roles[int(enemy.profile.role)] += 1
-		enemy.health.apply_damage(1, hit(1))
-		check(arena.boss.health.current_health == 6 - lost, "partial minion damage does not change boss health")
-		enemy.health.apply_damage(1, hit(1))
-		check(arena.boss.health.current_health == 6 - lost, "second nonfatal hit does not change boss health")
+		for nonfatal in enemy.health.max_health - 1:
+			enemy.health.apply_damage(1, hit(1))
+			check(arena.boss.health.current_health == 6 - lost, "nonfatal shield damage never reduces boss health")
 		enemy.health.apply_damage(1, hit(1))
 		check(enemy.health.apply_damage(99, hit()) == 0, "dead minion cannot take repeat overkill damage")
 		if enemy.profile.self_destruct_enabled:

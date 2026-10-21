@@ -65,16 +65,13 @@ func _configure_guard_awareness() -> void:
 	# Private profiles keep the arena override out of ordinary rooms and saves.
 	for marker in $EnemySpawnPoints.get_children() + $SupportSpawnPoints.get_children():
 		marker.profile = marker.profile.duplicate()
+		marker.profile.max_health = 3 if marker.profile.role == EnemyProfile.Role.HEAVY_ANCHOR else 1
 		marker.profile.full_room_awareness = true
 		marker.profile.awareness_range = 1000.0
 		marker.profile.vision_angle_degrees = 360.0
 		marker.profile.hearing_range = 1000.0
 		marker.profile.ally_alert_range = 500.0
 		marker.profile.alert_memory_seconds = 10.0
-	# The opening is a scripted three-health guard wave, independent of the
-	# ordinary shield soldier's higher health. Support guards are configured below.
-	for marker in $EnemySpawnPoints.get_children():
-		marker.profile.max_health = 1
 
 
 func _configure_arena_camera() -> void:
@@ -191,7 +188,6 @@ func _spawn_support_guards() -> void:
 	for index in markers.size():
 		markers[index].position = candidates[index]
 		markers[index].profile = markers[index].profile.duplicate()
-		markers[index].profile.max_health = 3
 	support_spawner.spawn_all()
 
 
