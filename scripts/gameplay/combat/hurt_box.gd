@@ -45,6 +45,11 @@ func receive_hit(packet: DamagePacket) -> DamageResult:
 			duplicate_hit.target = actor
 			return duplicate_hit
 		packet.electric_event.hit_ids[actor.get_instance_id()] = true
+	# Player-side AI personas can prepare a guard before the ordinary resolver
+	# evaluates this packet. The hook is deliberately actor-owned so enemy and
+	# environmental hurt boxes keep their existing behavior.
+	if actor.has_method("try_persona_guard"):
+		actor.try_persona_guard(packet)
 	var result := DamageResolver.resolve(packet, actor, faction, health, guard)
 	if result.final_damage + result.absorbed_damage == 0 and packet.damage_type == &"electric":
 		packet.electric_event.hit_ids.erase(actor.get_instance_id())
@@ -70,7 +75,7 @@ func clear_invulnerability() -> void:
 func is_invulnerable() -> bool:
 	if _invulnerability_remaining > 0.0:
 		return true
-	# Keep dodge protection separate from post-hit/insurance protection. Ending
-	# a charge must never erase another source's invulnerability window.
-	var mobility := actor.get_node_or_null("MobilityController") as MobilityController if is_instance_valid(actor) else null
-	return mobility != null and mobility.provides_invulnerability()
+	# Keep dash protection separate from post-hit/insurance protection. Ending a
+	# dash must never erase another source's invulnerability window.
+	var dash := actor.get_node_or_null("DashController") as DashController if is_instance_valid(actor) else null
+	return dash != null and dash.provides_invulnerability()

@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="CyberwareData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/player/cyberware_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+module_id = &"kill_heat_sink"
+display_name = "击破散热器"
+description = "亲手击破敌人时移除30%最大热量，每0.5秒最多触发一次。"
+kill_cooling_ratio = 0.3
+trigger_cooldown = 0.5

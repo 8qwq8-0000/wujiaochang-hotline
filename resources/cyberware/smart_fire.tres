@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="CyberwareData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/player/cyberware_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+module_id = &"smart_fire"
+display_name = "智能火控"
+description = "实体弹丸生成时在准星扇区内锁定一次目标。"
+targeting_half_angle_degrees = 25.0
+homing_turn_degrees_per_second = 360.0

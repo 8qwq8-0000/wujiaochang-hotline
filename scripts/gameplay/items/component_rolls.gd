@@ -23,13 +23,13 @@ const AFFIXES := {
 }
 
 static func ordinary(item: InventoryItem) -> bool:
-	return item != null and not bool(item.get_property("bound", false)) and not bool(item.get_property("debug_only", false)) and str(item.get_property("slot", "")) in ["weapon", "mobility", "defense"]
+	return item != null and not bool(item.get_property("bound", false)) and not bool(item.get_property("debug_only", false)) and str(item.get_property("slot", "")) in ["weapon", "defense"]
 
 static func synthesizable(item: InventoryItem) -> bool:
-	return ordinary(item)
+	return ordinary(item) or _is_cyberware(item)
 
 static func synthesis_quality(item: InventoryItem) -> int:
-	return quality(item)
+	return 0 if _is_cyberware(item) else quality(item)
 
 # Retired melee weapons become plain issued pistols wherever they were stored.
 # Keep instance identity so slot references and duplicate checks remain valid.
@@ -37,6 +37,8 @@ static func migrate_snapshot(value: Variant) -> Variant:
 	if value is Array:
 		var items := []
 		for item in value:
+			if item is Dictionary and item.get("prototype_id", "") == "wheel":
+				continue
 			items.append(migrate_snapshot(item))
 		return items
 	if not value is Dictionary:
@@ -44,6 +46,9 @@ static func migrate_snapshot(value: Variant) -> Variant:
 	var data := {}
 	for key in value:
 		data[key] = migrate_snapshot(value[key])
+	if data.has("mobility") and data.has("primary") and data.has("secondary"):
+		data["cyberware"] = data.get("cyberware", {})
+		data.erase("mobility")
 	if data.get("prototype_id", "") in ["baton", "initial_baton"] and data.get("protoset", "") == "res://resources/items/components.json":
 		data.prototype_id = "pistol"
 		var properties: Dictionary = create_issued_pistol().serialize().get("properties", {})
@@ -85,6 +90,10 @@ static func affixes(item: InventoryItem) -> Dictionary:
 	return value if value is Dictionary else {}
 
 static func ensure(item: InventoryItem) -> void:
+	if _is_cyberware(item):
+		if not item.has_property("modules"):
+			item.set_property("modules", cyberware_modules(item))
+		return
 	if not ordinary(item):
 		return
 	if not item.has_property("quality"):
@@ -137,14 +146,21 @@ static func create_issued_pistol() -> InventoryItem:
 	return create_without_affixes("pistol", 1, RandomNumberGenerator.new())
 
 static func title(item: InventoryItem) -> String:
+	if _is_cyberware(item):
+		return cyberware_title(cyberware_modules(item))
 	return "%s · %s" % [QUALITIES[quality(item)], item.get_title()] if ordinary(item) else item.get_title()
 
 static func describe(item: InventoryItem) -> String:
 	var lines: Array[String] = [title(item)]
+	if _is_cyberware(item):
+		lines.append(cyberware_indicator(cyberware_modules(item)))
+		for module_id in cyberware_modules(item):
+			var data := load(cyberware_resource_path(module_id)) as CyberwareData
+			if data != null:
+				lines.append("• %s：%s" % [data.display_name, data.description])
+		return "\n".join(lines)
 	if item.get_property("slot", "") == "defense":
 		lines.append("就绪时吸收1点伤害 · 恢复 %.0f 秒" % ARMOR_RECOVERY_SECONDS[quality(item) - 1])
-	if item.get_prototype().get_prototype_id() == "wheel":
-		lines.append("冲撞 %d 点伤害 · 冷却 %.1f 秒" % [WHEEL_RAM_DAMAGE[quality(item) - 1], WHEEL_RAM_COOLDOWNS[quality(item) - 1]])
 	for key in affixes(item):
 		if AFFIXES.has(key):
 			lines.append("%s +%s%s" % [AFFIXES[key][0], affixes(item)[key], "毫秒" if key == "guard" else "%"])
@@ -163,20 +179,39 @@ static func weapon(item: InventoryItem) -> WeaponComponentData:
 	var data: WeaponComponentData = load(str(item.get_property("effect"))).duplicate(true)
 	return data
 
-static func mobility_mode(item: InventoryItem, equipped: Array) -> MobilityMode:
-	var data: MobilityMode = (load(str(item.get_property("effect"))) if item != null else MobilityController.WALK_MODE).duplicate(true)
-	data.max_speed *= 1.0 + bonus(equipped, "mobility") / 100.0
-	if data is WheelMobilityMode:
-		data.ram_damage = WHEEL_RAM_DAMAGE[quality(item) - 1]
-		data.ability_cooldown = WHEEL_RAM_COOLDOWNS[quality(item) - 1]
-	return data
-
 static func compatible(a: InventoryItem, b: InventoryItem) -> bool:
-	return synthesizable(a) and synthesizable(b) and a != b and a.get_property("instance_id", "") != b.get_property("instance_id", "") and a.get_property("slot") == b.get_property("slot") and synthesis_quality(a) == synthesis_quality(b)
+	if not synthesizable(a) or not synthesizable(b) or a == b or a.get_property("instance_id", "") == b.get_property("instance_id", "") or a.get_property("slot") != b.get_property("slot"):
+		return false
+	if _is_cyberware(a):
+		var a_modules := cyberware_modules(a)
+		var b_modules := cyberware_modules(b)
+		var union := a_modules.duplicate()
+		for module_id in b_modules:
+			if module_id not in union:
+				union.append(module_id)
+		if union.size() > 4:
+			return false
+		for module_id in b_modules:
+			if module_id not in a_modules:
+				return true
+		for module_id in a_modules:
+			if module_id not in b_modules:
+				return true
+		return false
+	return synthesis_quality(a) == synthesis_quality(b)
 
 static func fuse(a: InventoryItem, b: InventoryItem, rng: RandomNumberGenerator) -> InventoryItem:
 	if not compatible(a, b):
 		return null
+	if _is_cyberware(a):
+		var result := create_without_affixes(a.get_prototype().get_prototype_id(), 1, rng)
+		var merged := cyberware_modules(a)
+		for module_id in cyberware_modules(b):
+			if module_id not in merged:
+				merged.append(module_id)
+		merged.sort()
+		result.set_property("modules", merged)
+		return result
 	var tier := mini(synthesis_quality(a) + 1, 3)
 	var result := create(a.get_prototype().get_prototype_id(), tier, rng)
 	var affixes_a := _migrated_affixes(affixes(a))
@@ -206,5 +241,61 @@ static func floor_drop(floor_number: int, rng: RandomNumberGenerator) -> Invento
 	var weights := floor_weights(floor_number)
 	var roll := rng.randi_range(1, 100)
 	var tier := 1 if roll <= weights[0] else (2 if roll <= weights[0] + weights[1] else 3)
-	var pool := ["baton", "pistol", "scattergun", "rail_cannon", "wheel", "armor"]
+	var pool := ["baton", "pistol", "scattergun", "rail_cannon", "smart_fire", "explosive_magazine", "tactical_coprocessor", "optical_intruder", "kill_heat_sink", "heat_threshold_pulser", "armor"]
 	return create(pool[rng.randi_range(0, pool.size() - 1)], tier, rng)
+
+
+static func cyberware_modules(item: InventoryItem) -> PackedStringArray:
+	var result := PackedStringArray()
+	if not _is_cyberware(item):
+		return result
+	var stored: Variant = item.get_property("modules", PackedStringArray())
+	if stored is PackedStringArray:
+		result = stored.duplicate()
+	elif stored is Array:
+		for module_id in stored:
+			result.append(str(module_id))
+	if result.is_empty():
+		var data := load(str(item.get_property("effect", ""))) as CyberwareData
+		if data != null and not data.module_id.is_empty():
+			result.append(data.module_id)
+	result.sort()
+	return result
+
+
+static func cyberware_resource_path(module_id: StringName) -> String:
+	return {
+		&"smart_fire": "res://resources/cyberware/smart_fire.tres",
+		&"explosive_magazine": "res://resources/cyberware/explosive_magazine.tres",
+		&"tactical_coprocessor": "res://resources/cyberware/tactical_coprocessor.tres",
+		&"optical_intruder": "res://resources/cyberware/optical_intruder.tres",
+		&"kill_heat_sink": "res://resources/cyberware/kill_heat_sink.tres",
+		&"heat_threshold_pulser": "res://resources/cyberware/heat_threshold_pulser.tres",
+	}.get(module_id, "")
+
+
+static func cyberware_title(modules: PackedStringArray) -> String:
+	if modules.is_empty():
+		return "无义体"
+	if modules.size() > 1:
+		return "复合义体 [%d/4]" % modules.size()
+	var data := load(cyberware_resource_path(StringName(modules[0]))) as CyberwareData
+	return data.display_name if data != null else "义体"
+
+
+static func cyberware_indicator(modules: PackedStringArray) -> String:
+	var entries: Array[String] = []
+	for entry in [
+		["智", "smart_fire"],
+		["爆", "explosive_magazine"],
+		["协", "tactical_coprocessor"],
+		["侵", "optical_intruder"],
+		["散", "kill_heat_sink"],
+		["震", "heat_threshold_pulser"],
+	]:
+		entries.append("[%s%s]" % [entry[0], "●" if entry[1] in modules else "○"])
+	return " ".join(entries)
+
+
+static func _is_cyberware(item: InventoryItem) -> bool:
+	return item != null and str(item.get_property("slot", "")) == "cyberware"

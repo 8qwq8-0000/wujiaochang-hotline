@@ -6,6 +6,7 @@ const PANEL := preload("res://scripts/ui/warehouse_panel.gd")
 var chest: Inventory
 var panel: CanvasLayer
 var upgrade_panel: CanvasLayer
+var archive_panel: WarehouseArchivePanel
 var last_synthesis_result: InventoryItem
 var _mutating := false
 var _departing := false
@@ -28,6 +29,9 @@ func _ready() -> void:
 	upgrade_panel.set_script(preload("res://scripts/ui/synthesis_panel.gd"))
 	upgrade_panel.room = self
 	add_child(upgrade_panel)
+	archive_panel = WarehouseArchivePanel.new()
+	archive_panel.room = self
+	add_child(archive_panel)
 	var profile: Dictionary = store.get_profile()
 	_mutating = true
 	for entry in profile.chest:
@@ -220,7 +224,7 @@ func _synthesis_feedback(message: String) -> void:
 
 func synthesize(subject: InventoryItem, material: InventoryItem) -> bool:
 	if _mutating or _departing or not owns_synthesis_item(subject) or not owns_synthesis_item(material) or not ComponentRolls.compatible(subject, material):
-		_synthesis_feedback("请选择两件同槽位、同品质的组件")
+		_synthesis_feedback("请选择两件可兼容的同槽组件；义体必须包含不同模块")
 		return false
 	var result := ComponentRolls.fuse(subject, material, RandomNumberGenerator.new())
 	var inv: ComponentInventory = player.inventory
@@ -238,7 +242,7 @@ func synthesize(subject: InventoryItem, material: InventoryItem) -> bool:
 		if item != subject and item != material:
 			bag.append(item.serialize())
 	state.backpack["items"] = bag
-	var slots := {"weapon": "primary", "weapon_secondary": "secondary", "mobility": "mobility", "defense": "defense", "blackbox": "blackbox"}
+	var slots := {"weapon": "primary", "weapon_secondary": "secondary", "cyberware": "cyberware", "defense": "defense", "blackbox": "blackbox"}
 	for slot_key in slots.values():
 		var entry: Dictionary = state[slot_key]
 		if entry.has("item") and entry.item.get("properties", {}).get("instance_id", {}).get("value", "") in ids:

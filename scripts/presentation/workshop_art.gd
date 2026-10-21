@@ -13,6 +13,7 @@ const REGIONS := {
 	"ranged": Rect2(332,229,529,845),
 }
 static var _cache: Dictionary = {}
+const VISUAL_SEAM_OVERLAP := 2.0
 var layout: CombatLayoutData
 var floor_pass := false
 var left_open := false
@@ -103,7 +104,9 @@ func _draw_perimeter() -> void:
 
 func _beam(rect: Rect2) -> void:
 	var vertical := rect.size.y > rect.size.x
-	var length := rect.size.y if vertical else rect.size.x
+	# Bleed two pixels past each collider endpoint so adjacent wall and door
+	# pieces cannot expose a background seam under linear texture filtering.
+	var length := (rect.size.y if vertical else rect.size.x) + VISUAL_SEAM_OVERLAP * 2.0
 	var width := maxf(10,minf(rect.size.x,rect.size.y))
 	draw_set_transform(rect.get_center(),PI/2 if vertical else 0)
 	var texture := asset("wall")

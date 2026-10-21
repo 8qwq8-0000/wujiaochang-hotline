@@ -5,15 +5,18 @@
 [resource]
 script = ExtResource("1")
 id = &"heavy_anchor"
-display_name = "重型锚点"
+display_name = "重装盾兵"
 role = 2
-max_health = 1
+max_health = 3
 move_speed = 46.0
 awareness_range = 1000.0
 attack_range = 34.0
 attack_cooldown = 1.82
 attack_knockback = 220.0
 body_color = Color(0.68, 0.12, 0.2, 1)
+barrier_enabled = true
+barrier_duration = 3.0
+barrier_cooldown = 6.0
 self_destruct_enabled = true
 self_destruct_delay = 0.45
 self_destruct_damage = 1

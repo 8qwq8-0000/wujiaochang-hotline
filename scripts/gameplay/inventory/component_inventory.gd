@@ -11,7 +11,7 @@ var backpack: Inventory
 # Equipped items live in independent GLoot slots, outside the six-cell bag.
 var weapon_slot: ItemSlot
 var secondary_weapon_slot: ItemSlot
-var mobility_slot: ItemSlot
+var cyberware_slot: ItemSlot
 var defense_slot: ItemSlot
 var blackbox_slot: ItemSlot
 var panel: CanvasLayer
@@ -45,7 +45,7 @@ func _ready() -> void:
 	add_child(backpack)
 	weapon_slot = _create_slot("WeaponSlot")
 	secondary_weapon_slot = _create_slot("SecondaryWeaponSlot")
-	mobility_slot = _create_slot("MobilitySlot")
+	cyberware_slot = _create_slot("CyberwareSlot")
 	defense_slot = _create_slot("DefenseSlot")
 	blackbox_slot = _create_slot("BlackboxSlot")
 	panel = PANEL_SCENE.instantiate()
@@ -107,20 +107,7 @@ func _on_player_died(_packet: DamagePacket) -> void:
 	set_open(false)
 
 func can_change_equipment() -> bool:
-	if player.health.is_dead():
-		return false
-	if allow_trial_equipment_changes:
-		return true
-	var area := EnvironmentArea.for_actor(player)
-	if area is CombatRoom and area.sequence_managed:
-		return area.cleared
-	var run := get_node_or_null("/root/RunManager")
-	if run != null and run.mandatory_enemies_remaining > 0:
-		return false
-	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if enemy is EnemyController and enemy.state != EnemyController.State.DEAD:
-			return false
-	return true
+	return not player.health.is_dead() and not player.health.resolving_damage
 
 func _assign_instance_id(item: InventoryItem) -> void:
 	_serial += 1
@@ -231,8 +218,8 @@ func _slot_for(slot_name: String) -> Object:
 			return weapon_slot
 		"weapon_secondary":
 			return secondary_weapon_slot
-		"mobility":
-			return mobility_slot
+		"cyberware":
+			return cyberware_slot
 		"defense":
 			return defense_slot
 		"blackbox":
@@ -253,7 +240,7 @@ func item_location(item: InventoryItem) -> String:
 		return ""
 	if backpack.has_item(item):
 		return "backpack"
-	for location in ["weapon", "weapon_secondary", "mobility", "defense", "blackbox"]:
+	for location in ["weapon", "weapon_secondary", "cyberware", "defense", "blackbox"]:
 		if item_at(location) == item:
 			return location
 	return ""
@@ -263,7 +250,7 @@ func _fits_location(item: InventoryItem, location: String) -> bool:
 	if item == null or location == "backpack":
 		return true
 	if location == "blackbox":
-		return not bool(item.get_property("bound", false))
+		return not bool(item.get_property("bound", false)) and item.get_property("slot", "") != "cyberware"
 	var kind := str(item.get_property("slot", ""))
 	return kind == ("weapon" if location in ["weapon", "weapon_secondary"] else location)
 
@@ -279,7 +266,7 @@ func can_drop_item(item: InventoryItem, destination: String, index: int = -1) ->
 	var other := item_at(destination, index)
 	if other == item or (source == destination and source != "backpack"):
 		return false
-	if source in ["weapon", "weapon_secondary", "mobility", "defense"] or destination in ["weapon", "weapon_secondary", "mobility", "defense"]:
+	if source in ["weapon", "weapon_secondary", "cyberware", "defense"] or destination in ["weapon", "weapon_secondary", "cyberware", "defense"]:
 		if not can_change_equipment():
 			return false
 	elif "blackbox" in [source, destination] and not can_change_blackbox():
@@ -295,10 +282,10 @@ func drop_item(item: InventoryItem, destination: String, index: int = -1) -> boo
 	var source := item_location(item)
 	var source_index := backpack.get_item_index(item) if source == "backpack" else -1
 	var active_weapon := player.weapons.current_index
-	var ability_cooldown := player.mobility.ability_cooldown_remaining
-	var ability_active: float = player.mobility.get("_ability_active_remaining")
-	var ram_direction: Vector2 = player.mobility.get("_ram_direction")
-	var ram_hits: Dictionary = player.mobility.get("_ram_hits").duplicate()
+	var dash_cooldown := player.dash.cooldown_remaining
+	var dash_active: float = player.dash.get("_active_remaining")
+	var dash_direction: Vector2 = player.dash.get("_direction")
+	var dash_hits: Dictionary = player.dash.get("_hits").duplicate()
 	var other := item_at(destination, index)
 	var moved := false
 	if source == "backpack" and destination == "backpack" and other != null:
@@ -319,7 +306,7 @@ func drop_item(item: InventoryItem, destination: String, index: int = -1) -> boo
 	if not moved:
 		return false
 	# Reordering bag items never changes weapon heat, cooldown or active weapon.
-	if source in ["weapon", "weapon_secondary", "mobility", "defense"] or destination in ["weapon", "weapon_secondary", "mobility", "defense"]:
+	if source in ["weapon", "weapon_secondary", "cyberware", "defense"] or destination in ["weapon", "weapon_secondary", "cyberware", "defense"]:
 		_apply_equipment()
 	elif "blackbox" in [source, destination]:
 		sync_insurance()
@@ -336,10 +323,10 @@ func drop_item(item: InventoryItem, destination: String, index: int = -1) -> boo
 			_slot_for(source).equip(item)
 		player.weapons.current_index = active_weapon
 		_apply_equipment()
-		player.mobility.ability_cooldown_remaining = ability_cooldown
-		player.mobility.set("_ability_active_remaining", ability_active)
-		player.mobility.set("_ram_direction", ram_direction)
-		player.mobility.set("_ram_hits", ram_hits)
+		player.dash.cooldown_remaining = dash_cooldown
+		player.dash.set("_active_remaining", dash_active)
+		player.dash.set("_direction", dash_direction)
+		player.dash.set("_hits", dash_hits)
 		changed.emit()
 		return false
 	changed.emit()
@@ -354,9 +341,10 @@ func _apply_equipment() -> void:
 	var secondary := secondary_weapon_slot.get_item()
 	player.get_node("WeaponController").set_carried_weapons(
 		ComponentRolls.weapon(weapon), ComponentRolls.weapon(secondary))
-	var mode := mobility_slot.get_item()
-	var equipped := [weapon, secondary, mode, defense_slot.get_item()]
-	player.get_node("MobilityController").set_equipped_mode(ComponentRolls.mobility_mode(mode, equipped))
+	var cyberware_item := cyberware_slot.get_item()
+	var equipped := [weapon, secondary, defense_slot.get_item()]
+	player.get_node("CyberwareController").set_equipped_item(cyberware_item)
+	player.get_node("DashController").equipment_speed_bonus = ComponentRolls.bonus(equipped, "mobility") / 100.0
 	player.get_node("HeatComponent").equipment_capacity_bonus = ComponentRolls.bonus(equipped, "capacity") / 100.0
 	player.get_node("HeatComponent").equipment_cooling_bonus = ComponentRolls.bonus(equipped, "cooling") / 100.0
 	player.get_node("GuardComponent").equipment_window_bonus = ComponentRolls.bonus(equipped, "guard") / 1000.0
@@ -401,6 +389,9 @@ func put_in_blackbox(index: int) -> bool:
 	if not can_change_blackbox() or index < 0 or index >= items.size():
 		return false
 	var item := items[index]
+	if item.get_property("slot", "") == "cyberware":
+		_notify("义体属于局内构筑，不能放入黑匣", &"full")
+		return false
 	if bool(item.get_property("bound", false)):
 		_notify("绑定物品不能放入黑匣", &"full")
 		return false
@@ -460,10 +451,10 @@ func prepare_for_departure() -> void:
 
 
 func move_to_storage(item: InventoryItem, storage: Inventory) -> bool:
-	if item == null or bool(item.get_property("bound", false)):
+	if item == null or bool(item.get_property("bound", false)) or item.get_property("slot", "") == "cyberware":
 		return false
 	var owned := backpack.has_item(item)
-	for slot in [weapon_slot, secondary_weapon_slot, mobility_slot, defense_slot, blackbox_slot]:
+	for slot in [weapon_slot, secondary_weapon_slot, cyberware_slot, defense_slot, blackbox_slot]:
 		owned = owned or slot.get_item() == item
 	if not owned or not storage.add_item(item):
 		return false
@@ -500,7 +491,7 @@ func export_run_state() -> Dictionary:
 		"backpack": backpack.serialize(),
 		"primary": weapon_slot.serialize(),
 		"secondary": secondary_weapon_slot.serialize(),
-		"mobility": mobility_slot.serialize(),
+		"cyberware": cyberware_slot.serialize(),
 		"defense": defense_slot.serialize(),
 		"blackbox": blackbox_slot.serialize(),
 		"active_weapon": player.weapons.current_index,
@@ -512,7 +503,7 @@ func get_extraction_items() -> Array[Dictionary]:
 	# Copy each instance, including properties/quality added by future item systems.
 	var result: Array[Dictionary] = []
 	var seen: Dictionary = {}
-	var locations := {"主武器": weapon_slot, "副武器": secondary_weapon_slot, "机动装备": mobility_slot, "防御装备": defense_slot, "黑匣": blackbox_slot}
+	var locations := {"主武器": weapon_slot, "副武器": secondary_weapon_slot, "防御装备": defense_slot, "黑匣": blackbox_slot}
 	for location in locations:
 		var item: InventoryItem = locations[location].get_item()
 		if item != null:
@@ -523,6 +514,8 @@ func get_extraction_items() -> Array[Dictionary]:
 
 
 func _append_extraction_item(result: Array[Dictionary], seen: Dictionary, item: InventoryItem, location: String) -> void:
+	if item.get_property("slot", "") == "cyberware":
+		return
 	var id := str(item.get_property("instance_id", str(item.get_instance_id())))
 	if seen.has(id):
 		return
@@ -531,22 +524,29 @@ func _append_extraction_item(result: Array[Dictionary], seen: Dictionary, item: 
 
 
 func import_run_state(state: Dictionary) -> void:
+	var serialized := JSON.stringify(state)
+	var removed_legacy_mobility := (
+		(state.has("mobility") and not (state.get("mobility", {}) as Dictionary).is_empty())
+		or serialized.contains("\"prototype_id\":\"wheel\"")
+	)
 	state = ComponentRolls.migrate_snapshot(state)
 	# RunManager may still hold snapshots from an older build.
 	backpack.deserialize(state["backpack"])
 	weapon_slot.deserialize(state["primary"])
 	secondary_weapon_slot.deserialize(state["secondary"])
-	mobility_slot.deserialize(state["mobility"])
+	cyberware_slot.deserialize(state.get("cyberware", {}))
 	defense_slot.deserialize(state.get("defense", {}))
 	if state.has("blackbox"):
 		blackbox_slot.deserialize(state["blackbox"])
 	_has_picked_up_weapon = bool(state.get("has_picked_up_weapon", false))
 	player.weapons.current_index = clampi(int(state.get("active_weapon", 0)), 0, 1)
-	for item in backpack.get_items() + [weapon_slot.get_item(), secondary_weapon_slot.get_item(), mobility_slot.get_item(), defense_slot.get_item(), blackbox_slot.get_item()]:
+	for item in backpack.get_items() + [weapon_slot.get_item(), secondary_weapon_slot.get_item(), cyberware_slot.get_item(), defense_slot.get_item(), blackbox_slot.get_item()]:
 		if item != null:
 			ComponentRolls.ensure(item)
 	_apply_equipment()
 	changed.emit()
+	if removed_legacy_mobility:
+		_notify("旧版机动装备已移除；固有突进现已默认启用", &"equip")
 
 
 func export_recovery_inventory() -> Dictionary:
@@ -554,7 +554,7 @@ func export_recovery_inventory() -> Dictionary:
 	snapshot.backpack.erase("items")
 	snapshot.primary = {}
 	snapshot.secondary = {}
-	snapshot.mobility = {}
+	snapshot.cyberware = {}
 	snapshot.defense = {}
 	snapshot.active_weapon = 0
 	snapshot.has_picked_up_weapon = false

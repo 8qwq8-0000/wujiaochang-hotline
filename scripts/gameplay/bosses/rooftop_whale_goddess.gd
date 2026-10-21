@@ -96,6 +96,12 @@ func play_echo_probe() -> void:
 	echo_probe_audio.play()
 
 
+func apply_optical_disruption(last_observed_position: Vector2, duration: float) -> void:
+	var arena := get_parent()
+	if arena != null and arena.has_method("apply_optical_disruption"):
+		arena.apply_optical_disruption(last_observed_position, duration)
+
+
 func get_halo_segments_remaining() -> int:
 	return halo_segments_remaining
 

@@ -6,6 +6,9 @@
 | 2026-10-13 | yuyu-yuuuu | 实现 R 键重开当前战斗，死亡后可用 | scripts/bootstrap_main.gd、scripts/gameplay/player_controller.gd、project.godot、tests/integration/restart_room_check.gd、tests/README.md | 战斗中/死亡后/清场后连续三次重开通过；10 项原有规则测试通过；尚需人工试玩 | feature/restart-room，尚未提交；/tmp/wujiaochang-restart-test.log |
 | 2026-10-19 | 本任务维护者（待团队认领） | 按用户反馈完成双区域装备循环、主菜单、互通房型和开阔车间；炸药桶优先布置在敌人密集处并做种子随机 | scripts/gameplay/rooms/、scripts/gameplay/inventory/、scripts/gameplay/mobility/、scripts/ui/、resources/rooms/、对应场景和测试 | 两区 40、房型 128、炸药桶 170、门窗 48 项及连续三轮流程通过；尚需另一成员实际运行审核 | codex/status-electric；4f6eda6、86e4c6e；docs/technical/开阔车间与炸药桶布置.md |
 | 2026-10-19 | 本任务维护者（待团队认领） | 通过内置 imagegen 将用户确认的开阔工业车间效果图转换为独立地板、墙帽、机器、箱体、控制台和两类机器人素材；沿用共享门、终端、炸药箱和电梯素材 | assets/art/environment/workshop/、assets/art/environment/refined/、scripts/presentation/workshop_art.gd、scripts/presentation/refined_environment_art.gd、相关场景 | 已提交干净快照导入、48 项单元、33 项新美术和 19 项共享美术检查通过；图形模式实机截图复核；没有验证 .NET/Windows 导出 | ab43f03、f745437；docs/art/装卸车间美术接入.md（含来源与提示词摘要） |
+| 2026-10-20 | 本任务维护者（待团队认领） | 检索并整理《赛博朋克 2077》2.x 义体系统，提炼为本项目组件、词条、协议与构筑设计参考 | docs/research/赛博朋克2077义体系统设计参考.md、docs/AI_USAGE.md | 已核对官方 2.0、2.1 与 2.31 新闻记录，并以两份公开数据库交叉整理；未复制代码或媒体素材，候选效果尚未进入实现范围 | 本地文档，尚未提交 |
+| 2026-10-20 | 本任务维护者（待团队认领） | 按 v1.5 文档完成固有突进迁移与智能火控、爆裂弹仓、战术协处理器、光学入侵器四种义体 | player/dash/cyberware、弹丸、敌人/Boss、背包/掉落/敲合/HUD、专项测试与实施说明 | 单元 62/62；固有突进 20/20；无敌 13/13；义体 23/23；Godot 无头编辑器完成资源扫描。运行结束仍有既有插件 user:// 与资源释放警告 | 本地实现，尚未提交 |
+| 2026-10-20 | 本任务维护者（待团队认领） | 读取全项目设定并通过逐项盘问，将铁人叛乱后的机器人宗教、算力兼并暗线与三种商业人格饮料整合为 v2 共识 | docs/design/五角场热线_开发流程策划案.md、docs/design/portable-ai-personality-spec-v2.md、docs/design/personality-drinks-design-v2.md、docs/design/赛博朋克UI视觉基线.md；同时归档人格头像、饮料图标与台词表 | 已人工确认人格来源、四次授权、三级二选一天赋、软接管、隐藏关系、三级语义泄漏与无属性遗产记录；只更新设计与素材归档，现有三协议代码尚未迁移 | 本地文档，尚未提交 |
 
 ## 2026-10-18 — Rooftop server chapel BOSS room
 
@@ -99,3 +102,47 @@
 - Restored the old editor/Git formatting and ignore rules, Windows environment-check script and current GPT art implementation note. Updated the existing wrist-weapon note instead of restoring the obsolete duplicate document. The local maximize-window preference remains outside the commit as before. Windows/PowerShell and .NET execution are not validated on this macOS session.
 
 - Pre-push validation: laser beam 26/26, loot/equipment 11/11, synthesis NPC 40/40, point-blank shooting 73/73 and unit checks 62/62 passed. git diff --check passed. Known shared hinged-door art regression and existing exit resource warnings remain as recorded above.
+
+## 2026-10-20 — First approved new cyberware: kill heat sink
+
+- The user approved an iterative one-at-a-time design and implementation loop. Added 击破散热器: a player-attributed enemy kill removes 30% of effective maximum weapon heat, can immediately leave overheat through the existing recovery threshold, and is limited to one trigger per 0.5 seconds. Environment and enemy-attributed defeats are excluded through the normal damage-resolution source.
+- Added cyan return-link/flash feedback, a combat notice and heat-meter flash. The module participates in ordinary drops, run-local equipment, serialization and irreversible compound fusion. The previously approved compound cap is now enforced at four distinct modules; a fifth-module fusion is rejected.
+- Validation: unit checks 63/63, cyberware integration 29/29, synthesis NPC 40/40 and enemy death-drop 23/23. The synthesis/death-drop fixtures were migrated from retired wheel materials and weapon-only quality assumptions to current armor/cyberware contracts. Existing ObjectDB/resource-use exit warnings remain.
+
+## 2026-10-20 — Second approved new cyberware: heat threshold pulser
+
+- The user rejected the proposed status inversion layer and approved 热阈震荡器 instead. Entering overheat now emits a 64-pixel, zero-damage pulse that staggers ordinary enemies for 0.8 seconds. Bosses are excluded, heat and overheat duration are unchanged, and an eight-second controller-owned cooldown survives unequip/re-equip attempts.
+- Added two procedural orange-red pulse rings, a spatial shock cue reusing the existing guard-impact sound, a combat notice, ordinary drop/catalog/resource integration and compound-module presentation. Validation: unit checks 63/63, cyberware integration 34/34 and enemy death-drop 23/23. Existing headless user-directory, ObjectDB and resource-use exit warnings remain.
+
+## 2026-10-21 — AI personality state-core migration
+
+- Continued the approved persona-drink design by replacing the three-protocol state model with 深渊忍者／传奇宗师／摇滚奇侠 identities. Each persona now keeps its own level, three-tier talent build, hidden relationship stage and one-time level-three semantic leak while sharing the existing per-floor takeover charge.
+- Added state format version 2 plus explicit migration for legacy `assault / defense / mobility` IDs and their talent choices. Player-facing code now exposes persona/drink terminology while retaining compatibility wrappers during the transition; low-pressure operator lines use the fused persona voices.
+- Validation: unit checks 65/65, including persona persistence, switch preservation, one-time semantic leaks and legacy snapshot migration. `git diff --check` passed. The existing warehouse integration fixture currently fails in unrelated backpack/chest setup before reaching its persona-state assertions, so no warehouse logic was changed in this slice.
+
+## 2026-10-21 — Persona rest and authorization flow
+
+- Added the mandatory first-through-fourth-floor persona rest flow for persistent warehouse deployments. Each floor grants one physical-DRM drink authorization, blocks departure from the rest panel until it is consumed, refills the shared takeover charge once, and then allows free talent selection for the active persona.
+- The full-screen terminal UI uses the three approved 64 px drink icons, distinct non-color silhouettes, persona names, combat summaries, current levels and next drink outcomes. Fresh runs no longer preinstall the transitional master persona; sandbox/non-persistent combat remains unaffected. Level-three semantic leaks are visible inside the rest panel as well as through the operator communication bus.
+- Validation: unit checks 66/66 and dedicated cross-floor rest integration 19/19. A rendered 1280×720 preview was visually inspected for card, icon, text and talent-column fit. Existing headless user-directory, ObjectDB and resource-use exit warnings remain.
+
+## 2026-10-21 — Persona combat runtime prototype
+
+- Continued the user-approved three-persona design by adding a player-owned combat runtime rather than distributing persona conditionals across every weapon, projectile and enemy.
+- Reused the existing global damage-resolution stream for hit, kill and guard sampling. Added only two narrow integration hooks: pre-resolution persona guard preparation and a forced weapon attack path for successful AI takeover shots.
+- Implemented visible execution marks, attack-pattern analysis, stage feedback, cancellable soft takeovers, shared-charge emergency actions and compact HUD state. Relationship sampling, codex persistence, legacy-drink records and predictive trajectory rendering remain explicitly out of scope for this pass.
+- Validation: fresh editor parse, unit suite, and `tests/integration/persona_combat_check.gd`; the headless environment still reports its pre-existing `user://`, Dialogic/save-system and exit-time resource warnings.
+
+## 2026-10-21 — Hidden persona rapport and master prediction follow-up
+
+- Added persisted, deliberately non-UI relationship progress to the existing v2 persona snapshot. Combat recognition events are persona-specific, while stage changes surface only through fused-voice wording; AI-performed master guards do not count as player validation.
+- Added the Open Model battlefield cue for analyzed live enemies. It stays as a low-detail dashed trajectory and becomes stronger during enemy windup, avoiding an exact countdown or a second timing HUD.
+- Validation: editor class scan, unit suite 66/66, and the persona combat integration covering persistent hidden progress, repeated-pattern analysis, prediction-source retention, three manual validations, proxy guard and successful emergency fire.
+
+## 2026-10-21 — Permanent persona codex and legacy drinks
+
+- Finished the approved run boundary: extraction and death harvest discovered personas and level-three semantic leaks into the permanent warehouse codex, then reset all persona levels, talents, rapport, semantic state and run metrics for the next deployment. Existing equipment recovery rules are unchanged.
+- Continuing after the fourth cleared floor now loads the production rooftop Boss. Only a persistent run that defeats the Boss can atomically mint one stat-free legacy drink; extraction, death, repeated settlement and the warehouse Boss-test shortcut cannot mint one.
+- Added the warehouse archive terminal for read-only persona discoveries, anomaly transcripts and legacy run records. Records include used persona levels, tier-three talents, marked-kill chain, manual perfect guards, rock feedback/attack rhythm, clear time and leaks.
+- Updated the broad warehouse/extraction fixtures from the retired `wheel`/mobility assumptions to current armor plus mandatory persona rest. Their cross-scene run also exposed and fixed one stale Deep Ninja mark reference after room cleanup by validating the object before narrowing its type.
+- Validation: unit suite 66/66; persona archive persistence 23/23; production floor-four-to-rooftop victory and archive display 14/14; warehouse 57/57; full extraction reports zero failures; persona combat reports zero failures. Editor parse and `git diff --check` pass. Headless exit-time ObjectDB/resource-use warnings remain.

@@ -1,0 +1,119 @@
+{
+  "generator": "built-in image_gen",
+  "splitter": "FrameRonin skill frameronin.py process",
+  "direction": "right",
+  "frames": 9,
+  "columns": 3,
+  "rows": 3,
+  "frameSize": [
+    418,
+    418
+  ],
+  "requestedFps": 15,
+  "gifFrames": 9,
+  "gifDurationMs": 540,
+  "loopRecommended": false,
+  "animation": [
+    "startup",
+    "unfold",
+    "form",
+    "hold",
+    "parry_flash",
+    "settle",
+    "break",
+    "dissolve",
+    "motes"
+  ],
+  "audit": [
+    {
+      "file": "frame-001.png",
+      "visibleAlphaBounds": [
+        189,
+        186,
+        247,
+        307
+      ],
+      "transparentPixels": 168111
+    },
+    {
+      "file": "frame-002.png",
+      "visibleAlphaBounds": [
+        151,
+        134,
+        299,
+        361
+      ],
+      "transparentPixels": 148370
+    },
+    {
+      "file": "frame-003.png",
+      "visibleAlphaBounds": [
+        116,
+        98,
+        322,
+        374
+      ],
+      "transparentPixels": 135697
+    },
+    {
+      "file": "frame-004.png",
+      "visibleAlphaBounds": [
+        126,
+        79,
+        341,
+        368
+      ],
+      "transparentPixels": 129565
+    },
+    {
+      "file": "frame-005.png",
+      "visibleAlphaBounds": [
+        109,
+        84,
+        388,
+        369
+      ],
+      "transparentPixels": 114012
+    },
+    {
+      "file": "frame-006.png",
+      "visibleAlphaBounds": [
+        114,
+        79,
+        326,
+        369
+      ],
+      "transparentPixels": 130870
+    },
+    {
+      "file": "frame-007.png",
+      "visibleAlphaBounds": [
+        132,
+        57,
+        353,
+        332
+      ],
+      "transparentPixels": 131693
+    },
+    {
+      "file": "frame-008.png",
+      "visibleAlphaBounds": [
+        157,
+        77,
+        330,
+        316
+      ],
+      "transparentPixels": 143694
+    },
+    {
+      "file": "frame-009.png",
+      "visibleAlphaBounds": [
+        171,
+        157,
+        258,
+        258
+      ],
+      "transparentPixels": 168837
+    }
+  ]
+}

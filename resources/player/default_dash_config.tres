@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="DashConfigData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/player/dash_config_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+walk_speed = 125.0
+acceleration = 1250.0
+braking = 1650.0
+dash_speed = 420.0
+dash_duration = 0.2
+dash_cooldown = 1.2
+invulnerability_seconds = 0.15
+collision_radius = 14.0
+collision_damage = 2
+collision_stagger_seconds = 0.65

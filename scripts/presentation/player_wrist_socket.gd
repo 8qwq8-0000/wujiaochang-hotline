@@ -8,8 +8,11 @@ extends Node2D
 const FRAME_SIZE := Vector2(128.0, 256.0)
 const WRIST_PIXELS := {
 	&"idle": [
-		Vector2(18, 169), Vector2(26, 160), Vector2(34, 150),
-		Vector2(40, 143), Vector2(34, 151), Vector2(25, 165),
+		Vector2(18, 169), Vector2(25, 165),
+	],
+	&"idle_gesture": [
+		Vector2(26, 160), Vector2(34, 150), Vector2(40, 143),
+		Vector2(34, 151), Vector2(25, 165),
 	],
 	&"walk_down": [
 		Vector2(19, 165), Vector2(20, 164), Vector2(20, 164),
@@ -65,7 +68,7 @@ func get_source_wrist(animation: StringName, frame: int) -> Vector2:
 
 
 func _animation_direction(animation: StringName) -> StringName:
-	if animation == &"idle":
+	if animation == &"idle" or animation == &"idle_gesture":
 		return &"left"
 	var text := String(animation)
 	for direction in [&"down", &"up", &"left", &"right"]:

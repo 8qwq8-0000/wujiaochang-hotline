@@ -8,7 +8,7 @@ var _message: Label
 var _buttons: Array[Button] = []
 var _weapon: Button
 var _secondary: Button
-var _mobility: Button
+var _cyberware: Button
 var _defense: Button
 var _discard_menu: PopupMenu
 var _discard_target: InventoryItem
@@ -56,14 +56,14 @@ func _ready() -> void:
 	column.add_child(equipment)
 	_weapon = _make_slot(equipment, "weapon")
 	_secondary = _make_slot(equipment, "weapon_secondary")
-	_mobility = _make_slot(equipment, "mobility")
+	_cyberware = _make_slot(equipment, "cyberware")
 	_defense = _make_slot(equipment, "defense")
 	_blackbox = _make_slot(equipment, "blackbox")
 	# Click shortcuts remain available; dragging explicitly chooses the target slot.
 	_weapon.pressed.connect(func() -> void: inventory.unequip("weapon"))
 	_secondary.pressed.connect(func() -> void: inventory.unequip("weapon_secondary"))
 	_defense.pressed.connect(func() -> void: inventory.unequip("defense"))
-	_mobility.pressed.connect(func() -> void: inventory.unequip("mobility"))
+	_cyberware.pressed.connect(func() -> void: inventory.unequip("cyberware"))
 	_blackbox.pressed.connect(func() -> void: inventory.take_from_blackbox())
 	var separator := HSeparator.new()
 	column.add_child(separator)
@@ -124,10 +124,10 @@ func set_open(value: bool) -> void:
 	_discard_menu.hide()
 	_discard_target = null
 	if value:
-		_message.text = "拖动物品到主 / 副武器、机动、防御槽或黑匣；拖回背包取出。右键背包物品可丢到地上。"
+		_message.text = "拖动物品到主 / 副武器、义体、防御槽或黑匣；义体不能放入黑匣。右键背包物品可丢到地上。"
 		refresh()
 	else:
-		for button in _buttons + [_weapon, _secondary, _mobility, _defense, _blackbox]:
+		for button in _buttons + [_weapon, _secondary, _cyberware, _defense, _blackbox]:
 			button.release_focus()
 
 func _process(_delta: float) -> void:
@@ -146,7 +146,7 @@ func refresh() -> void:
 		_buttons[index].icon = item.get_texture() if item != null else null
 		_buttons[index].tooltip_text = (ComponentRolls.describe(item) + "\n" if item != null else "") + "拖到装备槽或黑匣，也可拖到其它背包物品上交换位置；右键可丢到地上" if item != null else "把槽内物品拖回背包"
 		# Empty cells stay enabled so Godot can deliver drops to them.
-	for entry in [{"button": _weapon, "location": "weapon", "title": "主武器"}, {"button": _secondary, "location": "weapon_secondary", "title": "副武器"}, {"button": _mobility, "location": "mobility", "title": "机动槽"}, {"button": _defense, "location": "defense", "title": "防御槽"}, {"button": _blackbox, "location": "blackbox", "title": "黑匣"}]:
+	for entry in [{"button": _weapon, "location": "weapon", "title": "主武器"}, {"button": _secondary, "location": "weapon_secondary", "title": "副武器"}, {"button": _cyberware, "location": "cyberware", "title": "义体槽"}, {"button": _defense, "location": "defense", "title": "防御槽"}, {"button": _blackbox, "location": "blackbox", "title": "黑匣"}]:
 		var item := inventory.item_at(entry.location)
 		var name := ComponentRolls.title(item).replace("（绑定）", "") if item != null else "空位 · 拖入"
 		if entry.location == "blackbox" and item != null:

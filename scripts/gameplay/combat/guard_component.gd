@@ -23,6 +23,7 @@ enum State {
 var state: State = State.IDLE
 var guard_direction: Vector2 = Vector2.RIGHT
 var _time_remaining: float = 0.0
+var _state_duration: float = 0.0
 var recovery_multiplier := 1.0
 var equipment_window_bonus := 0.0
 
@@ -50,6 +51,12 @@ func can_attack() -> bool:
 
 func is_guard_active() -> bool:
 	return state == State.PERFECT or state == State.NORMAL
+
+
+func get_state_progress() -> float:
+	if _state_duration <= 0.0:
+		return 1.0
+	return clampf(1.0 - _time_remaining / _state_duration, 0.0, 1.0)
 
 
 func reset_to_idle() -> void:
@@ -124,4 +131,5 @@ func _advance_state() -> void:
 func _enter_state(next_state: State, duration: float) -> void:
 	state = next_state
 	_time_remaining = maxf(duration, 0.0)
+	_state_duration = _time_remaining
 	state_changed.emit(state)

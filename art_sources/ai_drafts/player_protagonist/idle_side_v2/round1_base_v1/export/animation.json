@@ -1,0 +1,36 @@
+{
+  "frames": 6,
+  "columns": 6,
+  "rows": 1,
+  "frameWidth": 128,
+  "frameHeight": 256,
+  "durationsMs": [
+    250,
+    250,
+    250,
+    250,
+    250,
+    250
+  ],
+  "fpsRequested": 4,
+  "sources": [
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\idle_side_v2\\round1_base_v1\\candidate_frames_proportion_fixed\\frame-001.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\idle_side_v2\\round1_base_v1\\candidate_frames_proportion_fixed\\frame-002.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\idle_side_v2\\round1_base_v1\\candidate_frames_proportion_fixed\\frame-003.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\idle_side_v2\\round1_base_v1\\candidate_frames_proportion_fixed\\frame-004.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\idle_side_v2\\round1_base_v1\\candidate_frames_proportion_fixed\\frame-005.png",
+    "D:\\Projects\\wujiaochang-hotline\\art_sources\\ai_drafts\\player_protagonist\\idle_side_v2\\round1_base_v1\\candidate_frames_proportion_fixed\\frame-006.png"
+  ],
+  "files": {
+    "sheet": "sprite-sheet.png",
+    "gif": "animation.gif",
+    "frames": [
+      "frame-001.png",
+      "frame-002.png",
+      "frame-003.png",
+      "frame-004.png",
+      "frame-005.png",
+      "frame-006.png"
+    ]
+  }
+}

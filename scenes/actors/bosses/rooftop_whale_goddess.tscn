@@ -24,12 +24,15 @@ script = ExtResource("1_boss")
 dormant_texture = ExtResource("2_dormant")
 
 [node name="BodySprite" type="Sprite2D" parent="."]
+z_index = 19
+z_as_relative = false
 texture_filter = 1
 texture = ExtResource("2_dormant")
 
 [node name="GlowSprite" type="Sprite2D" parent="."]
 visible = false
-z_index = 1
+z_index = 19
+z_as_relative = false
 texture_filter = 1
 material = SubResource("GlowMaterial")
 texture = ExtResource("4_glow")

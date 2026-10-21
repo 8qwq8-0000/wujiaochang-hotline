@@ -114,7 +114,7 @@ func run() -> void:
 	var direct_material := ComponentRolls.create("pistol", 1, RandomNumberGenerator.new())
 	inv.backpack.add_item(direct_material)
 	for index in 5:
-		inv.backpack.add_item(ComponentRolls.create("wheel", 1, RandomNumberGenerator.new()))
+		inv.backpack.add_item(ComponentRolls.create("armor", 1, RandomNumberGenerator.new()))
 	room.upgrade_panel.open()
 	room.upgrade_panel.select_material(0, direct_subject)
 	room.upgrade_panel.select_material(1, inv.backpack.get_items()[1])
@@ -135,7 +135,7 @@ func run() -> void:
 	check(room.upgrade_panel.get("_preview").text.contains("升级完成"), "workshop displays actual result after success")
 	check(store.get_profile().loadout.inventory == inv.export_run_state(), "committed mixed-source ownership equals live inventory")
 	var bag_subject := inv.backpack.get_items()[0]
-	var chest_material := ComponentRolls.create("wheel", 1, RandomNumberGenerator.new())
+	var chest_material := ComponentRolls.create("armor", 1, RandomNumberGenerator.new())
 	room.chest.add_item(chest_material)
 	check(room.synthesize(bag_subject, chest_material), "bag subject can use stored material directly")
 	check(ComponentRolls.quality(inv.backpack.get_items()[0]) == 2 and room.chest.get_item_count() == 0, "bag upgrade stays in bag rather than becoming a storage transfer")

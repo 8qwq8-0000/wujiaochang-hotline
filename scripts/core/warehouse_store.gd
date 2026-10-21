@@ -6,7 +6,13 @@ var save_path := "user://warehouse.json"
 var error_message := ""
 var _loaded := false
 var _writable := true
-var _profile: Dictionary = {"version": SAVE_VERSION, "chest": [], "loadout": {}}
+var _profile: Dictionary = {
+	"version": SAVE_VERSION,
+	"chest": [],
+	"loadout": {},
+	"codex": {"personas": [], "semantic_leaks": []},
+	"legacy_drinks": [],
+}
 
 
 func load_profile() -> bool:
@@ -24,7 +30,7 @@ func load_profile() -> bool:
 	var migrated: Variant = ComponentRolls.migrate_snapshot(json.data)
 	if not _valid_profile(migrated):
 		return _reject("仓库存档格式异常或版本不兼容，原文件已保留")
-	_profile = migrated.duplicate(true)
+	_profile = _normalize_profile(migrated)
 	return true
 
 
@@ -33,10 +39,31 @@ func get_profile() -> Dictionary:
 	return _profile.duplicate(true)
 
 
-func commit(chest: Array, loadout: Dictionary, difficulty: String = "") -> bool:
+func commit(
+	chest: Array,
+	loadout: Dictionary,
+	difficulty: String = "",
+	legacy_record: Dictionary = {}
+) -> bool:
 	if not load_profile():
 		return false
-	var next := {"version": SAVE_VERSION, "chest": chest.duplicate(true), "loadout": loadout.duplicate(true), "difficulty": difficulty if not difficulty.is_empty() else _profile.get("difficulty", ["low_pressure", "standard", "high_pressure"][int(get_node("/root/GameSettings").difficulty)])}
+	var sanitized_loadout := loadout.duplicate(true)
+	var archive: Variant = sanitized_loadout.get("persona_archive", {})
+	sanitized_loadout.erase("persona_archive")
+	var codex: Dictionary = _profile.get("codex", {"personas": [], "semantic_leaks": []}).duplicate(true)
+	_merge_persona_archive(codex, archive)
+	var legacy_drinks: Array = _profile.get("legacy_drinks", []).duplicate(true)
+	if not legacy_record.is_empty():
+		legacy_drinks.append(legacy_record.duplicate(true))
+		_merge_legacy_record(codex, legacy_record)
+	var next := {
+		"version": SAVE_VERSION,
+		"chest": chest.duplicate(true),
+		"loadout": sanitized_loadout,
+		"difficulty": difficulty if not difficulty.is_empty() else _profile.get("difficulty", ["low_pressure", "standard", "high_pressure"][int(get_node("/root/GameSettings").difficulty)]),
+		"codex": codex,
+		"legacy_drinks": legacy_drinks,
+	}
 	next = ComponentRolls.migrate_snapshot(next)
 	if not _valid_profile(next):
 		error_message = "装备数据异常，未保存"
@@ -71,6 +98,16 @@ func _valid_profile(value: Variant) -> bool:
 		return false
 	if value.get("difficulty", "standard") not in ["low_pressure", "standard", "high_pressure"]:
 		return false
+	if not value.get("codex", {"personas": [], "semantic_leaks": []}) is Dictionary:
+		return false
+	var codex: Dictionary = value.get("codex", {"personas": [], "semantic_leaks": []})
+	if not codex.get("personas", []) is Array or not codex.get("semantic_leaks", []) is Array:
+		return false
+	if not value.get("legacy_drinks", []) is Array:
+		return false
+	for record: Variant in value.get("legacy_drinks", []):
+		if not record is Dictionary or not record.get("personas", []) is Array or not record.get("semantic_leaks", []) is Array:
+			return false
 	var items: Array = value.chest.duplicate()
 	var state: Dictionary = value.loadout
 	if not state.is_empty():
@@ -85,7 +122,7 @@ func _valid_profile(value: Variant) -> bool:
 		if not bag.get("items", []) is Array or bag.get("items", []).size() > 6:
 			return false
 		items.append_array(bag.get("items", []))
-		for key in ["primary", "secondary", "mobility"]:
+		for key in ["primary", "secondary", "cyberware"]:
 			if not inv.get(key) is Dictionary:
 				return false
 			if inv[key].has("item"):
@@ -140,9 +177,75 @@ func create_new_profile(difficulty: String = "standard") -> bool:
 	var was_writable := _writable
 	_loaded = true
 	_writable = true
+	_profile = {
+		"version": SAVE_VERSION,
+		"chest": [],
+		"loadout": {},
+		"difficulty": difficulty,
+		"codex": {"personas": [], "semantic_leaks": []},
+		"legacy_drinks": [],
+	}
 	if not commit([], {}, difficulty):
 		_profile = previous
 		_loaded = was_loaded
 		_writable = was_writable
 		return false
 	return true
+
+
+func get_codex() -> Dictionary:
+	load_profile()
+	return _profile.get("codex", {"personas": [], "semantic_leaks": []}).duplicate(true)
+
+
+func get_legacy_drinks() -> Array:
+	load_profile()
+	return _profile.get("legacy_drinks", []).duplicate(true)
+
+
+func _normalize_profile(value: Dictionary) -> Dictionary:
+	var normalized := value.duplicate(true)
+	if not normalized.has("codex"):
+		normalized["codex"] = {"personas": [], "semantic_leaks": []}
+	if not normalized.has("legacy_drinks"):
+		normalized["legacy_drinks"] = []
+	return normalized
+
+
+func _merge_persona_archive(codex: Dictionary, archive: Variant) -> void:
+	if not archive is Dictionary:
+		return
+	var personas: Array = codex.get("personas", [])
+	var levels: Variant = archive.get("persona_levels", {})
+	if levels is Dictionary:
+		for persona_id: Variant in levels:
+			if int(levels[persona_id]) > 0 and not String(persona_id) in personas:
+				personas.append(String(persona_id))
+	var leaks: Array = codex.get("semantic_leaks", [])
+	var saved_leaks: Variant = archive.get("semantic_leaks", {})
+	if saved_leaks is Dictionary:
+		for persona_id: Variant in saved_leaks:
+			var leak_id := String(TalentCoreController.SEMANTIC_LEAK_IDS.get(StringName(persona_id), persona_id))
+			if bool(saved_leaks[persona_id]) and not leak_id in leaks:
+				leaks.append(leak_id)
+	personas.sort()
+	leaks.sort()
+	codex["personas"] = personas
+	codex["semantic_leaks"] = leaks
+
+
+func _merge_legacy_record(codex: Dictionary, record: Dictionary) -> void:
+	var personas: Array = codex.get("personas", [])
+	for entry: Variant in record.get("personas", []):
+		if entry is Dictionary:
+			var persona_id := String(entry.get("id", ""))
+			if not persona_id.is_empty() and not persona_id in personas:
+				personas.append(persona_id)
+	var leaks: Array = codex.get("semantic_leaks", [])
+	for leak_id: Variant in record.get("semantic_leaks", []):
+		if not String(leak_id) in leaks:
+			leaks.append(String(leak_id))
+	personas.sort()
+	leaks.sort()
+	codex["personas"] = personas
+	codex["semantic_leaks"] = leaks

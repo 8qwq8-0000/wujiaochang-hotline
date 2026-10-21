@@ -1,0 +1,153 @@
+{
+  "canvas": [
+    512,
+    512
+  ],
+  "frames": [
+    {
+      "frame": 1,
+      "source_rect": [
+        0,
+        110,
+        455,
+        470
+      ],
+      "source_actor_root": [
+        230,
+        430
+      ],
+      "canvas_anchor": [
+        256,
+        400
+      ],
+      "duration_ms": 100
+    },
+    {
+      "frame": 2,
+      "source_rect": [
+        455,
+        110,
+        887,
+        470
+      ],
+      "source_actor_root": [
+        670,
+        430
+      ],
+      "canvas_anchor": [
+        256,
+        400
+      ],
+      "duration_ms": 100
+    },
+    {
+      "frame": 3,
+      "source_rect": [
+        887,
+        110,
+        1331,
+        470
+      ],
+      "source_actor_root": [
+        1110,
+        430
+      ],
+      "canvas_anchor": [
+        256,
+        400
+      ],
+      "duration_ms": 110
+    },
+    {
+      "frame": 4,
+      "source_rect": [
+        1331,
+        110,
+        1774,
+        470
+      ],
+      "source_actor_root": [
+        1550,
+        430
+      ],
+      "canvas_anchor": [
+        256,
+        400
+      ],
+      "duration_ms": 90
+    },
+    {
+      "frame": 5,
+      "source_rect": [
+        0,
+        510,
+        424,
+        866
+      ],
+      "source_actor_root": [
+        230,
+        802
+      ],
+      "canvas_anchor": [
+        256,
+        400
+      ],
+      "duration_ms": 90
+    },
+    {
+      "frame": 6,
+      "source_rect": [
+        424,
+        510,
+        882,
+        866
+      ],
+      "source_actor_root": [
+        670,
+        802
+      ],
+      "canvas_anchor": [
+        256,
+        400
+      ],
+      "duration_ms": 90
+    },
+    {
+      "frame": 7,
+      "source_rect": [
+        882,
+        510,
+        1330,
+        866
+      ],
+      "source_actor_root": [
+        1110,
+        802
+      ],
+      "canvas_anchor": [
+        256,
+        400
+      ],
+      "duration_ms": 110
+    },
+    {
+      "frame": 8,
+      "source_rect": [
+        1330,
+        510,
+        1774,
+        866
+      ],
+      "source_actor_root": [
+        1550,
+        802
+      ],
+      "canvas_anchor": [
+        256,
+        400
+      ],
+      "duration_ms": 650
+    }
+  ],
+  "note": "Front-facing cast, body and shield combined; not wired to gameplay."
+}

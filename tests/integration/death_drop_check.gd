@@ -60,7 +60,16 @@ func run() -> void:
 	var pickup: ComponentPickup = drops[0]
 	check(pickup.global_position.distance_to(death_position) < 0.01 and pickup.get_parent() == first, "pickup spawns at snapshotted enemy death position in its own area")
 	check(pickup.get_meta("enemy_drop") == enemy_id and pickup.has_meta("area_guarantee"), "first natural drop fulfils its area guarantee")
-	check(ComponentRolls.affixes(pickup.rolled_item).size() >= 1, "enemy drop has real quality and affixes")
+	var dropped_slot := str(pickup.rolled_item.get_property("slot", ""))
+	check(
+		(
+			dropped_slot == "cyberware"
+			and ComponentRolls.quality(pickup.rolled_item) == 0
+			and not ComponentRolls.cyberware_modules(pickup.rolled_item).is_empty()
+		)
+		or (dropped_slot != "cyberware" and ComponentRolls.affixes(pickup.rolled_item).size() >= 1),
+		"enemy drop follows its slot-specific roll contract"
+	)
 	assembler.enemy_drop_chance = 0.0
 	for enemy in get_nodes_in_group("enemies"):
 		kill(enemy)

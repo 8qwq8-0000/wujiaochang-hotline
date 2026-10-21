@@ -14,8 +14,17 @@ The files in this directory are unlicensed temporary development placeholders su
 - `player_walk_up.png`: six back-facing movement frames;
 - `player_walk_left.png`: six left-facing movement frames plus front/back idle references;
 - `player_walk_right.png`: six independently authored right-facing movement frames;
-- `player_idle_side.png`: six left-facing idle frames.
+- `player_idle_side.png`: six optimized right-facing idle frames; frames 1 and 6
+  form the quiet base loop, while frames 2–5 form the occasional core-check
+  gesture.
 
 Each atlas cell is 128×256. The import helper removes the border-connected white canvas and large high-purity enclosed matte regions such as the front-facing arm/waist gaps. It reconstructs semi-transparent contour colors from the original white matte to prevent pale fringes, keeps the authored pixels at their original resolution, and aligns the used cells to a shared foot baseline. Godot displays the sheets at 0.25 scale with nearest-neighbor filtering.
 
-Runtime mirroring is disabled. Movement uses the independently authored directional sheets, while every stationary direction plays the original `player_idle_side.png` sequence unchanged. Renamed source sheets and individual source frames are preserved under `art_sources/ai_drafts/player_protagonist/gemini_motion_v1/`.
+Runtime mirroring is disabled. Movement uses the independently authored
+directional sheets, while every stationary direction uses the optimized idle
+sheet. The visual controller loops frames 1 and 6 and occasionally plays frames
+2–5, followed by frame 6 as recovery. Renamed Gemini source sheets and individual
+source frames are preserved under
+`art_sources/ai_drafts/player_protagonist/gemini_motion_v1/`; the optimized idle
+sources, audits, and comparison board are preserved under
+`art_sources/ai_drafts/player_protagonist/idle_side_v2/`.

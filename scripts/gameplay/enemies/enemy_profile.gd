@@ -31,6 +31,9 @@ enum Role {
 @export_range(0.1, 10.0, 0.1) var alert_memory_seconds: float = 3.0
 
 @export_group("Role Abilities")
+@export var barrier_enabled: bool = false
+@export var barrier_duration: float = 3.0
+@export var barrier_cooldown: float = 6.0
 @export var self_destruct_enabled: bool = false
 @export_range(0.1, 2.0, 0.05) var self_destruct_delay: float = 0.45
 @export_range(1, 10, 1) var self_destruct_damage: int = 1

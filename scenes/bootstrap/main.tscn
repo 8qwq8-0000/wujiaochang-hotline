@@ -21,6 +21,7 @@
 [ext_resource type="AudioStream" path="res://assets/audio/ui/hotline_connect.wav" id="19"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/reinforcement_approach.wav" id="20"]
 [ext_resource type="PackedScene" path="res://scenes/ui/pause_settings_menu.tscn" id="21"]
+[ext_resource type="Script" path="res://scripts/ui/persona_rest_flow.gd" id="22"]
 
 [node name="Main" type="Node" unique_id=88177702]
 script = ExtResource("1")
@@ -44,7 +45,8 @@ reinforcement_approach_sound = ExtResource("20")
 weapon_cues = {
 &"baton:swing": ExtResource("16"),
 &"initial_baton:swing": ExtResource("16"),
-&"service_pistol:fire": ExtResource("15")
+&"service_pistol:fire": ExtResource("15"),
+&"cyberware:thermal_pulse": ExtResource("12")
 }
 hotline_dial_sounds = Array[AudioStream]([ExtResource("17"), ExtResource("18")])
 hotline_connect_sound = ExtResource("19")
@@ -74,3 +76,7 @@ color = Color(0.025, 0.03, 0.045, 1)
 script = ExtResource("2")
 scene_container_path = NodePath("../SceneContainer")
 fade_rect_path = NodePath("../TransitionLayer/Fade")
+
+[node name="PersonaRestFlow" type="CanvasLayer" parent="."]
+layer = 95
+script = ExtResource("22")

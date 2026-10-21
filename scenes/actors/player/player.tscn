@@ -4,7 +4,8 @@
 [ext_resource type="Script" uid="uid://dvf0vif2eetq2" path="res://scripts/gameplay/combat/health_component.gd" id="2_health"]
 [ext_resource type="Script" uid="uid://bldhoiaqae7xm" path="res://scripts/gameplay/combat/heat_component.gd" id="3_heat"]
 [ext_resource type="Script" uid="uid://bs42r0pq1ruky" path="res://scripts/gameplay/combat/guard_component.gd" id="4_guard"]
-[ext_resource type="Script" uid="uid://dmsp3odubylvl" path="res://scripts/gameplay/mobility/mobility_controller.gd" id="5_mobility"]
+[ext_resource type="Script" path="res://scripts/gameplay/player/dash_controller.gd" id="5_dash"]
+[ext_resource type="Script" path="res://scripts/gameplay/player/cyberware_controller.gd" id="5_cyberware"]
 [ext_resource type="Script" uid="uid://34o6mljv4o2p" path="res://scripts/gameplay/combat/weapon_controller.gd" id="6_weapon"]
 [ext_resource type="Script" uid="uid://bsn70jo45ko2r" path="res://scripts/gameplay/combat/hurt_box.gd" id="7_hurtbox"]
 [ext_resource type="Script" uid="uid://iekd5ex3oxsj" path="res://scripts/gameplay/player/status_component.gd" id="8_status"]
@@ -21,6 +22,7 @@
 [ext_resource type="Script" uid="uid://0m60b3165g4q" path="res://scripts/presentation/inventory_audio.gd" id="18_audio"]
 [ext_resource type="Script" uid="uid://d0rksn64yvcev" path="res://scripts/gameplay/items/enemy_loot.gd" id="19_loot"]
 [ext_resource type="Script" uid="uid://co1drnaptmoj4" path="res://scripts/gameplay/player/talent_core_controller.gd" id="20_talent_core"]
+[ext_resource type="Script" path="res://scripts/gameplay/player/persona_combat_controller.gd" id="20_persona_combat"]
 [ext_resource type="Script" uid="uid://b35xuobakrv1" path="res://scripts/presentation/weapon_mount.gd" id="21_weapon_mount"]
 [ext_resource type="Script" uid="uid://bdhd3ocwco4" path="res://scripts/gameplay/player/room_buff_component.gd" id="22_room_buff"]
 [ext_resource type="Script" uid="uid://dg53xird04joq" path="res://scripts/presentation/player_wrist_socket.gd" id="23_wrist_socket"]
@@ -160,9 +162,17 @@ region = Rect2(640, 0, 128, 256)
 [sub_resource type="SpriteFrames" id="PlayerSpriteFrames"]
 animations = [{
 "frames": [{
-"duration": 1.0,
+"duration": 3.0,
 "texture": SubResource("Atlas_right_0")
 }, {
+"duration": 3.0,
+"texture": SubResource("Atlas_right_5")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
 "duration": 1.0,
 "texture": SubResource("Atlas_right_1")
 }, {
@@ -178,8 +188,8 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("Atlas_right_5")
 }],
-"loop": 1,
-"name": &"idle",
+"loop": 0,
+"name": &"idle_gesture",
 "speed": 4.0
 }, {
 "frames": [{
@@ -293,8 +303,11 @@ script = ExtResource("3_heat")
 [node name="GuardComponent" type="Node" parent="." unique_id=1952862416]
 script = ExtResource("4_guard")
 
-[node name="MobilityController" type="Node" parent="." unique_id=1080810218]
-script = ExtResource("5_mobility")
+[node name="DashController" type="Node" parent="." unique_id=1080810218]
+script = ExtResource("5_dash")
+
+[node name="CyberwareController" type="Node" parent="."]
+script = ExtResource("5_cyberware")
 
 [node name="WeaponController" type="Node2D" parent="." unique_id=1883589819]
 script = ExtResource("6_weapon")
@@ -305,6 +318,9 @@ script = ExtResource("8_status")
 
 [node name="TalentCoreController" type="Node" parent="." unique_id=83680898]
 script = ExtResource("20_talent_core")
+
+[node name="PersonaCombatController" type="Node2D" parent="."]
+script = ExtResource("20_persona_combat")
 
 [node name="CircuitBreakerComponent" type="Node" parent="." unique_id=1034048397]
 script = ExtResource("9_breaker")
