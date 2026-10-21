@@ -21,6 +21,12 @@ func _physics_process(delta: float) -> void:
 
 
 func receive_hit(packet: DamagePacket) -> DamageResult:
+	# Ignore friendly enemy hits before armor, guard, statuses or electric events.
+	if packet.source_faction == CombatFaction.Id.ENEMY and faction == CombatFaction.Id.ENEMY:
+		var friendly_hit := DamageResult.new()
+		friendly_hit.packet = packet
+		friendly_hit.target = actor
+		return friendly_hit
 	if is_invulnerable():
 		var ignored := DamageResult.new()
 		ignored.packet = packet

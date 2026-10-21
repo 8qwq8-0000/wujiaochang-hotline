@@ -50,6 +50,11 @@ var _returning_to_patrol := false
 var mandatory: bool = true
 var state: State = State.IDLE
 var _attack_cooldown_remaining: float = 0.0
+var _cover_shield: EnemyController
+var _cover_goal := Vector2(INF, INF)
+var _cover_progress := Vector2(INF, INF)
+var _cover_stuck := 0.0
+var _cover_retry := 0.0
 var barrier_skill: EnemyBarrierSkill
 var stationary_test_target := false
 var _stagger_remaining: float = 0.0
@@ -214,6 +219,8 @@ func _physics_process(delta: float) -> void:
 		_cancel_precharge()
 		_stop_navigation_motion()
 		return
+	if _tick_shield_cover(delta, sees_target):
+		return
 	_tick_precharge(delta, sees_target)
 	if state == State.WINDUP:
 		_windup_remaining -= delta
@@ -232,7 +239,7 @@ func _physics_process(delta: float) -> void:
 		state = State.CHASE
 		desired_velocity = _direction_to_position(_last_known_position) * profile.move_speed if global_position.distance_to(_last_known_position) > 12.0 else Vector2.ZERO
 	else:
-		current_tactical_intent = _choose_tactical_intent(distance, delta)
+		current_tactical_intent = EnemyTacticalBrain.Intent.HOLD_AND_ATTACK if is_instance_valid(_cover_shield) else _choose_tactical_intent(distance, delta)
 		match current_tactical_intent:
 			EnemyTacticalBrain.Intent.RETREAT:
 				state = State.CHASE
@@ -270,6 +277,72 @@ func _physics_process(delta: float) -> void:
 	else:
 		_submit_navigation_velocity(desired_velocity)
 	queue_redraw()
+
+
+func _tick_shield_cover(delta: float, sees_target: bool) -> bool:
+	_cover_retry = maxf(_cover_retry - delta, 0.0)
+	_cover_shield = null
+	if profile.role != EnemyProfile.Role.RANGED_SIGHTLINE or not sees_target or _cover_retry > 0.0:
+		_cover_goal = Vector2(INF, INF)
+		_cover_stuck = 0.0
+		return false
+	var best_distance := 320.0 * 320.0
+	var combat_room := CombatProjectile.room_for_actor(self)
+	for node in get_tree().get_nodes_in_group("enemies"):
+		var shield := node as EnemyController
+		if shield == null or shield == self or shield.health.is_dead() or not shield.profile.barrier_enabled:
+			continue
+		var skill := shield.barrier_skill
+		var preparing := skill.cooldown <= 1.0 and shield.can_see_target() and shield.state not in [State.STAGGERED, State.DEAD, State.SELF_DESTRUCT, State.WINDUP]
+		if not skill.casting and not preparing:
+			continue
+		if CombatProjectile.room_for_actor(shield) != combat_room:
+			continue
+		var forward := shield.global_position.direction_to(_target.global_position)
+		if skill.casting and forward.dot(skill.direction) < 0.5:
+			continue
+		# Stable, separated rear slots leave space for two ranged allies.
+		var slot := 0
+		for peer in get_tree().get_nodes_in_group("enemies"):
+			if peer is EnemyController and peer.profile.role == EnemyProfile.Role.RANGED_SIGHTLINE and peer.get_instance_id() < get_instance_id() and CombatProjectile.room_for_actor(peer) == combat_room:
+				slot += 1
+		var side := forward.orthogonal() * (22.0 if slot % 2 == 0 else -22.0)
+		var desired := shield.global_position - forward * 56.0 + side
+		if desired.distance_to(_target.global_position) > profile.attack_range or not _clear_segment(desired, _target.global_position):
+			continue
+		var goal := _snap_to_reachable_navigation(desired)
+		if goal.x == INF or (goal - shield.global_position).dot(forward) > -24.0:
+			continue
+		var score := global_position.distance_squared_to(goal)
+		if score < best_distance:
+			best_distance = score
+			_cover_shield = shield
+			_cover_goal = goal
+	if not is_instance_valid(_cover_shield):
+		_cover_goal = Vector2(INF, INF)
+		_cover_stuck = 0.0
+		return false
+	if global_position.distance_to(_cover_goal) <= maxf(9.0, navigation_agent.target_desired_distance):
+		_cover_stuck = 0.0
+		return false
+	if _cover_progress.x == INF or global_position.distance_to(_cover_progress) > 3.0:
+		_cover_progress = global_position
+		_cover_stuck = 0.0
+	else:
+		_cover_stuck += delta
+	if _cover_stuck >= 1.2:
+		_cover_shield = null
+		_cover_retry = 2.0
+		_cover_stuck = 0.0
+		return false
+	_windup_remaining = 0.0
+	_cancel_precharge()
+	state = State.CHASE
+	var heading := _direction_to_position(_cover_goal)
+	facing = global_position.direction_to(_target.global_position)
+	_submit_navigation_velocity(heading * profile.move_speed)
+	queue_redraw()
+	return true
 
 
 func should_retreat(distance: float) -> bool:
