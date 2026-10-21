@@ -24,6 +24,9 @@ var _request_serial := 0
 
 
 func _ready() -> void:
+	# Scene payload handlers may immediately pause the tree (for example, the
+	# mandatory persona rest screen). The transition must still finish fading.
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	set_process(false)
 	if _fade_rect != null:
 		_fade_rect.modulate.a = 0.0
@@ -91,7 +94,7 @@ func _swap_loaded_scene() -> void:
 func _fade_to(alpha: float) -> void:
 	if _fade_rect == null or fade_duration <= 0.0:
 		return
-	var tween := create_tween()
+	var tween := create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	tween.tween_property(_fade_rect, "modulate:a", alpha, fade_duration)
 	await tween.finished
 

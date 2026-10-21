@@ -36,7 +36,7 @@ func run_checks() -> void:
 	store.save_path = TEST_PATH
 	DirAccess.remove_absolute(TEST_PATH)
 	var main: Node = load("res://scenes/bootstrap/warehouse_main.tscn").instantiate()
-	main.get_node("SceneFlow").fade_duration = 0
+	main.get_node("SceneFlow").fade_duration = 0.01
 	root.add_child(main)
 	current_scene = main
 	var room := await wait_scene(main)
@@ -140,6 +140,9 @@ func run_checks() -> void:
 	player = battle.get_node("Player")
 	var rest := main.get_node("PersonaRestFlow") as PersonaRestFlow
 	check(paused and rest.is_open, "persistent departure opens mandatory persona rest")
+	await create_timer(0.3, true).timeout
+	var fade := main.get_node("TransitionLayer/Fade") as ColorRect
+	check(fade.modulate.a <= 0.01, "combat fade clears even when persona rest pauses the tree")
 	check(rest.choose_persona(TalentCoreController.LEGENDARY_MASTER) and rest.close(), "warehouse flow consumes first-floor persona authorization")
 	check(player.inventory.backpack.get_item_count() == 5, "departure preserves chosen backpack")
 	check(not player.circuit_breaker.circuit_breaker_used and player.talent_core.takeover_charges == player.talent_core.takeover_charge_max, "new run refreshes per-run insurance and takeover resources")
