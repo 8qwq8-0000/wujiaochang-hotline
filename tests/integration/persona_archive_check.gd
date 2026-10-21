@@ -44,7 +44,7 @@ func run_checks() -> void:
 	var run := root.get_node("RunManager")
 	run.begin_run(73031)
 	run.persistent_run = true
-	run.floor_index = 4
+	run.floor_index = 3
 	run.set_mandatory_enemy_count(0)
 	check(run.finish_victory(player), "complete rooftop victory creates one pending record")
 	var record: Dictionary = run.victory_result.record

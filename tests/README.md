@@ -160,4 +160,4 @@ godot --headless --path . --script res://tests/integration/boss_shortcut_check.g
 
 人格永久档案：`godot --headless --path . --script res://tests/integration/persona_archive_check.gd`，覆盖普通结算收录人格与三级语义泄漏、下一局人格清零、临时档案载荷剥离、完整胜利记录与重复结算拒绝。
 
-完整通关与遗产酒谱：`godot --headless --path . --script res://tests/integration/victory_flow_check.gd`，覆盖第四层转入生产楼顶、胜利入口唯一铸造、回仓、酒谱显示和最后人格瓶型。仓库 BOSS 测试捷径仍由 `boss_shortcut_check.gd` 验证，不会生成遗产记录。
+完整通关与遗产酒谱：`godot --headless --path . --script res://tests/integration/victory_flow_check.gd`，覆盖第三层转入生产楼顶、胜利入口唯一铸造、回仓、酒谱显示和最后人格瓶型。仓库 BOSS 测试捷径仍由 `boss_shortcut_check.gd` 验证，不会生成遗产记录。
