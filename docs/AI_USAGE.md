@@ -110,3 +110,8 @@
 - User requested a warehouse passage into a ring of three ranged robots, approved sequential single shots every 0.9 seconds, and asked for sliders including enemy HP. Added the training passage, isolated scene and temporary run; robots start at three HP and dead targets are skipped.
 - Interval (0.4–2 seconds), projectile speed (120–600 px/s) and robot HP (1–10) are adjustable. Changes clear old bullets; HP changes rebuild targets. R resets player, targets and counters while retaining settings. Return and training death preserve the warehouse profile.
 - Validation: new training integration 46/46 with actual reflected projectiles hitting all three shooters, live damage-resolution feedback, real R input, settings persistence, pause and save isolation. Existing unit 62/62, warehouse 55/55, Boss shortcut 24/24 and player parry art 42/42 passed. Non-headless screenshot inspected; existing ObjectDB/resource-use exit warnings remain.
+
+## 2026-10-21 — Keep PERFECT! active throughout a successful streak
+
+- User clarified that every perfect parry starting with the second consecutive success must show the popup. Removed the post-popup combo reset; subsequent successful parries restart the popup until damage, normal block, timeout or scene change breaks the streak.
+- Training integration expanded to 50 checks, including the third/fourth consecutive popup and rebuilding the streak after a normal block.
