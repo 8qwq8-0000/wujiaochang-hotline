@@ -85,9 +85,9 @@ func run() -> void:
 	check(arena.player.is_physics_processing(), "cinematic restores player movement")
 	check(arena.player.camera.zoom.is_equal_approx(Vector2.ONE * 0.8) and arena.player.camera.position.length() < 40, "phase two opens a wider view after original cinematic")
 	check(not arena.boss.hurt_box.monitorable and arena.boss.health.guard_link_active, "supports protect active boss from direct hits")
-	check(arena.get_node("SupportEnemies").get_child_count() == 3, "phase two spawns three supports")
+	check(arena.get_node("SupportEnemies").get_child_count() == 5, "phase two spawns five supports")
 	arena._spawn_support_guards()
-	check(arena.get_node("SupportEnemies").get_child_count() == 3, "support wave cannot be duplicated")
+	check(arena.get_node("SupportEnemies").get_child_count() == 5, "support wave cannot be duplicated")
 	check(root.get_node("RunManager").mandatory_enemies_remaining == 1, "boss remains mandatory during support wave")
 	var supports: Array[EnemyController] = []
 	var support_heavy: EnemyController
@@ -108,29 +108,33 @@ func run() -> void:
 	await create_timer(0.4).timeout
 	check(arena.boss.health.get_precise_health() == 6, "real weapon shot cannot harm shielded boss")
 	var lost := 0
+	var roles := {0: 0, 1: 0, 2: 0}
 	for enemy in supports:
-		for index in 3:
-			enemy.health.apply_damage(1, hit(1))
-			lost += 1
-			var expected := 6.0 * (1.0 - float(lost) / 9.0 * 0.5)
-			check(absf(arena.boss.health.get_precise_health() - expected) < 0.00001, "every lost guard health point proportionally reduces boss health")
-			check(arena.boss.health.apply_damage(99, hit()) == 0, "boss stays immune until final support death completes")
-		check(enemy.health.apply_damage(99, hit()) == 0, "overkill on a dead guard cannot repeat linked damage")
-	check(arena.boss.health.guard_link_active, "heavy death animation keeps boss shield active")
-	check(absf(arena.boss.health.get_health_ratio() - 0.5) < 0.00001, "nine lost guard health points leave exactly half boss health")
+		roles[int(enemy.profile.role)] += 1
+		enemy.health.apply_damage(1, hit(1))
+		check(arena.boss.health.current_health == 6 - lost, "partial minion damage does not change boss health")
+		enemy.health.apply_damage(1, hit(1))
+		check(arena.boss.health.current_health == 6 - lost, "second nonfatal hit does not change boss health")
+		enemy.health.apply_damage(1, hit(1))
+		check(enemy.health.apply_damage(99, hit()) == 0, "dead minion cannot take repeat overkill damage")
+		if enemy.profile.self_destruct_enabled:
+			check(arena.boss.health.guard_link_active, "heavy must complete self destruction before shield opens")
+			await create_timer(0.6).timeout
+		lost += 1
+		check(arena.boss.health.current_health == 6 - lost, "each confirmed minion defeat removes exactly one boss health")
+		check(arena.boss.health.current_health == 6 - lost, "overkill never repeats linked boss damage")
+		if lost < 5:
+			check(arena.boss.health.apply_damage(99, hit()) == 0, "living supports keep boss immune")
+	check(roles == {0: 2, 1: 2, 2: 1}, "five supports are two melee, two ranged and one shield soldier")
 	await create_timer(0.6).timeout
 	check(not arena.boss.health.guard_link_active and arena.boss.hurt_box.monitorable, "clearing supports opens boss hurtbox")
-	check(absf(arena.boss.health.get_precise_health() - 3.0) < 0.00001, "shield removal preserves exactly 3 of 6 health")
-	check(arena.phase == RooftopBossArena.Phase.BOSS_ACTIVE and not arena.exit_elevator.enabled, "player must still defeat remaining half health boss")
+	check(absf(arena.boss.health.get_precise_health() - 1.0) < 0.00001, "shield removal preserves exactly 1 of 6 health")
+	check(arena.phase == RooftopBossArena.Phase.BOSS_ACTIVE and not arena.exit_elevator.enabled, "player must still defeat last health boss")
 	shot = load("res://scenes/combat/projectile.tscn").instantiate()
 	arena.add_child(shot)
 	shot.global_position = arena.boss.global_position + Vector2(0, 165)
 	shot.setup(arena.player, CombatFaction.Id.PLAYER, Vector2.UP, 1, 180)
 	await create_timer(0.4).timeout
-	check(absf(arena.boss.health.get_precise_health() - 2.0) < 0.00001, "real bullet damages vulnerable remaining boss without refilling health")
-	arena.boss.health.apply_damage(1, hit(1))
-	check(absf(arena.boss.health.get_precise_health() - 1.0) < 0.00001, "last boss health point stays accurate")
-	arena.boss.hurt_box.receive_hit(hit(1))
 	await process_frame
 	check(arena.phase == RooftopBossArena.Phase.CLEARED and arena.exit_elevator.enabled, "remaining boss health must be depleted before exit opens")
 	check(arena.telegraph.mode == BossAttackTelegraph.Mode.NONE, "victory clears pending hazards")

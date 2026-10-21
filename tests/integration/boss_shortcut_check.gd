@@ -82,7 +82,7 @@ func run_checks() -> void:
 	arena.boss.health.set_current_health(1)
 	await create_timer(1.3).timeout
 	arena._spawn_support_guards()
-	check(arena.get_node("SupportEnemies").get_child_count() == 3 and arena.boss.health.guard_link_active, "restart test reaches shielded boss with three supports")
+	check(arena.get_node("SupportEnemies").get_child_count() == 5 and arena.boss.health.guard_link_active, "restart test reaches shielded boss with five supports")
 	var restart := InputEventAction.new()
 	restart.action = &"restart_room"
 	restart.pressed = true

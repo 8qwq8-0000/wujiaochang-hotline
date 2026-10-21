@@ -54,7 +54,7 @@ func test_arena_authors_phase_one_and_phase_two_contract() -> void:
 	assert_true(arena.get_node("Boss").z_index < arena.get_node("Player").z_index)
 	assert_eq(arena.get_node("Player").position, Vector2(480.0, 486.0))
 	assert_eq(arena.get_node("EnemySpawnPoints").get_child_count(), 3)
-	assert_eq(arena.get_node("SupportSpawnPoints").get_child_count(), 3)
+	assert_eq(arena.get_node("SupportSpawnPoints").get_child_count(), 5)
 	assert_false(arena.get_node("SupportSpawner").auto_spawn)
 	assert_false(arena.get_node("SupportSpawner").report_to_run_manager)
 	assert_true(arena.has_signal("room_cleared"))
