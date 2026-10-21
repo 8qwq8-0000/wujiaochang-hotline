@@ -36,6 +36,13 @@ func run() -> void:
 	player.set_physics_process(false)
 	player.health.configure_max_health(1000)
 	var assembler := main.find_child("FloorAssembler", true, false) as FloorAssembler
+	# Formal floor loot must not depend on a listener owned by the player. That
+	# listener can disappear when player/scene lifecycle changes, which previously
+	# made every enemy death silently produce no pickup.
+	var player_loot_listener := player.get_node_or_null("ComponentInventory/EnemyLoot")
+	check(player_loot_listener != null, "fixture includes the legacy player-owned loot listener")
+	player_loot_listener.free()
+	await settle()
 	var first: CombatRoom = assembler.generated_rooms[0]
 	var second: CombatRoom = assembler.generated_rooms[1]
 	for enemy in get_nodes_in_group("enemies"):

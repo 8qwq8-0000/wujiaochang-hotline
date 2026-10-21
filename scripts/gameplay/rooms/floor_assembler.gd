@@ -24,6 +24,9 @@ var _drop_chance_rng := RandomNumberGenerator.new()
 
 
 func _ready() -> void:
+	var events := get_node_or_null("/root/CombatEvents")
+	if events != null and not events.entity_defeated.is_connected(_on_entity_defeated):
+		events.entity_defeated.connect(_on_entity_defeated)
 	assemble()
 
 
@@ -190,6 +193,18 @@ func try_enemy_drop(enemy: EnemyController, room: CombatRoom, death_position: Ve
 	var run := get_node_or_null("/root/RunManager")
 	var item := ComponentRolls.floor_drop(run.floor_index + 1 if run != null else 1, _loot_rng)
 	_spawn_enemy_drop.call_deferred(room, death_position, item, first_drop, enemy.get_instance_id())
+
+
+func _on_entity_defeated(entity: Node) -> void:
+	if not entity is EnemyController or entity.state != EnemyController.State.DEAD:
+		return
+	var owner_node := entity.get_parent()
+	while owner_node != null and not owner_node is CombatRoom:
+		owner_node = owner_node.get_parent()
+	var room := owner_node as CombatRoom
+	if room == null or room.get_parent() != self:
+		return
+	try_enemy_drop(entity, room, entity.global_position)
 
 
 func _spawn_enemy_drop(room: CombatRoom, death_position: Vector2, item: InventoryItem, first_drop: bool, enemy_id: int) -> void:

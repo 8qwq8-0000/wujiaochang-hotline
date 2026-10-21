@@ -45,14 +45,12 @@ func run_checks() -> void:
 	var buffs: RoomBuffComponent = player.get_node("RoomBuffComponent")
 	var hud: CanvasLayer = load("res://scenes/ui/combat_hud.tscn").instantiate()
 	room.add_child(hud)
-	var buff_label: Label = hud.get_node("Overlay/TopLeft/RoomBuff")
-	check(not buff_label.visible,"HUD buff row starts hidden")
+	check(hud.get_node_or_null("Overlay/TopLeft/RoomBuff") == null,"minimal HUD omits the persistent room-buff row")
 	var attack_box := box_at(room,Vector2(200,200),1)
 	for frame in 4:
 		await physics_frame
 	await press_e()
 	check(attack_box.state == PowerBox.State.CLAIMED and buffs.active_buff == &"attack_speed", "real E interaction claims attack buff")
-	check(buff_label.visible and buff_label.text.contains("攻速提升 25%"),"real E claim shows buff effect in top-left HUD")
 	var weapon: WeaponComponentData = load("res://resources/weapons/service_pistol.tres")
 	var original_cooldown := weapon.cooldown
 	player.weapons.set_equipped_weapon(weapon)
@@ -63,14 +61,12 @@ func run_checks() -> void:
 	await process_frame
 	check(attack_box.discharge_count == 0, "claimed box cannot be destroyed for a second reward")
 	room.room_cleared.emit()
-	check(not buff_label.visible,"room clear immediately hides HUD buff")
 	check(buffs.active_buff.is_empty() and player.weapons.attack_speed_multiplier == 1, "room clear removes source-room buff")
 	var cooling_box := box_at(room,Vector2(200,200),2)
 	for frame in 3:
 		await physics_frame
 	await press_e()
 	check(cooling_box.state == PowerBox.State.CLAIMED and player.heat.cooling_multiplier == 1.5, "cooling buff claimed through same E path")
-	check(buff_label.visible and buff_label.text.contains("散热提升 50%"),"HUD updates when active buff changes")
 	player.heat.set_physics_process(false)
 	player.heat.current_heat = 80
 	player.heat._physics_process(1)
@@ -168,7 +164,6 @@ func run_checks() -> void:
 	player.set_circuit_breaker_equipped(false)
 	player.health.apply_damage(100,DamagePacket.new())
 	check(player.health.is_dead() and buffs.active_buff.is_empty() and player.heat.cooling_multiplier == 1, "death clears room buff")
-	check(not buff_label.visible,"death immediately hides HUD buff")
 	room.cleared = true
 	var late_box := box_at(room,Vector2(490,100))
 	check(not late_box.can_interact(player), "dead player and cleared room cannot claim a fresh buff")

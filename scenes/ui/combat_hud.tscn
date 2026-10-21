@@ -16,73 +16,13 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="TopLeft" type="VBoxContainer" parent="Overlay"]
-layout_mode = 0
-offset_left = 12.0
-offset_top = 10.0
-offset_right = 245.0
-offset_bottom = 112.0
-theme_override_constants/separation = 1
-
-[node name="Health" type="Label" parent="Overlay/TopLeft"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.55, 1, 0.65, 1)
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 3
-text = "耐久"
-
-[node name="Heat" type="Label" parent="Overlay/TopLeft"]
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.55, 0.25, 1)
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 3
-text = "热量"
-
-[node name="Mobility" type="Label" parent="Overlay/TopLeft"]
-layout_mode = 2
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 3
-text = "机动"
-
-[node name="Weapon" type="Label" parent="Overlay/TopLeft"]
-layout_mode = 2
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 3
-text = "武装"
-
-[node name="Guard" type="Label" parent="Overlay/TopLeft"]
-layout_mode = 2
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 3
-text = "格挡"
-
-[node name="RoomBuff" type="Label" parent="Overlay/TopLeft"]
-visible = false
-layout_mode = 2
-mouse_filter = 2
-theme_override_colors/font_color = Color(0.62, 0.95, 0.73, 1)
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 3
-text = "增益"
-
-[node name="Objective" type="Label" parent="Overlay"]
-layout_mode = 0
-offset_left = 406.0
-offset_top = 12.0
-offset_right = 628.0
-offset_bottom = 38.0
-theme_override_colors/font_color = Color(0.75, 0.9, 1, 1)
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 3
-text = "必杀目标剩余"
-horizontal_alignment = 2
-
 [node name="NoticeQueue" type="VBoxContainer" parent="Overlay"]
+visible = false
 layout_mode = 0
-offset_left = 120.0
-offset_top = 238.0
-offset_right = 520.0
-offset_bottom = 334.0
-theme_override_constants/separation = 2
-alignment = 2
+offset_left = 225.0
+offset_top = 244.0
+offset_right = 415.0
+offset_bottom = 352.0
+mouse_filter = 2
 script = ExtResource("2_notice_queue")
+tutorial_text = ""
