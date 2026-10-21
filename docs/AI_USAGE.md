@@ -115,3 +115,7 @@
 
 - User clarified that every perfect parry starting with the second consecutive success must show the popup. Removed the post-popup combo reset; subsequent successful parries restart the popup until damage, normal block, timeout or scene change breaks the streak.
 - Training integration expanded to 50 checks, including the third/fourth consecutive popup and rebuilding the streak after a normal block.
+
+## 2026-10-21 — Grow PERFECT! up to its existing size
+
+- User requested small-to-large animation with the existing size as the maximum. Changed popup scaling from an overshoot-and-settle pop to a 0.22-second eased growth from 15% to 100%, capped at the existing 156-pixel width. Retained the existing 0.7-second display and fade.

@@ -5,6 +5,7 @@ const TEXTURE := preload("res://assets/art/ui/feedback/perfect_purple.png")
 const COMBO_SECONDS := 1.2
 const DISPLAY_SECONDS := 0.7
 const WIDTH := 156.0
+const GROW_SECONDS := 0.22
 var sprite: Sprite2D
 var combo_count := 0
 var popups_shown := 0
@@ -35,7 +36,8 @@ func _process(delta: float) -> void:
 		return
 	_elapsed += delta
 	var progress := clampf(_elapsed / DISPLAY_SECONDS, 0.0, 1.0)
-	var pop := lerpf(0.75, 1.12, progress / 0.14) if progress < 0.14 else lerpf(1.12, 1.0, minf((progress - 0.14) / 0.18, 1.0))
+	var growth := clampf(_elapsed / GROW_SECONDS, 0.0, 1.0)
+	var pop := lerpf(0.15, 1.0, 1.0 - pow(1.0 - growth, 3.0))
 	sprite.scale = Vector2.ONE * WIDTH / TEXTURE.get_width() * pop
 	sprite.global_position = _origin + Vector2(0, -12.0 * progress)
 	sprite.modulate.a = 1.0 - clampf((progress - 0.6) / 0.4, 0.0, 1.0)
