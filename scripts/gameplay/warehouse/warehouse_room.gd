@@ -209,6 +209,30 @@ func enter_boss_test() -> bool:
 	return true
 
 
+func enter_parry_training() -> bool:
+	if _departing or get_tree().paused:
+		return false
+	var flow := get_parent().get_parent().get_node_or_null("SceneFlow") as SceneContainerManager
+	if flow == null:
+		$Instructions.text = "请从主入口进入盾反训练营"
+		return false
+	if not save_loadout():
+		$Instructions.text = store.error_message
+		return false
+	if not flow.request_scene("res://scenes/debug/parry_training.tscn"):
+		$Instructions.text = "盾反训练营加载失败，请重试"
+		return false
+	get_node("/root/RunManager").begin_run()
+	_departing = true
+	player.set_input_enabled(false)
+	flow.load_failed.connect(func(_path: String, _error: String) -> void:
+		_departing = false
+		player.set_input_enabled(true)
+		$Instructions.text = "盾反训练营加载失败，请重试"
+	, CONNECT_ONE_SHOT)
+	return true
+
+
 func owns_synthesis_item(item: InventoryItem) -> bool:
 	return item != null and (chest.has_item(item) or player.inventory.item_location(item) != "")
 
