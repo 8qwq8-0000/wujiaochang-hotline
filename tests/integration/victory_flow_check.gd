@@ -43,15 +43,15 @@ func run_checks() -> void:
 	var run := root.get_node("RunManager")
 	run.begin_run(88421)
 	run.persistent_run = true
-	run.floor_index = 3
+	run.floor_index = 2
 	run.set_mandatory_enemy_count(0)
 	var floor_player := floor.get_node("Player") as PlayerController
 	check(floor_player.consume_persona_drink(TalentCoreController.DEEP_NINJA), "fixture installs the final active persona")
 	var ui: Node = main.get_node("ExtractionFlow")
 	ui.continue_floor()
 	var arena := await wait_scene(flow) as RooftopBossArena
-	check(arena != null and arena.scene_file_path == "res://scenes/levels/bosses/rooftop_boss_arena.tscn", "continuing after floor four loads rooftop boss")
-	check(run.floor_index == 4 and run.persistent_run, "rooftop is the fifth and final run stage")
+	check(arena != null and arena.scene_file_path == "res://scenes/levels/bosses/rooftop_boss_arena.tscn", "continuing after floor three loads rooftop boss")
+	check(run.floor_index == 3 and run.persistent_run, "rooftop is the fourth and final run stage")
 	if arena == null:
 		quit(1)
 		return
