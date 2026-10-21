@@ -99,3 +99,8 @@
 - Restored the old editor/Git formatting and ignore rules, Windows environment-check script and current GPT art implementation note. Updated the existing wrist-weapon note instead of restoring the obsolete duplicate document. The local maximize-window preference remains outside the commit as before. Windows/PowerShell and .NET execution are not validated on this macOS session.
 
 - Pre-push validation: laser beam 26/26, loot/equipment 11/11, synthesis NPC 40/40, point-blank shooting 73/73 and unit checks 62/62 passed. git diff --check passed. Known shared hinged-door art regression and existing exit resource warnings remain as recorded above.
+
+## 2026-10-21 — Purple arcade feedback for paired perfect parries
+
+- User approved the generated purple pixel PERFECT! wordmark and clarified that it triggers after two consecutive perfect parries. Preserved the prompt and source bitmap, imported the transparent runtime copy, and subscribed presentation to resolved player damage events.
+- Pair window is 1.2 seconds; ordinary blocks, damage, timeout and scene changes break the chain. The popup lasts 0.7 seconds with a scale pop, upward movement and fade; it inherits pause behavior and does not change combat resolution.
