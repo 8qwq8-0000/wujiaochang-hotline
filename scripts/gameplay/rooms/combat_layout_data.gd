@@ -1,6 +1,8 @@
 class_name CombatLayoutData
 extends Resource
 
+const STRUCTURAL_PARTITION_MAX_THICKNESS := 6.1
+
 @export var id: StringName
 @export var display_name: String
 @export var covers: Array[Rect2] = []
@@ -43,14 +45,19 @@ func scaled_for_room(scale_factor: float, base_size: Vector2 = Vector2(640.0, 36
 	result.floor_color = floor_color
 	result.cover_color = cover_color
 	for rect in covers:
-		result.covers.append(_scaled_rect_center(rect, scale_factor, base_size, false))
+		# Thin cover rectangles are authored as connected wall segments. Their
+		# dimensions must grow with the expanded room or doors pull away from
+		# the neighbouring wall, leaving both a visible and physical gap.
+		# Furniture keeps its original footprint so combat lanes still open up.
+		var is_partition := minf(rect.size.x, rect.size.y) <= STRUCTURAL_PARTITION_MAX_THICKNESS
+		result.covers.append(_scaled_rect_center(rect, scale_factor, base_size, is_partition))
 	for rect in windows:
-		result.windows.append(_scaled_rect_center(rect, scale_factor, base_size, false))
+		result.windows.append(_scaled_rect_center(rect, scale_factor, base_size, true))
 	for rect in zones:
 		result.zones.append(_scaled_rect_center(rect, scale_factor, base_size, true))
 	for definition in doors:
 		var point := _scaled_point(Vector2(definition.x, definition.y), scale_factor, base_size)
-		result.doors.append(Vector4(point.x, point.y, definition.z, definition.w))
+		result.doors.append(Vector4(point.x, point.y, definition.z, definition.w * scale_factor))
 	for point in enemy_positions:
 		result.enemy_positions.append(_scaled_point(point, scale_factor, base_size))
 	result.enemy_profiles.assign(enemy_profiles)

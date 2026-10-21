@@ -152,7 +152,9 @@ func _apply_layout() -> void:
 		var door: AutomaticDoor = load("res://scenes/environment/automatic_door.tscn").instantiate()
 		door.position = Vector2(definition.x, definition.y)
 		door.rotation = definition.z
-		door.scale.y = definition.w / 64.0
+		# Keep the door leaf at its authored aspect ratio. The door owns a
+		# variable-length collider and draws matching wall infill at both ends.
+		door.configure_opening_width(definition.w)
 		geometry.add_child(door)
 	$Floor.color = layout.floor_color
 	$Floor.z_index = -2

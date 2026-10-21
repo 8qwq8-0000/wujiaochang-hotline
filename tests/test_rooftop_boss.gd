@@ -51,7 +51,15 @@ func test_arena_authors_phase_one_and_phase_two_contract() -> void:
 	assert_true(arena.get_node_or_null("RoomLighting") is RooftopBossRoomLighting)
 	assert_eq(arena.get_node("RoomArt").texture.get_size(), Vector2(960.0, 540.0))
 	assert_true(arena.get_node("Boss").position.y < arena.get_node("Player").position.y)
-	assert_true(arena.get_node("Boss").z_index < arena.get_node("Player").z_index)
+	assert_true(arena.get_node("Boss").z_index > arena.get_node("Player").z_index)
+	var boss_body := arena.get_node("Boss/BodySprite") as Sprite2D
+	var boss_glow := arena.get_node("Boss/GlowSprite") as Sprite2D
+	var player_guard := arena.get_node("Player/VisualRoot/GuardVisual") as Node2D
+	assert_false(boss_body.z_as_relative)
+	assert_eq(boss_body.z_index, 19)
+	assert_eq(boss_glow.z_index, boss_body.z_index)
+	assert_true(boss_body.z_index > arena.get_node("Player").z_index + player_guard.z_index)
+	assert_true(boss_body.z_index < arena.get_node("AttackTelegraph").z_index)
 	assert_eq(arena.get_node("Player").position, Vector2(480.0, 486.0))
 	assert_eq(arena.get_node("EnemySpawnPoints").get_child_count(), 3)
 	assert_eq(arena.get_node("SupportSpawnPoints").get_child_count(), 3)

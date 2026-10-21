@@ -11,6 +11,8 @@ var _state := -99
 var _pose := 0.0
 static var _textures: Dictionary = {}
 const ROOT := "res://assets/art/environment/refined/"
+const DOOR_LEAF_SIZE := Vector2(40, 72)
+const DOOR_FRAME_OVERLAP := 2.0
 # Opaque silhouette bounds measured once from the source PNGs. Ignore faint
 # alpha speckles in their wide transparent margins without altering the images.
 const REGIONS := {
@@ -75,6 +77,7 @@ func _draw() -> void:
 				return
 			filename = "explosive_crate.png"
 		"door":
+			_draw_door_infill()
 			filename = "bulkhead_open.png" if _state == 1 else "bulkhead_closed.png"
 		"exit":
 			filename = "downward_elevator.png"
@@ -84,3 +87,24 @@ func _draw() -> void:
 			filename = "gpt_synthesist.png"
 	if not filename.is_empty():
 		draw_texture_rect(art_texture(filename), Rect2(draw_offset - draw_size * 0.5, draw_size), false, tint)
+
+
+func _draw_door_infill() -> void:
+	var opening_width := maxf(float(_owner.get("opening_width")), DOOR_LEAF_SIZE.y)
+	var door_half := DOOR_LEAF_SIZE.y * 0.5
+	var opening_half := opening_width * 0.5
+	var filler_length := opening_half - door_half + DOOR_FRAME_OVERLAP * 2.0
+	if filler_length <= 0.0:
+		return
+	var wall := WorkshopArt.asset("wall")
+	for side: int in [-1, 1]:
+		var center_y := side * (opening_half + door_half) * 0.5
+		draw_set_transform(Vector2(0, center_y), PI * 0.5)
+		draw_texture_rect_region(
+			wall,
+			Rect2(-filler_length * 0.5, -5, filler_length, 10),
+			Rect2(0, 0, wall.get_width() * filler_length / 64.0, wall.get_height())
+		)
+		draw_set_transform(Vector2.ZERO)
+		var frame_y := side * door_half
+		draw_line(Vector2(-6, frame_y), Vector2(6, frame_y), Color("f7c56b"), 2.0)

@@ -42,3 +42,33 @@ func test_enemy_noise_does_not_replace_own_last_known_target() -> void:
 	enemy._alert_to(target_position, false)
 	enemy._on_noise(enemy, Vector2(8, 0), 1000.0)
 	assert_eq(enemy._last_known_position, target_position)
+
+
+func test_wide_door_expands_collision_without_stretching_leaf() -> void:
+	var door := track(load("res://scenes/environment/automatic_door.tscn").instantiate()) as AutomaticDoor
+	door.configure_opening_width(96.0)
+	(Engine.get_main_loop() as SceneTree).root.add_child(door)
+	var body_shape := door.get_node("Body/Shape").shape as RectangleShape2D
+	var contact_shape := door.get_node("Contact/Shape").shape as RectangleShape2D
+	var art := door.get_node("RefinedArt") as RefinedEnvironmentArt
+	assert_eq(door.scale, Vector2.ONE)
+	assert_eq(body_shape.size, Vector2(12, 96))
+	assert_eq(contact_shape.size, Vector2(30, 104))
+	assert_eq(art.draw_size, Vector2(40, 72))
+
+
+func test_enemy_door_breach_preserves_position_and_velocity() -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	var door := track(load("res://scenes/environment/automatic_door.tscn").instantiate()) as AutomaticDoor
+	var enemy := track(load("res://scenes/actors/enemies/enemy.tscn").instantiate()) as EnemyController
+	tree.root.add_child(door)
+	tree.root.add_child(enemy)
+	door.position = Vector2(100, 100)
+	enemy.position = Vector2(84, 100)
+	enemy.velocity = Vector2(70, 0)
+	var position_before := enemy.global_position
+	var velocity_before := enemy.velocity
+	door._on_contact(enemy)
+	assert_true(door.opened)
+	assert_eq(enemy.global_position, position_before)
+	assert_eq(enemy.velocity, velocity_before)

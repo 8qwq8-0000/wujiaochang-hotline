@@ -3,6 +3,7 @@ extends Node2D
 
 @export var knockdown_seconds := 0.8
 @export var knockdown_reach := 60.0
+@export var opening_width := 64.0
 # Kept for old scene compatibility; doors now always break instead of swinging.
 @export var hinged_visual := false
 var opened := false
@@ -11,8 +12,25 @@ var knocked_count := 0
 
 func _ready() -> void:
 	add_to_group("environment_doors")
+	_apply_opening_width()
 	$Contact.body_entered.connect(_on_contact)
 	set_physics_process(true)
+
+
+func configure_opening_width(value: float) -> void:
+	opening_width = maxf(value, 1.0)
+	if is_node_ready():
+		_apply_opening_width()
+
+
+func _apply_opening_width() -> void:
+	var body_shape := $Body/Shape.shape.duplicate() as RectangleShape2D
+	body_shape.size = Vector2(body_shape.size.x, opening_width)
+	$Body/Shape.shape = body_shape
+	var contact_shape := $Contact/Shape.shape.duplicate() as RectangleShape2D
+	contact_shape.size = Vector2(contact_shape.size.x, opening_width + 8.0)
+	$Contact/Shape.shape = contact_shape
+	$RefinedArt.queue_redraw()
 
 
 func _physics_process(_delta: float) -> void:
@@ -25,7 +43,7 @@ func _physics_process(_delta: float) -> void:
 			if not candidate is Node2D:
 				continue
 			var local := to_local(candidate.global_position)
-			if absf(local.x) <= 17.0 and absf(local.y) <= 38.0:
+			if absf(local.x) <= 17.0 and absf(local.y) <= opening_width * 0.5 + 6.0:
 				_on_contact(candidate)
 				if opened:
 					return
@@ -45,12 +63,9 @@ func _on_contact(body: Node2D) -> void:
 	slammed = body is PlayerController and body.dash.is_dashing() and body.velocity.dot(direction) > 80.0
 	$Body/Shape.set_deferred("disabled",true)
 	if body is EnemyController:
-		# Release a navigation agent that reached the leaf before its deferred
-		# collider disable was flushed; this is a tiny breach step, not knockback.
-		var breached_local := to_local(body.global_position)
-		breached_local.x = -20.0 if side > 0.0 else 20.0
-		body.global_position = to_global(breached_local)
-		body.navigation_agent.target_position = body.global_position
+		# Never teleport an enemy across the leaf. Once the deferred collider
+		# disable is flushed, its existing velocity and navigation target carry
+		# it through naturally on the next physics frame.
 		body._clear_navigation_recovery()
 	_spawn_break_fragments(direction)
 	var events := get_node_or_null("/root/CombatEvents")

@@ -17,9 +17,10 @@ func enemy_at(point: Vector2,parent: Node = null) -> EnemyController:
 	(parent if parent != null else room).add_child(enemy)
 	enemy.set_physics_process(false)
 	return enemy
-func door_at(point: Vector2) -> AutomaticDoor:
+func door_at(point: Vector2, opening_width: float = 64.0) -> AutomaticDoor:
 	var door: AutomaticDoor = load("res://scenes/environment/automatic_door.tscn").instantiate()
 	door.position = point
+	door.configure_opening_width(opening_width)
 	room.add_child(door)
 	return door
 func approach(player: PlayerController,door: AutomaticDoor,direction: Vector2) -> void:
@@ -110,17 +111,24 @@ func run_checks() -> void:
 	player.mobility.activate_ability(player,Vector2.LEFT)
 	await approach(player,reverse,Vector2.LEFT)
 	check(reverse.opened and reverse.slammed and reverse_target.state == EnemyController.State.STAGGERED,"dash works from reverse side")
-	var enemy_door := door_at(Vector2(800,150))
+	var enemy_door := door_at(Vector2(800,150), 96.0)
 	var approaching := enemy_at(Vector2(750,150))
 	await physics_frame
 	await physics_frame
+	check(enemy_door.scale.is_equal_approx(Vector2.ONE), "wide doorway keeps the door leaf at its authored aspect ratio")
+	check((enemy_door.get_node("Body/Shape").shape as RectangleShape2D).size.y == 96.0, "wide doorway expands the blocking collision instead of scaling the art")
+	check((enemy_door.get_node("Contact/Shape").shape as RectangleShape2D).size.y == 104.0, "wide doorway expands its contact area with the collision")
+	var maximum_enemy_step := 0.0
 	for frame in 60:
+		var before := approaching.global_position
 		approaching.velocity = Vector2(100,0)
 		approaching.move_and_slide()
+		maximum_enemy_step = maxf(maximum_enemy_step, approaching.global_position.distance_to(before))
 		await physics_frame
 		if enemy_door.opened:
 			break
 	check(enemy_door.opened and not enemy_door.slammed,"ordinary enemy contact also opens door")
+	check(maximum_enemy_step <= 4.0, "enemy opens a door without an abnormal breach lunge")
 	room.queue_free()
 	other.queue_free()
 	await process_frame

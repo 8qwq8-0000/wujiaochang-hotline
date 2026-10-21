@@ -21,9 +21,10 @@ func test_weighted_room_selection_rejects_empty_weight() -> void:
 	assembler.free()
 
 
-func test_combat_layout_expands_spacing_without_scaling_cover() -> void:
+func test_combat_layout_scales_partitions_and_doors_but_not_furniture() -> void:
 	var source := CombatLayoutData.new()
 	source.covers = [Rect2(300, 160, 40, 40)]
+	source.covers.append(Rect2(200, 40, 6, 80))
 	source.zones = [Rect2(0, 0, 320, 180)]
 	source.enemy_positions = [Vector2(500, 180)]
 	source.doors = [Vector4(600, 180, 0, 64)]
@@ -31,6 +32,9 @@ func test_combat_layout_expands_spacing_without_scaling_cover() -> void:
 	assert_eq(expanded.room_size, Vector2(960, 540))
 	assert_eq(expanded.covers[0].size, Vector2(40, 40))
 	assert_eq(expanded.covers[0].get_center(), Vector2(480, 270))
+	assert_eq(expanded.covers[1].size, Vector2(9, 120))
+	assert_eq(expanded.covers[1].get_center(), Vector2(304.5, 120))
 	assert_eq(expanded.zones[0].size, Vector2(480, 270))
 	assert_eq(expanded.enemy_positions[0], Vector2(750, 270))
 	assert_eq(Vector2(expanded.doors[0].x, expanded.doors[0].y), Vector2(900, 270))
+	assert_eq(expanded.doors[0].w, 96.0)
