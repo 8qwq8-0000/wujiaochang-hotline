@@ -35,7 +35,7 @@ mouse_filter = 2
 [node name="Instructions" type="Label" parent="UI"]
 offset_left = 20.0
 offset_top = 38.0
-text = "左键引爆炸弹箱 · 配电箱 E / 攻击 · 碰门开启\n测试箱取轮式组件 → Tab 装备 → 鼠标指门 + 空格 · R 重置"
+text = "左键引爆炸弹箱 · 充电台 E 领取增益 · 碰门开启\n测试箱取轮式组件 → Tab 装备 → 鼠标指门 + 空格 · R 重置"
 theme_override_font_sizes/font_size = 12
 mouse_filter = 2
 [node name="Status" type="Label" parent="UI"]

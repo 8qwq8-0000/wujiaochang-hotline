@@ -57,12 +57,16 @@ func run_checks() -> void:
 	await approach(player,walking,Vector2.RIGHT)
 	check(walking.opened and not walking.slammed and walking.knocked_count == 0,"real walking contact opens door without knockdown")
 	check(breach_radii == [96.0], "ordinary breach emits only the restrained 96-pixel investigation noise")
-	check(walking.find_children("DoorFragment*", "Sprite2D", true, false).size() >= 4, "breach uses cut pieces of the closed door texture")
+	check(walking.find_children("DoorFragment*", "Sprite2D", true, false).size() >= 10, "breach uses cut pieces of the closed door texture")
 	await physics_frame
 	check(walking.get_node("Body/Shape").disabled,"open door removes blocking collider")
 	player.weapons.try_attack(Vector2(205,350),Vector2.RIGHT,player)
 	await create_timer(0.2).timeout
 	check(walk_target.health.current_health == 7,"open doorway permits projectile")
+	await create_timer(0.5).timeout
+	var debris := walking.find_children("DoorFragment*", "Sprite2D", true, false)
+	check(debris.size() >= 10 and debris.size() <= 14, "broken door leaves persistent floor fragments")
+	check(debris.all(func(piece: Sprite2D) -> bool: return piece.has_meta("ground_debris") and piece.z_index == -1 and piece.modulate.a == 1.0), "fragments finish falling onto ground without fading away")
 	var dash := door_at(Vector2(400,150))
 	var behind := enemy_at(Vector2(435,150))
 	var front := enemy_at(Vector2(365,180))

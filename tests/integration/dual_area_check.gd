@@ -69,7 +69,7 @@ func run_checks() -> void:
 	check(run.mandatory_enemies_remaining == 12 and get_nodes_in_group("enemies").size() == 6, "pending area contributes to floor objectives without spawning early")
 	for room in [first, second]:
 		check(room.find_children("*", "PowerBox", true, false).size() == 1, "each area has one power box")
-		check(room.find_children("*", "FuelBarrel", true, false).size() == 1, "each area has one bomb box")
+		check(room.find_children("*", "FuelBarrel", true, false).size() == 3, "each area has three bomb boxes")
 		check(not room.find_children("*", "AutomaticDoor", true, false).is_empty(), "formal areas contain usable interior doors")
 	player.global_position = first.to_global(Vector2(900,270))
 	await settle()
@@ -109,7 +109,8 @@ func run_checks() -> void:
 	check(get_nodes_in_group("enemies").size() == 6 and run.mandatory_enemies_remaining == 6, "second enemies spawn once without resetting total objectives")
 	check(player.get_instance_id() == identity and player.export_run_state() == state and run.floor_index == 0, "area traversal preserves player, inventory and floor")
 	check(player.health.current_health == health and is_equal_approx(player.heat.current_heat,heat), "area traversal preserves health and heat")
-	check(EnvironmentArea.for_actor(player) == second and not player.inventory.can_change_equipment(), "area scope and combat equipment lock switch on entry")
+	check(EnvironmentArea.for_actor(player) == second, "area scope switches on entry")
+	check(player.inventory.can_change_equipment(), "living player can change equipment in combat under current rules")
 	check(assembler.passages[0].return_sealed, "entering second area permanently seals return route")
 	player.global_position = second.to_global(Vector2(30, 270))
 	await settle()
@@ -146,7 +147,9 @@ func run_checks() -> void:
 	assembler._on_room_cleared(second)
 	check(get_nodes_in_group("component_pickups").size() == 2 and assembler._rooms_remaining == 0, "duplicate final clear cannot issue another area guarantee")
 	var guarantee: ComponentPickup = get_first_node_in_group("component_pickups")
-	check(ComponentRolls.quality(guarantee.rolled_item) >= 1 and ComponentRolls.affixes(guarantee.rolled_item).size() >= 1, "area guarantee contains real rolled quality and affixes")
+	var item := guarantee.rolled_item
+	var valid_drop := not ComponentRolls.cyberware_modules(item).is_empty() if str(item.get_property("slot", "")) == "cyberware" else ComponentRolls.quality(item) >= 1 and not ComponentRolls.affixes(item).is_empty()
+	check(valid_drop, "area guarantee contains a real rolled component or fixed-effect cyberware")
 	player.global_position = second.exit_elevator.global_position
 	await settle()
 	check(ui.get("_overlay").visible and not paused, "actual final exit opens non-pausing extraction choice")

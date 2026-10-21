@@ -84,61 +84,43 @@ func run_checks() -> void:
 	check(player.guard.state == GuardComponent.State.RECOVERY and player.guard.get("_time_remaining") < player.guard.recovery_seconds, "guard buff shortens actual recovery phase")
 	player.guard.advance_timing(player.guard.recovery_seconds*0.7)
 	check(player.guard.state == GuardComponent.State.IDLE, "guard exits recovery at shortened duration")
-	# Player and enemies are damaged together; cover, range, and scope stay respected.
+	# The station is immune to direct hits, bullets and real melee sweeps.
 	player.position = Vector2(430,200)
 	player.health.set_current_health(3)
 	player.hurt_box.clear_invulnerability()
 	var target := enemy_at(room,Vector2(460,200))
-	var covered := enemy_at(room,Vector2(460,250))
-	var far := enemy_at(room,Vector2(600,200))
 	var other_room := TestRoom.new()
 	other_room.add_to_group("combat_rooms")
 	root.add_child(other_room)
-	var isolated := enemy_at(other_room,Vector2(460,200))
-	var wall := StaticBody2D.new()
-	wall.position = Vector2(430,225)
-	var collider := CollisionShape2D.new()
-	var shape := RectangleShape2D.new()
-	shape.size = Vector2(10,20)
-	collider.shape = shape
-	wall.add_child(collider)
-	room.add_child(wall)
-	var danger := box_at(room,Vector2(400,200))
-	for frame in 3:
-		await physics_frame
-	danger.receive_hit(DamagePacket.new())
-	danger.interact(player)
-	danger.receive_hit(DamagePacket.new())
-	await process_frame
-	await process_frame
-	check(danger.state == PowerBox.State.BROKEN and danger.discharge_count == 1, "attacking reserves one discharge and excludes E claim")
-	check(player.health.current_health == 2 and target.health.current_health == 7, "environment discharge damages both player and enemy")
-	check(player.statuses.has_status(&"conductive") and target.get_node("StatusComponent").has_status(&"conductive"), "discharge applies conductivity to both actor types")
-	check(covered.health.current_health == 8 and far.health.current_health == 8 and isolated.health.current_health == 8, "cover, radius and room scope block discharge")
-	player.position = Vector2(20,20)
-	var chain_target := enemy_at(room,Vector2(520,200))
-	chain_target.get_node("StatusComponent").add_status(&"conductive",6,["negative","electric"])
 	var arcs: Array = []
 	root.get_node("CombatEvents").electric_arc_requested.connect(func(_a: Vector2,_b: Vector2,_room: Node) -> void: arcs.append(true))
-	var second := box_at(room,Vector2(400,200))
-	second.receive_hit(DamagePacket.new())
+	var danger := box_at(room,Vector2(400,200))
+	check(danger.get_node("ActiveSigil").visible, "ready station projects its floor sigil")
+	check(danger.collision_layer == 32, "station keeps interaction layer and leaves damage target layer")
+	var impact := DamagePacket.new()
+	impact.base_damage = 100
+	impact.damage_type = &"electric"
+	for attempt in 3:
+		var result := danger.receive_hit(impact)
+		check(result.final_damage == 0 and not result.target_defeated, "attacks cannot damage or destroy charging station")
 	await process_frame
-	check(arcs.size() > 0 and chain_target.health.current_health < 8, "power-box electric discharge triggers real conductive arc damage")
-	# Native projectile collision must break the Area2D prop.
+	check(danger.state == PowerBox.State.READY and danger.discharge_count == 0 and arcs.is_empty(), "attacks never discharge station or consume its buff")
+	check(player.health.current_health == 3 and target.health.current_health == 8, "station attacks do not cause surrounding blast damage")
+	danger.interact(player)
+	check(danger.state == PowerBox.State.CLAIMED and not danger.get_node("ActiveSigil").visible, "E still claims attacked station and immediately extinguishes sigil")
 	player.position = Vector2(490,100)
 	player.hurt_box.clear_invulnerability()
 	player.heat.current_heat = 0
 	player.weapons.set("_cooldown_remaining",0)
 	var shot_box := box_at(room,Vector2(550,100))
+	var behind := enemy_at(room,Vector2(600,100))
 	await physics_frame
 	await physics_frame
-	check(player.weapons.try_attack(Vector2(510,100),Vector2.RIGHT,player), "actual weapon fires toward power box")
-	for frame in 20:
+	check(player.weapons.try_attack(Vector2(510,100),Vector2.RIGHT,player), "actual weapon fires toward charging station")
+	for frame in 25:
 		await physics_frame
-		if shot_box.state == PowerBox.State.BROKEN:
-			break
-	check(shot_box.state == PowerBox.State.BROKEN, "real projectile breaks the box")
-	# The bound melee weapon can also hit the environment Area2D.
+	check(shot_box.state == PowerBox.State.READY and shot_box.discharge_count == 0, "real projectile cannot break station")
+	check(behind.health.current_health < 8, "projectile passes through station and can hit an enemy behind it")
 	player.weapons.set_equipped_weapon(load("res://resources/weapons/initial_baton.tres"))
 	player.weapons.reset_transient_state()
 	player.heat.current_heat = 0
@@ -150,7 +132,13 @@ func run_checks() -> void:
 	for frame in 12:
 		player.weapons.update_attack_pose(player.position,Vector2.RIGHT,player)
 		await physics_frame
-	check(melee_box.state == PowerBox.State.BROKEN, "real melee sweep breaks power box")
+	check(melee_box.state == PowerBox.State.READY and melee_box.discharge_count == 0, "real melee sweep cannot break station")
+	var sigil := melee_box.get_node("ActiveSigil") as ChargingSigil
+	var phase := sigil.phase
+	paused = true
+	await create_timer(0.1, true).timeout
+	check(sigil.phase == phase, "paused game freezes sigil animation")
+	paused = false
 	buffs.apply_buff(&"cooling",other_room)
 	other_room.queue_free()
 	await process_frame
@@ -166,7 +154,8 @@ func run_checks() -> void:
 	check(player.health.is_dead() and buffs.active_buff.is_empty() and player.heat.cooling_multiplier == 1, "death clears room buff")
 	room.cleared = true
 	var late_box := box_at(room,Vector2(490,100))
-	check(not late_box.can_interact(player), "dead player and cleared room cannot claim a fresh buff")
+	late_box.get_node("ActiveSigil").refresh()
+	check(not late_box.can_interact(player) and not late_box.get_node("ActiveSigil").visible, "cleared room hides floor sigil and rejects fresh buffs")
 	room.queue_free()
 	other_room.queue_free()
 	await process_frame
