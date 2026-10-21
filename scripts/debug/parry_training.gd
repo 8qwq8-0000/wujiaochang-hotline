@@ -4,11 +4,12 @@ signal training_shot_fired(index: int)
 const SCENE_PATH := "res://scenes/debug/parry_training.tscn"
 const CENTER := Vector2(410, 216)
 const RADIUS := 112.0
+const FAN_HALF_ANGLE := PI / 3.0
+const BULLET_SPEED := 260.0
 const ENEMY := preload("res://scenes/actors/enemies/enemy.tscn")
 const SHOT := preload("res://scenes/combat/projectile.tscn")
 var shot_interval := 0.9
 var robot_health := 3
-var bullet_speed := 260.0
 var robots: Array[EnemyController] = []
 var sliders: Dictionary = {}
 var perfects := 0
@@ -45,7 +46,7 @@ func _ready() -> void:
 
 func receive_scene_payload(payload: Dictionary) -> void:
 	var settings: Dictionary = payload.get("training_settings", {})
-	for key in ["interval", "health", "speed"]:
+	for key in ["interval", "health"]:
 		if settings.has(key):
 			sliders[key].value = settings[key]
 
@@ -74,7 +75,6 @@ func _build_ui() -> void:
 	column.add_theme_constant_override("separation", 8)
 	_panel.add_child(column)
 	_add_slider(column, "interval", "射击间隔", 0.4, 2.0, 0.1, shot_interval, "秒")
-	_add_slider(column, "speed", "子弹速度", 120, 600, 20, bullet_speed, "px/s")
 	_add_slider(column, "health", "机器人血量", 1, 10, 1, robot_health, "点")
 	_make_label(column, "血量调整会重置全部机器人\n本场训练不写入正式存档", Vector2.ZERO, 10)
 	_button("重置训练 [R]", Vector2(500, 12), restart_training)
@@ -105,7 +105,6 @@ func _add_slider(parent: Node, key: String, title: String, minimum: float, maxim
 		update.call(value)
 		match key:
 			"interval": shot_interval = value
-			"speed": bullet_speed = value
 			"health":
 				robot_health = int(value)
 				call_deferred("_reset_robots")
@@ -128,6 +127,10 @@ func _button(text: String, point: Vector2, action: Callable) -> void:
 	ui.add_child(button)
 
 
+func _robot_position(index: int) -> Vector2:
+	return CENTER + Vector2.UP.rotated((index - 1) * FAN_HALF_ANGLE) * RADIUS
+
+
 func _reset_robots() -> void:
 	if _leaving or not is_inside_tree():
 		return
@@ -144,7 +147,7 @@ func _reset_robots() -> void:
 		enemy.profile.patrol_enabled = false
 		enemy.stationary_test_target = true
 		enemy.mandatory = false
-		enemy.position = CENTER + Vector2.UP.rotated(TAU * index / 3.0) * RADIUS
+		enemy.position = _robot_position(index)
 		enemy.initial_facing = enemy.position.direction_to(CENTER)
 		$Robots.add_child(enemy)
 		robots.append(enemy)
@@ -181,7 +184,7 @@ func _fire_next() -> void:
 		var bullet := SHOT.instantiate() as CombatProjectile
 		add_child(bullet)
 		bullet.global_position = enemy.global_position + heading * 22.0
-		bullet.setup(enemy, CombatFaction.Id.ENEMY, heading, 1, bullet_speed)
+		bullet.setup(enemy, CombatFaction.Id.ENEMY, heading, 1, BULLET_SPEED)
 		_next_index = (index + 1) % 3
 		last_fired_index = index
 		training_shot_fired.emit(index)
@@ -237,7 +240,7 @@ func restart_training() -> bool:
 		return false
 	player.inventory.set_open(false)
 	get_tree().paused = false
-	var payload := {"training_settings": {"interval": shot_interval, "health": robot_health, "speed": bullet_speed}}
+	var payload := {"training_settings": {"interval": shot_interval, "health": robot_health}}
 	var flow := _flow()
 	if flow == null:
 		return false
@@ -274,10 +277,12 @@ func _draw() -> void:
 	for y in range(68, 340, 16):
 		draw_line(Vector2(216, y), Vector2(632, y), Color("202334"))
 	draw_rect(Rect2(216, 64, 416, 276), Color("70508b"), false, 2)
-	draw_arc(CENTER, RADIUS, 0, TAU, 96, Color("665078"), 1)
+	draw_arc(CENTER, RADIUS, -PI / 2.0 - FAN_HALF_ANGLE, -PI / 2.0 + FAN_HALF_ANGLE, 48, Color("665078"), 1)
+	for index in [0, 2]:
+		draw_line(CENTER, _robot_position(index), Color("4c4262"), 1)
 	draw_arc(CENTER, 24, 0, TAU, 32, Color("ba7cff"), 2)
 	for index in 3:
-		var point := CENTER + Vector2.UP.rotated(TAU * index / 3.0) * RADIUS
+		var point := _robot_position(index)
 		draw_arc(point, 22, 0, TAU, 24, Color("cf9bff") if index == _next_index else Color("4c4262"), 2)
 
 

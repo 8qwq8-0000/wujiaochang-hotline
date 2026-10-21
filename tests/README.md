@@ -158,4 +158,4 @@ godot --headless --path . --script res://tests/integration/boss_shortcut_check.g
 
 盾兵飞行屏障与远程配合：`godot --headless --path . --script res://tests/integration/shield_support_check.gd`，61 项覆盖四方向、独立移动、墙体、干净身体、初始冷却、提前一秒跑位及友伤。带窗口追加 `-- --capture` 输出四方向截图。
 
-盾反训练营：`godot --headless --path . --script tests/integration/parry_training_check.gd`，覆盖仓库入口、三只环形机器人、顺序单发、三个参数滑块、死亡跳过、真实弹道反射、连续两次 PERFECT! 与断连、真实 R 重置及参数保留、暂停和正式存档隔离。非 headless 追加 `-- --capture` 可生成训练营截图。
+盾反训练营：`godot --headless --path . --script tests/integration/parry_training_check.gd`，覆盖仓库入口、三只前方扇形机器人、顺序单发、血量与间隔滑块、固定弹速、死亡跳过、真实弹道反射、连续两次 PERFECT! 与断连、真实 R 重置及参数保留、暂停和正式存档隔离。非 headless 追加 `-- --capture` 可生成训练营截图。

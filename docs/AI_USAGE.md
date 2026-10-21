@@ -119,3 +119,9 @@
 ## 2026-10-21 — Grow PERFECT! up to its existing size
 
 - User requested small-to-large animation with the existing size as the maximum. Changed popup scaling from an overshoot-and-settle pop to a 0.22-second eased growth from 15% to 100%, capped at the existing 156-pixel width. Retained the existing 0.7-second display and fade.
+
+## 2026-10-21 — Forward fan formation and fixed training projectile speed
+
+- User requested fan placement and explicitly clarified that bullet speed should be fixed with its slider removed. Three stationary robots now occupy the player's forward 120-degree arc; the floor guide uses the same fan geometry.
+- Removed speed from sliders and reset payloads; every training projectile uses the fixed 260 px/s constant. Interval and robot HP remain adjustable. Updated the existing integration assertions, player instructions and runtime screenshot.
+- Headless and rendered training checks both pass 50/50, including actual reflected hits on all three shooters, fixed projectile speed, removed speed control and R reset. Existing exit-time resource warnings remain.

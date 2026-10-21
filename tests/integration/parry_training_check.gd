@@ -66,10 +66,10 @@ func run() -> void:
 		return
 	check(not root.get_node("RunManager").persistent_run, "training has no persistent run")
 	check(not main.get_node("CombatHUD").visible, "formal combat HUD hidden")
-	check(camp.robots.size() == 3, "three ring robots")
+	check(camp.robots.size() == 3, "three fan robots")
 	for robot in camp.robots:
 		check(robot.health.current_health == 3 and robot.health.max_health == 3, "robot defaults to three HP")
-		check(robot.stationary_test_target and is_equal_approx(robot.position.distance_to(camp.CENTER), 112), "robot stationary on ring")
+		check(robot.stationary_test_target and robot.position.y < camp.CENTER.y and is_equal_approx(robot.position.distance_to(camp.CENTER), 112), "robot stationary on forward fan arc")
 	check(is_equal_approx(camp.shot_interval, 0.9), "default interval 0.9 seconds")
 	# Advance the real scheduler without allowing player damage to interrupt the sequence.
 	camp.set_physics_process(false)
@@ -90,18 +90,17 @@ func run() -> void:
 	camp._physics_process(5)
 	check(camp.last_fired_index == 0, "dragging pauses shots")
 	camp._editing = false
-	camp.sliders.speed.value = 400
 	camp.sliders.interval.value = 1.3
 	camp.sliders.health.value = 5
 	await process_frame
 	check(camp.robot_health == 5 and camp.robots[0].health.max_health == 5, "health slider resets robots")
-	check(is_equal_approx(camp.shot_interval, 1.3) and is_equal_approx(camp.bullet_speed, 400), "speed and interval sliders apply")
+	check(is_equal_approx(camp.shot_interval, 1.3) and not camp.sliders.has("speed"), "interval slider applies and speed slider removed")
 	camp._fire_next()
 	var bullets: Array[Node] = []
 	for node in camp.get_children():
 		if node is CombatProjectile and not node.is_queued_for_deletion():
 			bullets.append(node)
-	check(bullets.size() == 1 and is_equal_approx(bullets[0].speed, 400), "new shot uses slider speed and old bullets removed")
+	check(bullets.size() == 1 and is_equal_approx(bullets[0].speed, 260), "new shot uses fixed speed and old bullets removed")
 	camp._clear_shots()
 	camp.robots[1].health.set_current_health(0)
 	camp._fire_next()
@@ -171,7 +170,7 @@ func run() -> void:
 		return
 	camp.set_physics_process(false)
 	check(camp.player.health.current_health == camp.player.health.max_health and camp.perfects == 0, "R restores player and counters")
-	check(camp.robot_health == 5 and camp.robots[0].health.current_health == 5 and is_equal_approx(camp.bullet_speed, 400), "R preserves selected settings")
+	check(camp.robot_health == 5 and camp.robots[0].health.current_health == 5 and not camp.sliders.has("speed"), "R preserves selected settings without restoring speed slider")
 	check(not feedback.sprite.visible and feedback.combo_count == 0, "scene restart clears popup")
 	check(store.get_profile() == saved, "training and reset preserve warehouse save")
 	if "--capture" in OS.get_cmdline_user_args() and DisplayServer.get_name() != "headless":
