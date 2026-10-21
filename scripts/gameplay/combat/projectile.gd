@@ -100,8 +100,10 @@ func _on_area_entered(area: Area2D) -> void:
 	if _resolved:
 		return
 	# The player's upward-offset hurt box overlaps the upward muzzle position.
-	# Ignore only the shooter, preserving friendly-fire hits on other actors.
+	# Enemy fire passes through allies so ranged units can fire from cover.
 	if area is HurtBox2DComponent and is_instance_valid(source) and area.actor == source:
+		return
+	if area is HurtBox2DComponent and faction == CombatFaction.Id.ENEMY and area.faction == CombatFaction.Id.ENEMY:
 		return
 	# Oil receives only ignition shots; spent fire fields never absorb projectiles.
 	if area is FuelPatch and (damage_type != &"fire" or area.burning):

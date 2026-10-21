@@ -146,3 +146,44 @@
 - Added the warehouse archive terminal for read-only persona discoveries, anomaly transcripts and legacy run records. Records include used persona levels, tier-three talents, marked-kill chain, manual perfect guards, rock feedback/attack rhythm, clear time and leaks.
 - Updated the broad warehouse/extraction fixtures from the retired `wheel`/mobility assumptions to current armor plus mandatory persona rest. Their cross-scene run also exposed and fixed one stale Deep Ninja mark reference after room cleanup by validating the object before narrowing its type.
 - Validation: unit suite 66/66; persona archive persistence 23/23; production floor-four-to-rooftop victory and archive display 14/14; warehouse 57/57; full extraction reports zero failures; persona combat reports zero failures. Editor parse and `git diff --check` pass. Headless exit-time ObjectDB/resource-use warnings remain.
+## 2026-10-21 — Purple arcade feedback for paired perfect parries
+
+- User approved the generated purple pixel PERFECT! wordmark and clarified that it triggers after two consecutive perfect parries. Preserved the prompt and source bitmap, imported the transparent runtime copy, and subscribed presentation to resolved player damage events.
+- Pair window is 1.2 seconds; ordinary blocks, damage, timeout and scene changes break the chain. The popup lasts 0.7 seconds with a scale pop, upward movement and fade; it inherits pause behavior and does not change combat resolution.
+
+## 2026-10-21 — Adjustable warehouse parry training room
+
+- User requested a warehouse passage into a ring of three ranged robots, approved sequential single shots every 0.9 seconds, and asked for sliders including enemy HP. Added the training passage, isolated scene and temporary run; robots start at three HP and dead targets are skipped.
+- Interval (0.4–2 seconds), projectile speed (120–600 px/s) and robot HP (1–10) are adjustable. Changes clear old bullets; HP changes rebuild targets. R resets player, targets and counters while retaining settings. Return and training death preserve the warehouse profile.
+- Validation: new training integration 46/46 with actual reflected projectiles hitting all three shooters, live damage-resolution feedback, real R input, settings persistence, pause and save isolation. Existing unit 62/62, warehouse 55/55, Boss shortcut 24/24 and player parry art 42/42 passed. Non-headless screenshot inspected; existing ObjectDB/resource-use exit warnings remain.
+
+## 2026-10-21 — Keep PERFECT! active throughout a successful streak
+
+- User clarified that every perfect parry starting with the second consecutive success must show the popup. Removed the post-popup combo reset; subsequent successful parries restart the popup until damage, normal block, timeout or scene change breaks the streak.
+- Training integration expanded to 50 checks, including the third/fourth consecutive popup and rebuilding the streak after a normal block.
+
+## 2026-10-21 — Grow PERFECT! up to its existing size
+
+- User requested small-to-large animation with the existing size as the maximum. Changed popup scaling from an overshoot-and-settle pop to a 0.22-second eased growth from 15% to 100%, capped at the existing 156-pixel width. Retained the existing 0.7-second display and fade.
+
+## 2026-10-21 — Forward fan formation and fixed training projectile speed
+
+- User requested fan placement and explicitly clarified that bullet speed should be fixed with its slider removed. Three stationary robots now occupy the player's forward 120-degree arc; the floor guide uses the same fan geometry.
+- Removed speed from sliders and reset payloads; every training projectile uses the fixed 260 px/s constant. Interval and robot HP remain adjustable. Updated the existing integration assertions, player instructions and runtime screenshot.
+- Headless and rendered training checks both pass 50/50, including actual reflected hits on all three shooters, fixed projectile speed, removed speed control and R reset. Existing exit-time resource warnings remain.
+
+## 2026-10-21 — Four authored directions for the player parry shield
+
+- User reported the parry animation only had one direction and requested all four. Kept the approved right-facing nine-frame atlas, generated independent up/down/left views with built-in imagegen and preserved their selected sources, exact prompts and import manifest. The importer aligns and packs transparent frames without painting or rotating source pixels.
+- GuardArcVisual selects the authored atlas by aim, with residual rotation for diagonals. Upward drawing now uses body-level Z and sibling ordering rather than negative world Z, which could put the shield below the floor. Startup, perfect window, normal block, recovery, damage and reflection rules remain unchanged.
+- Validation: four-direction art checks expanded to 78/78, including separate atlas selection, complete state sequences, depth, reflection, pause and engine callbacks; training 50/50 and unit 62/62 passed. Four non-headless screenshots inspected on a normal-Z background. Editor's first scan reported not-yet-imported textures; after import the final editor pass had no script or resource-load errors. Existing exit-time ObjectDB/resource-use warnings remain.
+
+## 2026-10-21 — Confirm and publish four-direction parry preview
+
+- User viewed the four-way Godot runtime recording and explicitly approved using this version in the existing PR. Added the approved recording to the repository and acceptance note, and embedded the animation in PR #12 for review. No runtime behavior changed in this follow-up; prior art 78/78, training 50/50 and unit 62/62 validation still describe the approved implementation.
+
+## 2026-10-21 — Restore PR #12 additions after PR #13 integration
+
+- The user requested direct integration into main after confirming that merged PR #13 included the older PR #11 head, rather than the current PR #12. Merged `codex/enemy-animation-art` into the latest main history, retaining persona/cyberware runtime, archive terminal, optical disruption, paused transitions, door fixes and Boss render ordering.
+- Resolved overlapping scene, enemy, warehouse and guard-visual changes. Restored travelling directional shields, ranged cover cooperation, enemy friendly-fire immunity, the five-support Boss phase, cardinal parry art, warehouse parry training and repeat PERFECT feedback. Removed the stale opening-wave one-health override so the shield guard retains three health. Migrated the automatic-door integration fixture from retired wheel mobility to the current DashController.
+- Validation: Godot 4.7.2 editor import without script errors; unit suite 68/68; shields/support 61/61; barrier 22/22; player parry 78/78; training 50/50; rooftop Boss 84/84; warehouse 58/58; persona archive 23/23; victory flow 14/14; automatic doors 19/19; room layouts 128/128; Boss shortcut 24/24; Boss patterns 10/10; point-blank shooting 73/73; enemy animations 419/419 and playback 348/348. Persona combat, persona rest, cyberware, enemy combat upgrade and enemy tactics report zero failures. Existing ObjectDB/resource-use shutdown warnings remain; no new visual acceptance or platform export was performed in this integration.

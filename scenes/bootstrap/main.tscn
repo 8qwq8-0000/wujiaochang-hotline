@@ -6,20 +6,20 @@
 [ext_resource type="Script" uid="uid://crjqaa3hl31n4" path="res://scripts/presentation/vfx_manager.gd" id="4"]
 [ext_resource type="Script" uid="uid://dgr8enssrrkm3" path="res://scripts/presentation/audio_cue_manager.gd" id="5"]
 [ext_resource type="Script" uid="uid://by7puspusmvfs" path="res://scripts/ui/extraction_flow.gd" id="6"]
-[ext_resource type="Script" path="res://scripts/presentation/combat_music_controller.gd" id="7"]
-[ext_resource type="AudioStream" path="res://assets/audio/music/combat/combat_regular_01.ogg" id="8"]
-[ext_resource type="AudioStream" path="res://assets/audio/music/combat/combat_regular_02.ogg" id="9"]
-[ext_resource type="AudioStream" path="res://assets/audio/music/combat/combat_boss_phase_01.ogg" id="10"]
-[ext_resource type="AudioStream" path="res://assets/audio/music/combat/combat_boss_phase_02.ogg" id="11"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/guard_block.wav" id="12"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/player_hit.wav" id="13"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/enemy_death.wav" id="14"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/pistol_fire.wav" id="15"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/melee_swing.wav" id="16"]
-[ext_resource type="AudioStream" path="res://assets/audio/ui/hotline_dial_01.wav" id="17"]
-[ext_resource type="AudioStream" path="res://assets/audio/ui/hotline_dial_02.wav" id="18"]
-[ext_resource type="AudioStream" path="res://assets/audio/ui/hotline_connect.wav" id="19"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/reinforcement_approach.wav" id="20"]
+[ext_resource type="Script" uid="uid://dtm0pk0yblbw1" path="res://scripts/presentation/combat_music_controller.gd" id="7"]
+[ext_resource type="AudioStream" uid="uid://2e5gopex8ebt" path="res://assets/audio/music/combat/combat_regular_01.ogg" id="8"]
+[ext_resource type="AudioStream" uid="uid://dax2mcfclp3gl" path="res://assets/audio/music/combat/combat_regular_02.ogg" id="9"]
+[ext_resource type="AudioStream" uid="uid://b64x0dscfc6py" path="res://assets/audio/music/combat/combat_boss_phase_01.ogg" id="10"]
+[ext_resource type="AudioStream" uid="uid://dwm0lw5f01l7h" path="res://assets/audio/music/combat/combat_boss_phase_02.ogg" id="11"]
+[ext_resource type="AudioStream" uid="uid://cgr4eytdjwp8" path="res://assets/audio/sfx/combat/guard_block.wav" id="12"]
+[ext_resource type="AudioStream" uid="uid://ctt0tfonac2nn" path="res://assets/audio/sfx/combat/player_hit.wav" id="13"]
+[ext_resource type="AudioStream" uid="uid://b8duchpm6eg2" path="res://assets/audio/sfx/combat/enemy_death.wav" id="14"]
+[ext_resource type="AudioStream" uid="uid://b65kml2wa7uct" path="res://assets/audio/sfx/combat/pistol_fire.wav" id="15"]
+[ext_resource type="AudioStream" uid="uid://mo0nymbxm3qi" path="res://assets/audio/sfx/combat/melee_swing.wav" id="16"]
+[ext_resource type="AudioStream" uid="uid://u0qmtoo2uxg8" path="res://assets/audio/ui/hotline_dial_01.wav" id="17"]
+[ext_resource type="AudioStream" uid="uid://w2wj6mfhmkat" path="res://assets/audio/ui/hotline_dial_02.wav" id="18"]
+[ext_resource type="AudioStream" uid="uid://dvic4sxwa3uhp" path="res://assets/audio/ui/hotline_connect.wav" id="19"]
+[ext_resource type="AudioStream" uid="uid://d1r05oo2hulov" path="res://assets/audio/sfx/enemies/reinforcement_approach.wav" id="20"]
 [ext_resource type="PackedScene" path="res://scenes/ui/pause_settings_menu.tscn" id="21"]
 [ext_resource type="Script" path="res://scripts/ui/persona_rest_flow.gd" id="22"]
 
@@ -51,14 +51,14 @@ weapon_cues = {
 hotline_dial_sounds = Array[AudioStream]([ExtResource("17"), ExtResource("18")])
 hotline_connect_sound = ExtResource("19")
 
-[node name="CombatMusic" type="Node" parent="."]
+[node name="CombatMusic" type="Node" parent="." unique_id=2111284450]
 script = ExtResource("7")
 regular_tracks = Array[AudioStream]([ExtResource("8"), ExtResource("9")])
 boss_phase_tracks = Array[AudioStream]([ExtResource("10"), ExtResource("11")])
 
 [node name="CombatHUD" parent="." unique_id=1310232417 instance=ExtResource("3")]
 
-[node name="PauseSettingsMenu" parent="." instance=ExtResource("21")]
+[node name="PauseSettingsMenu" parent="." unique_id=770494154 instance=ExtResource("21")]
 
 [node name="TransitionLayer" type="CanvasLayer" parent="." unique_id=927069868]
 layer = 100

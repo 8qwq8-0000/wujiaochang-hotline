@@ -7,8 +7,8 @@ func suite_name() -> String:
 
 
 func test_enemy_friendly_fire_multiplier() -> void:
-	assert_true(is_equal_approx(CombatFaction.damage_multiplier(CombatFaction.Id.ENEMY, CombatFaction.Id.ENEMY), 0.6))
-	assert_true(is_equal_approx(CombatFaction.damage_multiplier(CombatFaction.Id.ENEMY, CombatFaction.Id.ENEMY, true), 1.0))
+	assert_true(is_equal_approx(CombatFaction.damage_multiplier(CombatFaction.Id.ENEMY, CombatFaction.Id.ENEMY), 0.0))
+	assert_true(is_equal_approx(CombatFaction.damage_multiplier(CombatFaction.Id.ENEMY, CombatFaction.Id.ENEMY, true), 0.0))
 	assert_true(is_zero_approx(CombatFaction.damage_multiplier(CombatFaction.Id.PLAYER, CombatFaction.Id.PLAYER)))
 
 

@@ -1,6 +1,6 @@
 extends Area2D
 
-@export_enum("chest", "deploy", "trial", "synthesis", "boss_test", "archive") var kind := "chest"
+@export_enum("chest", "deploy", "trial", "synthesis", "boss_test", "archive", "parry_training") var kind := "chest"
 @onready var room: Node2D = get_parent()
 
 func can_interact(actor: Node2D) -> bool:
@@ -19,6 +19,8 @@ func interact(actor: Node2D) -> void:
 		room.enter_boss_test()
 	elif kind == "archive":
 		room.archive_panel.open()
+	elif kind == "parry_training":
+		room.enter_parry_training()
 	else:
 		room.depart()
 
@@ -53,7 +55,7 @@ func _draw() -> void:
 		draw_circle(Vector2(0, 21), 5, Color("e3c681"))
 	else:
 		var color := Color("60513b") if kind == "trial" else Color("385b61")
-		if kind == "boss_test":
+		if kind in ["boss_test", "parry_training"]:
 			color = Color("59405f")
 		draw_rect(Rect2(-24, -32, 48, 64), color)
 		draw_line(Vector2(-15, 0), Vector2(15, 0), Color("d6d299"), 3)

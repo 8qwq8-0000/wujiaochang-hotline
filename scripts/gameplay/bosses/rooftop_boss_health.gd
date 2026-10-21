@@ -1,16 +1,14 @@
 class_name RooftopBossHealth
 extends HealthComponent
 
-## Normal damage uses whole points. Linked guard damage keeps the fractional
-## part separately: each of nine guard health points removes 1/3 health point
-## from a six-point boss, leaving exactly three points after the wave.
+## Each confirmed guard defeat removes exactly one of six health points.
 var damage_enabled := false
 var guard_link_active := false
-var _fractional_damage := 0.0
+var _guard_defeats := 0
 
 
 func get_precise_health() -> float:
-	return maxf(float(current_health) - _fractional_damage, 0.0)
+	return float(current_health)
 
 
 func get_health_ratio() -> float:
@@ -26,17 +24,15 @@ func get_health_text() -> String:
 func begin_guard_link() -> void:
 	guard_link_active = true
 	damage_enabled = false
-	set_guard_damage_progress(0, 9)
+	_guard_defeats = 0
 
 
 func set_guard_damage_progress(lost_health: int, total_guard_health: int) -> void:
 	if not guard_link_active:
 		return
-	var progress := clampf(float(lost_health) / maxi(total_guard_health, 1), 0.0, 1.0)
-	var precise := max_health * (1.0 - progress * 0.5)
-	var whole := int(ceil(precise))
-	_fractional_damage = whole - precise
-	set_current_health(whole)
+	# Counts confirmed defeats, never partial damage, healing or repeat signals.
+	_guard_defeats = maxi(_guard_defeats, clampi(lost_health, 0, total_guard_health))
+	set_current_health(maxi(max_health - _guard_defeats, 1))
 
 
 func end_guard_link() -> void:

@@ -139,7 +139,7 @@ func run() -> void:
 	check(defeated[0] == 1 and explosion_noise[0] == 1, "self-destruct resolves defeat and emits 300-pixel noise")
 	check(explosion_effects[0] == 2, "self-destruct requests a procedural flash and expanding ring")
 	check(player.health.current_health == player.health.max_health - 1, "self-destruct damages the player inside attack range")
-	check(blast_ally.health.current_health == blast_ally.health.max_health - 1, "self-destruct applies enemy friendly fire")
+	check(blast_ally.health.current_health == blast_ally.health.max_health, "self-destruct never damages enemy allies")
 	check(blast_outsider.health.current_health == blast_outsider.health.max_health, "self-destruct radius matches the 34-pixel attack range")
 	events.noise_emitted.disconnect(count_explosion)
 	events.effect_requested.disconnect(count_explosion_effect)

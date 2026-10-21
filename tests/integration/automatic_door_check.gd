@@ -25,7 +25,7 @@ func door_at(point: Vector2, opening_width: float = 64.0) -> AutomaticDoor:
 	return door
 func approach(player: PlayerController,door: AutomaticDoor,direction: Vector2) -> void:
 	for frame in 90:
-		player.mobility.tick(player,direction,direction,1.0/60)
+		player.dash.tick(player,direction,direction,1.0/60)
 		await physics_frame
 		if door.opened:
 			break
@@ -83,10 +83,9 @@ func run_checks() -> void:
 	room.add_child(wall)
 	player.position = Vector2(350,150)
 	player.velocity = Vector2.ZERO
-	player.equip_mobility(load("res://resources/mobility/wheel.tres"))
 	await physics_frame
 	await physics_frame
-	check(player.mobility.activate_ability(player,Vector2.RIGHT),"real wheel impulse activates")
+	check(player.dash.start_dash(player,Vector2.RIGHT),"real dash activates")
 	await approach(player,dash,Vector2.RIGHT)
 	check(dash.opened and dash.slammed and dash.knocked_count == 1,"real dash contact knocks only door-side visible target")
 	check(behind.state == EnemyController.State.STAGGERED and behind.health.current_health == 8,"door knockdown interrupts without adding damage")
@@ -105,10 +104,10 @@ func run_checks() -> void:
 	var reverse_target := enemy_at(Vector2(565,150))
 	player.position = Vector2(650,150)
 	player.velocity = Vector2.ZERO
-	player.mobility.reset_transient_state()
+	player.dash.reset_transient_state()
 	await physics_frame
 	await physics_frame
-	player.mobility.activate_ability(player,Vector2.LEFT)
+	player.dash.start_dash(player,Vector2.LEFT)
 	await approach(player,reverse,Vector2.LEFT)
 	check(reverse.opened and reverse.slammed and reverse_target.state == EnemyController.State.STAGGERED,"dash works from reverse side")
 	var enemy_door := door_at(Vector2(800,150), 96.0)
