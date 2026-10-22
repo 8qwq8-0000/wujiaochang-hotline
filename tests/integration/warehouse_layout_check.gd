@@ -4,10 +4,10 @@ const SAVE_PATH := "user://warehouse-layout-check.json"
 const SCENE_PATH := "user://warehouse-layout-roundtrip.tscn"
 const MOVABLE := {
 	"Chest": ["Art", "Body/Shape", "Shape"],
-	"Deploy": ["Art", "Shape"],
-	"Trial": ["Art", "Shape"],
-	"BossTest": ["Art", "Shape"],
-	"ParryTraining": ["Art", "Shape"],
+	"Deploy": ["Art", "Shape", "DoorSigil"],
+	"Trial": ["Art", "Shape", "DoorSigil"],
+	"BossTest": ["Art", "Shape", "DoorSigil"],
+	"ParryTraining": ["Art", "Shape", "DoorSigil"],
 	"ArchiveTerminal": ["Art", "Shape"],
 	"SynthesisNPC": ["RefinedArt", "Workbench/Art", "Workbench/Body/Shape", "Shape"],
 	"PartsRack": ["Art", "Body/Shape"],
@@ -61,7 +61,7 @@ func run() -> void:
 	for node_name in positions:
 		var item: Node2D = restored.get_node(node_name)
 		check(item.position.is_equal_approx(positions[node_name]), str(node_name, " placement survives save and ready"))
-	check(restored.get_node("WarehouseArt").get_child_count() == 7, "ready does not duplicate saved props or foreground")
+	check(restored.get_node("WarehouseArt").get_child_count() == 8, "ready does not duplicate saved props or foreground")
 	restored.queue_free()
 	await process_frame
 	DirAccess.remove_absolute(SAVE_PATH)
