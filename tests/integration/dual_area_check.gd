@@ -20,6 +20,8 @@ func settle() -> void:
 func freeze_enemies() -> void:
 	for enemy in get_nodes_in_group("enemies"):
 		enemy.set_physics_process(false)
+	for turret in get_nodes_in_group("sentry_turrets"):
+		turret.set_physics_process(false)
 
 func clear_active() -> void:
 	var enemies := get_nodes_in_group("enemies")
@@ -69,7 +71,7 @@ func run_checks() -> void:
 	for room in [first, second]:
 		check(room.find_children("*", "PowerBox", true, false).size() == 1, "each area has one power box")
 		check(room.find_children("*", "FuelBarrel", true, false).size() == 3, "each area has three bomb boxes")
-		check(not room.find_children("*", "AutomaticDoor", true, false).is_empty(), "formal areas contain usable interior doors")
+		check(room.find_children("*", "AutomaticDoor", true, false).size() == room.layout.doors.size(), "formal areas instantiate their authored doors; open halls need none")
 	player.global_position = first.to_global(Vector2(900,270))
 	await settle()
 	await walk_right(player, 40)
@@ -92,6 +94,7 @@ func run_checks() -> void:
 	var passage := assembler.passages[0]
 	var sign := passage.get_node("PassageSign") as Label
 	check(sign.get_theme_font("font") == CyberUITheme.FONT and sign.position.x + sign.size.x <= 0, "passage sign uses HUD pixel font and fits inside the current room")
+	check(is_zero_approx(sign.position.y + sign.size.y * 0.5), "passage text aligns with the entrance center")
 	check(passage.y_sort_enabled and passage.get_node("PassageFloor").z_index < player.z_index, "passage ground renders behind the player and walls sort by feet")
 	for direction in [Vector2.UP, Vector2.DOWN]:
 		player.global_position = passage.to_global(Vector2(passage.length * 0.5, 0))

@@ -30,7 +30,7 @@ func _ready() -> void:
 	_label.name = "PassageSign"
 	_label.theme = CyberUITheme.create_theme()
 	_label.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	_label.position = Vector2(-148, -84)
+	_label.position = Vector2(-148, -12)
 	_label.size = Vector2(140, 24)
 	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER

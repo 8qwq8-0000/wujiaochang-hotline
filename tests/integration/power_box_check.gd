@@ -51,6 +51,11 @@ func run_checks() -> void:
 		await physics_frame
 	await press_e()
 	check(attack_box.state == PowerBox.State.CLAIMED and buffs.active_buff == &"attack_speed", "real E interaction claims attack buff")
+	check(attack_box.get_node("RefinedArt").draw_size.is_equal_approx(Vector2(57.6,57.6)), "station artwork is ten percent smaller than two by two tiles")
+	check_popup(attack_box, &"attack_speed")
+	var original_popup := attack_box.get_node_or_null("ChargingBuffFeedback")
+	attack_box.interact(player)
+	check(get_nodes_in_group("charging_buff_feedback").size() == 1 and attack_box.get_node_or_null("ChargingBuffFeedback") == original_popup, "claimed station cannot spawn duplicate feedback")
 	var weapon: WeaponComponentData = load("res://resources/weapons/service_pistol.tres")
 	var original_cooldown := weapon.cooldown
 	player.weapons.set_equipped_weapon(weapon)
@@ -67,10 +72,11 @@ func run_checks() -> void:
 		await physics_frame
 	await press_e()
 	check(cooling_box.state == PowerBox.State.CLAIMED and player.heat.cooling_multiplier == 1.5, "cooling buff claimed through same E path")
+	check_popup(cooling_box, &"cooling")
 	player.heat.set_physics_process(false)
 	player.heat.current_heat = 80
 	player.heat._physics_process(1)
-	check(is_equal_approx(player.heat.current_heat,44), "cooling buff changes actual heat dissipation")
+	check(is_equal_approx(player.heat.current_heat,68), "cooling buff changes actual heat dissipation")
 	room.room_cleared.emit()
 	check(player.heat.cooling_multiplier == 1, "clear restores cooling multiplier")
 	var guard_box := box_at(room,Vector2(200,200),3)
@@ -78,6 +84,7 @@ func run_checks() -> void:
 		await physics_frame
 	await press_e()
 	check(guard_box.state == PowerBox.State.CLAIMED and player.guard.recovery_multiplier == 0.7, "guard buff claimed")
+	check_popup(guard_box, &"guard_recovery")
 	player.guard.set_physics_process(false)
 	player.guard.begin_guard(Vector2.RIGHT)
 	player.guard.advance_timing(player.guard.startup_seconds+player.guard.perfect_seconds+player.guard.normal_seconds+0.0001)
@@ -136,9 +143,14 @@ func run_checks() -> void:
 	var sigil := melee_box.get_node("ActiveSigil") as ChargingSigil
 	var phase := sigil.phase
 	paused = true
+	var feedback := guard_box.get_node_or_null("ChargingBuffFeedback") as Node2D
+	var feedback_position := feedback.position if feedback != null else Vector2.ZERO
 	await create_timer(0.1, true).timeout
 	check(sigil.phase == phase, "paused game freezes sigil animation")
+	check(feedback == null or feedback.position == feedback_position, "paused game freezes buff popup")
 	paused = false
+	await create_timer(1.4).timeout
+	check(get_nodes_in_group("charging_buff_feedback").is_empty(), "buff popups expire without leaving persistent effects")
 	buffs.apply_buff(&"cooling",other_room)
 	other_room.queue_free()
 	await process_frame
@@ -161,3 +173,11 @@ func run_checks() -> void:
 	await process_frame
 	print("Power-box checks: ",checks,"; failures: ",failures)
 	quit(0 if failures == 0 else 1)
+
+func check_popup(box: PowerBox, id: StringName) -> void:
+	var feedback := box.get_node_or_null("ChargingBuffFeedback") as Node2D
+	check(feedback != null, "successful %s claim shows arcade popup" % id)
+	if feedback == null:
+		return
+	check((feedback.get_child(0) as Sprite2D).texture == PowerBox.BUFF_ART[id], "popup uses the matching buff artwork")
+	check((feedback.get_child(1) as Label).text == "本区域清场后失效", "popup explains expiration")

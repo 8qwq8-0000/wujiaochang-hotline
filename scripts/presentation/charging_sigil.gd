@@ -26,7 +26,7 @@ func _draw() -> void:
 	if not active:
 		return
 	# Compress the ground plane, keeping the terminal's upright facade intact.
-	draw_set_transform(Vector2(0, 13), 0, Vector2(1, 0.48))
+	draw_set_transform(Vector2(0, 19.8), 0, Vector2(1.44, 0.48 * 1.44))
 	var pulse := 0.72 + 0.22 * sin(phase * 2.2)
 	for radius in range(48, 29, -3):
 		draw_circle(Vector2.ZERO, radius, Color(0.12, 0.85, 0.83, 0.025 * pulse))

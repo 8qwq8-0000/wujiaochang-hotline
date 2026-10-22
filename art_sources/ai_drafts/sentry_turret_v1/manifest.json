@@ -1,0 +1,37 @@
+{
+  "tool": "built-in image_gen",
+  "source_file": "/Users/yangjiayao/.codex/generated_images/01a1618c-9b5a-7c72-95da-56aabf21a2e1/exec-1282c32d-be33-4674-8ecd-c2fe67175667.png",
+  "asset": "res://assets/art/environment/turrets/sentry_turret_down_v1.png",
+  "source_size": [
+    1254,
+    1254
+  ],
+  "mode": "RGBA",
+  "alpha_range": [
+    0,
+    255
+  ],
+  "visible_bounds": [
+    0,
+    0,
+    1250,
+    1254
+  ],
+  "solid_bounds": [
+    108,
+    134,
+    1146,
+    1053
+  ],
+  "world_footprint": [
+    96,
+    96
+  ],
+  "tile_footprint": [
+    3,
+    3
+  ],
+  "direction": "down",
+  "status": "static art draft; no gameplay integration",
+  "prompt_file": "prompt.txt"
+}

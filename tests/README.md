@@ -1,5 +1,11 @@
 # Tests
 
+警戒炮台：`sentry_turret_check.gd` 验证八方向跟踪和双排射击、遮挡及清场摧毁；`sentry_placement_check.gd` 检查四张地图每区至少一台及占地、避障、寻路。运行方式为 `godot --headless --path . --script res://tests/integration/文件名`。
+
+人格战斗状态栏：`godot --headless --path . --script res://tests/integration/persona_status_hud_check.gd`，覆盖人格等级、猎痕锁定、限时效果到期、反馈数值、威胁解析、死亡清理和通讯展开/收起避让。添加 `-- --capture-persona-status` 并去掉 `--headless` 可生成三种人格及通讯展开截图。
+
+新增普通地图：`freight_atrium_check.gd` 检查货运中庭的十二扇门、中央近路及侧区寻路；`dual_track_depot_check.gd` 检查双轨货运站的三条换线口、两侧长射击线、真实横穿和 328 px 实际射击。均使用 `godot --headless --path . --script res://tests/integration/文件名` 运行。`room_layouts_check.gd` 检查正式四种地图的选择、双区域连接及首区/末区位置。
+
 盾兵屏障：`godot --headless --path . --script res://tests/integration/enemy_barrier_skill_check.gd`，覆盖施放动画、展开时机、正面及高速挡弹、背后受伤、到期恢复、冷却、硬直与死亡清理、四方向判定和 AI 触发。
 
 双战斗区域：`godot --headless --path . --script res://tests/integration/dual_area_check.gd`，覆盖真实通道碰撞、清场解锁、按进入激活第二区、全层目标累计、生命/热量/装备保留、各区增益失效、一次性补给和最终出口限制。

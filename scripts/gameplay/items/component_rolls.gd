@@ -4,7 +4,8 @@ extends RefCounted
 const QUALITIES := ["无品质", "制式", "改良", "原型"]
 const WHEEL_RAM_DAMAGE := [2, 3, 4]
 const WHEEL_RAM_COOLDOWNS := [1.2, 1.0, 0.8]
-const ARMOR_RECOVERY_SECONDS := [12.0, 10.0, 8.0]
+const ARMOR_RECOVERY_SECONDS := [12.0, 10.0, 10.0]
+const ARMOR_CAPACITY := [1, 1, 2]
 const QUALITY_COLORS := [Color("a8b1bd"), Color("e7edf3"), Color("70b7ff"), Color("cf99ff")]
 
 static func quality_color(item: InventoryItem) -> Color:
@@ -160,7 +161,7 @@ static func describe(item: InventoryItem) -> String:
 				lines.append("• %s：%s" % [data.display_name, data.description])
 		return "\n".join(lines)
 	if item.get_property("slot", "") == "defense":
-		lines.append("就绪时吸收1点伤害 · 恢复 %.0f 秒" % ARMOR_RECOVERY_SECONDS[quality(item) - 1])
+		lines.append("蓝血 %d 格 · 每格恢复 %.0f 秒" % [ARMOR_CAPACITY[quality(item) - 1], ARMOR_RECOVERY_SECONDS[quality(item) - 1]])
 	for key in affixes(item):
 		if AFFIXES.has(key):
 			lines.append("%s +%s%s" % [AFFIXES[key][0], affixes(item)[key], "毫秒" if key == "guard" else "%"])

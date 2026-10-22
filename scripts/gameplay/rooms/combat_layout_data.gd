@@ -13,6 +13,12 @@ const STRUCTURAL_PARTITION_MAX_THICKNESS := 6.1
 @export var enemy_positions: Array[Vector2] = []
 @export var enemy_profiles: Array[Resource] = []
 @export var power_position := Vector2(160, 280)
+# Explicit eligible zone indices; omitted zones never receive a station.
+@export var power_spawn_zones: Array[int] = []
+# Walkable corridors kept free of randomized solid props (not geometry).
+@export var clear_lanes: Array[Rect2] = []
+@export var sentry_positions: Array[Vector2] = []
+var navigation_obstacles: Array[Rect2] = []
 @export var bomb_position := Vector2(450, 245)
 @export var floor_color := Color("15212b")
 @export var cover_color := Color("405564")
@@ -28,6 +34,8 @@ func navigation_polygon() -> NavigationPolygon:
 	for rect in covers:
 		geometry.add_obstruction_outline(_outline(rect))
 	for rect in windows:
+		geometry.add_obstruction_outline(_outline(rect))
+	for rect in navigation_obstacles:
 		geometry.add_obstruction_outline(_outline(rect))
 	_navigation = NavigationPolygon.new()
 	_navigation.agent_radius = 20.0
@@ -55,13 +63,18 @@ func scaled_for_room(scale_factor: float, base_size: Vector2 = Vector2(640.0, 36
 		result.windows.append(_scaled_rect_center(rect, scale_factor, base_size, true))
 	for rect in zones:
 		result.zones.append(_scaled_rect_center(rect, scale_factor, base_size, true))
+	for rect in clear_lanes:
+		result.clear_lanes.append(_scaled_rect_center(rect, scale_factor, base_size, true))
 	for definition in doors:
 		var point := _scaled_point(Vector2(definition.x, definition.y), scale_factor, base_size)
 		result.doors.append(Vector4(point.x, point.y, definition.z, definition.w * scale_factor))
 	for point in enemy_positions:
 		result.enemy_positions.append(_scaled_point(point, scale_factor, base_size))
+	for point in sentry_positions:
+		result.sentry_positions.append(_scaled_point(point, scale_factor, base_size))
 	result.enemy_profiles.assign(enemy_profiles)
 	result.power_position = _scaled_point(power_position, scale_factor, base_size)
+	result.power_spawn_zones.assign(power_spawn_zones)
 	result.bomb_position = _scaled_point(bomb_position, scale_factor, base_size)
 	return result
 

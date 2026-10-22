@@ -2,11 +2,17 @@ class_name PowerBox
 extends Area2D
 
 enum State { READY, CLAIMED, BROKEN }
+const BUFF_ART := {
+	&"attack_speed": preload("res://assets/art/ui/feedback/charging_station_v1/attack_speed_25.png"),
+	&"cooling": preload("res://assets/art/ui/feedback/charging_station_v1/cooling_50.png"),
+	&"guard_recovery": preload("res://assets/art/ui/feedback/charging_station_v1/guard_recovery_30.png"),
+}
 @export_range(16.0, 300.0, 1.0) var discharge_radius := 120.0
 @export_enum("随机", "攻速", "散热", "格挡后摇") var buff_choice := 0
 var state := State.READY
 var discharge_count := 0
 var prompt: Label
+var _buff_feedback: Node2D
 
 func _ready() -> void:
 	add_to_group("power_boxes")
@@ -30,7 +36,7 @@ func scope_room() -> Node:
 func can_interact(actor: Node2D) -> bool:
 	if state != State.READY or get_tree().paused or not actor is PlayerController:
 		return false
-	if not actor.is_input_enabled() or actor.health.is_dead() or actor.global_position.distance_to(global_position) > 54:
+	if not actor.is_input_enabled() or actor.health.is_dead() or actor.global_position.distance_to(global_position) > 76:
 		return false
 	if EnvironmentArea.for_actor(actor) != scope_room() or scope_room().get("cleared") == true:
 		return false
@@ -48,12 +54,49 @@ func interact(actor: Node2D) -> void:
 	if not buffs.apply_buff(id, scope_room()):
 		state = State.READY
 		return
+	_show_buff_feedback(id, actor)
 	set_deferred("collision_layer", 0)
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null:
 		events.publish_message("充电台：%s · 本区域清场后失效" % RoomBuffComponent.TITLES[id], Color("9fe8ba"))
 	$ActiveSigil.refresh()
 	queue_redraw()
+
+func _show_buff_feedback(id: StringName, actor: Node2D) -> void:
+	var feedback := Node2D.new()
+	_buff_feedback = feedback
+	prompt.hide()
+	feedback.name = "ChargingBuffFeedback"
+	feedback.add_to_group("charging_buff_feedback")
+	feedback.z_as_relative = false
+	feedback.z_index = 100
+	add_child(feedback)
+	feedback.top_level = true
+	feedback.global_position = actor.global_position + Vector2(0, -80)
+	var sprite := Sprite2D.new()
+	sprite.texture = BUFF_ART[id]
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	var width := 220.0 if id == &"guard_recovery" else 184.0
+	sprite.scale = Vector2.ONE * width / sprite.texture.get_width()
+	feedback.add_child(sprite)
+	var detail := Label.new()
+	detail.text = "本区域清场后失效"
+	detail.theme = CyberUITheme.create_theme()
+	detail.position = Vector2(-110, 23)
+	detail.size.x = 220
+	detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	detail.add_theme_font_size_override("font_size", 10)
+	detail.add_theme_color_override("font_color", Color("e9f8f4"))
+	detail.add_theme_color_override("font_outline_color", Color.BLACK)
+	detail.add_theme_constant_override("outline_size", 2)
+	detail.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	feedback.add_child(detail)
+	feedback.scale = Vector2.ONE * 0.35
+	var tween := feedback.create_tween().set_parallel(true)
+	tween.tween_property(feedback, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(feedback, "position:y", feedback.position.y - 12, 1.3)
+	tween.tween_property(feedback, "modulate:a", 0.0, 0.35).set_delay(0.95)
+	tween.chain().tween_callback(feedback.queue_free)
 
 func receive_hit(packet: DamagePacket) -> DamageResult:
 	var result := DamageResult.new()
@@ -65,7 +108,7 @@ func receive_hit(packet: DamagePacket) -> DamageResult:
 
 func _process(_delta: float) -> void:
 	var player := get_tree().get_first_node_in_group("player") as PlayerController
-	prompt.visible = player != null and not player.health.is_dead() and player.global_position.distance_to(global_position) <= 70
+	prompt.visible = not is_instance_valid(_buff_feedback) and player != null and not player.health.is_dead() and player.global_position.distance_to(global_position) <= 96
 	if state == State.READY:
 		prompt.text = "本区域已清场" if scope_room().get("cleared") == true else "E 领取随机增益"
 	elif state == State.CLAIMED:
@@ -79,10 +122,10 @@ func _update_prompt_placement() -> void:
 	var text_size := Vector2(maxf(188, prompt.get_minimum_size().x), maxf(18, prompt.get_minimum_size().y))
 	prompt.size = text_size
 	var candidates: Array[Vector2] = [
-		Vector2(-text_size.x * 0.5, -text_size.y - 34),
-		Vector2(-text_size.x * 0.5, 28),
-		Vector2(-text_size.x - 28, -text_size.y * 0.5),
-		Vector2(28, -text_size.y * 0.5),
+		Vector2(-text_size.x * 0.5, -text_size.y - 42),
+		Vector2(-text_size.x * 0.5, 40),
+		Vector2(-text_size.x - 42, -text_size.y * 0.5),
+		Vector2(42, -text_size.y * 0.5),
 	]
 	var shape := RectangleShape2D.new()
 	# Extra lower clearance accounts for the wall artwork above its collider.
@@ -110,8 +153,8 @@ func _update_prompt_placement() -> void:
 
 func _draw() -> void:
 	var color := Color("5590a6") if state == State.READY else (Color("48775f") if state == State.CLAIMED else Color("394750"))
-	draw_rect(Rect2(-14,-20,28,40), color)
-	draw_rect(Rect2(-14,-20,28,40), Color("b7d2d7"), false, 2)
+	draw_rect(Rect2(-32,-32,64,64), color)
+	draw_rect(Rect2(-32,-32,64,64), Color("b7d2d7"), false, 2)
 	draw_line(Vector2(-3,-12),Vector2(-7,1),Color("f6d478"),3)
 	draw_line(Vector2(-7,1),Vector2(5,-1),Color("f6d478"),3)
 	draw_line(Vector2(5,-1),Vector2(1,12),Color("f6d478"),3)

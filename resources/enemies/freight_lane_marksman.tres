@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="EnemyProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/enemies/enemy_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"freight_lane_marksman"
+display_name = "货运线哨兵"
+role = 1
+max_health = 1
+move_speed = 58.0
+awareness_range = 1000.0
+attack_range = 420.0
+attack_cooldown = 1.8
+attack_windup = 0.55
+body_color = Color(0.95, 0.48, 0.12, 1)
+strafe_angle_degrees = 18.0
+target_prediction_seconds = 0.1
+patrol_enabled = true
+patrol_axis = 2
+patrol_distance = 24.0
