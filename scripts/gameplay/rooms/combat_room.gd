@@ -347,3 +347,6 @@ func _apply_workshop_art() -> void:
 		if label != null:
 			label.hide()
 	$ExitElevator/Label.hide()
+	var blood_decals := preload("res://scripts/presentation/floor_blood_decals.gd").new()
+	blood_decals.name = "FloorBloodDecals"
+	add_child(blood_decals)
