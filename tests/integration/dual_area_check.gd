@@ -63,7 +63,6 @@ func run_checks() -> void:
 	var second: CombatRoom = assembler.generated_rooms[1]
 	var run := root.get_node("RunManager")
 	var ui := main.get_node("ExtractionFlow")
-	var hud := main.find_child("CombatHUD", true, false)
 	check(assembler.generated_rooms.size() == 2 and assembler.passages.size() == 1, "one floor contains two connected areas")
 	check(first.active and not second.active and not second.spawner._spawned, "only first area is active before entry")
 	check(run.mandatory_enemies_remaining == 12 and get_nodes_in_group("enemies").size() == 6, "pending area contributes to floor objectives without spawning early")
@@ -88,8 +87,21 @@ func run_checks() -> void:
 	await clear_active()
 	check(first.cleared and not second.cleared and assembler._rooms_remaining == 1, "clearing first area does not clear the floor")
 	check(run.mandatory_enemies_remaining == 6 and buffs.active_buff.is_empty(), "first clear removes only its buff and leaves pending objectives")
-	check(str(hud.objective_label.text).contains("1/2 已清场"), "HUD directs player to the next area")
+	check(assembler.passages[0].get_node("PassageSign").text == "前往下一区 →", "cleared area sign directs player onward")
 	check(first.reward_count == 1 and assembler.passages[0].unlocked, "first clear grants one supply and unlocks the passage")
+	var passage := assembler.passages[0]
+	var sign := passage.get_node("PassageSign") as Label
+	check(sign.get_theme_font("font") == CyberUITheme.FONT and sign.position.x + sign.size.x <= 0, "passage sign uses HUD pixel font and fits inside the current room")
+	check(passage.y_sort_enabled and passage.get_node("PassageFloor").z_index < player.z_index, "passage ground renders behind the player and walls sort by feet")
+	for direction in [Vector2.UP, Vector2.DOWN]:
+		player.global_position = passage.to_global(Vector2(passage.length * 0.5, 0))
+		await settle()
+		for frame in 24:
+			await physics_frame
+			player.velocity = direction * 180
+			player.move_and_slide()
+		check(absf(passage.to_local(player.global_position).y) < 40, "passage wall physically stops vertical movement")
+	player.velocity = Vector2.ZERO
 	check(player.inventory.can_change_equipment(), "cleared area allows equipment changes despite pending next area")
 	first._on_all_required_defeated()
 	check(first.reward_count == 1 and assembler._rooms_remaining == 1, "repeated clear cannot duplicate supply or floor progress")
@@ -104,7 +116,7 @@ func run_checks() -> void:
 	await settle()
 	await walk_right(player, 46)
 	freeze_enemies()
-	check(str(hud.objective_label.text).contains("2/2"), "HUD switches to second area objectives")
+	check(assembler.active_area_index == 1, "objectives switch to the second area")
 	check(player.global_position.x > second.global_position.x and second.active and assembler.active_area_index == 1, "actual walking through passage activates second area")
 	check(get_nodes_in_group("enemies").size() == 6 and run.mandatory_enemies_remaining == 6, "second enemies spawn once without resetting total objectives")
 	check(player.get_instance_id() == identity and player.export_run_state() == state and run.floor_index == 0, "area traversal preserves player, inventory and floor")
@@ -136,7 +148,7 @@ func run_checks() -> void:
 	check(second.cleared and run.mandatory_enemies_remaining == 0 and assembler._rooms_remaining == 0, "both cleared areas complete the floor")
 	check(assembler.passages[0].return_sealed and not assembler.passages[0].get("_barrier").disabled, "clearing second room never reopens return route")
 	check(buffs.active_buff.is_empty() and second.reward_count == 1, "second clear expires its buff and issues independent area guarantee")
-	check(str(hud.objective_label.text).contains("本层已清理"), "HUD shows floor completion only after both clears")
+	check(run.mandatory_enemies_remaining == 0, "floor objectives complete only after both clears")
 	check(not first.exit_elevator.enabled and second.exit_elevator.enabled, "only final exit becomes enabled")
 	var rewards := 0
 	for pickup in get_nodes_in_group("component_pickups"):

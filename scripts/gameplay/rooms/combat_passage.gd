@@ -10,12 +10,37 @@ var _link: NavigationLink2D
 
 
 func _ready() -> void:
-	for y in [-44.0, 44.0]:
-		_add_wall(Vector2(length / 2, y), Vector2(length, 8))
+	y_sort_enabled = true
+	var floor_art := Node2D.new()
+	floor_art.name = "PassageFloor"
+	floor_art.z_index = -2
+	add_child(floor_art)
+	floor_art.draw.connect(func() -> void: WorkshopArt.draw_floor_tiles(floor_art, Rect2(0, -40, length, 80)))
+	floor_art.queue_redraw()
+	for definition in [[Rect2(0, -60, length, 20), "north"], [Rect2(0, 40, length, 14), "south"]]:
+		var bounds: Rect2 = definition[0]
+		_add_wall(bounds.get_center(), bounds.size)
+		var wall := CombatSceneryPiece.new()
+		wall.position = Vector2(length / 2, bounds.end.y)
+		wall.footprint = Rect2(Vector2(-length / 2, -bounds.size.y), bounds.size)
+		wall.direction = definition[1]
+		add_child(wall)
 	_barrier = _add_wall(Vector2(length / 2, 0), Vector2(8, 80))
 	_label = Label.new()
-	_label.position = Vector2(-30, -72)
-	_label.add_theme_font_size_override("font_size", 12)
+	_label.name = "PassageSign"
+	_label.theme = CyberUITheme.create_theme()
+	_label.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_label.position = Vector2(-148, -84)
+	_label.size = Vector2(140, 24)
+	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_label.z_index = 10
+	# Match the current HUD communication text.
+	_label.add_theme_font_override("font", CyberUITheme.FONT)
+	_label.add_theme_font_size_override("font_size", 13)
+	_label.add_theme_color_override("font_color", Color("e9f8f4"))
+	_label.add_theme_color_override("font_outline_color", Color("071017"))
+	_label.add_theme_constant_override("outline_size", 2)
 	_label.text = "清场后通行"
 	add_child(_label)
 	_link = NavigationLink2D.new()
@@ -62,9 +87,6 @@ func seal_return() -> void:
 
 func _draw() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	WorkshopArt.draw_floor_tiles(self, Rect2(0, -40, length, 80))
-	CombatArchitecture.wall(self, Rect2(0, -60, length, 20), "north")
-	CombatArchitecture.wall(self, Rect2(0, 40, length, 14), "south")
 	if not unlocked or return_sealed:
 		draw_line(Vector2(length / 2, -40), Vector2(length / 2, 40), Color("e37662"), 5)
 	else:
