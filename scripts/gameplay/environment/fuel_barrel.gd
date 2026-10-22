@@ -22,13 +22,13 @@ func receive_hit(packet: DamagePacket) -> DamageResult:
 func _spill() -> void:
 	if not is_inside_tree() or is_queued_for_deletion():
 		return
-	var settings := get_node_or_null("/root/GameSettings")
-	if settings != null and not settings.are_elemental_reactions_enabled():
-		return
 	var debris := BombDebrisEffect.new()
 	debris.name = "BombDebris"
 	add_child(debris)
 	patch = FuelPatch.new()
+	# A destructible bomb is a basic environmental hazard, independently of
+	# whether optional oil/elemental reaction combinations are enabled.
+	patch.is_bomb_hazard = true
 	EnvironmentArea.for_actor(self).add_child(patch)
 	patch.global_position = global_position
 	var fire := DamagePacket.new()

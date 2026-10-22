@@ -3,6 +3,7 @@ extends Area2D
 
 @export var radius := 64.0
 var burning := false
+var is_bomb_hazard := false
 var remaining := 8.0
 var explosion_count := 0
 var _pulse := 0.0
@@ -36,8 +37,7 @@ func receive_hit(packet: DamagePacket) -> DamageResult:
 	var result := DamageResult.new()
 	result.packet = packet
 	result.target = self
-	var settings := get_node_or_null("/root/GameSettings")
-	if settings != null and not settings.are_elemental_reactions_enabled():
+	if not _hazard_enabled():
 		return result
 	if packet.base_damage > 0 and packet.damage_type in [&"fire", &"thermal"] and not burning and not get_tree().paused:
 		# Reserve the transition before callbacks, including overlapping projectiles.
@@ -63,8 +63,7 @@ func _explode() -> void:
 		events.fuel_explosion_requested.emit(global_position,96.0)
 
 func _affect_actors(reach: float, deal_damage: bool) -> void:
-	var settings := get_node_or_null("/root/GameSettings")
-	if settings != null and not settings.are_elemental_reactions_enabled():
+	if not _hazard_enabled():
 		return
 	for actor in EnvironmentArea.visible_actors(self,reach):
 		var hurt := actor.get_node("HurtBox") as HurtBox2DComponent
@@ -79,6 +78,12 @@ func _affect_actors(reach: float, deal_damage: bool) -> void:
 			hurt.receive_hit(packet)
 		else:
 			actor.get_node("StatusComponent").add_status(&"oiled",6,["negative","oil"])
+
+func _hazard_enabled() -> bool:
+	if is_bomb_hazard:
+		return true
+	var settings := get_node_or_null("/root/GameSettings")
+	return settings == null or settings.are_elemental_reactions_enabled()
 
 func _draw() -> void:
 	if not burning:
