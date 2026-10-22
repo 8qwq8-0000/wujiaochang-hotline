@@ -161,6 +161,16 @@ position = Vector2(480, 356)
 script = ExtResource("5_marker")
 profile = ExtResource("8_heavy")
 
+[node name="MeleeSupportTwo" type="Marker2D" parent="SupportSpawnPoints"]
+position = Vector2(340, 320)
+script = ExtResource("5_marker")
+profile = ExtResource("6_melee")
+
+[node name="RangedSupportTwo" type="Marker2D" parent="SupportSpawnPoints"]
+position = Vector2(620, 320)
+script = ExtResource("5_marker")
+profile = ExtResource("7_ranged")
+
 [node name="SupportSpawner" type="Node" parent="."]
 script = ExtResource("4_spawner")
 marker_root_path = NodePath("../SupportSpawnPoints")

@@ -49,7 +49,14 @@ func run() -> void:
 			var all_blockers: Array[Rect2] = []
 			all_blockers.append_array(layout.covers)
 			all_blockers.append_array(layout.windows)
-			if EncounterPropPlacement.is_safe(point,layout.enemy_positions,all_blockers,layout.doors,layout.power_position):
+			var boxes := room.find_children("*", "FuelBarrel", true, false)
+			check(boxes.size() == 3, id + " has exactly three bomb boxes")
+			for box: FuelBarrel in boxes:
+				check(EncounterPropPlacement.is_safe(box.position, layout.enemy_positions, all_blockers, layout.doors, layout.power_position, room.ROOM_SIZE), "each box avoids geometry, doorways, entry, exit and actors")
+				for other: FuelBarrel in boxes:
+					if box.get_index() < other.get_index():
+						check(box.position.distance_to(other.position) >= 54, "bomb boxes remain separated")
+			if EncounterPropPlacement.is_safe(point,layout.enemy_positions,all_blockers,layout.doors,layout.power_position,room.ROOM_SIZE):
 				safe_count += 1
 			var region: NavigationRegion2D = room.get_node("NavigationRegion2D")
 			for frame in 40:
@@ -63,24 +70,26 @@ func run() -> void:
 			for enemy in room.get_node("Enemies").get_children():
 				enemy.set_physics_process(false)
 				health_before[enemy] = enemy.health.current_health
-			check(barrel.position == point and room.spawner.required_remaining == 6, "activation keeps one fixed barrel and all six objectives")
+			check(barrel.position == point and room.spawner.required_remaining == 6 and boxes.size() == 3, "activation preserves three boxes and all six objectives")
 			await settle()
 			var packet := DamagePacket.new()
 			packet.base_damage = 1
-			barrel.receive_hit(packet)
+			for box: FuelBarrel in boxes:
+				box.receive_hit(packet)
 			await settle(6)
 			var damaged := 0
 			for enemy in health_before:
-				if enemy.health.current_health < health_before[enemy]:
+				if not is_instance_valid(enemy) or enemy.health.current_health < health_before[enemy]:
 					damaged += 1
 			if damaged >= 2:
 				multi_hit_count += 1
-			check(barrel.broken and is_instance_valid(barrel.patch) and barrel.patch.explosion_count == 1, "one actual barrel creates one explosion")
+			for box: FuelBarrel in boxes:
+				check(box.broken and is_instance_valid(box.patch) and box.patch.explosion_count == 1, "each of the three actual boxes creates exactly one explosion")
 			varied[point] = true
 			room.queue_free()
 			await settle()
 		check(safe_count == 16, id + " all seeded positions avoid geometry, enemies, entry and doors")
-		check(multi_hit_count == 16, id + " real explosions hit at least two enemies for every sampled seed")
+		check(multi_hit_count == 16, id + " three-box encounter explosions reach at least two enemies for every sampled seed")
 		check(varied.size() >= 12, id + " random offsets produce varied valid positions")
 	# Verify open workshop clearances without depending on decorative art.
 	var open_layout: CombatLayoutData = load("res://resources/rooms/layouts/loading_workshop.tres")

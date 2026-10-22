@@ -8,9 +8,11 @@
 [ext_resource type="Resource" path="res://resources/rooms/templates/loading_workshop.tres" id="room_c"]
 
 [node name="CombatPrototype" type="Node2D" groups=["combat_rooms"]]
+y_sort_enabled = true
 script = ExtResource("1")
 
 [node name="FloorAssembler" type="Node2D" parent="."]
+y_sort_enabled = true
 script = ExtResource("3")
 room_count = 2
 sequential_progression = true

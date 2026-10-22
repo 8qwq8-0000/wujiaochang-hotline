@@ -49,7 +49,7 @@ func run_checks() -> void:
 	check(get_nodes_in_group("enemies").is_empty(), "warehouse is safe")
 	check(not main.get_node("CombatHUD/Overlay").visible, "warehouse hides combat HUD")
 	var inventory: ComponentInventory = player.inventory
-	player.position = Vector2(270, 215)
+	player.position = room.get_node("Chest").position + Vector2(40, 20)
 	for frame in 4:
 		await physics_frame
 	await press_key(KEY_E)

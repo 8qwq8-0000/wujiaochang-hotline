@@ -146,7 +146,6 @@
 - Added the warehouse archive terminal for read-only persona discoveries, anomaly transcripts and legacy run records. Records include used persona levels, tier-three talents, marked-kill chain, manual perfect guards, rock feedback/attack rhythm, clear time and leaks.
 - Updated the broad warehouse/extraction fixtures from the retired `wheel`/mobility assumptions to current armor plus mandatory persona rest. Their cross-scene run also exposed and fixed one stale Deep Ninja mark reference after room cleanup by validating the object before narrowing its type.
 - Validation: unit suite 66/66; persona archive persistence 23/23; production floor-four-to-rooftop victory and archive display 14/14; warehouse 57/57; full extraction reports zero failures; persona combat reports zero failures. Editor parse and `git diff --check` pass. Headless exit-time ObjectDB/resource-use warnings remain.
-
 ## 2026-10-21 — Minimal combat HUD and holographic AI calls
 
 - Rebuilt the combat HUD around three top-left health lights, a numberless segmented heat strip, and a collapsed persona portrait that expands into a two-line holographic call. Combat calls use a purpose-built priority queue instead of Dialogic: critical takeover/lethal messages interrupt, ordinary traffic keeps one merged pending entry, and the telephone connection cue plays only when opening from the collapsed state.
@@ -158,3 +157,111 @@
 - Fixed the all-drops-missing runtime failure without changing loot balance: the formal `FloorAssembler` now owns its enemy-defeat subscription instead of relying on the player inventory's optional listener. Existing 20% rolls, per-area final-kill guarantee and the complete weapon/cyberware/armor pool remain unchanged; existing enemy metadata still prevents duplicate pickups.
 - Deep Ninja emergency takeover now cancels an active locked-direction dash, clears inherited velocity and samples collision-safe landing points with horizontal and vertical escape space. Authored room geometry was not changed because the complete room-layout/navigation suite passed 128/128.
 - Validation: editor parse; unit suite 68/68; death-drop integration 24/24 with the player-owned listener deliberately removed; persona combat zero failures; room layouts 128/128; rail-cannon loot 11/11; room transition zero failures. Existing headless `user://`, Dialogic/save-system and exit-time resource warnings remain.
+
+## 2026-10-21 — Purple arcade feedback for paired perfect parries
+
+- User approved the generated purple pixel PERFECT! wordmark and clarified that it triggers after two consecutive perfect parries. Preserved the prompt and source bitmap, imported the transparent runtime copy, and subscribed presentation to resolved player damage events.
+- Pair window is 1.2 seconds; ordinary blocks, damage, timeout and scene changes break the chain. The popup lasts 0.7 seconds with a scale pop, upward movement and fade; it inherits pause behavior and does not change combat resolution.
+
+## 2026-10-21 — Adjustable warehouse parry training room
+
+- User requested a warehouse passage into a ring of three ranged robots, approved sequential single shots every 0.9 seconds, and asked for sliders including enemy HP. Added the training passage, isolated scene and temporary run; robots start at three HP and dead targets are skipped.
+- Interval (0.4–2 seconds), projectile speed (120–600 px/s) and robot HP (1–10) are adjustable. Changes clear old bullets; HP changes rebuild targets. R resets player, targets and counters while retaining settings. Return and training death preserve the warehouse profile.
+- Validation: new training integration 46/46 with actual reflected projectiles hitting all three shooters, live damage-resolution feedback, real R input, settings persistence, pause and save isolation. Existing unit 62/62, warehouse 55/55, Boss shortcut 24/24 and player parry art 42/42 passed. Non-headless screenshot inspected; existing ObjectDB/resource-use exit warnings remain.
+
+## 2026-10-21 — Keep PERFECT! active throughout a successful streak
+
+- User clarified that every perfect parry starting with the second consecutive success must show the popup. Removed the post-popup combo reset; subsequent successful parries restart the popup until damage, normal block, timeout or scene change breaks the streak.
+- Training integration expanded to 50 checks, including the third/fourth consecutive popup and rebuilding the streak after a normal block.
+
+## 2026-10-21 — Grow PERFECT! up to its existing size
+
+- User requested small-to-large animation with the existing size as the maximum. Changed popup scaling from an overshoot-and-settle pop to a 0.22-second eased growth from 15% to 100%, capped at the existing 156-pixel width. Retained the existing 0.7-second display and fade.
+
+## 2026-10-21 — Forward fan formation and fixed training projectile speed
+
+- User requested fan placement and explicitly clarified that bullet speed should be fixed with its slider removed. Three stationary robots now occupy the player's forward 120-degree arc; the floor guide uses the same fan geometry.
+- Removed speed from sliders and reset payloads; every training projectile uses the fixed 260 px/s constant. Interval and robot HP remain adjustable. Updated the existing integration assertions, player instructions and runtime screenshot.
+- Headless and rendered training checks both pass 50/50, including actual reflected hits on all three shooters, fixed projectile speed, removed speed control and R reset. Existing exit-time resource warnings remain.
+
+## 2026-10-21 — Four authored directions for the player parry shield
+
+- User reported the parry animation only had one direction and requested all four. Kept the approved right-facing nine-frame atlas, generated independent up/down/left views with built-in imagegen and preserved their selected sources, exact prompts and import manifest. The importer aligns and packs transparent frames without painting or rotating source pixels.
+- GuardArcVisual selects the authored atlas by aim, with residual rotation for diagonals. Upward drawing now uses body-level Z and sibling ordering rather than negative world Z, which could put the shield below the floor. Startup, perfect window, normal block, recovery, damage and reflection rules remain unchanged.
+- Validation: four-direction art checks expanded to 78/78, including separate atlas selection, complete state sequences, depth, reflection, pause and engine callbacks; training 50/50 and unit 62/62 passed. Four non-headless screenshots inspected on a normal-Z background. Editor's first scan reported not-yet-imported textures; after import the final editor pass had no script or resource-load errors. Existing exit-time ObjectDB/resource-use warnings remain.
+
+## 2026-10-21 — Confirm and publish four-direction parry preview
+
+- User viewed the four-way Godot runtime recording and explicitly approved using this version in the existing PR. Added the approved recording to the repository and acceptance note, and embedded the animation in PR #12 for review. No runtime behavior changed in this follow-up; prior art 78/78, training 50/50 and unit 62/62 validation still describe the approved implementation.
+
+## 2026-10-21 — Restore PR #12 additions after PR #13 integration
+
+- The user requested direct integration into main after confirming that merged PR #13 included the older PR #11 head, rather than the current PR #12. Merged `codex/enemy-animation-art` into the latest main history, retaining persona/cyberware runtime, archive terminal, optical disruption, paused transitions, door fixes and Boss render ordering.
+- Resolved overlapping scene, enemy, warehouse and guard-visual changes. Restored travelling directional shields, ranged cover cooperation, enemy friendly-fire immunity, the five-support Boss phase, cardinal parry art, warehouse parry training and repeat PERFECT feedback. Removed the stale opening-wave one-health override so the shield guard retains three health. Migrated the automatic-door integration fixture from retired wheel mobility to the current DashController.
+- Validation: Godot 4.7.2 editor import without script errors; unit suite 68/68; shields/support 61/61; barrier 22/22; player parry 78/78; training 50/50; rooftop Boss 84/84; warehouse 58/58; persona archive 23/23; victory flow 14/14; automatic doors 19/19; room layouts 128/128; Boss shortcut 24/24; Boss patterns 10/10; point-blank shooting 73/73; enemy animations 419/419 and playback 348/348. Persona combat, persona rest, cyberware, enemy combat upgrade and enemy tactics report zero failures. Existing ObjectDB/resource-use shutdown warnings remain; no new visual acceptance or platform export was performed in this integration.
+
+## 2026-10-21 — Modular initial warehouse art
+
+- User approved an underground maintenance safehouse, then explicitly requested separately generated components assembled into a whole map. Built-in image_gen generated ten individual assets: floor, wall, equipment chest, workbench, archive terminal, deployment elevator, training door, parts rack, crates and wall lamp. Original PNGs live in `assets/art/environment/warehouse/`; complete prompts live in `art_sources/ai_drafts/warehouse_safehouse_v1/{components_prompts,supplemental_prompts}.json`. The earlier whole-room concept is reference only.
+- Added a presentation adapter with explicit atlas bounds to ignore faint transparent-margin speckles, nearest-neighbor sampling, repeated floor/wall assembly, independent device sprites, engine-rendered labels and three restrained unshadowed lights. Reused the existing dragon mechanic. Added separate scene colliders for the workbench, rack and crate footprints, keeping existing service positions and data behavior.
+- Validation: Godot 4.7.2 editor import without script/load errors; warehouse 58/58; synthesis 40/40; parry training 50/50. Static physics-space connectivity probe reached all seven interaction areas from spawn with an 8-pixel-radius query. Non-headless runtime screenshot inspected at `docs/art/validation/warehouse_safehouse_v1/warehouse.png`. All preview/probe runs used isolated save paths. Existing ObjectDB/resource-use exit warnings remain; Windows export was not tested.
+
+
+## 2026-10-21 — Warehouse wall volume revision
+
+四向墙和四个转角由内置 image_gen 独立生成，原始透明 PNG 保存于 `assets/art/environment/warehouse/*_v2.png`。六件素材从上一聊天找回，两件前侧转角本次补齐。提示词保存在 `art_sources/ai_drafts/warehouse_safehouse_v1/walls_v2_prompts.json` 与 `foreground_corner_prompts.json`。通过 AtlasTexture 选择墙体与弯折接头区域，独立朝向拼装；前墙使用独立遮挡层。Godot 实机截图与仓库 58/58、合成师 40/40、盾反训练 50/50 回归通过；退出仍有原有资源释放诊断。
+
+## 2026-10-21 — Upward flying barrier orientation
+
+- User reported a reversed barrier in a runtime screenshot. Inspected the source atlas and corrected upward flight artwork with a vertical sprite flip; movement and collision transforms remain unchanged. No new generated art. Preserved existing local SpriteFrames and other workspace edits.
+- Validation: four cardinal runtime screenshots inspected; shield/support 69/69 and barrier physics 22/22 passed. Added orientation and global visual rotation assertions. Existing support-check shutdown ObjectDB/resource diagnostics remain.
+
+
+## 2026-10-21 — Warehouse volumetric props and editor placement
+
+用户追加要求为门、储物箱、工作台、档案终端、零件架和货箱统一增加 2.5D 体积感。内置 image_gen 按批准概念图独立生成七件透明组件，保留为 assets/art/environment/warehouse/*_v2.png；完整提示词保存为 art_sources/ai_drafts/warehouse_safehouse_v1/props_v2_prompts.json。按用户要求贴墙布置；随后将图像与碰撞转换为可在 Godot 编辑器拖动保存的场景节点。新增保存/重载验证 59/59，原交互检查 148/148；既有退出资源释放诊断仍在。
+
+## 2026-10-21 — Combat architecture and three bomb boxes
+
+- User approved 2.5D battle scenery and requested three bomb boxes in each room during implementation. Reused separately authored warehouse cardinal walls/corners and existing workshop ground/props. Built-in image_gen produced two independent door orientations; originals live in `assets/art/environment/combat_architecture/`, exact prompts in `art_sources/ai_drafts/combat_architecture_v1/prompts.json`.
+- Added ground-contact Y sorting for individual walls/props and actors, separate horizontal/side door artwork, broken jambs and matching fragments, textured passages, and a background layer fix allowing floor art to appear. Physics wall/door dimensions and navigation remain authored. All seven layout variants receive scenery.
+- Three bomb boxes per CombatRoom (six per formal two-area floor), with seeded placement using actual expanded room bounds, clearances from doors/entry/enemies/power and earlier boxes. Preserved existing explosion mechanics. Validation: scenery 132/132, bomb placement/explosions 458/458, layouts 128/128, dual area 41/41, doors 19/19, fuel 19/19; restart and shooting zero failures. Updated legacy test assumptions for current combat equipment switching and fixed-effect cyberware; explosion fixture now handles defeated/free enemies and checks all three boxes. Runtime room, doorway and occlusion screenshots inspected.
+
+## 2026-10-21 — Charging station floor sigil and immunity
+
+- User requested a floor sigil to invite buff use and made charging stations non-attackable/non-explosive. Added engine-drawn animated cyan ground rings, rotating segments/runes, pulsing illumination and ground-plane compression. Projection disappears after claim or area clear, and freezes with game pause. No new image generation for the animated effect.
+- Charging station retains only interaction collision layer 32 and a no-op direct-hit interface; removed discharge implementation and attack instructions. Actual bullets pass through to enemies behind it. E buff selection, actual modifiers, area ownership and cleanup remain intact.
+- Validation: power station 36/36, electric environment 23/23, trial entry 12/12 and two-area progression 41/41. Electric environment coverage now drives an independent scoped reaction event instead of attacking a station. Real projectile and melee immunity, paused sigil, claiming after attack and immediate sigil hiding are covered. Existing exit-time ObjectDB/resource-use warnings remain; Windows export not tested.
+
+## 2026-10-21 — Match combat ground to warehouse
+
+- User reported distracting ground shimmer while walking and explicitly requested the warehouse floor. Combat rooms now reference the same warehouse floor PNG, full-source 32-game-pixel tiling and tint, replacing the workshop quarter-atlas sampling. Connecting passages use the same shared tile drawing rather than a stretched floor image. No new generated assets or gameplay changes.
+
+## 2026-10-21 — Seal observation windows and vary small obstacles
+
+- User requested replacing every observation window with a wall, plus additional small obstacles of varied sizes. Converted the workshop's sole window rectangle to a solid cover segment, using existing cardinal wall art and collision layer 1 to stop projectiles and sight as well as movement. No new art generation.
+- Each authored combat layout now receives three seeded physical crate obstacles with 18x18, 28x16 and 16x28 footprints before navigation baking. Placement avoids wall/cover clearance, doorways, entries/exits, enemy spawns and the charging station; existing bomb placement also avoids these new footprints. Reused the existing workshop crate art with ground-contact depth sorting.
+- Validation: scenery 154/154 including actual world-layer ray blocking at the former window; layouts 128/128 (reachability and collision clearances), bomb boxes 458/458 and two-area flow 41/41 passed. Updated runtime overview inspected. Existing exit-time resource diagnostics remain.
+
+
+## 2026-10-21 — Upper row alignment and east-wall elevator
+
+Preserved the user-saved layout and adjusted only the upper row: visible bottom edges align within 0.3 game pixels; clear gaps are 44–45 game pixels. Moved the synthesist name clear of the title. Replaced the right-side front-facing elevator art with a separately generated left-facing east-wall sprite, `assets/art/environment/warehouse/elevator_east_v3.png`, keeping the Deploy service position. Built-in image_gen prompt: `art_sources/ai_drafts/warehouse_safehouse_v1/elevator_east_v3_prompt.json`. Updated the saved AtlasTexture, sprite display offset/scale and matching floor zone. Editor import and non-headless runtime capture passed without script/resource-load errors; existing exit resource diagnostics remain.
+
+## 2026-10-21 — Larger denser obstacles and persistent door debris
+
+- User requested larger and more numerous obstacles, then door breaking animation with fragments on the ground. Increased added obstacles from three to six per layout, using varied 32x32, 48x28, 28x44, 56x28, 36x40 and 44x32 footprints and a mix of existing crates, consoles and machinery. Expanded spacing from existing geometry/enemy spawns and sampled a denser candidate grid to preserve safe placement. No new generated assets.
+- Door texture fragments now burst outward, rotate/shrink, fall and settle as dark floor debris instead of fading/deleting after 0.12 seconds. Applied world/local direction conversion for horizontal door nodes. Landed debris renders below actors at Z -1, has no collider, and is freed with its room. Sparks still fade; gameplay breach timing and collision removal remain immediate.
+- Validation: scenery 154/154, bomb positions/explosions 458/458, door/break debris 21/21, dual area 41/41, layout paths 128/128. Real engine screenshots inspected before/after breaking, including persistent debris. Existing shutdown resource warnings remain.
+
+## 2026-10-21 — Authored bomb explosion and debris art; denser door fragments
+
+- User asked for better bomb debris art and more door fragments. Built-in image_gen produced separate transparent 4x2 sheets: eight sequential explosion/smoke frames and eight material shards matching the navy/orange crate and red canisters. Raw sheets live in `assets/art/effects/bomb/`; exact prompts live in `art_sources/ai_drafts/bomb_effects_v1/prompts.json`. Engine AtlasTextures select cells without repainting source pixels.
+- Replaced procedural block fireballs with AnimatedSprite2D playback and anchored scaling; used authored flame art for lingering fire. Eight separately textured shards spin/fly/fall in 0.4 seconds and remain as non-colliding ground debris until scene unload. Damage remains owned by FuelPatch; repeat hits cannot duplicate effects or damage.
+- Door break count increased from 4–6 to 10–14; smaller source subdivisions and slightly larger settled fragments keep the additional pieces visible. No new door images.
+- Validation: fuel/explosion 26/26, bomb encounter 458/458, doors/debris 21/21, no import/script errors, runtime explosion and settled debris screenshots inspected. An exploratory legacy presentation_systems_check failed on old HUD assumptions and nonexistent unequip_mobility; it was stopped and is not counted as passed. Existing exit resource warnings remain.
+
+## 2026-10-22 — Prepare scene-art pull request
+
+- User authorized committing, pushing and creating a PR for the completed warehouse/combat work. Included editor-placeable warehouse scene and presentation assets, combat architecture and varied obstacles, immune buff stations with sigils, three bomb boxes per area, textured explosion/debris and shield upward orientation fix. Excluded two semantically unchanged editor-resaved enemy SpriteFrames and pre-existing parry import sidecars.
+- Immediately before commit, reran warehouse layout 59/59, warehouse 58/58, synthesis 40/40, parry training 50/50, workshop scenery 154/154, fuel/explosion 26/26 and doors/debris 21/21 (408 assertions). Existing exit-time resource diagnostics remain; Windows export and legacy presentation-system fixture issues are still not verified/fixed.

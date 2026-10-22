@@ -27,7 +27,7 @@ mouse_filter = 2
 [node name="Instructions" type="Label" parent="UI"]
 offset_left = 20.0
 offset_top = 38.0
-text = "先用导电枪命中标靶 → Q 切电击枪 → 命中导电目标\n配电箱：靠近 E 领取 / 攻击放电 · Tab 背包 · R 重置"
+text = "先用导电枪命中标靶 → Q 切电击枪 → 命中导电目标\n充电台：靠近 E 领取增益 · Tab 背包 · R 重置"
 theme_override_font_sizes/font_size = 12
 mouse_filter = 2
 [node name="Status" type="Label" parent="UI"]

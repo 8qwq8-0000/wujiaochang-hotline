@@ -6,6 +6,7 @@ const DAMAGE_NUMBER_SCENE := preload("res://scenes/presentation/damage_number.ts
 const AFTERIMAGE_SCENE := preload("res://scenes/presentation/afterimage_effect.tscn")
 const ARC_EFFECT := preload("res://scripts/presentation/electric_arc_effect.gd")
 const STAIN_LAYER_SCRIPT := preload("res://scripts/presentation/cyber_stain_layer.gd")
+const PERFECT_FEEDBACK := preload("res://scripts/presentation/perfect_parry_feedback.gd")
 const AFTERIMAGE_COLOR := Color(0.25, 0.85, 1.0, 0.55)
 const AFTERIMAGE_DURATION := 0.25
 
@@ -23,9 +24,13 @@ var _active_afterimages: Array[AfterimageEffect] = []
 var _active_arcs: Array[Node2D] = []
 var _stain_layer: Variant
 var _stain_serial := 0
+var perfect_feedback: PerfectParryFeedback
 
 
 func _ready() -> void:
+	perfect_feedback = PERFECT_FEEDBACK.new()
+	perfect_feedback.name = "PerfectParryFeedback"
+	add_child(perfect_feedback)
 	_attach_stain_layer(_current_scene_host())
 	for _index in prewarm_count:
 		_available.append(_create_effect())
@@ -38,13 +43,14 @@ func _ready() -> void:
 		events.afterimages_clear_requested.connect(clear_afterimages)
 		events.effect_requested.connect(spawn_flash)
 		events.electric_arc_requested.connect(_spawn_arc)
-		events.fuel_explosion_requested.connect(func(point: Vector2, radius: float) -> void: spawn_flash(point, Color("ff9446"), radius, 0.3))
 		events.environment_discharge_requested.connect(func(point: Vector2, radius: float) -> void: spawn_flash(point, Color("69d6ec"), radius, 0.3))
 		events.entity_defeated.connect(_on_entity_defeated)
 	var scene_flow := get_node_or_null("../SceneFlow")
 	if scene_flow != null and scene_flow.has_signal("scene_swapped"):
 		scene_flow.scene_swapped.connect(
-			func(scene: Node, _payload: Dictionary) -> void: _attach_stain_layer(scene)
+			func(scene: Node, _payload: Dictionary) -> void:
+				perfect_feedback.clear()
+				_attach_stain_layer(scene)
 		)
 
 

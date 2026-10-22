@@ -30,7 +30,6 @@ const PHASE_TWO_CAMERA_ZOOM := 0.8
 
 var phase := Phase.MINIONS
 var _attack_generation := 0
-var _support_remaining_health: Dictionary = {}
 var _test_mode := false
 var _test_player_state: Dictionary = {}
 var _optical_disruption_remaining := 0.0
@@ -49,7 +48,6 @@ func _ready() -> void:
 	boss.health.health_changed.connect(_on_boss_health_changed)
 	boss.defeated.connect(_on_boss_defeated)
 	spawner.required_remaining_changed.connect(_on_opening_guards_remaining)
-	support_spawner.enemy_spawned.connect(_on_support_spawned)
 	support_spawner.all_required_defeated.connect(_on_supports_cleared)
 	support_spawner.required_remaining_changed.connect(_on_support_count_changed)
 	player.player_died.connect(_on_player_died)
@@ -76,16 +74,13 @@ func _configure_guard_awareness() -> void:
 	# Private profiles keep the arena override out of ordinary rooms and saves.
 	for marker in $EnemySpawnPoints.get_children() + $SupportSpawnPoints.get_children():
 		marker.profile = marker.profile.duplicate()
+		marker.profile.max_health = 3 if marker.profile.role == EnemyProfile.Role.HEAVY_ANCHOR else 1
 		marker.profile.full_room_awareness = true
 		marker.profile.awareness_range = 1000.0
 		marker.profile.vision_angle_degrees = 360.0
 		marker.profile.hearing_range = 1000.0
 		marker.profile.ally_alert_range = 500.0
 		marker.profile.alert_memory_seconds = 10.0
-	# The opening is a scripted three-health guard wave, independent of the
-	# ordinary shield soldier's higher health. Support guards are configured below.
-	for marker in $EnemySpawnPoints.get_children():
-		marker.profile.max_health = 1
 
 
 func _configure_arena_camera() -> void:
@@ -133,7 +128,7 @@ func _on_minions_cleared() -> void:
 	_set_phase(Phase.BOSS_ACTIVE)
 	_start_boss_music(2)
 	_spawn_support_guards()
-	_publish_notice(&"boss_phase_two", "第二阶段 · 神像苏醒 · 三名守卫加入战斗", Color(1.0, 0.42, 0.2), 2.4)
+	_publish_notice(&"boss_phase_two", "第二阶段 · 五名守卫 · 每击败一名，神像失去一滴血", Color(1.0, 0.42, 0.2), 2.4)
 	if attack_loop_enabled:
 		_attack_generation += 1
 		_run_attack_loop(_attack_generation)
@@ -205,28 +200,12 @@ func _spawn_support_guards() -> void:
 	for index in markers.size():
 		markers[index].position = candidates[index]
 		markers[index].profile = markers[index].profile.duplicate()
-		markers[index].profile.max_health = 3
 	support_spawner.spawn_all()
 
 
-func _on_support_spawned(enemy: EnemyController) -> void:
-	_support_remaining_health[enemy.get_instance_id()] = enemy.health.current_health
-	enemy.health.health_changed.connect(_on_support_health_changed.bind(enemy.get_instance_id()))
-
-
-func _on_support_health_changed(current: int, _maximum: int, _delta: int, enemy_id: int) -> void:
-	if not boss.health.guard_link_active:
-		return
-	# Retain entries after enemies disappear, and never count overkill twice.
-	_support_remaining_health[enemy_id] = mini(int(_support_remaining_health.get(enemy_id, 3)), maxi(current, 0))
-	var remaining := 0
-	for value: int in _support_remaining_health.values():
-		remaining += value
-	boss.health.set_guard_damage_progress(9 - remaining, 9)
-
-
-func _on_support_count_changed(_remaining: int) -> void:
-	pass
+func _on_support_count_changed(remaining: int) -> void:
+	boss.health.set_guard_damage_progress(5 - remaining, 5)
+	_on_boss_health_changed(boss.health.current_health, boss.health.max_health, 0)
 
 
 func _on_supports_cleared() -> void:
@@ -236,7 +215,7 @@ func _on_supports_cleared() -> void:
 	boss.hurt_box.set_deferred("monitorable", true)
 	_clear_hostile_projectiles()
 	boss.queue_redraw()
-	_publish_notice(&"boss_shield_down", "守卫已清除 · 护罩解除 · 神像剩余半血", Color(1, 0.75, 0.3), 2.4)
+	_publish_notice(&"boss_shield_down", "守卫已清除 · 护罩解除 · 神像只剩一滴血", Color(1, 0.75, 0.3), 2.4)
 
 
 func _clear_support_guards() -> void:
