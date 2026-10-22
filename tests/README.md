@@ -115,6 +115,7 @@ godot --headless --path . --script res://tests/integration/electric_sandbox_chec
 ```sh
 godot --headless --path . --script res://tests/integration/oil_status_check.gd
 godot --headless --path . --script res://tests/integration/fuel_environment_check.gd
+godot --headless --path . --script res://tests/integration/bomb_runtime_check.gd
 godot --headless --path . --script res://tests/integration/fuel_sandbox_check.gd
 ```
 
@@ -131,7 +132,7 @@ godot --headless --path . --script res://tests/integration/environment_electric_
 godot --headless --path . --script res://tests/integration/automatic_door_check.gd
 ```
 
-覆盖同次放电共享预算/去重、新导电不自触发、实际区域玩家归属、每区域配电箱数量、增益回调互斥；实际接触开门、挡弹/放行、双侧冲刺、门后击倒范围与遮挡、暂停及恢复。fuel_environment_check/fuel_sandbox_check 已改为验证警棍和枪击直接引爆，原浸油反应另由 oil_status_check 保留验证。
+覆盖同次放电共享预算/去重、新导电不自触发、实际区域玩家归属、每区域配电箱数量、增益回调互斥；实际接触开门、射击破门与后续放行、双侧冲刺、门后击倒范围与遮挡、暂停及恢复。自动门检查还覆盖破门子弹消耗、双向和横向门射击、碎片去重，以及无伤害/暂停射击不破门。fuel_environment_check/fuel_sandbox_check 已改为验证警棍和枪击直接引爆，原浸油反应另由 oil_status_check 保留验证。
 
 启动与角色确认：`godot --headless --path . --script res://tests/integration/start_menu_check.gd`，26 项检查覆盖透明立绘、无存档、真实鼠标选择角色、取消无副作用、继续保留装备实例、重开前原文件备份、损坏存档恢复、写入失败回滚及实际进入仓库。使用独立测试存档；去掉 `--headless` 还会在 `/tmp/hotline-start-*.png` 保存界面截图。
 
@@ -167,3 +168,5 @@ godot --headless --path . --script res://tests/integration/boss_shortcut_check.g
 盾兵飞行屏障与远程配合：`godot --headless --path . --script res://tests/integration/shield_support_check.gd`，61 项覆盖四方向、独立移动、墙体、干净身体、初始冷却、提前一秒跑位及友伤。带窗口追加 `-- --capture` 输出四方向截图。
 
 盾反训练营：`godot --headless --path . --script tests/integration/parry_training_check.gd`，覆盖仓库入口、三只前方扇形机器人、顺序单发、血量与间隔滑块、固定弹速、死亡跳过、真实弹道反射、连续两次 PERFECT! 与断连、真实 R 重置及参数保留、暂停和正式存档隔离。非 headless 追加 `-- --capture` 可生成训练营截图。
+
+`bomb_runtime_check.gd` 验证元素反应关闭时，真实枪弹仍能引爆炸弹箱、生成动画和碎片，并产生爆炸及持续火区伤害；普通油区仍遵守元素反应开关。窗口验证可使用 `godot --path . --windowed --script res://tests/integration/bomb_runtime_check.gd -- --capture`。

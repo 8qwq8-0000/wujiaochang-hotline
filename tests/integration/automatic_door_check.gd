@@ -41,8 +41,10 @@ func run_checks() -> void:
 	player.position = Vector2(140,350)
 	room.add_child(player)
 	player.set_physics_process(false)
-	var walking := door_at(Vector2(200,350))
-	var walk_target := enemy_at(Vector2(240,350))
+	var shot := door_at(Vector2(200,350))
+	var shot_target := enemy_at(Vector2(240,350))
+	var walking := door_at(Vector2(200,450))
+	var walk_target := enemy_at(Vector2(240,450))
 	var breach_radii: Array[float] = []
 	root.get_node("CombatEvents").noise_emitted.connect(func(source: Node, origin: Vector2, radius: float) -> void:
 		if source == player and origin.distance_to(walking.global_position) < 2.0:
@@ -53,14 +55,36 @@ func run_checks() -> void:
 	player.weapons.set_equipped_weapon(load("res://resources/weapons/service_pistol.tres"))
 	player.weapons.try_attack(Vector2(155,350),Vector2.RIGHT,player)
 	await create_timer(0.3).timeout
-	check(not walking.opened and walk_target.health.current_health == 8,"closed door blocks projectile without damage/destruction")
+	check(shot.opened and not shot.slammed and shot.knocked_count == 0, "real pistol shot breaks closed door without dash knockdown")
+	check(shot_target.health.current_health == 8, "breaking bullet is consumed by door before reaching enemy behind it")
+	var shot_fragments := shot.find_children("DoorFragment*", "Sprite2D", true, false).size()
+	check(shot_fragments >= 10, "shot door creates the same persistent break fragments")
+	var projectile_packet := DamagePacket.new()
+	projectile_packet.is_projectile = true
+	projectile_packet.source = player
+	projectile_packet.travel_direction = Vector2.RIGHT
+	if shot.has_method("receive_hit"):
+		shot.receive_hit(projectile_packet)
+	check(shot.find_children("DoorFragment*", "Sprite2D", true, false).size() == shot_fragments, "repeated hit never duplicates door fragments")
+	var guarded := door_at(Vector2(1000,350))
+	if guarded.has_method("receive_hit"):
+		projectile_packet.base_damage = 0
+		guarded.receive_hit(projectile_packet)
+		check(not guarded.opened, "zero-damage projectile cannot break door")
+		projectile_packet.base_damage = 1
+		paused = true
+		guarded.receive_hit(projectile_packet)
+		check(not guarded.opened, "paused door ignores projectile damage")
+		paused = false
+	player.position = Vector2(140,450)
+	player.velocity = Vector2.ZERO
 	await approach(player,walking,Vector2.RIGHT)
 	check(walking.opened and not walking.slammed and walking.knocked_count == 0,"real walking contact opens door without knockdown")
 	check(breach_radii == [96.0], "ordinary breach emits only the restrained 96-pixel investigation noise")
 	check(walking.find_children("DoorFragment*", "Sprite2D", true, false).size() >= 10, "breach uses cut pieces of the closed door texture")
 	await physics_frame
 	check(walking.get_node("Body/Shape").disabled,"open door removes blocking collider")
-	player.weapons.try_attack(Vector2(205,350),Vector2.RIGHT,player)
+	player.weapons.try_attack(Vector2(205,450),Vector2.RIGHT,player)
 	await create_timer(0.2).timeout
 	check(walk_target.health.current_health == 7,"open doorway permits projectile")
 	await create_timer(0.5).timeout
@@ -114,6 +138,23 @@ func run_checks() -> void:
 	player.dash.start_dash(player,Vector2.LEFT)
 	await approach(player,reverse,Vector2.LEFT)
 	check(reverse.opened and reverse.slammed and reverse_target.state == EnemyController.State.STAGGERED,"dash works from reverse side")
+	var reverse_shot := door_at(Vector2(600,350))
+	player.position = Vector2(660,350)
+	player.velocity = Vector2.ZERO
+	player.dash.reset_transient_state()
+	await physics_frame
+	await physics_frame
+	player.weapons.try_attack(Vector2(645,350), Vector2.LEFT, player)
+	await create_timer(0.3).timeout
+	check(reverse_shot.opened and not reverse_shot.slammed, "real bullet breaks door from reverse side")
+	var horizontal_shot := door_at(Vector2(800,350))
+	horizontal_shot.rotation = PI * 0.5
+	player.position = Vector2(800,290)
+	await physics_frame
+	await physics_frame
+	player.weapons.try_attack(Vector2(800,305), Vector2.DOWN, player)
+	await create_timer(0.3).timeout
+	check(horizontal_shot.opened and not horizontal_shot.slammed, "real bullet breaks a horizontal doorway")
 	var enemy_door := door_at(Vector2(800,150), 96.0)
 	var approaching := enemy_at(Vector2(750,150))
 	await physics_frame

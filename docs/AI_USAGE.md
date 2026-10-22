@@ -265,3 +265,25 @@ Preserved the user-saved layout and adjusted only the upper row: visible bottom 
 
 - User authorized committing, pushing and creating a PR for the completed warehouse/combat work. Included editor-placeable warehouse scene and presentation assets, combat architecture and varied obstacles, immune buff stations with sigils, three bomb boxes per area, textured explosion/debris and shield upward orientation fix. Excluded two semantically unchanged editor-resaved enemy SpriteFrames and pre-existing parry import sidecars.
 - Immediately before commit, reran warehouse layout 59/59, warehouse 58/58, synthesis 40/40, parry training 50/50, workshop scenery 154/154, fuel/explosion 26/26 and doors/debris 21/21 (408 assertions). Existing exit-time resource diagnostics remain; Windows export and legacy presentation-system fixture issues are still not verified/fixed.
+
+## 2026-10-22 — Warehouse doorway half-sigils
+
+- User selected a subtle breathing glow that brightens on approach. Added a saved `DoorSigil` child to each of the four warehouse doorways, with downward floor semicircles for the north-row doors and a left-facing semicircle for the east-wall deployment door. Colors follow the doorway roles: cyan, green, purple and amber.
+- `scripts/presentation/warehouse_door_sigil.gd` uses Godot ground-plane geometry for rings, runes and glow, and previews in the editor with `@tool`. It follows the doorway transform and uses the existing `can_interact` condition for proximity brightness; it does not create collision or alter entrance actions. Removed the superseded floor arrows.
+- Validation: editor import without script/resource errors; live near/far/animation probe passed for 4/4 doors; saved-layout/transform checks 67/67; warehouse integration 58/58. Far/near runtime captures: `docs/art/validation/warehouse_safehouse_v1/warehouse_door_sigils{,_near}.png`. Validation used isolated save paths. Existing ObjectDB/resource-use exit diagnostics remain.
+
+
+## 2026-10-22 — Bomb reactions-off regression and full sigil occlusion
+
+- Reproduced the reported "shoot bomb, box disappears" bug with a real pistol projectile under disabled elemental reactions. FuelBarrel marked itself broken and hid its artwork before the shared reaction setting aborted debris/patch creation. Basic bomb hazards now run independently of optional oil/element combinations; ordinary oil ignition still follows the setting. Added bomb_runtime_check.gd, explicitly exercising the reactions-off path rather than the headless setting shortcut. Before fix: failed to create blast. After fix: 13/13 in headless mode and 13/13 in a real window using the shipped GameSettings instance; existing fuel tests 26/26 and encounter barrel checks 458/458. Window captures verified explosion art, settled fragments and lingering fire. Existing ObjectDB/resource-use exit diagnostics remain.
+- Replaced the doorway half-symbol drawing with complete circle/rune geometry clipped by an invisible Polygon2D wall-plane mask. Removed the diameter seal; only the room-facing half remains visible. Kept breathing, proximity brightness, colors and saved parent transforms. Warehouse layout checks 67/67, four-door runtime brightness/animation probe 4/4, actual window render inspected.
+
+
+## 2026-10-22 — Extracted, reflected full sigil textures
+
+Following the user's correction, extracted the four existing colored half-sigils at 6× resolution, removed the renderer clip-group black matte, and used exact vertical/horizontal reflection to create four full transparent PNGs. Original floor perspective and colors are preserved; no new design was used. Raw/clean halves and source geometry are archived in art_sources/ai_drafts/warehouse_sigils_extracted_v1; full assets are in assets/art/effects/warehouse_sigils. Replaced half-mask drawing with whole Sprite2D textures positioned under actual architecture. Split wall artwork into a separate layer above the sigils so walls/doorframes provide the occlusion. Four-door animation/proximity probe passed 4/4, layout save/transform checks 67/67, runtime images inspected. Then shifted only Deploy/DoorSigil downward by 8 game pixels per user feedback.
+
+## 2026-10-22 — Projectile door breaking
+
+- User selected bullets breaking automatic doors. Projectile world impacts now notify the owning AutomaticDoor before consuming the bullet. Shared break handling preserves existing fragments, noise and collider removal; projectile breaks do not apply dash knockdown. Repeated hits cannot duplicate fragments, and zero-damage or paused hits do not break doors.
+- Regression first reproduced the missing behavior (4 failures). After implementation: automatic doors 28/28 in both headless and windowed runs, shield support 69/69, point-blank shooting 73/73, bomb runtime 13/13. Existing ObjectDB/resource-use diagnostics remain on test exit; no new script errors observed.
