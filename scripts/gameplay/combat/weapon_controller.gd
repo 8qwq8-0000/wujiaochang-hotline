@@ -276,18 +276,23 @@ func _perform_beam(
 ) -> void:
 	var room := CombatProjectile.room_for_actor(source_node)
 	var space := get_world_2d().direct_space_state
-	# Sweep the full beam width against walls, then use that same length for
-	# both the visible light and its damage rectangle.
+	# The rail beam forms inside its first five 32 px body lengths. Obstacles in
+	# that formation corridor cannot choke the shot at the muzzle; beyond it the
+	# first wall clips both damage and presentation.
+	var penetration_distance := minf(data.beam_wall_penetration_distance, data.attack_range)
 	var front := RectangleShape2D.new()
 	front.size = Vector2(1.0, data.beam_width)
 	var sweep := PhysicsShapeQueryParameters2D.new()
 	sweep.shape = front
-	sweep.transform = Transform2D(direction.angle(), origin)
+	sweep.transform = Transform2D(direction.angle(), origin + direction * penetration_distance)
 	sweep.collision_mask = 1
 	sweep.margin = 0.0
 	var starts_in_wall := not space.intersect_shape(sweep, 1).is_empty()
-	sweep.motion = direction * data.attack_range
-	var length := 0.0 if starts_in_wall else data.attack_range * space.cast_motion(sweep)[0]
+	var remaining_range := data.attack_range - penetration_distance
+	sweep.motion = direction * remaining_range
+	var length := penetration_distance
+	if not starts_in_wall:
+		length += remaining_range * space.cast_motion(sweep)[0]
 	if length <= 0.0:
 		return
 	var shape := RectangleShape2D.new()
@@ -310,16 +315,27 @@ func _perform_beam(
 		if CombatProjectile.room_for_actor(actor) != room or hit_actors.has(actor.get_instance_id()):
 			continue
 		hit_actors[actor.get_instance_id()] = true
-		var packet := _make_packet(data, origin, direction, source_node, damage_multiplier)
+		var actor_distance := clampf((actor.global_position - origin).dot(direction), 0.0, length)
+		var beam_multiplier := _beam_damage_multiplier(data, actor_distance)
+		var packet := _make_packet(data, origin, direction, source_node, damage_multiplier * beam_multiplier)
 		packet.is_area_damage = true
 		area.receive_hit(packet)
 	var beam := Node2D.new()
 	beam.set_script(LASER_BEAM)
 	beam.set("beam_length", length)
 	beam.set("beam_width", data.beam_width)
+	beam.set("falloff_start_distance", penetration_distance)
 	room.add_child(beam)
 	beam.global_position = origin
 	beam.global_rotation = direction.angle()
+
+
+func _beam_damage_multiplier(data: WeaponComponentData, distance: float) -> float:
+	var falloff_start := minf(data.beam_wall_penetration_distance, data.attack_range)
+	if distance <= falloff_start or falloff_start >= data.attack_range:
+		return 1.0
+	var progress := inverse_lerp(falloff_start, data.attack_range, distance)
+	return lerpf(1.0, data.beam_end_damage_multiplier, progress)
 
 
 func _make_packet(

@@ -34,13 +34,15 @@ func run() -> void:
 	await physics_frame
 	await physics_frame
 	check(player.weapons.try_attack(Vector2(150, 200), Vector2.RIGHT, player), "laser fires")
-	for index in 3:
-		check(targets[index].health.current_health == 17, "same laser damages near, wide and distant targets once: %d" % index)
+	check(targets[0].health.current_health == 17, "laser deals full damage inside its formation distance")
+	check(targets[1].health.current_health == 18, "laser damage begins fading after five body lengths")
+	check(targets[2].health.current_health == 19, "laser remains damaging but weak at maximum depth")
 	for index in range(3, 6):
 		check(targets[index].health.current_health == 20, "outside width, length or rear is safe: %d" % index)
 	check(player.health.current_health == 100, "beam never hits shooter")
 	var beams := get_nodes_in_group("laser_beams")
 	check(beams.size() == 1 and is_equal_approx(beams[0].get("beam_length"), 1000.0) and beams[0].get("beam_width") == 48.0, "visible beam uses damage dimensions")
+	check(beams.size() == 1 and beams[0].material is ShaderMaterial and is_equal_approx(beams[0].material.get_shader_parameter("falloff_start_ratio"), 0.16), "beam visual carries the same near-to-deep falloff gradient")
 	for child in room.get_children():
 		check(not child is CombatProjectile, "beam emits no ordinary projectile")
 	if "--capture-laser" in OS.get_cmdline_user_args():
@@ -50,6 +52,15 @@ func run() -> void:
 	await create_timer(0.4).timeout
 	check(get_nodes_in_group("laser_beams").is_empty(), "beam visual finishes and cleans up")
 	check(targets[0].health.current_health == 17, "visual duration cannot repeatedly damage a target")
+	var near_wall := StaticBody2D.new()
+	near_wall.collision_layer = 1
+	var near_collider := CollisionShape2D.new()
+	var near_rectangle := RectangleShape2D.new()
+	near_rectangle.size = Vector2(12, 120)
+	near_collider.shape = near_rectangle
+	near_wall.add_child(near_collider)
+	room.add_child(near_wall)
+	near_wall.global_position = Vector2(220, 200)
 	var wall := StaticBody2D.new()
 	wall.collision_layer = 1
 	var collider := CollisionShape2D.new()
@@ -73,7 +84,7 @@ func run() -> void:
 	player.weapons.reset_transient_state()
 	player.heat.current_heat = 0
 	player.weapons.try_attack(Vector2(150, 200), Vector2.RIGHT, player)
-	check(targets[0].health.current_health == 17, "enemy before wall is hit")
+	check(targets[0].health.current_health == 17, "wall inside five body lengths is penetrated")
 	check(targets[1].health.current_health == 20 and targets[2].health.current_health == 20, "wall stops laser damage")
 	beams = get_nodes_in_group("laser_beams")
 	check(beams.size() == 1 and beams[0].get("beam_length") < 341.0, "wall clips visual to the same damage endpoint")

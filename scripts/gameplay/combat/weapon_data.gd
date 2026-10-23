@@ -24,6 +24,8 @@ enum TriggerMode {
 @export_range(0.0, 100.0, 0.5) var heat_per_attack: float = 15.0
 @export_range(1.0, 1000.0, 1.0) var attack_range: float = 72.0
 @export_range(1.0, 200.0, 1.0) var beam_width: float = 48.0
+@export_range(0.0, 1000.0, 1.0) var beam_wall_penetration_distance: float = 0.0
+@export_range(0.0, 1.0, 0.05) var beam_end_damage_multiplier: float = 1.0
 @export_range(1.0, 2000.0, 1.0) var projectile_speed: float = 440.0
 @export_range(1, 12, 1) var projectile_count: int = 1
 @export_range(0.0, 90.0, 1.0) var spread_degrees: float = 0.0
