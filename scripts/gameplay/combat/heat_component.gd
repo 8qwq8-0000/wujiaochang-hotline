@@ -6,7 +6,7 @@ signal overheated
 signal recovered
 
 @export_range(1.0, 1000.0, 1.0) var max_heat: float = 100.0
-@export_range(0.0, 1000.0, 1.0) var dissipation_per_second: float = 24.0
+@export_range(0.0, 1000.0, 1.0) var dissipation_per_second: float = 12.0
 @export_range(0.0, 1.0, 0.01) var recovery_ratio: float = 0.35
 
 var current_heat: float = 0.0

@@ -1,7 +1,7 @@
 extends SceneTree
 
-const FORMAL_IDS := ["interlinked_apartment", "loading_workshop"]
-const IDS := ["interlinked_apartment", "loading_workshop", "staggered_cover", "central_server", "storage_lanes", "cross_checkpoint", "offset_workshop", "split_office"]
+const FORMAL_IDS := ["interlinked_apartment", "loading_workshop", "freight_atrium", "dual_track_depot"]
+const IDS := ["interlinked_apartment", "loading_workshop", "freight_atrium", "dual_track_depot", "staggered_cover", "central_server", "storage_lanes", "cross_checkpoint", "offset_workshop", "split_office"]
 var checks := 0
 var failures := 0
 
@@ -32,7 +32,8 @@ func run() -> void:
 	run_manager.begin_run(4287)
 	var seen_pairs := {}
 	var seen_layouts := {}
-	for seed in [41, 63, 87, 105, 229, 4287]:
+	var seen_slots := {}
+	for seed in [41, 63, 87, 105, 229, 4287, 800, 801, 802, 803]:
 		var pair_at_zero := ""
 		for level in [0, 0, 1]:
 			run_manager.begin_run(seed)
@@ -41,11 +42,12 @@ func run() -> void:
 			root.add_child(floor_node)
 			current_scene = floor_node
 			var assembler: FloorAssembler = floor_node.get_node("FloorAssembler")
-			check(assembler.room_pool.size() == FORMAL_IDS.size(), "formal floor wires the two selected layouts")
+			check(assembler.room_pool.size() == FORMAL_IDS.size(), "formal floor wires all four selected layouts")
 			var paths: Array[String] = []
 			for room in assembler.generated_rooms:
 				paths.append(room.scene_file_path)
 				seen_layouts[room.scene_file_path] = true
+				seen_slots["%s:%d" % [room.layout.id, paths.size() - 1]] = true
 			check(paths[0] != paths[1], "two areas never repeat same layout")
 			var pair := "|".join(paths)
 			seen_pairs[pair] = true
@@ -69,8 +71,10 @@ func run() -> void:
 			check(route_connected, "unlocked passage links different navigation meshes")
 			floor_node.queue_free()
 			await settle()
-	check(seen_layouts.size() == FORMAL_IDS.size(), "seed samples reach both selected layouts")
-	check(seen_pairs.size() == 2, "seeds and floors provide varied room pairs")
+	check(seen_layouts.size() == FORMAL_IDS.size(), "seed samples reach all four selected layouts")
+	check(seen_pairs.size() > 4, "seeds and floors provide varied pairs from four layouts")
+	for id in FORMAL_IDS:
+		check(seen_slots.has(id + ":0") and seen_slots.has(id + ":1"), id + " appears as both first and final area")
 	for id in IDS:
 		var template: RoomTemplateData = load("res://resources/rooms/templates/" + id + ".tres")
 		var room := template.scene.instantiate() as CombatRoom

@@ -72,10 +72,19 @@ func update_visual(
 			_schedule_idle_gesture()
 	var direction_name := _direction_name(aim_direction)
 	var animation := _body_animation(direction_name, moving)
+	if _has_ranged_weapon() and _idle_gesture_active:
+		_cancel_idle_gesture()
 	if not moving and _idle_gesture_active:
 		animation = &"idle_gesture"
-	if body_sprite.sprite_frames.has_animation(animation) and (animation != _last_animation or not body_sprite.is_playing()):
-		body_sprite.play(animation)
+	if body_sprite.sprite_frames.has_animation(animation):
+		if not moving and not _idle_gesture_active:
+			# The generic idle sheet has one fixed facing. Use the planted
+			# directional frame so every gun stays in front when standing.
+			body_sprite.animation = animation
+			body_sprite.pause()
+			body_sprite.set_frame_and_progress(0, 0.0)
+		elif animation != _last_animation or not body_sprite.is_playing():
+			body_sprite.play(animation)
 		_last_animation = animation
 	if Time.get_ticks_usec() < _visual_hold_until_usec:
 		body_sprite.pause()
@@ -144,6 +153,10 @@ func _play_reaction(direction: Vector2, strength: float, recoil: bool) -> void:
 
 func set_weapon(data: WeaponComponentData) -> void:
 	weapon_pivot.set_weapon(data)
+	if _has_ranged_weapon():
+		_cancel_idle_gesture()
+	else:
+		_schedule_idle_gesture()
 
 
 func play_weapon_attack() -> void:
@@ -178,7 +191,7 @@ func set_dead(dead: bool) -> void:
 
 
 func _schedule_idle_gesture() -> void:
-	if _idle_gesture_timer == null or _dead or _moving or _idle_gesture_active:
+	if _idle_gesture_timer == null or _dead or _moving or _idle_gesture_active or _has_ranged_weapon():
 		return
 	var minimum := minf(idle_gesture_min_delay, idle_gesture_max_delay)
 	var maximum := maxf(idle_gesture_min_delay, idle_gesture_max_delay)
@@ -192,7 +205,7 @@ func _cancel_idle_gesture() -> void:
 
 
 func _on_idle_gesture_timeout() -> void:
-	if _dead or _moving or not body_sprite.sprite_frames.has_animation(&"idle_gesture"):
+	if _dead or _moving or _has_ranged_weapon() or not body_sprite.sprite_frames.has_animation(&"idle_gesture"):
 		return
 	_idle_gesture_active = true
 	body_sprite.play(&"idle_gesture")
@@ -215,9 +228,11 @@ func _direction_name(direction: Vector2) -> String:
 
 
 func _body_animation(direction_name: String, moving: bool) -> StringName:
-	if not moving:
-		return &"idle"
 	return StringName("walk_" + direction_name)
+
+
+func _has_ranged_weapon() -> bool:
+	return is_instance_valid(weapon_pivot) and weapon_pivot.current_data != null and weapon_pivot.current_data.attack_kind != WeaponComponentData.AttackKind.MELEE
 
 
 func _weapon_draws_in_front(direction_name: String) -> bool:

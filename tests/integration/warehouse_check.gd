@@ -57,6 +57,20 @@ func run_checks() -> void:
 	check(root.get_node("SoundManager").is_music_playing(LOBBY_MUSIC), "warehouse keeps the lobby music playing")
 	check(not main.get_node("CombatHUD/Overlay").visible, "warehouse hides combat HUD")
 	var inventory: ComponentInventory = player.inventory
+	var original_starter := inventory.weapon_slot.get_item()
+	var stored_scattergun := ComponentRolls.create("scattergun", 1, RandomNumberGenerator.new())
+	room.chest.add_item(stored_scattergun)
+	inventory.weapon_slot.clear()
+	room._ensure_fallback_weapon()
+	var fallback := inventory.weapon_slot.get_item()
+	check(fallback != null and fallback.serialize().get("prototype_id") == "pistol", "empty loadout receives issued pistol even with scattergun in chest")
+	check(room.chest.has_item(stored_scattergun), "fallback never auto-equips stored loot")
+	room._ensure_fallback_weapon()
+	check(inventory.weapon_slot.get_item() == fallback, "existing equipped weapon remains unchanged")
+	inventory.weapon_slot.clear()
+	inventory.weapon_slot.equip(original_starter)
+	inventory._apply_equipment()
+	room.chest.remove_item(stored_scattergun)
 	player.position = room.get_node("Chest").position + Vector2(40, 20)
 	for frame in 4:
 		await physics_frame

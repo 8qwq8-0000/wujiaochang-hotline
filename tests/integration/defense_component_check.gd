@@ -139,9 +139,9 @@ func run() -> void:
 	armor = inv.defense_slot.get_item()
 	check(inv.unequip("defense"), "armor can be carried for full-bag fixture")
 	while inv.backpack.get_item_count() < 6:
-		inv.pickup("wheel")
+		inv.pickup("pistol")
 	check(inv.equip(inv.backpack.get_item_index(armor)) and inv.backpack.get_item_count() == 5, "equipping armor frees one full-bag cell")
-	inv.pickup("wheel")
+	inv.pickup("pistol")
 	check(not inv.unequip("defense") and inv.defense_slot.get_item() == armor, "full bag cannot swallow equipped armor on unequip")
 	var pool_has_armor := false
 	for index in 100:

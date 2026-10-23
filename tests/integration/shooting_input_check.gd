@@ -36,7 +36,7 @@ func run_checks() -> void:
 	check(attack_transform.origin.is_equal_approx(player.weapons.clamp_projectile_origin(player.visuals.get_weapon_mount_global_position(), player.visuals.get_weapon_muzzle_global_position())), "projectile still originates at the rendered muzzle")
 	# Real GUI dispatch: decorative HUD must not consume firing/guard clicks.
 	var hud: Node = main.get_node("CombatHUD")
-	for path in ["Overlay/TopLeft", "Overlay/Objective", "Overlay/NoticeQueue"]:
+	for path in ["Overlay/MinimalStatus", "Overlay/TopRightPersona/PersonaStatus", "Overlay/NoticeQueue"]:
 		var control: Control = hud.get_node(path)
 		var point := control.get_global_rect().get_center()
 		player.set("_attack_pressed", false)

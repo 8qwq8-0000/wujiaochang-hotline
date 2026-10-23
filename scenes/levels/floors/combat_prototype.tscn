@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scripts/gameplay/rooms/combat_floor.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/actors/player/player.tscn" id="2"]
@@ -6,6 +6,8 @@
 
 [ext_resource type="Resource" path="res://resources/rooms/templates/interlinked_apartment.tres" id="room_b"]
 [ext_resource type="Resource" path="res://resources/rooms/templates/loading_workshop.tres" id="room_c"]
+[ext_resource type="Resource" path="res://resources/rooms/templates/freight_atrium.tres" id="room_d"]
+[ext_resource type="Resource" path="res://resources/rooms/templates/dual_track_depot.tres" id="room_e"]
 
 [node name="CombatPrototype" type="Node2D" groups=["combat_rooms"]]
 y_sort_enabled = true
@@ -16,7 +18,7 @@ y_sort_enabled = true
 script = ExtResource("3")
 room_count = 2
 sequential_progression = true
-room_pool = [ExtResource("room_b"), ExtResource("room_c")]
+room_pool = [ExtResource("room_b"), ExtResource("room_c"), ExtResource("room_d"), ExtResource("room_e")]
 
 [node name="Player" parent="." instance=ExtResource("2")]
 position = Vector2(111, 270)
