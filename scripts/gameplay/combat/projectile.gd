@@ -77,6 +77,12 @@ func _physics_process(delta: float) -> void:
 	var wall_hit := get_world_2d().direct_space_state.intersect_ray(query)
 	if not wall_hit.is_empty():
 		global_position = wall_hit.position
+		_resolved = true
+		# Door leaves are world-blocking StaticBody2Ds. Notify their owning door
+		# before consuming the impact; ordinary walls still just stop the shot.
+		var door: AutomaticDoor = wall_hit.collider.get_parent() as AutomaticDoor
+		if door != null:
+			door.receive_hit(_make_damage_packet())
 		_detonate()
 		queue_free()
 		return

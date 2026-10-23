@@ -131,7 +131,7 @@ marker_root_path = NodePath("../EnemySpawnPoints")
 spawn_parent_path = NodePath("../Enemies")
 
 [node name="ExitElevator" type="Area2D" parent="."]
-position = Vector2(592, 180)
+position = Vector2(606, 280)
 collision_layer = 64
 collision_mask = 2
 script = ExtResource("4")

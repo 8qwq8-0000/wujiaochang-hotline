@@ -58,22 +58,45 @@ func _on_contact(body: Node2D) -> void:
 	var normal := global_transform.x.normalized()
 	var side := (body.global_position-global_position).dot(normal)
 	var direction := -normal if side > 0 else normal
-	opened = true
-	set_physics_process(false)
-	slammed = body is PlayerController and body.dash.is_dashing() and body.velocity.dot(direction) > 80.0
-	$Body/Shape.set_deferred("disabled",true)
 	if body is EnemyController:
 		# Never teleport an enemy across the leaf. Once the deferred collider
 		# disable is flushed, its existing velocity and navigation target carry
 		# it through naturally on the next physics frame.
 		body._clear_navigation_recovery()
+	_break_open(direction, body, body is PlayerController and body.dash.is_dashing() and body.velocity.dot(direction) > 80.0)
+
+func receive_hit(packet: DamagePacket) -> DamageResult:
+	var result := DamageResult.new()
+	result.packet = packet
+	result.target = self
+	if not is_inside_tree() or opened or get_tree().paused or packet == null or not packet.is_projectile or packet.base_damage <= 0:
+		return result
+	var normal := global_transform.x.normalized()
+	var direction := normal if packet.travel_direction.dot(normal) >= 0 else -normal
+	if packet.travel_direction.is_zero_approx():
+		direction = -normal if (packet.source_position - global_position).dot(normal) > 0 else normal
+	var instigator: Node = packet.source if is_instance_valid(packet.source) else self
+	_break_open(direction, instigator, false)
+	result.outcome = DamageResult.Outcome.DAMAGED
+	result.final_damage = 1
+	result.target_defeated = true
+	return result
+
+func _break_open(direction: Vector2, source: Node, with_slam: bool) -> void:
+	if opened:
+		return
+	# Reserve the break before callbacks so multiple bullets cannot duplicate it.
+	opened = true
+	slammed = with_slam
+	set_physics_process(false)
+	$Body/Shape.set_deferred("disabled",true)
 	_spawn_break_fragments(direction)
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null:
-		events.publish_noise(body, global_position, 160.0 if slammed else 96.0)
+		events.publish_noise(source, global_position, 160.0 if slammed else 96.0)
 		events.request_effect(global_position, Color("e6bc73"), 18.0, 0.12)
 	if slammed:
-		call_deferred("_knock_down",direction,body)
+		call_deferred("_knock_down",direction,source)
 	queue_redraw()
 
 func _knock_down(direction: Vector2, source: Node2D) -> void:

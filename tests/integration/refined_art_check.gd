@@ -45,8 +45,9 @@ func run() -> void:
 	var exit := ExitElevator.new()
 	room.add_child(exit)
 	exit.set_enabled(true)
-	exit.get_child(0)._process(0.0)
-	check(exit.get_child(0).get("_state") == 1, "exit illumination follows enabled state")
+	check(exit.get_node("DoorArt").modulate == Color.WHITE and exit.get_node("DoorSigil").texture.resource_path.ends_with("deploy_complete.png"), "unlocked exit uses illuminated warehouse door and orange sigil")
+	exit.set_enabled(false)
+	check(exit.get_node("DoorArt").modulate.r < 1.0 and not exit.can_interact(power), "locked exit dims warehouse door and prevents interaction")
 	room.queue_free()
 	await process_frame
 	print("Refined art checks: ", checks, "; failures: ", failures)

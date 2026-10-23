@@ -12,8 +12,15 @@
 [ext_resource type="Texture2D" uid="uid://dyaqeq11d0uta" path="res://assets/art/environment/warehouse/terminal_v2.png" id="art_terminal"]
 [ext_resource type="Texture2D" uid="uid://0a1qhu4reypg" path="res://assets/art/environment/warehouse/training_door_v2.png" id="art_training_door"]
 [ext_resource type="Texture2D" uid="uid://bkyqt2t67fbat" path="res://assets/art/environment/warehouse/workbench_v2.png" id="art_workbench"]
+[ext_resource type="Script" uid="uid://dlua384ihlh1u" path="res://scripts/presentation/warehouse_door_sigil.gd" id="door_sigil"]
 [ext_resource type="Script" uid="uid://c1ls7u113nbfr" path="res://scripts/presentation/warehouse_foreground_art.gd" id="foreground_art"]
 [ext_resource type="Script" uid="uid://cc7c83bgiq7kp" path="res://scripts/presentation/warehouse_art.gd" id="warehouse_art"]
+
+[ext_resource type="Script" path="res://scripts/presentation/warehouse_wall_art.gd" id="wall_art"]
+[ext_resource type="Texture2D" path="res://assets/art/effects/warehouse_sigils/parry_complete.png" id="sigil_parry"]
+[ext_resource type="Texture2D" path="res://assets/art/effects/warehouse_sigils/trial_complete.png" id="sigil_trial"]
+[ext_resource type="Texture2D" path="res://assets/art/effects/warehouse_sigils/boss_complete.png" id="sigil_boss"]
+[ext_resource type="Texture2D" path="res://assets/art/effects/warehouse_sigils/deploy_complete.png" id="sigil_deploy"]
 
 [sub_resource type="RectangleShape2D" id="WallHorizontal"]
 size = Vector2(640, 24)
@@ -202,6 +209,15 @@ position = Vector2(19.3, -6)
 scale = Vector2(0.051252183, 0.051252183)
 texture = SubResource("Art_elevator")
 
+[node name="DoorSigil" type="Sprite2D" parent="Deploy" unique_id=1684507696]
+z_index = -2
+z_as_relative = false
+texture_filter = 2
+position = Vector2(22, 8)
+scale = Vector2(0.225, 0.225)
+texture = ExtResource("sigil_deploy")
+script = ExtResource("door_sigil")
+
 [node name="Trial" type="Area2D" parent="." unique_id=1663611196]
 self_modulate = Color(1, 1, 1, 0)
 position = Vector2(386, 62)
@@ -247,6 +263,15 @@ texture_filter = 1
 scale = Vector2(0.053465348, 0.053465348)
 texture = SubResource("Art_training_door")
 
+[node name="DoorSigil" type="Sprite2D" parent="Trial" unique_id=344300250]
+z_index = -2
+z_as_relative = false
+texture_filter = 2
+position = Vector2(0, 18)
+scale = Vector2(0.225, 0.225)
+texture = ExtResource("sigil_trial")
+script = ExtResource("door_sigil")
+
 [node name="BossTest" type="Area2D" parent="." unique_id=697322043]
 self_modulate = Color(1, 1, 1, 0)
 position = Vector2(485, 62)
@@ -291,6 +316,15 @@ modulate = Color(0.85, 0.72, 1, 1)
 texture_filter = 1
 scale = Vector2(0.053465348, 0.053465348)
 texture = SubResource("Art_training_door")
+
+[node name="DoorSigil" type="Sprite2D" parent="BossTest" unique_id=2017666086]
+z_index = -2
+z_as_relative = false
+texture_filter = 2
+position = Vector2(0, 18)
+scale = Vector2(0.225, 0.225)
+texture = ExtResource("sigil_boss")
+script = ExtResource("door_sigil")
 
 [node name="SynthesisNPC" type="Area2D" parent="." unique_id=256862902]
 self_modulate = Color(1, 1, 1, 0)
@@ -437,6 +471,15 @@ texture_filter = 1
 scale = Vector2(0.053465348, 0.053465348)
 texture = SubResource("Art_training_door")
 
+[node name="DoorSigil" type="Sprite2D" parent="ParryTraining" unique_id=1410721436]
+z_index = -2
+z_as_relative = false
+texture_filter = 2
+position = Vector2(0, 18)
+scale = Vector2(0.225, 0.225)
+texture = ExtResource("sigil_parry")
+script = ExtResource("door_sigil")
+
 [node name="WarehouseArt" type="Node2D" parent="." unique_id=161272953]
 z_index = -10
 texture_filter = 1
@@ -510,3 +553,8 @@ texture = SubResource("Art_crates")
 [node name="Shape" type="CollisionShape2D" parent="CratesRight/Body" unique_id=325542917]
 position = Vector2(0, 1)
 shape = SubResource("SmallCrateFootprint")
+
+[node name="WallsArt" type="Node2D" parent="WarehouseArt"]
+z_index = -1
+z_as_relative = false
+script = ExtResource("wall_art")

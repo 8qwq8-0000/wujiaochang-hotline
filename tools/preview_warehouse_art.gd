@@ -21,6 +21,11 @@ func capture() -> void:
 			break
 	for frame in 15:
 		await process_frame
+	var near_door := "--near-door" in OS.get_cmdline_user_args()
+	if near_door:
+		var room := main.get_node("SceneContainer").get_child(0)
+		room.get_node("Player").position = room.get_node("Deploy").position + Vector2(-42, 0)
+		await create_timer(0.5).timeout
 	var front_wall := "--front-wall" in OS.get_cmdline_user_args()
 	if front_wall:
 		var room := main.get_node("SceneContainer").get_child(0)
@@ -34,6 +39,8 @@ func capture() -> void:
 		filename = "warehouse_props_v2.png"
 	if front_wall:
 		filename = "warehouse_front_wall_v2.png"
+	if "--door-sigils" in OS.get_cmdline_user_args():
+		filename = "warehouse_door_sigils_near.png" if near_door else "warehouse_door_sigils.png"
 	var result := root.get_texture().get_image().save_png("res://docs/art/validation/warehouse_safehouse_v1/" + filename)
 	print("Warehouse art capture: ", result)
 	main.queue_free()
