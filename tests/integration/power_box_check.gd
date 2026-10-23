@@ -76,7 +76,7 @@ func run_checks() -> void:
 	player.heat.set_physics_process(false)
 	player.heat.current_heat = 80
 	player.heat._physics_process(1)
-	check(is_equal_approx(player.heat.current_heat,68), "cooling buff changes actual heat dissipation")
+	check(is_equal_approx(player.heat.current_heat,62), "12/s base cooling with a 50% buff dissipates 18 heat per second")
 	room.room_cleared.emit()
 	check(player.heat.cooling_multiplier == 1, "clear restores cooling multiplier")
 	var guard_box := box_at(room,Vector2(200,200),3)
