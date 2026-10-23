@@ -10,6 +10,7 @@ extends Area2D
 
 var direction := Vector2.RIGHT
 var source: Node
+var weapon_id: StringName = &""
 var damage_type: StringName = &"kinetic"
 var status_tags: PackedStringArray = []
 var homing_target: Node2D
@@ -17,6 +18,7 @@ var homing_turn_radians_per_second := 0.0
 var explosion_radius := 0.0
 var explosion_damage := 0
 var has_area_behavior := false
+var feedback_group_id: int = 0
 var _resolved := false
 
 
@@ -141,11 +143,13 @@ func _make_damage_packet() -> DamagePacket:
 	packet.status_tags = status_tags.duplicate()
 	packet.source = source if is_instance_valid(source) else null
 	packet.source_faction = faction
+	packet.weapon_id = weapon_id
 	packet.source_position = global_position - direction * 8.0
 	packet.travel_direction = direction
 	packet.knockback = direction * 85.0
 	packet.is_projectile = true
 	packet.reflectable = reflectable
+	packet.feedback_group_id = feedback_group_id
 	return packet
 
 
@@ -178,10 +182,12 @@ func _detonate(excluded_actor_id: int = 0) -> void:
 		packet.damage_type = &"explosive"
 		packet.source = source if is_instance_valid(source) else null
 		packet.source_faction = faction
+		packet.weapon_id = weapon_id
 		packet.source_position = global_position
 		packet.travel_direction = offset.normalized() if not offset.is_zero_approx() else direction
 		packet.knockback = packet.travel_direction * 70.0
 		packet.is_area_damage = true
+		packet.feedback_group_id = feedback_group_id
 		hurt.receive_hit(packet)
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null:

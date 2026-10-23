@@ -116,6 +116,7 @@ func _on_minions_cleared() -> void:
 	if run_manager != null:
 		run_manager.set_mandatory_enemy_count(1)
 	_publish_notice(&"boss_awakening", "静默协议解除 · 神像苏醒", Color(1.0, 0.72, 0.25), 2.0)
+	_publish_combat_moment(&"boss_phase")
 	player.set_physics_process(false)
 	room_lighting.begin_awakening()
 	_push_camera_to_altar()
@@ -129,6 +130,7 @@ func _on_minions_cleared() -> void:
 	_start_boss_music(2)
 	_spawn_support_guards()
 	_publish_notice(&"boss_phase_two", "第二阶段 · 五名守卫 · 每击败一名，神像失去一滴血", Color(1.0, 0.42, 0.2), 2.4)
+	_publish_combat_moment(&"boss_phase")
 	if attack_loop_enabled:
 		_attack_generation += 1
 		_run_attack_loop(_attack_generation)
@@ -216,6 +218,7 @@ func _on_supports_cleared() -> void:
 	_clear_hostile_projectiles()
 	boss.queue_redraw()
 	_publish_notice(&"boss_shield_down", "守卫已清除 · 护罩解除 · 神像只剩一滴血", Color(1, 0.75, 0.3), 2.4)
+	_publish_combat_moment(&"boss_break")
 
 
 func _clear_support_guards() -> void:
@@ -331,6 +334,12 @@ func _publish_notice(id: StringName, text: String, color: Color, seconds: float)
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null:
 		events.publish_notice(id, text, color, CombatNotice.Priority.HIGH, 0.0, seconds)
+
+
+func _publish_combat_moment(kind: StringName) -> void:
+	var events := get_node_or_null("/root/CombatEvents")
+	if events != null:
+		events.publish_combat_moment(kind, boss.global_position)
 
 
 func _on_exit_entered() -> void:

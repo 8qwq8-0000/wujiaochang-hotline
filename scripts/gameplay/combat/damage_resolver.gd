@@ -35,6 +35,7 @@ static func resolve(
 			return result
 	result.outcome = DamageResult.Outcome.DAMAGED
 	result.final_damage = health.apply_damage(requested_damage, packet)
+	result.fatal_damage_prevented = health.last_fatal_damage_prevented
 	result.target_defeated = health.is_dead()
 	_publish(result)
 	return result

@@ -41,8 +41,31 @@ func run_checks() -> void:
 	await process_frame
 
 	check(player.persona_combat != null, "player mounts persona combat runtime")
+	player.persona_combat.set_physics_process(false)
 	player.talent_core.consume_persona_drink(TalentCoreController.DEEP_NINJA)
-	player.talent_core.set_talent_choice(TalentCoreController.DEEP_NINJA, 1, &"read_opening")
+	player.talent_core.set_talent_choice(TalentCoreController.DEEP_NINJA, 1, &"gaze")
+	player.equip_weapon(load("res://resources/weapons/service_pistol.tres"))
+	player.weapons.reset_transient_state()
+	var ai_attacks := [0]
+	player.weapons.attack_performed.connect(func(_data: WeaponComponentData) -> void: ai_attacks[0] += 1)
+	player.persona_combat._physics_process(0.3)
+	player.persona_combat._physics_process(0.3)
+	check(player.persona_combat.marked_target == enemy, "new scene establishes an initial hunt mark")
+	check(ai_attacks[0] == 0, "initial scene mark never triggers an automatic shot")
+	var next_enemy := load("res://scenes/actors/enemies/enemy.tscn").instantiate() as EnemyController
+	next_enemy.stationary_test_target = true
+	next_enemy.global_position = Vector2(210.0, 100.0)
+	arena.add_child(next_enemy)
+	await process_frame
+	var marked_defeat := DamageResult.new()
+	marked_defeat.packet = DamagePacket.new()
+	marked_defeat.packet.source = player
+	marked_defeat.final_damage = 1
+	marked_defeat.target_defeated = true
+	player.persona_combat._on_deep_ninja_hit(enemy, marked_defeat)
+	player.persona_combat._physics_process(0.2)
+	check(player.persona_combat.marked_target == next_enemy and ai_attacks[0] == 1, "defeating a marked enemy still lets Gaze fire once at the next mark")
+	player.persona_combat._set_mark(enemy)
 	var player_hit := DamagePacket.new()
 	player_hit.base_damage = 0
 	player_hit.source = player

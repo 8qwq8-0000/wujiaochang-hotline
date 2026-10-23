@@ -39,3 +39,4 @@ func test_pause_settings_scene_exposes_confirmed_resolutions() -> void:
 	assert_eq(PauseSettingsMenu.RESOLUTIONS.size(), 4)
 	assert_eq(PauseSettingsMenu.RESOLUTIONS[0], Vector2i(1280, 720))
 	assert_eq(PauseSettingsMenu.RESOLUTIONS[3], Vector2i(2560, 1440))
+	assert_eq(PauseSettingsMenu.CAMERA_SHAKE_STRENGTHS, [0.0, 0.5, 1.0])

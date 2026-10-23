@@ -7,6 +7,7 @@ script = ExtResource("1")
 id = &"heavy_anchor"
 display_name = "重装盾兵"
 role = 2
+impact_material = 1
 max_health = 3
 move_speed = 46.0
 awareness_range = 1000.0

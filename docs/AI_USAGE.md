@@ -146,6 +146,18 @@
 - Added the warehouse archive terminal for read-only persona discoveries, anomaly transcripts and legacy run records. Records include used persona levels, tier-three talents, marked-kill chain, manual perfect guards, rock feedback/attack rhythm, clear time and leaks.
 - Updated the broad warehouse/extraction fixtures from the retired `wheel`/mobility assumptions to current armor plus mandatory persona rest. Their cross-scene run also exposed and fixed one stale Deep Ninja mark reference after room cleanup by validating the object before narrowing its type.
 - Validation: unit suite 66/66; persona archive persistence 23/23; production floor-four-to-rooftop victory and archive display 14/14; warehouse 57/57; full extraction reports zero failures; persona combat reports zero failures. Editor parse and `git diff --check` pass. Headless exit-time ObjectDB/resource-use warnings remain.
+## 2026-10-21 — Minimal combat HUD and holographic AI calls
+
+- Rebuilt the combat HUD around three top-left health lights, a numberless segmented heat strip, and a collapsed persona portrait that expands into a two-line holographic call. Combat calls use a purpose-built priority queue instead of Dialogic: critical takeover/lethal messages interrupt, ordinary traffic keeps one merged pending entry, and the telephone connection cue plays only when opening from the collapsed state.
+- Added a small top-right pause control, a 50%-opacity current-weapon view at bottom right, transient weapon-name feedback, HUD scaling at 100/125/150%, reduced-flash accessibility, and a recent-call page in pause. Removed runtime damage numbers, generic combat-notice presentation, persistent objective/enemy counters, and all Boss health/phase labels; the Boss keeps only its in-world halo segments.
+- Elemental-reaction gameplay is disabled for the current player-facing pass while its implementation and headless regressions remain preserved. Validation covers health HUD, combat comms, minimal presentation, pause settings and the rooftop Boss. The headless environment continues to emit pre-existing `user://`, Dialogic/save-system and exit-time resource warnings.
+
+## 2026-10-21 — Death-drop ownership and takeover landing recovery
+
+- Fixed the all-drops-missing runtime failure without changing loot balance: the formal `FloorAssembler` now owns its enemy-defeat subscription instead of relying on the player inventory's optional listener. Existing 20% rolls, per-area final-kill guarantee and the complete weapon/cyberware/armor pool remain unchanged; existing enemy metadata still prevents duplicate pickups.
+- Deep Ninja emergency takeover now cancels an active locked-direction dash, clears inherited velocity and samples collision-safe landing points with horizontal and vertical escape space. Authored room geometry was not changed because the complete room-layout/navigation suite passed 128/128.
+- Validation: editor parse; unit suite 68/68; death-drop integration 24/24 with the player-owned listener deliberately removed; persona combat zero failures; room layouts 128/128; rail-cannon loot 11/11; room transition zero failures. Existing headless `user://`, Dialogic/save-system and exit-time resource warnings remain.
+
 ## 2026-10-21 — Purple arcade feedback for paired perfect parries
 
 - User approved the generated purple pixel PERFECT! wordmark and clarified that it triggers after two consecutive perfect parries. Preserved the prompt and source bitmap, imported the transparent runtime copy, and subscribed presentation to resolved player damage events.
@@ -297,3 +309,14 @@ Following the user's correction, extracted the four existing colored half-sigils
 - Clean validation against origin/main in an isolated worktree: enemy combat upgrade; enemy native animation 348/348; warehouse 61/61; Codex passage 23/23; cyberware effects; armor blue-health 38/38; defense 40/40; extraction; victory 14/14; persona rest. All ten scripts exited successfully with zero assertion failures. Windowed captures also passed and were visually checked.
 - Limits: Godot 4.7.2 GDScript/Compatibility validation on macOS, not .NET/Windows export or another member's review. Existing resource/RID cleanup diagnostics remain; fresh import also emitted two file-access diagnostics while importing unchanged data/fonts. The old component_progression_check.gd still references removed mobility APIs and fails parsing at line 149; it is not counted as passed.
 - PR contains only this chat's work. Concurrent floor difficulty, boss-minion health, persona emergency movement, wall/crate navigation, raw reference media and unrelated editor imports remain outside this branch. Generated assets: project-local AI output, no newly imported third-party assets; team ownership pending assignment.
+
+## 2026-10-23 — Resolve PR18 laser merge conflict
+
+- User explicitly selected PR18's implementation for the weapon_controller.gd beam conflict. Merged current origin/main into the PR18 head, retained PR18's 160px formation/penetration corridor and subsequent wall clipping, and did not retain main's conflicting projectile-style automatic-door impact block.
+- Updated the newly merged door assertions to match that explicit choice: distant blocking doors stay closed, the beam remains clipped, and the rear door remains protected. Laser beam integration: 33/33. Existing resource-use exit warnings remain; this updates the PR branch only, without merging it into main.
+- Settings assertions reported zero failures. The merged presentation_systems_check hits missing HUD affordances and a null get_global_rect call, preventing completion; it is not counted as passing and requires follow-up separate from this laser-conflict choice.
+
+## 2026-10-23 — Sync PR19 with merged PR18
+
+- Resolved the append-only AI_USAGE.md conflict by retaining both PR18's laser-resolution record and PR19's workshop/art record. Gameplay code auto-merged; kept PR18's selected beam behavior and PR19's service passage, melee preparation, storage UI and item art.
+- Validation after merging current main: Codex passage 23/23, warehouse 63/63, laser beam 33/33 and enemy combat upgrade zero failures. Existing resource cleanup diagnostics remain. Only the PR19 branch is updated; no direct main merge.

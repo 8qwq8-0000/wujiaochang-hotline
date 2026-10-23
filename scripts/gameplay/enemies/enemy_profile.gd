@@ -9,9 +9,16 @@ enum Role {
 	HEAVY_ANCHOR,
 }
 
+enum ImpactMaterial {
+	LIGHT_METAL,
+	HEAVY_METAL,
+	SOFT,
+}
+
 @export var id: StringName = &"enemy"
 @export var display_name: String = "敌人"
 @export var role: Role = Role.MELEE_PRESSURE
+@export var impact_material: ImpactMaterial = ImpactMaterial.LIGHT_METAL
 @export_range(1, 20, 1) var max_health: int = 2
 @export_range(1.0, 500.0, 1.0) var move_speed: float = 76.0
 @export var full_room_awareness := false

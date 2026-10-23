@@ -31,6 +31,12 @@ func receive_hit(packet: DamagePacket) -> DamageResult:
 		var ignored := DamageResult.new()
 		ignored.packet = packet
 		ignored.target = actor
+		ignored.ignore_reason = DamageResult.IgnoreReason.INVULNERABLE
+		var loop := Engine.get_main_loop()
+		if loop is SceneTree:
+			var events := (loop as SceneTree).root.get_node_or_null("CombatEvents")
+			if events != null:
+				events.publish_damage(ignored)
 		hit_resolved.emit(ignored)
 		return ignored
 	if packet.base_damage > 0 and actor.has_method("try_absorb_hit") and bool(actor.try_absorb_hit(packet)):

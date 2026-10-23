@@ -4,6 +4,7 @@ extends RefCounted
 var base_damage: int = 1
 var source: Node
 var source_faction: CombatFaction.Id = CombatFaction.Id.NEUTRAL
+var weapon_id: StringName = &""
 var damage_type: StringName = &"kinetic"
 var status_tags: PackedStringArray = []
 var allow_status_reactions := true
@@ -19,6 +20,12 @@ var is_projectile: bool = false
 var is_melee: bool = false
 var is_area_damage: bool = false
 var reflected: bool = false
+## Presentation-only grouping for pellets, beams, and other hits produced by one attack.
+## It never participates in damage resolution.
+var feedback_group_id: int = 0
+## Marks recurring damage so presentation can show one clear warning followed by
+## restrained pulses instead of replaying the full hit package every tick.
+var is_continuous_damage: bool = false
 
 
 func duplicate_packet() -> DamagePacket:
@@ -26,6 +33,7 @@ func duplicate_packet() -> DamagePacket:
 	copy.base_damage = base_damage
 	copy.source = source if is_instance_valid(source) else null
 	copy.source_faction = source_faction
+	copy.weapon_id = weapon_id
 	copy.damage_type = damage_type
 	copy.status_tags = status_tags.duplicate()
 	copy.allow_status_reactions = allow_status_reactions
@@ -40,4 +48,6 @@ func duplicate_packet() -> DamagePacket:
 	copy.is_melee = is_melee
 	copy.is_area_damage = is_area_damage
 	copy.reflected = reflected
+	copy.feedback_group_id = feedback_group_id
+	copy.is_continuous_damage = is_continuous_damage
 	return copy
