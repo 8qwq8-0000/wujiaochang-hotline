@@ -116,6 +116,9 @@ func run_checks() -> void:
 	passage.upgrade_panel.select_material(0, subject)
 	passage.upgrade_panel.select_material(1, material)
 	passage.upgrade_panel.get("_synthesis_button").pressed.emit()
+	check(passage.upgrade_panel.get("_target") == 0, "successful synthesis resets selection to subject")
+	check(passage.upgrade_panel.get("_materials") == [null, null], "successful synthesis clears both consumed inputs")
+	check(root.gui_get_focus_owner() == passage.upgrade_panel.get("_material_buttons")[0], "successful synthesis returns keyboard focus to subject")
 	check(ComponentRolls.quality(inv.weapon_slot.get_item()) == 2 and inv.backpack.get_item_count() == 5, "workshop upgrades equipped gun while consuming its material from a full bag")
 	check(not passage.owns_synthesis_item(subject) and not passage.owns_synthesis_item(material), "consumed input instances cannot be reused")
 	check(not passage.synthesize(subject, material), "duplicate synthesis request cannot duplicate equipment")
@@ -123,7 +126,11 @@ func run_checks() -> void:
 	for item in inv.backpack.get_items():
 		if item.get_property("slot") == "cyberware":
 			cyber_material = item
-	check(passage.synthesize(inv.cyberware_slot.get_item(), cyber_material), "carried cyberware can be fused inside the run")
+	passage.upgrade_panel.select_material(passage.upgrade_panel.get("_target"), inv.cyberware_slot.get_item())
+	check(passage.upgrade_panel.get("_materials")[0] == inv.cyberware_slot.get_item() and passage.upgrade_panel.get("_target") == 1, "next selection fills subject and advances to material")
+	passage.upgrade_panel.select_material(passage.upgrade_panel.get("_target"), cyber_material)
+	passage.upgrade_panel.get("_synthesis_button").pressed.emit()
+	check(passage.upgrade_panel.get("_target") == 0 and passage.upgrade_panel.get("_materials") == [null, null], "repeated cyberware synthesis also returns to an empty subject slot")
 	check(player.cyberware.has_module(CyberwareController.SMART_FIRE) and player.cyberware.has_module(CyberwareController.EXPLOSIVE_MAGAZINE), "equipped compound activates both modules immediately")
 	var result := inv.cyberware_slot.get_item()
 	check(not passage.synthesize(result, ComponentRolls.create("optical_intruder", 1, rng)), "unowned material is rejected")
