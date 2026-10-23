@@ -31,42 +31,42 @@
 		"name": "智能火控",
 		"slot": "cyberware",
 		"effect": "res://resources/cyberware/smart_fire.tres",
-		"image": "res://assets/art/items/wheel.svg",
+		"image": "res://assets/art/items/equipment_v1/smart_fire.png",
 		"maximum_stack_size": 1.0
 	},
 	"explosive_magazine": {
 		"name": "爆裂弹仓",
 		"slot": "cyberware",
 		"effect": "res://resources/cyberware/explosive_magazine.tres",
-		"image": "res://assets/art/items/wheel.svg",
+		"image": "res://assets/art/items/equipment_v1/explosive_magazine.png",
 		"maximum_stack_size": 1.0
 	},
 	"tactical_coprocessor": {
 		"name": "战术协处理器",
 		"slot": "cyberware",
 		"effect": "res://resources/cyberware/tactical_coprocessor.tres",
-		"image": "res://assets/art/items/wheel.svg",
+		"image": "res://assets/art/items/equipment_v1/tactical_coprocessor.png",
 		"maximum_stack_size": 1.0
 	},
 	"optical_intruder": {
 		"name": "光学入侵器",
 		"slot": "cyberware",
 		"effect": "res://resources/cyberware/optical_intruder.tres",
-		"image": "res://assets/art/items/wheel.svg",
+		"image": "res://assets/art/items/equipment_v1/optical_intruder.png",
 		"maximum_stack_size": 1.0
 	},
 	"kill_heat_sink": {
 		"name": "击破散热器",
 		"slot": "cyberware",
 		"effect": "res://resources/cyberware/kill_heat_sink.tres",
-		"image": "res://assets/art/items/wheel.svg",
+		"image": "res://assets/art/items/equipment_v1/kill_heat_sink.png",
 		"maximum_stack_size": 1.0
 	},
 	"heat_threshold_pulser": {
 		"name": "热阈震荡器",
 		"slot": "cyberware",
 		"effect": "res://resources/cyberware/heat_threshold_pulser.tres",
-		"image": "res://assets/art/items/wheel.svg",
+		"image": "res://assets/art/items/equipment_v1/heat_threshold_pulser.png",
 		"maximum_stack_size": 1.0
 	},
 	"circuit_breaker": {
@@ -95,7 +95,7 @@
 	"armor": {
 		"name": "缓冲装甲",
 		"slot": "defense",
-		"image": "res://assets/art/items/armor.svg",
+		"image": "res://assets/art/items/equipment_v1/armor.png",
 		"maximum_stack_size": 1.0
 	}
 }

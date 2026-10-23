@@ -9,10 +9,14 @@ var _label: Label
 func _ready() -> void:
 	if rolled_item == null:
 		rolled_item = ComponentRolls.create(component_id, 1, RandomNumberGenerator.new())
+	ComponentRolls.ensure(rolled_item)
 	add_to_group("component_pickups")
-	var definition: Dictionary = ComponentInventory.PROTOTYPES.data.get(rolled_item.get_prototype().get_prototype_id(), {})
 	var icon := Sprite2D.new()
-	icon.texture = load(str(definition.get("image", "res://icon.svg")))
+	icon.name = "ItemIcon"
+	icon.texture = rolled_item.get_texture()
+	icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	if icon.texture != null and rolled_item.get_property("slot", "") in ["cyberware", "defense"]:
+		icon.scale = Vector2.ONE * minf(1.0, 32.0 / maxf(icon.texture.get_width(), icon.texture.get_height()))
 	add_child(icon)
 	_label = Label.new()
 	_label.position = Vector2(-90, 18)
