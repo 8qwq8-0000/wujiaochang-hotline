@@ -76,7 +76,7 @@ func _ready() -> void:
 func _bind_floor(scene: Node, _payload: Dictionary) -> void:
 	close(true)
 	_player = scene.get_node_or_null("Player") as PlayerController
-	if not is_instance_valid(_player) or scene.is_in_group("warehouse") or not run.persistent_run:
+	if not is_instance_valid(_player) or scene.is_in_group("warehouse") or scene.is_in_group("intermission") or not run.persistent_run:
 		return
 	if not run.prepare_persona_rest(run.floor_index):
 		return
