@@ -1,6 +1,7 @@
 extends Control
 
 const WAREHOUSE := "res://scenes/bootstrap/warehouse_main.tscn"
+const LOBBY_MUSIC := preload("res://assets/audio/music/lobby/lobby_theme.ogg")
 const PORTRAIT := preload("res://assets/art/ui/standard_chassis_cutout.png")
 const HOME_BACKGROUND := preload("res://assets/art/ui/start_menu/start_menu_background_v1.png")
 const HOME_CHASSIS := preload("res://assets/art/ui/start_menu/start_menu_chassis_v1.png")
@@ -36,11 +37,14 @@ var _continue: Button
 var _status: Label
 var _busy := false
 var _difficulty := "standard"
+var _sound_manager: Node
 @onready var store: Node = get_node("/root/WarehouseStore")
 
 
 func _ready() -> void:
 	get_tree().paused = false
+	_sound_manager = get_node_or_null("/root/SoundManager")
+	_play_lobby_music()
 	_canvas = Control.new()
 	_canvas.size = Vector2(1280, 720)
 	add_child(_canvas)
@@ -79,6 +83,17 @@ func _ready() -> void:
 	resized.connect(_resize_canvas)
 	_resize_canvas()
 	show_home()
+
+
+func _play_lobby_music() -> void:
+	if _sound_manager == null or _sound_manager.is_music_playing(LOBBY_MUSIC):
+		return
+	_sound_manager.play_music(LOBBY_MUSIC, 0.75)
+
+
+func _stop_lobby_music() -> void:
+	if _sound_manager != null:
+		_sound_manager.stop_music(0.75)
 
 
 func _resize_canvas() -> void:
@@ -485,10 +500,12 @@ func _enter_warehouse() -> void:
 	get_node("/root/GameSettings").set_difficulty(["low_pressure", "standard", "high_pressure"].find(difficulty) as GameSettingsController.Difficulty, false)
 	get_node("/root/RunManager").begin_run()
 	get_node("/root/RunManager").set_scene_payload({})
+	_stop_lobby_music()
 	var error := get_tree().change_scene_to_file(WAREHOUSE)
 	if error != OK:
 		_busy = false
 		show_home()
+		_play_lobby_music()
 		_status.text = "无法进入仓库，请重试。"
 
 

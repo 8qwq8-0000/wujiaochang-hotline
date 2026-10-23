@@ -27,6 +27,8 @@ var _swing_direction := Vector2.RIGHT
 var _swing_sign: float = -1.0
 var _swing_hits: Dictionary = {}
 var _swing_damage_multiplier := 1.0
+var _feedback_group_serial := 0
+var _active_feedback_group_id := 0
 
 @onready var heat_component: HeatComponent = get_node(heat_component_path)
 
@@ -136,6 +138,8 @@ func _perform_attack(
 	source_node: Node,
 	damage_multiplier: float
 ) -> void:
+	_feedback_group_serial += 1
+	_active_feedback_group_id = _feedback_group_serial
 	_cooldown_remaining = data.cooldown / maxf(attack_speed_multiplier, 0.01)
 	match data.attack_kind:
 		WeaponComponentData.AttackKind.MELEE:
@@ -254,8 +258,10 @@ func _perform_projectiles(
 			maxi(int(round(data.damage * damage_multiplier)), 0),
 			data.projectile_speed
 		)
+		projectile.weapon_id = data.id
 		projectile.damage_type = data.damage_type
 		projectile.status_tags = data.status_tags.duplicate()
+		projectile.feedback_group_id = _active_feedback_group_id
 		var cyberware := source_node.get_node_or_null("CyberwareController") as CyberwareController
 		if cyberware != null:
 			cyberware.configure_projectile(projectile, direction)
@@ -327,10 +333,12 @@ func _make_packet(
 	packet.base_damage = maxi(int(round(data.damage * damage_multiplier)), 0)
 	packet.source = source_node
 	packet.source_faction = faction
+	packet.weapon_id = data.id
 	packet.damage_type = data.damage_type
 	packet.status_tags = data.status_tags.duplicate()
 	packet.source_position = origin
 	packet.travel_direction = direction
+	packet.feedback_group_id = _active_feedback_group_id
 	return packet
 
 

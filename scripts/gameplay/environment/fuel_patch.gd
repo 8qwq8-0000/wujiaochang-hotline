@@ -74,6 +74,7 @@ func _affect_actors(reach: float, deal_damage: bool) -> void:
 			packet.source_faction = CombatFaction.Id.ENVIRONMENT
 			packet.damage_type = &"fire"
 			packet.is_area_damage = true
+			packet.is_continuous_damage = true
 			packet.blockable = false
 			packet.source_position = global_position
 			hurt.receive_hit(packet)

@@ -23,6 +23,8 @@ signal operator_communication_requested(text: String)
 signal weapon_cue_requested(weapon_id: StringName, cue: StringName, world_position: Vector2)
 signal afterimage_requested(source: Node, sprite: AnimatedSprite2D)
 signal afterimages_clear_requested(source: Node)
+signal combat_moment_requested(kind: StringName, world_position: Vector2)
+signal low_health_pulse_requested
 
 
 func publish_damage(result: DamageResult) -> void:
@@ -95,3 +97,11 @@ func request_afterimage(source: Node, sprite: AnimatedSprite2D) -> void:
 func clear_afterimages(source: Node) -> void:
 	if is_instance_valid(source):
 		afterimages_clear_requested.emit(source)
+
+
+func publish_combat_moment(kind: StringName, world_position: Vector2) -> void:
+	combat_moment_requested.emit(kind, world_position)
+
+
+func publish_low_health_pulse() -> void:
+	low_health_pulse_requested.emit()

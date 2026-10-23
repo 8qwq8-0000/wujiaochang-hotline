@@ -22,6 +22,59 @@
 [ext_resource type="AudioStream" uid="uid://d1r05oo2hulov" path="res://assets/audio/sfx/enemies/reinforcement_approach.wav" id="20"]
 [ext_resource type="PackedScene" path="res://scenes/ui/pause_settings_menu.tscn" id="21"]
 [ext_resource type="Script" path="res://scripts/ui/persona_rest_flow.gd" id="22"]
+[ext_resource type="Script" path="res://scripts/presentation/combat_feedback_manager.gd" id="75"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_hits/service_pistol_hit_01.wav" id="23_pistol_hit_01"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_hits/service_pistol_hit_02.wav" id="24_pistol_hit_02"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_hits/service_pistol_hit_03.wav" id="25_pistol_hit_03"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_hits/service_pistol_hit_04.wav" id="26_pistol_hit_04"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_hits/scattergun_hit_01.wav" id="27_scatter_hit_01"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_hits/scattergun_hit_02.wav" id="28_scatter_hit_02"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_hits/scattergun_hit_03.wav" id="29_scatter_hit_03"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_hits/scattergun_hit_04.wav" id="30_scatter_hit_04"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_hits/rail_cannon_hit_01.wav" id="31_rail_hit_01"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_hits/rail_cannon_hit_02.wav" id="32_rail_hit_02"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_hits/rail_cannon_hit_03.wav" id="33_rail_hit_03"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_hits/rail_cannon_hit_04.wav" id="34_rail_hit_04"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_hits/material_light_metal_01.wav" id="35_light_metal_01"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_hits/material_light_metal_02.wav" id="36_light_metal_02"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_hits/material_light_metal_03.wav" id="37_light_metal_03"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_hits/material_light_metal_04.wav" id="38_light_metal_04"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_hits/material_heavy_metal_01.wav" id="39_heavy_metal_01"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_hits/material_heavy_metal_02.wav" id="40_heavy_metal_02"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_hits/material_heavy_metal_03.wav" id="41_heavy_metal_03"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_hits/material_heavy_metal_04.wav" id="42_heavy_metal_04"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_fire/service_pistol_fire_01.wav" id="43_pistol_fire_01"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_fire/service_pistol_fire_02.wav" id="44_pistol_fire_02"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_fire/service_pistol_fire_03.wav" id="45_pistol_fire_03"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_fire/service_pistol_fire_04.wav" id="46_pistol_fire_04"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_fire/scattergun_fire_01.wav" id="47_scatter_fire_01"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_fire/scattergun_fire_02.wav" id="48_scatter_fire_02"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_fire/scattergun_fire_03.wav" id="49_scatter_fire_03"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_fire/scattergun_fire_04.wav" id="50_scatter_fire_04"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_fire/rail_cannon_fire_01.wav" id="51_rail_fire_01"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_fire/rail_cannon_fire_02.wav" id="52_rail_fire_02"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_fire/rail_cannon_fire_03.wav" id="53_rail_fire_03"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_fire/rail_cannon_fire_04.wav" id="54_rail_fire_04"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/defense/block_metal_01.wav" id="55_block_01"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/defense/block_metal_02.wav" id="56_block_02"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/defense/block_metal_03.wav" id="57_block_03"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/defense/block_metal_04.wav" id="58_block_04"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/defense/perfect_guard_energy_01.wav" id="59_perfect_01"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/defense/perfect_guard_energy_02.wav" id="60_perfect_02"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/defense/perfect_guard_energy_03.wav" id="61_perfect_03"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/player/player_hurt_01.wav" id="62_hurt_01"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/player/player_hurt_02.wav" id="63_hurt_02"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/player/player_hurt_03.wav" id="64_hurt_03"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/player/player_hurt_04.wav" id="65_hurt_04"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/player/heavy_damage_01.wav" id="66_heavy_damage_01"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/player/heavy_damage_02.wav" id="67_heavy_damage_02"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/player/low_health_warning.wav" id="68_low_health_warning"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/player/low_health_heartbeat.wav" id="69_low_health_heartbeat"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/kills/kill_confirm_01.wav" id="70_kill_01"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/kills/kill_confirm_02.wav" id="71_kill_02"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/kills/kill_confirm_03.wav" id="72_kill_03"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/kills/heavy_kill_weight_01.wav" id="73_heavy_kill_01"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/kills/heavy_kill_weight_02.wav" id="74_heavy_kill_02"]
 
 [node name="Main" type="Node" unique_id=88177702]
 script = ExtResource("1")
@@ -34,6 +87,9 @@ script = ExtResource("6")
 
 [node name="VFXManager" type="Node2D" parent="." unique_id=1573087612]
 script = ExtResource("4")
+
+[node name="CombatFeedbackManager" type="Node" parent="."]
+script = ExtResource("75")
 
 [node name="AudioCueManager" type="Node" parent="." unique_id=1278085769]
 script = ExtResource("5")
@@ -50,6 +106,22 @@ weapon_cues = {
 }
 hotline_dial_sounds = Array[AudioStream]([ExtResource("17"), ExtResource("18")])
 hotline_connect_sound = ExtResource("19")
+service_pistol_fire_sounds = Array[AudioStream]([ExtResource("43_pistol_fire_01"), ExtResource("44_pistol_fire_02"), ExtResource("45_pistol_fire_03"), ExtResource("46_pistol_fire_04")])
+scattergun_fire_sounds = Array[AudioStream]([ExtResource("47_scatter_fire_01"), ExtResource("48_scatter_fire_02"), ExtResource("49_scatter_fire_03"), ExtResource("50_scatter_fire_04")])
+rail_cannon_fire_sounds = Array[AudioStream]([ExtResource("51_rail_fire_01"), ExtResource("52_rail_fire_02"), ExtResource("53_rail_fire_03"), ExtResource("54_rail_fire_04")])
+block_sounds = Array[AudioStream]([ExtResource("55_block_01"), ExtResource("56_block_02"), ExtResource("57_block_03"), ExtResource("58_block_04")])
+perfect_guard_energy_sounds = Array[AudioStream]([ExtResource("59_perfect_01"), ExtResource("60_perfect_02"), ExtResource("61_perfect_03")])
+player_hurt_sounds = Array[AudioStream]([ExtResource("62_hurt_01"), ExtResource("63_hurt_02"), ExtResource("64_hurt_03"), ExtResource("65_hurt_04")])
+heavy_damage_sounds = Array[AudioStream]([ExtResource("66_heavy_damage_01"), ExtResource("67_heavy_damage_02")])
+low_health_warning_sound = ExtResource("68_low_health_warning")
+low_health_heartbeat_sound = ExtResource("69_low_health_heartbeat")
+kill_confirm_sounds = Array[AudioStream]([ExtResource("70_kill_01"), ExtResource("71_kill_02"), ExtResource("72_kill_03")])
+heavy_kill_sounds = Array[AudioStream]([ExtResource("73_heavy_kill_01"), ExtResource("74_heavy_kill_02")])
+service_pistol_hit_sounds = Array[AudioStream]([ExtResource("23_pistol_hit_01"), ExtResource("24_pistol_hit_02"), ExtResource("25_pistol_hit_03"), ExtResource("26_pistol_hit_04")])
+scattergun_hit_sounds = Array[AudioStream]([ExtResource("27_scatter_hit_01"), ExtResource("28_scatter_hit_02"), ExtResource("29_scatter_hit_03"), ExtResource("30_scatter_hit_04")])
+rail_cannon_hit_sounds = Array[AudioStream]([ExtResource("31_rail_hit_01"), ExtResource("32_rail_hit_02"), ExtResource("33_rail_hit_03"), ExtResource("34_rail_hit_04")])
+light_metal_hit_sounds = Array[AudioStream]([ExtResource("35_light_metal_01"), ExtResource("36_light_metal_02"), ExtResource("37_light_metal_03"), ExtResource("38_light_metal_04")])
+heavy_metal_hit_sounds = Array[AudioStream]([ExtResource("39_heavy_metal_01"), ExtResource("40_heavy_metal_02"), ExtResource("41_heavy_metal_03"), ExtResource("42_heavy_metal_04")])
 
 [node name="CombatMusic" type="Node" parent="." unique_id=2111284450]
 script = ExtResource("7")

@@ -1,6 +1,8 @@
 class_name PlayerVisualController
 extends Node2D
 
+const FLASH_SHADER_CODE := "shader_type canvas_item; uniform float flash_amount = 0.0; uniform vec4 flash_color : source_color = vec4(1.0); void fragment(){ vec4 tex = texture(TEXTURE, UV); vec4 tint = COLOR; vec3 base = tex.rgb * tint.rgb; COLOR = vec4(mix(base, flash_color.rgb, flash_amount), tex.a * tint.a); }"
+
 @export var body_sprite_path: NodePath
 @export var wrist_socket_path: NodePath
 @export var weapon_pivot_path: NodePath
@@ -20,9 +22,22 @@ var _idle_gesture_active := false
 var _moving := false
 var _dead := false
 var _idle_rng := RandomNumberGenerator.new()
+var _flash_material: ShaderMaterial
+var _flash_until_usec := 0
+var _visual_hold_until_usec := 0
+var _reaction_tween: Tween
+var _base_position := Vector2.ZERO
+var _base_scale := Vector2.ONE
 
 
 func _ready() -> void:
+	_base_position = position
+	_base_scale = scale
+	_flash_material = ShaderMaterial.new()
+	var shader := Shader.new()
+	shader.code = FLASH_SHADER_CODE
+	_flash_material.shader = shader
+	body_sprite.material = _flash_material
 	_idle_rng.randomize()
 	_idle_gesture_timer = Timer.new()
 	_idle_gesture_timer.one_shot = true
@@ -30,6 +45,14 @@ func _ready() -> void:
 	_idle_gesture_timer.timeout.connect(_on_idle_gesture_timeout)
 	body_sprite.animation_finished.connect(_on_body_animation_finished)
 	_schedule_idle_gesture()
+
+
+func _process(_delta: float) -> void:
+	if _flash_material != null:
+		var remaining_usec := maxi(_flash_until_usec - Time.get_ticks_usec(), 0)
+		_flash_material.set_shader_parameter(&"flash_amount", clampf(float(remaining_usec) / 50_000.0, 0.0, 1.0))
+	if Time.get_ticks_usec() < _visual_hold_until_usec:
+		body_sprite.pause()
 
 
 func update_visual(
@@ -54,6 +77,8 @@ func update_visual(
 	if body_sprite.sprite_frames.has_animation(animation) and (animation != _last_animation or not body_sprite.is_playing()):
 		body_sprite.play(animation)
 		_last_animation = animation
+	if Time.get_ticks_usec() < _visual_hold_until_usec:
+		body_sprite.pause()
 	body_sprite.flip_h = false
 	wrist_socket.sync_pose(body_sprite, StringName(animation), body_sprite.frame)
 	weapon_pivot.position = wrist_socket.position
@@ -81,7 +106,40 @@ func play_hurt_flash() -> void:
 		_hurt_tween.kill()
 	modulate = Color(1.8, 1.8, 1.8, 1.0)
 	_hurt_tween = create_tween()
+	_hurt_tween.set_ignore_time_scale(true)
 	_hurt_tween.tween_property(self, "modulate", Color.WHITE, 0.12)
+
+
+func flash_hit(color: Color = Color.WHITE) -> void:
+	_flash_until_usec = Time.get_ticks_usec() + 50_000
+	if _flash_material != null:
+		_flash_material.set_shader_parameter(&"flash_color", color)
+		_flash_material.set_shader_parameter(&"flash_amount", 1.0)
+
+
+func hold_impact(seconds: float) -> void:
+	_visual_hold_until_usec = maxi(_visual_hold_until_usec, Time.get_ticks_usec() + int(seconds * 1_000_000.0))
+
+
+func play_hit_reaction(direction: Vector2, strength: float = 0.7) -> void:
+	_play_reaction(direction, strength, false)
+
+
+func play_recoil(direction: Vector2, strength: float = 0.35) -> void:
+	_play_reaction(-direction, strength, true)
+
+
+func _play_reaction(direction: Vector2, strength: float, recoil: bool) -> void:
+	if _reaction_tween != null and _reaction_tween.is_valid():
+		_reaction_tween.kill()
+	var axis := direction.normalized() if not direction.is_zero_approx() else Vector2.RIGHT
+	var amount := (2.8 if recoil else 4.2) * clampf(strength, 0.0, 1.2)
+	position = _base_position + axis * amount
+	scale = _base_scale * Vector2(1.0 + 0.06 * strength, 1.0 - 0.08 * strength)
+	_reaction_tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT).set_ignore_time_scale(true)
+	_reaction_tween.set_parallel(true)
+	_reaction_tween.tween_property(self, "position", _base_position, 0.13)
+	_reaction_tween.tween_property(self, "scale", _base_scale, 0.13)
 
 
 func set_weapon(data: WeaponComponentData) -> void:

@@ -38,6 +38,11 @@ extends Control
 	set(next):
 		empty_alpha = next
 		queue_redraw()
+@export var show_loss_trail := false
+@export var loss_trail_color := Color(1.0, 0.22, 0.28, 0.52)
+
+var _trail_value := -1.0
+var _trail_delay := 0.0
 
 
 func _ready() -> void:
@@ -46,13 +51,32 @@ func _ready() -> void:
 	if custom_minimum_size.y <= 0.0:
 		custom_minimum_size.y = 18.0
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	set_process(true)
 	queue_redraw()
 
 
 func set_meter(next_value: float, next_maximum: float = maximum) -> void:
+	var previous_value := value
 	maximum = maxf(next_maximum, 1.0)
-	value = clampf(next_value, 0.0, maximum)
+	var clamped := clampf(next_value, 0.0, maximum)
+	if _trail_value < 0.0:
+		_trail_value = clamped
+	elif show_loss_trail and clamped < previous_value:
+		_trail_value = maxf(_trail_value, previous_value)
+		_trail_delay = 0.18
+	elif clamped > previous_value:
+		_trail_value = clamped
+	value = clamped
 	queue_redraw()
+
+
+func _process(delta: float) -> void:
+	if not show_loss_trail or _trail_value <= value:
+		return
+	_trail_delay = maxf(_trail_delay - delta, 0.0)
+	if _trail_delay <= 0.0:
+		_trail_value = move_toward(_trail_value, value, maximum * 2.8 * delta)
+		queue_redraw()
 
 
 func _notification(what: int) -> void:
@@ -63,6 +87,7 @@ func _notification(what: int) -> void:
 func _draw() -> void:
 	var ratio := clampf(value / maximum, 0.0, 1.0)
 	var filled := ceili(ratio * float(segments))
+	var trail_filled := ceili(clampf(_trail_value / maximum, 0.0, 1.0) * float(segments)) if show_loss_trail else filled
 	if show_caption:
 		draw_string(CyberUITheme.FONT, Vector2(0.0, 13.0), caption, HORIZONTAL_ALIGNMENT_LEFT, 58.0, 12, CyberUITheme.MUTED)
 	var numeric_width := 34.0 if show_numeric else 0.0
@@ -73,7 +98,7 @@ func _draw() -> void:
 	var block_width := block_height if square_segments else maxf(2.0, (available - gap * float(segments - 1)) / float(segments))
 	for index in segments:
 		var rect := Rect2(meter_left + float(index) * (block_width + gap), (size.y - block_height) * 0.5, block_width, block_height)
-		var color := meter_color if index < filled else Color(meter_color, empty_alpha)
+		var color := meter_color if index < filled else (loss_trail_color if index < trail_filled else Color(meter_color, empty_alpha))
 		draw_rect(rect, color, true)
 		draw_rect(rect, Color(meter_color, 0.78 if index < filled else 0.42), false, 1.0)
 	if show_numeric:

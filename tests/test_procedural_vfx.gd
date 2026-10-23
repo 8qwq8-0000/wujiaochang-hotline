@@ -3,6 +3,7 @@ extends McpTestSuite
 
 const COATING_SCRIPT := preload("res://scripts/presentation/procedural_coating_2d.gd")
 const STAIN_LAYER_SCRIPT := preload("res://scripts/presentation/cyber_stain_layer.gd")
+const IMPACT_SCRIPT := preload("res://scripts/presentation/impact_particle_effect.gd")
 
 
 func suite_name() -> String:
@@ -91,3 +92,91 @@ func test_vfx_manager_owns_and_clears_stains() -> void:
 	assert_eq(manager.get_stain_count(), 1)
 	manager.clear_stains()
 	assert_eq(manager.get_stain_count(), 0)
+
+
+func test_impact_particles_follow_weapon_material_and_accessibility_budget() -> void:
+	var effect: ImpactParticleEffect = track(IMPACT_SCRIPT.new()) as ImpactParticleEffect
+	(Engine.get_main_loop() as SceneTree).root.add_child(effect)
+	effect.play(Vector2.ZERO, &"scattergun", false, Vector2.RIGHT, false, 1.0)
+	var standard_count := effect.get_particle_count()
+	effect.play(Vector2.ZERO, &"scattergun", true, Vector2.RIGHT, false, 1.0)
+	var heavy_count := effect.get_particle_count()
+	effect.play(Vector2.ZERO, &"scattergun", false, Vector2.RIGHT, true, 1.0)
+	var reduced_count := effect.get_particle_count()
+	assert_gt(heavy_count, standard_count)
+	assert_true(reduced_count < standard_count)
+	assert_gt(reduced_count, 1)
+
+
+func test_dense_hitstop_keeps_only_strongest_request_in_merge_window() -> void:
+	var manager := CombatFeedbackManager.new()
+	var original_scale := Engine.time_scale
+	manager._request_global_slow(0.05)
+	var first_end: int = manager._slow_until_usec
+	manager._request_global_slow(0.02)
+	assert_eq(manager._slow_until_usec, first_end)
+	manager._request_global_slow(0.075)
+	assert_gt(manager._slow_until_usec, first_end)
+	manager._restore_time_scale()
+	assert_true(is_equal_approx(Engine.time_scale, original_scale))
+	manager.free()
+
+
+func test_feedback_group_marks_followup_targets_as_secondary() -> void:
+	var manager := CombatFeedbackManager.new()
+	var source := Node.new()
+	var packet := DamagePacket.new()
+	packet.source = source
+	packet.feedback_group_id = 7
+	var result := DamageResult.new()
+	result.packet = packet
+	assert_false(manager._is_secondary_feedback_group(result))
+	assert_true(manager._is_secondary_feedback_group(result))
+	manager.free()
+	source.free()
+
+
+func test_player_damage_overlay_merges_dense_hurt_feedback() -> void:
+	var layer := PlayerDamageFeedbackLayer.new()
+	layer._add_effect(PlayerDamageFeedbackLayer.Kind.DAMAGE, Vector2.LEFT, 0.4)
+	layer._add_effect(PlayerDamageFeedbackLayer.Kind.DAMAGE, Vector2.RIGHT, 0.9, true)
+	assert_eq(layer._effects.size(), 1)
+	assert_eq(layer._effects[0].direction, Vector2.RIGHT)
+	assert_true(layer._effects[0].heavy)
+	layer.free()
+
+
+func test_kill_chain_accepts_player_direct_damage_and_rejects_environment() -> void:
+	var manager := CombatFeedbackManager.new()
+	var player := PlayerController.new()
+	var enemy := EnemyController.new()
+	var packet := DamagePacket.new()
+	packet.source = player
+	packet.source_faction = CombatFaction.Id.PLAYER
+	packet.weapon_id = &"service_pistol"
+	var result := DamageResult.new()
+	result.packet = packet
+	result.target = enemy
+	result.target_defeated = true
+	assert_true(manager._qualifies_player_kill(result))
+	packet.source_faction = CombatFaction.Id.ENVIRONMENT
+	assert_false(manager._qualifies_player_kill(result))
+	packet.source_faction = CombatFaction.Id.PLAYER
+	packet.source = enemy
+	assert_false(manager._qualifies_player_kill(result))
+	manager.free()
+	player.free()
+	enemy.free()
+
+
+func test_kill_chain_tail_only_emits_for_multi_kill() -> void:
+	var manager := CombatFeedbackManager.new()
+	var ended_stages: Array[int] = []
+	manager.kill_chain_ended.connect(func(stage: int) -> void: ended_stages.append(stage))
+	manager._kill_chain_count = 1
+	manager._reset_kill_chain(true)
+	assert_true(ended_stages.is_empty())
+	manager._kill_chain_count = 8
+	manager._reset_kill_chain(true)
+	assert_eq(ended_stages, [CombatFeedbackManager.KILL_CHAIN_MAX_STAGE])
+	manager.free()

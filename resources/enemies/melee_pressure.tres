@@ -7,6 +7,7 @@ script = ExtResource("1")
 id = &"melee_pressure"
 display_name = "近战施压者"
 role = 0
+impact_material = 0
 max_health = 1
 move_speed = 100.0
 awareness_range = 1000.0

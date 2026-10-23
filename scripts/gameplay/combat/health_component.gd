@@ -10,6 +10,7 @@ signal fatal_damage_prevented(packet: DamagePacket)
 @export_range(1, 1000, 1) var max_health: int = 3
 var current_health: int
 var fatal_damage_interceptor: Callable
+var last_fatal_damage_prevented := false
 var _damage_depth := 0
 var resolving_damage: bool:
 	get:
@@ -31,6 +32,7 @@ func configure_max_health(value: int, refill: bool = true) -> void:
 
 
 func apply_damage(amount: int, packet: DamagePacket) -> int:
+	last_fatal_damage_prevented = false
 	if amount <= 0 or is_dead():
 		return 0
 	_damage_depth += 1
@@ -39,6 +41,7 @@ func apply_damage(amount: int, packet: DamagePacket) -> int:
 	var prevented := false
 	if would_be_fatal and fatal_damage_interceptor.is_valid():
 		prevented = bool(fatal_damage_interceptor.call(amount, packet))
+	last_fatal_damage_prevented = prevented
 	current_health = 1 if prevented else maxi(current_health - amount, 0)
 	var applied := previous - current_health
 	if applied > 0:

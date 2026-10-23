@@ -21,11 +21,12 @@ func run() -> void:
 	menu.open_menu()
 	check(menu.visible and paused, "pause menu owns and pauses the scene tree")
 	check(menu.get("_resolution").item_count == 4, "settings expose the four confirmed resolutions")
-	check(menu.find_children("*", "HSlider", true, false).size() == 3, "settings expose Master, Music and SFX sliders")
+	check(menu.find_children("*", "HSlider", true, false).size() == 4, "settings expose Master, Music, SFX and combat-cue sliders")
 	check(menu.get("_mute") != null, "settings expose global mute")
 	check(menu.get("_continuous_precharge") != null, "AI test switch remains available")
 	check(menu.get("_hud_scale") != null and (menu.get("_hud_scale") as OptionButton).item_count == 3, "settings expose 100, 125 and 150 percent HUD scales")
 	check(menu.get("_reduced_flashes") != null, "settings expose reduced-flashes accessibility toggle")
+	check(menu.get("_feedback_quality") != null and (menu.get("_feedback_quality") as OptionButton).item_count == 2, "settings expose low and standard combat effect quality")
 	menu._show_settings_page()
 	await process_frame
 	var settings_page := menu.get("_settings_page") as VBoxContainer

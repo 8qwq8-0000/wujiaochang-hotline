@@ -37,6 +37,7 @@ const DEFAULT_VIEWPORT_SIZE := Vector2(640.0, 360.0)
 var facing := Vector2.LEFT
 var death_motion_direction := Vector2.ZERO
 var death_impact_direction := Vector2.ZERO
+var death_weapon_id: StringName = &""
 var _alerted := false
 var _memory_remaining := 0.0
 var _last_known_position := Vector2.ZERO
@@ -96,6 +97,7 @@ var _initial_precharge_consumed := false
 var _self_destruct_remaining := 0.0
 var _defeat_finalized := false
 var _optical_disruption_remaining := 0.0
+var _base_z_index := 0
 const ATTACK_WARNING := preload("res://assets/audio/sfx/enemy_ui/enemy_attack.wav")
 
 @onready var navigation_agent: NavigationAgent2D = $NavigationAgent2D
@@ -108,6 +110,7 @@ const ATTACK_WARNING := preload("res://assets/audio/sfx/enemy_ui/enemy_attack.wa
 
 func _ready() -> void:
 	add_to_group("enemies")
+	_base_z_index = z_index
 	hurt_box.faction = CombatFaction.Id.ENEMY
 	health.died.connect(_on_died)
 	health.damaged.connect(_on_damaged)
@@ -153,6 +156,9 @@ func _configure_sprite() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	# Telegraphs are gameplay information. Raising the actor while a warning is
+	# active guarantees hit particles and death fragments never cover it.
+	z_index = _base_z_index + 20 if state in [State.WINDUP, State.SELF_DESTRUCT] or _precharge_active or _attack_precharged else _base_z_index
 	if state == State.DEAD:
 		return
 	if state == State.SELF_DESTRUCT:
@@ -794,6 +800,7 @@ func _on_died(packet: DamagePacket) -> void:
 		barrier_skill.cancel()
 	death_motion_direction = velocity.normalized() if not velocity.is_zero_approx() else Vector2.ZERO
 	if packet != null:
+		death_weapon_id = packet.weapon_id
 		if not packet.travel_direction.is_zero_approx():
 			death_impact_direction = packet.travel_direction.normalized()
 		elif not packet.knockback.is_zero_approx():

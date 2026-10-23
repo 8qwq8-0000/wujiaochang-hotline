@@ -1,35 +1,67 @@
-[gd_resource type="SpriteFrames" load_steps=10 format=3]
-[ext_resource type="Texture2D" path="res://assets/art/characters/enemies/shield_barrier_cast_v1/cast_sheet.png" id="1"]
+[gd_resource type="SpriteFrames" format=3 uid="uid://6ttpxp00xmg"]
+
+[ext_resource type="Texture2D" uid="uid://c07whmphk4hak" path="res://assets/art/characters/enemies/shield_barrier_cast_v1/cast_sheet.png" id="1"]
+
 [sub_resource type="AtlasTexture" id="F0"]
 atlas = ExtResource("1")
 region = Rect2(0, 0, 512, 512)
+
 [sub_resource type="AtlasTexture" id="F1"]
 atlas = ExtResource("1")
 region = Rect2(512, 0, 512, 512)
+
 [sub_resource type="AtlasTexture" id="F2"]
 atlas = ExtResource("1")
 region = Rect2(1024, 0, 512, 512)
+
 [sub_resource type="AtlasTexture" id="F3"]
 atlas = ExtResource("1")
 region = Rect2(1536, 0, 512, 512)
+
 [sub_resource type="AtlasTexture" id="F4"]
 atlas = ExtResource("1")
 region = Rect2(0, 512, 512, 512)
+
 [sub_resource type="AtlasTexture" id="F5"]
 atlas = ExtResource("1")
 region = Rect2(512, 512, 512, 512)
+
 [sub_resource type="AtlasTexture" id="F6"]
 atlas = ExtResource("1")
 region = Rect2(1024, 512, 512, 512)
+
 [sub_resource type="AtlasTexture" id="F7"]
 atlas = ExtResource("1")
 region = Rect2(1536, 512, 512, 512)
+
 [resource]
-animations = [{"frames": [{"duration": 1.00, "texture": SubResource("F0")},
-{"duration": 1.00, "texture": SubResource("F1")},
-{"duration": 1.10, "texture": SubResource("F2")},
-{"duration": 0.90, "texture": SubResource("F3")},
-{"duration": 0.90, "texture": SubResource("F4")},
-{"duration": 0.90, "texture": SubResource("F5")},
-{"duration": 1.10, "texture": SubResource("F6")},
-{"duration": 6.50, "texture": SubResource("F7")}], "loop": false, "name": &"cast_barrier_down", "speed": 10.0}]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("F0")
+}, {
+"duration": 1.0,
+"texture": SubResource("F1")
+}, {
+"duration": 1.1,
+"texture": SubResource("F2")
+}, {
+"duration": 0.9,
+"texture": SubResource("F3")
+}, {
+"duration": 0.9,
+"texture": SubResource("F4")
+}, {
+"duration": 0.9,
+"texture": SubResource("F5")
+}, {
+"duration": 1.1,
+"texture": SubResource("F6")
+}, {
+"duration": 6.5,
+"texture": SubResource("F7")
+}],
+"loop": 0,
+"name": &"cast_barrier_down",
+"speed": 10.0
+}]

@@ -17,6 +17,8 @@ const DEFAULT_CONFIG := preload("res://resources/player/default_player_config.tr
 const AFTERIMAGE_INTERVAL := 0.05
 const MOVEMENT_NOISE_INTERVAL := 0.35
 const MOBILITY_BURST_NOISE_RADIUS := 220.0
+const INPUT_BUFFER_SECONDS := 0.12
+const CAMERA_SHAKE_SETTING := &"CameraShakeStrength"
 
 @export var config: CombatPlayerConfig = DEFAULT_CONFIG
 
@@ -47,6 +49,14 @@ var _attack_held := false
 var _afterimage_active_remaining := 0.0
 var _afterimage_emit_remaining := 0.0
 var _movement_noise_remaining := 0.0
+var _attack_buffer_remaining := 0.0
+var _attack_release_buffer_remaining := 0.0
+var _guard_buffer_remaining := 0.0
+var _dash_buffer_remaining := 0.0
+var _camera_trauma := 0.0
+var _camera_shake_direction := Vector2.RIGHT
+var _camera_shake_phase := 0.0
+var _camera_shake_last_usec := 0
 
 
 func _ready() -> void:
@@ -80,6 +90,11 @@ func _ready() -> void:
 	if not config.debug_loadout_enabled:
 		inventory._apply_equipment()
 	_emit_public_state()
+	_camera_shake_last_usec = Time.get_ticks_usec()
+
+
+func _process(_delta: float) -> void:
+	_update_camera_shake()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -89,13 +104,15 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("attack"):
 		_attack_pressed = true
 		_attack_held = true
+		_attack_buffer_remaining = INPUT_BUFFER_SECONDS
 	if event.is_action_released("attack"):
 		_attack_released = true
 		_attack_held = false
-	if event.is_action_pressed("guard") and dash.can_guard():
-		guard.begin_guard(aim_direction)
+		_attack_release_buffer_remaining = INPUT_BUFFER_SECONDS
+	if event.is_action_pressed("guard"):
+		_guard_buffer_remaining = INPUT_BUFFER_SECONDS
 	if event.is_action_pressed("mobility_ability"):
-		dash.start_dash(self, aim_direction, Input.get_vector("move_left", "move_right", "move_up", "move_down"))
+		_dash_buffer_remaining = INPUT_BUFFER_SECONDS
 	if InputMap.has_action("interact") and event.is_action_pressed("interact"):
 		interactor.request_interaction(self)
 	if event.is_action_pressed("weapon_switch") or event.is_action_pressed("weapon_next"):
@@ -106,6 +123,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _physics_process(delta: float) -> void:
 	_update_aim_direction()
+	_consume_buffered_defense_actions()
 	var weapon_aim_direction := _get_weapon_aim_direction()
 	guard.update_direction(aim_direction)
 	if _dead:
@@ -119,12 +137,12 @@ func _physics_process(delta: float) -> void:
 	_external_velocity = _external_velocity.move_toward(Vector2.ZERO, config.knockback_recovery * delta)
 	weapons.update_attack_pose(global_position, aim_direction, self)
 	# The muzzle must use this frame's aim before an attack is spawned.
-	visuals.update_visual(aim_direction, velocity, guard.state, guard.guard_arc_degrees, weapons.get_melee_swing_angle_offset(), get_global_mouse_position())
+	visuals.update_visual(aim_direction, velocity, guard.state, guard.guard_arc_degrees, weapons.get_melee_swing_angle_offset(), _logical_mouse_world_position())
 	if _input_enabled and guard.can_attack() and dash.can_attack() and _should_attack_this_frame():
 		var attack := _get_attack_transform()
-		weapons.try_attack(attack.origin, attack.x.normalized(), self)
-	_attack_pressed = false
-	_attack_released = false
+		if weapons.try_attack(attack.origin, attack.x.normalized(), self):
+			_consume_attack_buffer()
+	_tick_input_buffers(delta)
 	_update_camera(delta)
 	visuals.update_visual(
 		aim_direction,
@@ -132,7 +150,7 @@ func _physics_process(delta: float) -> void:
 		guard.state,
 		guard.guard_arc_degrees,
 		weapons.get_melee_swing_angle_offset(),
-		get_global_mouse_position()
+		_logical_mouse_world_position()
 	)
 	_tick_afterimages(delta)
 	_update_movement_audio()
@@ -145,6 +163,10 @@ func set_input_enabled(enabled: bool) -> void:
 	_attack_pressed = false
 	_attack_released = false
 	_attack_held = false
+	_attack_buffer_remaining = 0.0
+	_attack_release_buffer_remaining = 0.0
+	_guard_buffer_remaining = 0.0
+	_dash_buffer_remaining = 0.0
 	if not enabled:
 		velocity = Vector2.ZERO
 	input_enabled_changed.emit(enabled)
@@ -347,7 +369,7 @@ func reset_transient_state() -> void:
 
 
 func _update_aim_direction() -> void:
-	var mouse_delta := get_global_mouse_position() - global_position
+	var mouse_delta := _logical_mouse_world_position() - global_position
 	if mouse_delta.length() > config.aim_deadzone:
 		aim_direction = mouse_delta.normalized()
 
@@ -356,7 +378,7 @@ func _get_weapon_aim_direction() -> Vector2:
 	var data := weapons.get_current_weapon()
 	if data == null or data.attack_kind == WeaponComponentData.AttackKind.MELEE:
 		return aim_direction
-	var direction := get_global_mouse_position() - visuals.get_weapon_mount_global_position()
+	var direction := _logical_mouse_world_position() - visuals.get_weapon_mount_global_position()
 	return direction.normalized() if direction.length_squared() > 1.0 else aim_direction
 
 
@@ -364,6 +386,71 @@ func _update_camera(delta: float) -> void:
 	var target := aim_direction * config.camera_look_ahead
 	var weight := clampf(config.camera_look_ahead_response * delta, 0.0, 1.0)
 	camera.position = camera.position.lerp(target, weight)
+
+
+func add_camera_trauma(direction: Vector2, strength: float) -> void:
+	var configured_strength := clampf(float(PlayerConfig.get_config(&"UISettings", CAMERA_SHAKE_SETTING, 1.0)), 0.0, 1.0)
+	if configured_strength <= 0.0:
+		camera.offset = Vector2.ZERO
+		return
+	_camera_trauma = maxf(_camera_trauma, clampf(strength * configured_strength, 0.0, 1.0))
+	_camera_shake_direction = direction.normalized() if not direction.is_zero_approx() else aim_direction
+
+
+func clear_camera_shake() -> void:
+	_camera_trauma = 0.0
+	camera.offset = Vector2.ZERO
+
+
+func _update_camera_shake() -> void:
+	var now := Time.get_ticks_usec()
+	var real_delta := clampf(float(now - _camera_shake_last_usec) / 1_000_000.0, 0.0, 0.05)
+	_camera_shake_last_usec = now
+	if _camera_trauma <= 0.001:
+		_camera_trauma = 0.0
+		camera.offset = Vector2.ZERO
+		return
+	_camera_trauma = maxf(_camera_trauma - real_delta * 3.8, 0.0)
+	_camera_shake_phase += real_delta * 58.0
+	var amplitude := 6.0 * _camera_trauma * _camera_trauma
+	var perpendicular := _camera_shake_direction.orthogonal()
+	camera.offset = _camera_shake_direction * sin(_camera_shake_phase) * amplitude + perpendicular * sin(_camera_shake_phase * 1.73 + 0.8) * amplitude * 0.42
+
+
+func _logical_mouse_world_position() -> Vector2:
+	# Camera2D.offset is presentation-only; removing it keeps aim coordinates
+	# stable while the rendered world shakes.
+	return get_global_mouse_position() - camera.offset
+
+
+func _consume_buffered_defense_actions() -> void:
+	if not _input_enabled or _dead:
+		return
+	if _guard_buffer_remaining > 0.0 and dash.can_guard() and guard.begin_guard(aim_direction):
+		_guard_buffer_remaining = 0.0
+	if _dash_buffer_remaining > 0.0:
+		var movement := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+		if dash.start_dash(self, aim_direction, movement):
+			_dash_buffer_remaining = 0.0
+
+
+func _tick_input_buffers(delta: float) -> void:
+	_attack_buffer_remaining = maxf(_attack_buffer_remaining - delta, 0.0)
+	_attack_release_buffer_remaining = maxf(_attack_release_buffer_remaining - delta, 0.0)
+	_guard_buffer_remaining = maxf(_guard_buffer_remaining - delta, 0.0)
+	_dash_buffer_remaining = maxf(_dash_buffer_remaining - delta, 0.0)
+	_attack_pressed = _attack_buffer_remaining > 0.0
+	_attack_released = _attack_release_buffer_remaining > 0.0
+
+
+func _consume_attack_buffer() -> void:
+	var data := weapons.get_current_weapon()
+	if data != null and data.trigger_mode == WeaponComponentData.TriggerMode.CHARGE:
+		_attack_release_buffer_remaining = 0.0
+	else:
+		_attack_buffer_remaining = 0.0
+	_attack_pressed = false
+	_attack_released = false
 
 
 func _configure_movement_audio() -> void:
@@ -398,9 +485,9 @@ func _should_attack_this_frame() -> bool:
 		WeaponComponentData.TriggerMode.AUTOMATIC:
 			return _attack_held
 		WeaponComponentData.TriggerMode.CHARGE:
-			return _attack_released
+			return _attack_release_buffer_remaining > 0.0
 		_:
-			return _attack_held if cyberware.supports_automatic_fire(data) else _attack_pressed
+			return _attack_held if cyberware.supports_automatic_fire(data) else _attack_buffer_remaining > 0.0
 
 
 func _try_prevent_fatal_damage(_amount: int, _packet: DamagePacket) -> bool:
