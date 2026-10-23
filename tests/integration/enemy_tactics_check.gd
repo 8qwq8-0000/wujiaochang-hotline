@@ -64,6 +64,15 @@ func run() -> void:
 	check(ranged.get_tactical_intent() == EnemyTacticalBrain.Intent.STRAFE_LEFT, "cooling ranged enemy strafes instead of standing still")
 	var strafe_destination: Vector2 = ranged.get("_tactical_destination")
 	check(strafe_destination.x != INF, "ranged strafe keeps a reachable destination with line of sight")
+	# The old 100%-108% band strafed forever without entering firing range.
+	for ratio in [1.001, 1.04, 1.08, 1.2]:
+		for cooldown in [0.0, 0.6]:
+			for side in [-1.0, 1.0]:
+				ranged.tactical_brain.configure(ranged.profile.decision_interval, side)
+				ranged.set("_attack_cooldown_remaining", cooldown)
+				check(ranged._choose_tactical_intent(ranged.profile.attack_range * ratio, 0.2) == EnemyTacticalBrain.Intent.APPROACH, "ranged enemy closes distance outside firing range, ratio=%s cooldown=%s side=%s" % [ratio, cooldown, side])
+	ranged.set("_attack_cooldown_remaining", 0.0)
+	check(ranged._choose_tactical_intent(ranged.profile.attack_range, 0.0) == EnemyTacticalBrain.Intent.HOLD_AND_ATTACK, "entering firing range immediately opens the attack window")
 
 	var heavy := _enemy(parent, "res://resources/enemies/heavy_anchor.tres", Vector2(330, 230), 1.0)
 	heavy._alert_to(player.global_position, false)
