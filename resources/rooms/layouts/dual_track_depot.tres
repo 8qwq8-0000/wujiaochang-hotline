@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="CombatLayoutData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/rooms/combat_layout_data.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/enemies/melee_pressure.tres" id="melee"]
+[ext_resource type="Resource" path="res://resources/enemies/freight_lane_marksman.tres" id="ranged"]
+[ext_resource type="Resource" path="res://resources/enemies/heavy_anchor.tres" id="shield"]
+
+[resource]
+script = ExtResource("1")
+id = &"dual_track_depot"
+display_name = "双轨货运站"
+covers = Array[Rect2]([Rect2(169.333, 90, 64, 60), Rect2(218, 94, 60, 64), Rect2(181.333, 141.333, 48, 24), Rect2(169.333, 195, 64, 62), Rect2(218, 200, 60, 72), Rect2(174.333, 248, 58, 24), Rect2(377.667, 88.167, 54, 75), Rect2(417.667, 97.333, 62, 56), Rect2(422.333, 144.667, 54, 20), Rect2(376, 195, 64, 62), Rect2(425.333, 208, 52, 72), Rect2(376.333, 248, 62, 24), Rect2(50, 50, 44, 40), Rect2(55.667, 236.333, 42, 46), Rect2(546.667, 51.167, 44, 45), Rect2(546, 227.333, 52, 48), Rect2(322.333, 221.333, 34, 44)])
+zones = Array[Rect2]([Rect2(16, 16, 84, 328), Rect2(100, 16, 72, 328), Rect2(172, 16, 104, 328), Rect2(276, 16, 102, 328), Rect2(378, 16, 104, 328), Rect2(482, 16, 142, 328)])
+doors = Array[Vector4]([])
+windows = Array[Rect2]([])
+sentry_positions = Array[Vector2]([Vector2(338.666667, 125.333333)])
+enemy_positions = Array[Vector2]([Vector2(120, 48), Vector2(518.667, 312), Vector2(232.667, 160), Vector2(453.333, 186.667), Vector2(326.667, 273.333), Vector2(479.333, 180)])
+enemy_profiles = Array[Resource]([ExtResource("ranged"), ExtResource("ranged"), ExtResource("melee"), ExtResource("melee"), ExtResource("melee"), ExtResource("shield")])
+power_position = Vector2(320, 48)
+power_spawn_zones = Array[int]([2, 3, 4, 5])
+clear_lanes = Array[Rect2]([Rect2(97.333, 57.333, 446.667, 29.333), Rect2(97.333, 165.333, 446.667, 29.333), Rect2(97.333, 273.333, 446.667, 29.333), Rect2(108, 32, 24, 296), Rect2(506.667, 32, 24, 296)])
+bomb_position = Vector2(480, 225)
+floor_color = Color(0.09, 0.13, 0.17, 1)
+cover_color = Color(0.34, 0.42, 0.48, 1)

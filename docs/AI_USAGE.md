@@ -299,3 +299,9 @@ Following the user's correction, extracted the four existing colored half-sigils
 
 - User selected bullets breaking automatic doors. Projectile world impacts now notify the owning AutomaticDoor before consuming the bullet. Shared break handling preserves existing fragments, noise and collider removal; projectile breaks do not apply dash knockdown. Repeated hits cannot duplicate fragments, and zero-damage or paused hits do not break doors.
 - Regression first reproduced the missing behavior (4 failures). After implementation: automatic doors 28/28 in both headless and windowed runs, shield support 69/69, point-blank shooting 73/73, bomb runtime 13/13. Existing ObjectDB/resource-use diagnostics remain on test exit; no new script errors observed.
+
+## 2026-10-23 — Resolve PR18 laser merge conflict
+
+- User explicitly selected PR18's implementation for the weapon_controller.gd beam conflict. Merged current origin/main into the PR18 head, retained PR18's 160px formation/penetration corridor and subsequent wall clipping, and did not retain main's conflicting projectile-style automatic-door impact block.
+- Updated the newly merged door assertions to match that explicit choice: distant blocking doors stay closed, the beam remains clipped, and the rear door remains protected. Laser beam integration: 33/33. Existing resource-use exit warnings remain; this updates the PR branch only, without merging it into main.
+- Settings assertions reported zero failures. The merged presentation_systems_check hits missing HUD affordances and a null get_global_rect call, preventing completion; it is not counted as passing and requires follow-up separate from this laser-conflict choice.

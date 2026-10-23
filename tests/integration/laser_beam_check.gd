@@ -94,6 +94,40 @@ func run() -> void:
 	await process_frame
 	await process_frame
 	check(is_instance_valid(barrels[0].patch) and barrels[0].patch.burning and barrels[0].patch.explosion_count == 1, "beam-hit barrel explodes exactly once")
+	await create_timer(0.4).timeout
+	# PR18 clips at distant blocking doors without applying a projectile impact.
+	var door: AutomaticDoor = load("res://scenes/environment/automatic_door.tscn").instantiate()
+	door.position = Vector2(350,200)
+	room.add_child(door)
+	var hidden_door: AutomaticDoor = load("res://scenes/environment/automatic_door.tscn").instantiate()
+	hidden_door.position = Vector2(600,200)
+	room.add_child(hidden_door)
+	await physics_frame
+	await physics_frame
+	player.weapons.reset_transient_state()
+	player.heat.set_heat(0)
+	check(player.weapons.try_attack(Vector2(150,200), Vector2.RIGHT, player), "rail cannon fires at closed door")
+	check(not door.opened, "PR18 beam clips at the first closed door without breaking it")
+	check(not hidden_door.opened, "beam cannot break a door behind the first blocker")
+	beams = get_nodes_in_group("laser_beams")
+	check(beams.size() == 1 and beams[0].get("beam_length") < 201, "PR18 beam still ends at blocking door")
+	await physics_frame
+	await physics_frame
+	player.weapons.reset_transient_state()
+	player.heat.set_heat(0)
+	player.weapons.try_attack(Vector2(150,200), Vector2.RIGHT, player)
+	check(not hidden_door.opened, "first blocking door continues protecting the rear door")
+	# Only the edge of the 48px beam touches this horizontal leaf.
+	door = load("res://scenes/environment/automatic_door.tscn").instantiate()
+	door.position = Vector2(350,226)
+	door.rotation = PI / 2
+	room.add_child(door)
+	await physics_frame
+	await physics_frame
+	player.weapons.reset_transient_state()
+	player.heat.set_heat(0)
+	player.weapons.try_attack(Vector2(150,200), Vector2.RIGHT, player)
+	check(not door.opened, "PR18 beam does not break the rotated blocking door")
 	room.queue_free()
 	await process_frame
 	print("Laser beam checks: ", checks, "; failures: ", failures)

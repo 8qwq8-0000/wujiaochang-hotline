@@ -39,7 +39,7 @@ func run() -> void:
 		var door := CombatArchitecture.door_texture(horizontal) as AtlasTexture
 		check(Rect2(Vector2.ZERO, door.atlas.get_size()).encloses(door.region), "directional doorway crop stays in source image")
 		check(door.get_width() > door.get_height() if horizontal else door.get_height() > door.get_width(), "doorway uses its authored world orientation")
-	for id in ["loading_workshop", "interlinked_apartment", "central_server", "storage_lanes", "cross_checkpoint", "offset_workshop", "split_office"]:
+	for id in ["loading_workshop", "interlinked_apartment", "freight_atrium", "dual_track_depot", "central_server", "storage_lanes", "cross_checkpoint", "offset_workshop", "split_office"]:
 		var room: CombatRoom = load("res://scenes/levels/rooms/variants/"+id+".tscn").instantiate()
 		room.configure_stage(0,2)
 		root.add_child(room)

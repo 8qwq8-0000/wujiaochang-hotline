@@ -35,6 +35,10 @@ func _ready() -> void:
 	_expand_room_shell()
 	if layout != null:
 		layout = layout.scaled_for_room(ROOM_SCALE, BASE_ROOM_SIZE)
+		_place_sentries()
+		var run := get_node_or_null("/root/RunManager")
+		var seed_value: int = (run.run_seed if run != null else 1) + 104729 * (run.floor_index + 1 if run != null else 1) + area_index * 97 + hash(layout.id)
+		layout.power_position = EncounterPropPlacement.choose_power_position(layout, seed_value)
 		_add_small_obstacles()
 		_apply_layout()
 	_place_barrel()
@@ -264,9 +268,16 @@ func _add_small_obstacles() -> void:
 		# Extra clearance keeps a full dodge lane alongside the new crates.
 		blockers.append(rect.grow(24))
 	blockers.append_array(layout.windows)
+	for rect in layout.navigation_obstacles:
+		blockers.append(rect.grow(24))
 	var candidates: Array[Vector2] = []
-	for y in range(80, int(ROOM_SIZE.y) - 64, 48):
-		for x in range(80, int(ROOM_SIZE.x) - 64, 48):
+	# Maps with protected routes need a finer search around authored machinery.
+	var protected_routes := not layout.clear_lanes.is_empty()
+	var spacing := 24 if protected_routes else 48
+	var padding := 40 if protected_routes else 80
+	var end_padding := 38 if protected_routes else 64
+	for y in range(padding, int(ROOM_SIZE.y) - end_padding, spacing):
+		for x in range(padding, int(ROOM_SIZE.x) - end_padding, spacing):
 			candidates.append(Vector2(x, y))
 	var random := RandomNumberGenerator.new()
 	var run := get_node_or_null("/root/RunManager")
@@ -285,6 +296,8 @@ func _add_small_obstacles() -> void:
 		var sizes := [Vector2(32, 32), Vector2(48, 28), Vector2(28, 44), Vector2(56, 28), Vector2(36, 40), Vector2(44, 32)]
 		var size: Vector2 = sizes[small_obstacles.size()]
 		var footprint := Rect2(point - size * 0.5, size)
+		if layout.clear_lanes.any(func(lane: Rect2) -> bool: return lane.intersects(footprint.grow(20))):
+			continue
 		small_obstacles.append(footprint)
 		layout.covers.append(footprint)
 		blockers.append(footprint.grow(20))
@@ -297,6 +310,7 @@ func _place_barrel() -> void:
 	if layout != null:
 		blockers.append_array(layout.covers)
 		blockers.append_array(layout.windows)
+		blockers.append_array(layout.navigation_obstacles)
 		windows.assign(layout.windows)
 		doors.assign(layout.doors)
 	else:
@@ -317,6 +331,20 @@ func _place_barrel() -> void:
 		barrel.position = EncounterPropPlacement.choose_barrel_position(spawner.planned_positions(self), blockers, doors, $PowerBox.position, seed_value + index * 7919, $FuelBarrel.position, windows, ROOM_SIZE)
 		# Keep separate boxes apart and leave a walking lane around each one.
 		blockers.append(Rect2(barrel.position - Vector2(32, 32), Vector2(64, 64)))
+
+
+func _place_sentries() -> void:
+	for point in layout.sentry_positions:
+		var turret := load("res://scenes/environment/sentry_turret.tscn").instantiate() as Node2D
+		turret.position = point
+		layout.navigation_obstacles.append(Rect2(point - Vector2(48, 48), Vector2(96, 96)))
+		add_child(turret)
+
+
+func remove_sentry_obstacle(turret: Node2D) -> void:
+	layout.navigation_obstacles.erase(Rect2(turret.position - Vector2(48, 48), Vector2(96, 96)))
+	layout._navigation = null
+	$NavigationRegion2D.navigation_polygon = layout.navigation_polygon()
 
 
 func _apply_workshop_art() -> void:
@@ -348,3 +376,6 @@ func _apply_workshop_art() -> void:
 		if label != null:
 			label.hide()
 	$ExitElevator/Label.hide()
+	var blood_decals := preload("res://scripts/presentation/floor_blood_decals.gd").new()
+	blood_decals.name = "FloorBloodDecals"
+	add_child(blood_decals)

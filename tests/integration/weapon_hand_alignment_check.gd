@@ -17,12 +17,13 @@ func run() -> void:
 	player.set_physics_process(false)
 	player.get_node("Camera2D").enabled = false
 	for id in ["service_pistol", "scattergun", "rail_cannon"]:
-		var data := WeaponComponentData.new()
-		data.id = id
-		data.view_scene = load("res://scenes/weapons/"+id+".tscn")
+		var data: WeaponComponentData = load("res://resources/weapons/"+id+".tres")
 		player.weapons.equip_weapon(data)
 		var mount := player.visuals.weapon_pivot
 		mount.current_view.cancel_feedback()
+		player.visuals.update_visual(Vector2.RIGHT, Vector2.ZERO, GuardComponent.State.IDLE, 120)
+		player.visuals._on_idle_gesture_timeout()
+		check(not player.visuals._idle_gesture_active and player.visuals.body_sprite.animation == &"walk_right", id + " keeps its facing after switching and prolonged standing")
 		for moving in [false,true]:
 			for step in 8:
 				var direction := Vector2.RIGHT.rotated(step*PI/4)
@@ -51,6 +52,17 @@ func run() -> void:
 	visuals.body_sprite.frame = 3
 	visuals.update_visual(Vector2.UP, Vector2.ZERO, GuardComponent.State.IDLE, 120)
 	check(not visuals.body_sprite.is_playing() and visuals.body_sprite.frame == 0, "stopping freezes the planted directional pose")
+	var gun_ids := ["service_pistol", "scattergun", "rail_cannon"]
+	for index in gun_ids.size():
+		var primary: WeaponComponentData = load("res://resources/weapons/" + gun_ids[index] + ".tres")
+		var secondary: WeaponComponentData = load("res://resources/weapons/" + gun_ids[(index + 1) % gun_ids.size()] + ".tres")
+		player.weapons.set_carried_weapons(primary, secondary)
+		for direction in [Vector2.LEFT, Vector2.RIGHT, Vector2.UP, Vector2.DOWN]:
+			player.weapons.cycle_weapon(1)
+			visuals.update_visual(direction, Vector2.ZERO, GuardComponent.State.IDLE, 120)
+			visuals._on_idle_gesture_timeout()
+			check(visuals.weapon_pivot.current_data == player.weapons.get_current_weapon(), "cycling updates the displayed gun for every weapon pair")
+			check(visuals.body_sprite.animation == StringName("walk_" + visuals._direction_name(direction)) and not visuals._idle_gesture_active, "cycling while stationary preserves forward-facing pose")
 	room.queue_free()
 	await process_frame
 	print("Weapon wrist checks: ",checks,"; failures: ",failures)

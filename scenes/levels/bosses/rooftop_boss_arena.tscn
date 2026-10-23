@@ -126,6 +126,7 @@ position = Vector2(480, 510)
 collision_layer = 64
 collision_mask = 2
 script = ExtResource("10_exit")
+show_exit_art = false
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="ExitElevator" unique_id=1925263417]
 shape = SubResource("ElevatorShape")

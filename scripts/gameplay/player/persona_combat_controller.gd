@@ -55,6 +55,9 @@ var _manual_validations := 0
 var _pending_master_takeover := false
 var _pending_ai_guard := false
 var _guard_bonus_applied := 0.0
+var _observed_threat: WeakRef
+var _observed_attack_key := ""
+var _master_loop_remaining := 0.0
 var _attack_speed_bonus_applied := 0.0
 
 
@@ -168,6 +171,9 @@ func reset_transient_state() -> void:
 	_marked_kill_streak = 0
 	_recorded_marked_chain = 0
 	_analysis_samples.clear()
+	_observed_threat = null
+	_observed_attack_key = ""
+	_master_loop_remaining = 0.0
 	_analyzed_attacks.clear()
 	_analyzed_sources.clear()
 	_proxy_counter_used.clear()
@@ -187,6 +193,11 @@ func reset_transient_state() -> void:
 
 
 func get_runtime_snapshot() -> Dictionary:
+	var threat := _observed_threat.get_ref() as Node if _observed_threat != null else null
+	var threat_live := is_instance_valid(threat) and CombatProjectile.room_for_actor(threat) == CombatProjectile.room_for_actor(player)
+	if threat is EnemyController:
+		threat_live = threat_live and _is_live_enemy(threat)
+	var samples := _attack_sample_count(threat, _observed_attack_key) if threat_live else 0
 	return {
 		"persona_id": String(core.current_persona_id) if is_instance_valid(core) else "",
 		"marked_target_id": marked_target.get_instance_id() if _is_live_enemy(marked_target) else 0,
@@ -194,6 +205,20 @@ func get_runtime_snapshot() -> Dictionary:
 		"analyzed_attack_count": _analyzed_attacks.size(),
 		"prediction_source_count": _analyzed_sources.size(),
 		"soft_takeover_active": _gaze_remaining > 0.0 or _chase_remaining > 0.0 or _encore_remaining > 0.0,
+		"blood_step_remaining": _blood_step_remaining,
+		"resonance_remaining": _resonance_remaining,
+		"gaze_active": _gaze_remaining > 0.0,
+		"chase_active": _chase_remaining > 0.0,
+		"analysis_has_threat": threat_live,
+		"analysis_samples": mini(samples, MASTER_ANALYSIS_SAMPLES),
+		"analysis_required": MASTER_ANALYSIS_SAMPLES,
+		"guard_window_active": _guard_bonus_applied > 0.0,
+		"ai_guard_active": _pending_ai_guard and guard.is_guard_active(),
+		"master_loop_remaining": _master_loop_remaining,
+		"master_takeover_pending": _pending_master_takeover,
+		"seamless_free_attack": _seamless_free_attack,
+		"encore_remaining": _encore_remaining,
+		"distortion_active": _is_active(TalentCoreController.ROCK_VIGILANTE) and _has_talent(&"distortion_gain") and rock_feedback >= 60.0,
 	}
 
 
@@ -245,6 +270,7 @@ func _tick_rock_vigilante(delta: float) -> void:
 
 
 func _tick_temporary_bonuses(delta: float) -> void:
+	_master_loop_remaining = maxf(_master_loop_remaining - delta, 0.0)
 	_blood_step_remaining = maxf(_blood_step_remaining - delta, 0.0)
 	_resonance_remaining = maxf(_resonance_remaining - delta, 0.0)
 	var wanted_dash_bonus := 0.15 if _blood_step_remaining > 0.0 else 0.0
@@ -391,6 +417,8 @@ func _on_heat_recovered() -> void:
 
 
 func _record_attack_sample(source: Node, key: String) -> void:
+	_observed_threat = weakref(source)
+	_observed_attack_key = key
 	var source_id := source.get_instance_id()
 	var sample_key := "%d:%s" % [source_id, key]
 	var count := int(_analysis_samples.get(sample_key, 0)) + 1
@@ -402,6 +430,7 @@ func _record_attack_sample(source: Node, key: String) -> void:
 	_publish_notice(&"attack_analyzed", "格物演算完成：下一次可拆招", Color(0.35, 0.9, 1.0))
 	if _has_talent(&"master_loop") and source.has_method("apply_stagger"):
 		source.apply_stagger(1.0)
+		_master_loop_remaining = 1.0
 	_emit_runtime_state()
 
 
