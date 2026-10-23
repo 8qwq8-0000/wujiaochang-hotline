@@ -1,5 +1,7 @@
 extends Node2D
 
+const GLASS_BACKDROP := preload("res://scripts/presentation/combat_glass_backdrop.gd")
+
 
 func _ready() -> void:
 	var run_manager := get_node_or_null("/root/RunManager")
@@ -15,6 +17,14 @@ func _ready() -> void:
 	add_child(backdrop)
 	backdrop.draw.connect(_draw_background.bind(backdrop))
 	backdrop.queue_redraw()
+	var assembler := get_node_or_null("FloorAssembler") as FloorAssembler
+	var glass_backdrop := GLASS_BACKDROP.new() as CombatGlassBackdrop
+	glass_backdrop.name = "GlassCurtainBackdrop"
+	var seed_value: int = run_manager.run_seed if run_manager != null else 1
+	var room_count: int = assembler.room_count if assembler != null else 1
+	var spacing: float = assembler.room_spacing.x if assembler != null else CombatRoom.ROOM_SIZE.x
+	glass_backdrop.configure(room_count, spacing, CombatRoom.ROOM_SIZE.x, seed_value)
+	add_child(glass_backdrop)
 
 
 func receive_scene_payload(payload: Dictionary) -> void:
