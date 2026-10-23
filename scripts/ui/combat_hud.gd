@@ -51,7 +51,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_health_pulse_time += delta
-	overlay.visible = get_tree().get_nodes_in_group("warehouse").is_empty()
+	overlay.visible = get_tree().get_nodes_in_group("warehouse").is_empty() and get_tree().get_nodes_in_group("intermission").is_empty()
 	if not is_instance_valid(_player):
 		_player = get_tree().get_first_node_in_group("player") as PlayerController
 		if is_instance_valid(_player):
