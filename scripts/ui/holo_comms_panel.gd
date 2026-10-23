@@ -49,7 +49,7 @@ func set_takeover_state(charges: int, armed: bool) -> void:
 
 
 func set_expanded(value: bool, animate: bool = true) -> void:
-	if _expanded == value and ((_text_root.visible and value) or (not _text_root.visible and not value)):
+	if animate and _expanded == value and ((_text_root.visible and value) or (not _text_root.visible and not value)):
 		return
 	_expanded = value
 	if _size_tween != null and _size_tween.is_valid():
@@ -58,17 +58,23 @@ func set_expanded(value: bool, animate: bool = true) -> void:
 	if value:
 		_text_root.show()
 	if not animate:
-		size = target
 		custom_minimum_size = target
+		size = target
 		_text_root.modulate.a = 1.0 if value else 0.0
 		_text_root.visible = value
 		queue_redraw()
 		return
 	_size_tween = create_tween().set_parallel(true)
 	_size_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	_size_tween.tween_property(self, "size", target, 0.16)
 	_size_tween.tween_property(self, "custom_minimum_size", target, 0.16)
+	_size_tween.tween_property(self, "size", target, 0.16)
 	_size_tween.tween_property(_text_root, "modulate:a", 1.0 if value else 0.0, 0.12)
+	# Control minimum-size updates can clamp a simultaneous size tween. Snap
+	# both after layout settles so collapse always reaches the portrait width.
+	_size_tween.chain().tween_callback(func() -> void:
+		custom_minimum_size = target
+		size = target
+	)
 	if not value:
 		_size_tween.chain().tween_callback(_text_root.hide)
 

@@ -281,7 +281,24 @@ func _perform_beam(
 	sweep.margin = 0.0
 	var starts_in_wall := not space.intersect_shape(sweep, 1).is_empty()
 	sweep.motion = direction * data.attack_range
-	var length := 0.0 if starts_in_wall else data.attack_range * space.cast_motion(sweep)[0]
+	var fractions := space.cast_motion(sweep)
+	var length := 0.0 if starts_in_wall else data.attack_range * fractions[0]
+	if starts_in_wall or fractions[0] < 1.0:
+		# Resolve the first blocking surface across the entire beam width.
+		# Keep this shot clipped at the impact, just like a physical projectile.
+		var impact := PhysicsShapeQueryParameters2D.new()
+		impact.shape = front
+		var impact_distance := 0.0 if starts_in_wall else data.attack_range * fractions[1]
+		impact.transform = Transform2D(direction.angle(), origin + direction * impact_distance)
+		impact.collision_mask = 1
+		impact.margin = 0.01
+		for hit in space.intersect_shape(impact, 32):
+			var door := (hit.collider as Node).get_parent() as AutomaticDoor
+			if door == null or CombatProjectile.room_for_actor(door) != room:
+				continue
+			var packet := _make_packet(data, origin, direction, source_node, damage_multiplier)
+			packet.is_projectile = true
+			door.receive_hit(packet)
 	if length <= 0.0:
 		return
 	var shape := RectangleShape2D.new()

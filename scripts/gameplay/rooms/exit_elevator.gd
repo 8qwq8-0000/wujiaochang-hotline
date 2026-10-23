@@ -4,6 +4,7 @@ extends Area2D
 signal entered
 signal exited
 
+@export var show_exit_art := true
 var enabled: bool = false
 var _door_art: Sprite2D
 var _sigil: Sprite2D
@@ -19,6 +20,7 @@ func _ready() -> void:
 	_door_art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_door_art.position = Vector2(19.3, -6)
 	_door_art.scale = Vector2.ONE * 0.051252183
+	_door_art.visible = show_exit_art
 	add_child(_door_art)
 	_sigil = preload("res://scripts/presentation/warehouse_door_sigil.gd").new()
 	_sigil.name = "DoorSigil"
@@ -27,6 +29,7 @@ func _ready() -> void:
 	_sigil.scale = Vector2.ONE * 0.225
 	# Place the projection slightly lower, at the entry step.
 	_sigil.position = Vector2(22, 14)
+	_sigil.visible = show_exit_art
 	call_deferred("_clip_sigil_to_room")
 	add_child(_sigil)
 	body_entered.connect(_on_body_entered)
@@ -65,6 +68,10 @@ func _update_art() -> void:
 		_door_art.modulate = Color.WHITE if enabled else Color(0.48, 0.48, 0.48)
 	if is_instance_valid(_sigil):
 		_sigil.modulate = Color.WHITE if enabled else Color(0.45, 0.3, 0.2)
+	if not show_exit_art:
+		var label := get_node_or_null("Label") as Label
+		if label != null:
+			label.visible = enabled
 
 
 func _on_body_entered(body: Node) -> void:

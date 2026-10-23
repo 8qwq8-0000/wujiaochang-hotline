@@ -1,0 +1,69 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/environment/sentry_turret.gd" id="turret"]
+[ext_resource type="Script" path="res://scripts/gameplay/combat/health_component.gd" id="health"]
+[ext_resource type="Script" path="res://scripts/gameplay/combat/hurt_box.gd" id="hurt"]
+[ext_resource type="Script" path="res://scripts/gameplay/player/status_component.gd" id="status"]
+[ext_resource type="Texture2D" path="res://assets/art/environment/turrets/sentry_base_v1.png" id="base_png"]
+[ext_resource type="Texture2D" path="res://assets/art/environment/turrets/sentry_head_v1.png" id="head_png"]
+
+[sub_resource type="AtlasTexture" id="base"]
+atlas = ExtResource("base_png")
+region = Rect2(87, 123, 1082, 972)
+
+[sub_resource type="RectangleShape2D" id="body"]
+size = Vector2(86.4, 86.4)
+
+[sub_resource type="RectangleShape2D" id="hurt_shape"]
+size = Vector2(86.4, 86.4)
+
+[sub_resource type="AtlasTexture" id="head"]
+atlas = ExtResource("head_png")
+region = Rect2(264, 172, 723, 1059)
+
+[node name="SentryTurret" type="StaticBody2D"]
+y_sort_enabled = true
+collision_layer = 128
+collision_mask = 0
+script = ExtResource("turret")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("body")
+
+[node name="Visuals" type="Node2D" parent="."]
+position = Vector2(0, 43.2)
+scale = Vector2(0.9, 0.9)
+
+[node name="Base" type="Sprite2D" parent="Visuals"]
+texture_filter = 1
+position = Vector2(0, -48)
+scale = Vector2(0.08872458, 0.09876543)
+texture = SubResource("base")
+
+[node name="GunPivot" type="Node2D" parent="Visuals"]
+position = Vector2(0, -48)
+
+[node name="Head" type="Sprite2D" parent="Visuals/GunPivot"]
+texture_filter = 1
+scale = Vector2(0.075, 0.075)
+texture = SubResource("head")
+centered = false
+offset = Vector2(-363, -468)
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("health")
+max_health = 4
+
+[node name="HurtBox" type="Area2D" parent="."]
+collision_layer = 16
+collision_mask = 0
+monitoring = false
+script = ExtResource("hurt")
+faction = 2
+health_path = NodePath("../HealthComponent")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HurtBox"]
+shape = SubResource("hurt_shape")
+
+[node name="StatusComponent" type="Node" parent="."]
+script = ExtResource("status")

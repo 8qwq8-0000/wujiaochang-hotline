@@ -17,12 +17,14 @@ const PERSONA_PRESENTATION := {
 var _player: PlayerController
 var _top_left: Control
 var _health_meter: SegmentMeter
+var _armor_meter: SegmentMeter
 var _heat_meter: SegmentMeter
 var _heat_warning: Label
 var _weapon_name: Label
 var _weapon_preview: TextureRect
-var _pause_button: Button
+var _persona_root: Control
 var _operator_panel: HoloCommsPanel
+var _persona_status: PersonaStatusPanel
 var _operator_audio: AudioStreamPlayer
 var _comms: CombatCommsController
 var _circuit_value: Label
@@ -60,6 +62,13 @@ func _process(delta: float) -> void:
 	var heat_state := _player.get_heat_state()
 	_health_meter.segments = int(health_state.maximum)
 	_health_meter.set_meter(float(health_state.current), float(health_state.maximum))
+	var defense := _player.get_node("DefenseComponent") as DefenseComponent
+	_armor_meter.visible = defense.capacity() > 0
+	if _armor_meter.visible:
+		var block_height := minf(14.0, maxf(_health_meter.size.y - 4.0, 4.0))
+		_armor_meter.position = Vector2(float(_health_meter.segments) * (block_height + 2.0), 0)
+		_armor_meter.segments = defense.capacity()
+		_armor_meter.set_meter(defense.charges(), defense.capacity())
 	_update_circuit_status()
 	if int(health_state.current) == 1 and not _circuit_protection_active:
 		_health_meter.meter_color = CyberUITheme.DANGER
@@ -72,6 +81,8 @@ func _process(delta: float) -> void:
 	_heat_warning.visible = heat_state.overheated
 	if is_instance_valid(_player.talent_core):
 		_operator_panel.set_takeover_state(_player.talent_core.takeover_charges, _player.talent_core.takeover_armed)
+		_persona_status.update_status(_player.talent_core, _player.persona_combat.get_runtime_snapshot(), not _player.health.is_dead())
+		_persona_status.position = Vector2(-224, 78) if _operator_panel.is_expanded() or _operator_panel.size.x > HoloCommsPanel.COLLAPSED_SIZE.x + 1 else Vector2(-224, 0)
 
 
 func _bind_player(player: PlayerController) -> void:
@@ -112,6 +123,18 @@ func _build_minimal_hud() -> void:
 	_health_meter.empty_alpha = 0.08
 	_top_left.add_child(_health_meter)
 
+	_armor_meter = SegmentMeter.new()
+	_armor_meter.name = "ArmorLights"
+	_armor_meter.size = Vector2(36, 20)
+	_armor_meter.custom_minimum_size = _armor_meter.size
+	_armor_meter.show_caption = false
+	_armor_meter.show_numeric = false
+	_armor_meter.square_segments = true
+	_armor_meter.meter_color = Color("70b7ff")
+	_armor_meter.empty_alpha = 0.08
+	_armor_meter.hide()
+	_top_left.add_child(_armor_meter)
+
 	_heat_meter = SegmentMeter.new()
 	_heat_meter.name = "HeatStrip"
 	_heat_meter.position = Vector2(0.0, 24.0)
@@ -141,10 +164,23 @@ func _build_minimal_hud() -> void:
 	_weapon_name.modulate.a = 0.0
 	_top_left.add_child(_weapon_name)
 
+	_persona_root = Control.new()
+	_persona_root.name = "TopRightPersona"
+	_persona_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(_persona_root)
+	_persona_root.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_persona_root.offset_left = -8
+	_persona_root.offset_right = -8
+	_persona_root.offset_top = 8
+	_persona_root.offset_bottom = 8
 	_operator_panel = HoloCommsPanel.new()
 	_operator_panel.name = "AICommsPanel"
-	_operator_panel.position = Vector2(0.0, 44.0)
-	_top_left.add_child(_operator_panel)
+	_operator_panel.position = Vector2(-304, 0)
+	_persona_root.add_child(_operator_panel)
+	_persona_status = PersonaStatusPanel.new()
+	_persona_status.name = "PersonaStatus"
+	_persona_status.position = Vector2(-224, 0)
+	_persona_root.add_child(_persona_status)
 
 	_comms = CombatCommsController.new()
 	_comms.name = "CombatCommsController"
@@ -158,37 +194,9 @@ func _build_minimal_hud() -> void:
 	_operator_audio.volume_db = -12.0
 	_operator_audio.stream = CONNECT_SOUND
 	add_child(_operator_audio)
-	_build_pause_button()
 	_build_weapon_preview()
 	_circuit_value = Label.new()
 	_apply_hud_scale(_saved_hud_scale())
-
-
-func _build_pause_button() -> void:
-	_pause_button = Button.new()
-	_pause_button.name = "PauseButton"
-	_pause_button.text = "Ⅱ"
-	_pause_button.focus_mode = Control.FOCUS_NONE
-	_pause_button.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	_pause_button.position = Vector2(-36.0, 8.0)
-	_pause_button.size = Vector2(28.0, 28.0)
-	# Scale inward from the safe top-right corner instead of growing off-screen.
-	_pause_button.pivot_offset = Vector2(_pause_button.size.x, 0.0)
-	_pause_button.tooltip_text = "暂停"
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = Color("071017", 0.58)
-	normal.border_color = Color("55d9ff", 0.78)
-	normal.set_border_width_all(1)
-	var hover := normal.duplicate() as StyleBoxFlat
-	hover.bg_color = Color("12313b", 0.82)
-	hover.border_color = Color("8deaff")
-	_pause_button.add_theme_stylebox_override("normal", normal)
-	_pause_button.add_theme_stylebox_override("hover", hover)
-	_pause_button.add_theme_stylebox_override("pressed", hover)
-	_pause_button.add_theme_color_override("font_color", Color("79e8ff"))
-	_pause_button.add_theme_font_size_override("font_size", 16)
-	_pause_button.pressed.connect(_on_pause_pressed)
-	overlay.add_child(_pause_button)
 
 
 func _build_weapon_preview() -> void:
@@ -319,7 +327,7 @@ func set_hud_scale(value: float) -> void:
 
 func _apply_hud_scale(value: float) -> void:
 	_top_left.scale = Vector2.ONE * value
-	_pause_button.scale = Vector2.ONE * value
+	_persona_root.scale = Vector2.ONE * value * 0.85
 	_weapon_preview.scale = Vector2.ONE * value
 
 

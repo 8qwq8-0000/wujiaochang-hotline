@@ -3,9 +3,58 @@ extends RefCounted
 
 const BLAST_REACH := 92.0 # Leave a margin inside FuelPatch's 96 px explosion.
 const CLEARANCE := 22.0
+const POWER_CLEARANCE := 32.0 # Half the 64 px terminal artwork.
 const MIN_ENEMY_DISTANCE := 32.0
 const ENTRY := Vector2(74, 180)
 const EXIT := Vector2(592, 180)
+const ELEVATOR_EXIT := Vector2(606, 280)
+
+
+static func choose_power_position(layout: CombatLayoutData, seed_value: int) -> Vector2:
+	if layout.power_spawn_zones.is_empty():
+		return layout.power_position
+	var blockers: Array[Rect2] = []
+	blockers.append_array(layout.covers)
+	blockers.append_array(layout.windows)
+	blockers.append_array(layout.clear_lanes)
+	blockers.append_array(layout.navigation_obstacles)
+	var candidates: Array[Vector2] = []
+	for y in range(48, int(layout.room_size.y) - 38, 8):
+		for x in range(48, int(layout.room_size.x) - 38, 8):
+			var point := Vector2(x, y)
+			var allowed := false
+			for index in layout.power_spawn_zones:
+				if index >= 0 and index < layout.zones.size() and layout.zones[index].grow(-POWER_CLEARANCE).has_point(point):
+					allowed = true
+					break
+			if not allowed or not is_safe(point, layout.enemy_positions, blockers, layout.doors, Vector2(INF, INF), layout.room_size):
+				continue
+			var terminal_bounds := Rect2(point - Vector2(POWER_CLEARANCE, POWER_CLEARANCE), Vector2.ONE * POWER_CLEARANCE * 2)
+			var footprint := power_footprint(point).grow(8)
+			var obstructed := false
+			for rect in layout.covers + layout.windows:
+				obstructed = obstructed or terminal_bounds.intersects(rect)
+			for lane in layout.clear_lanes:
+				obstructed = obstructed or footprint.intersects(lane)
+			for enemy in layout.enemy_positions:
+				obstructed = obstructed or terminal_bounds.grow(8).has_point(enemy)
+			if obstructed:
+				continue
+			var near_door := false
+			for door in layout.doors:
+				near_door = near_door or door_bounds(door, 40, 32).has_point(point) or door_bounds(door, 12, 8).intersects(footprint)
+			if not near_door:
+				candidates.append(point)
+	if candidates.is_empty():
+		push_error("No safe power station position in eligible zones: %s" % layout.id)
+		return layout.power_position
+	var random := RandomNumberGenerator.new()
+	random.seed = seed_value
+	return candidates[random.randi_range(0, candidates.size() - 1)]
+
+static func power_footprint(point: Vector2) -> Rect2:
+	# Upright artwork extends above the actual floor collision shape.
+	return Rect2(point + Vector2(-32, 4), Vector2(64, 28))
 
 
 static func choose_barrel_position(enemies: Array[Vector2], blockers: Array[Rect2], doors: Array[Vector4], power: Vector2, seed_value: int, fallback: Vector2, windows: Array[Rect2] = [], room_size := Vector2(640, 360)) -> Vector2:
@@ -77,7 +126,10 @@ static func is_safe(point: Vector2, enemies: Array[Vector2], blockers: Array[Rec
 	if not Rect2(Vector2(38, 38), room_size - Vector2(76, 76)).has_point(point):
 		return false
 	var scale_factor := room_size / Vector2(640, 360)
-	if point.distance_to(ENTRY * scale_factor) < 112 or point.distance_to(EXIT * scale_factor) < 52 or point.distance_to(power) < 48:
+	if point.distance_to(ENTRY * scale_factor) < 112 or point.distance_to(EXIT * scale_factor) < 52 or point.distance_to(power) < 64:
+		return false
+	# The right-hand passage and final elevator occupy different positions.
+	if point.distance_to(ELEVATOR_EXIT * scale_factor) < 64:
 		return false
 	for rect in blockers:
 		if rect.grow(CLEARANCE).has_point(point):

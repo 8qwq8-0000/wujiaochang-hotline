@@ -304,16 +304,11 @@ func synthesize(subject: InventoryItem, material: InventoryItem) -> bool:
 
 
 func _ensure_fallback_weapon() -> void:
-	# A save always offers an equipped weapon on entry/departure, preferring an
-	# existing instance over minting another pistol. Blackbox choices stay protected.
+	# Empty loadouts receive the issued pistol. Stored loot stays where the
+	# player left it rather than being silently selected as the starting weapon.
 	var inv: ComponentInventory = player.inventory
 	if inv.weapon_slot.get_item() != null or inv.secondary_weapon_slot.get_item() != null:
 		return
-	for item in inv.backpack.get_items() + chest.get_items():
-		if item.get_property("slot", "") == "weapon":
-			inv.weapon_slot.equip(item)
-			inv._apply_equipment()
-			return
 	var fallback := ComponentRolls.create_issued_pistol()
 	inv.weapon_slot.equip(fallback)
 	inv._apply_equipment()
