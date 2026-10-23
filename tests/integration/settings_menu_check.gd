@@ -27,6 +27,7 @@ func run() -> void:
 	check(menu.get("_hud_scale") != null and (menu.get("_hud_scale") as OptionButton).item_count == 3, "settings expose 100, 125 and 150 percent HUD scales")
 	check(menu.get("_reduced_flashes") != null, "settings expose reduced-flashes accessibility toggle")
 	check(menu.get("_feedback_quality") != null and (menu.get("_feedback_quality") as OptionButton).item_count == 2, "settings expose low and standard combat effect quality")
+	check(menu.get("_movement_feedback_preview") is MovementFeedbackPreview, "settings expose the three-persona movement feedback preview")
 	menu._show_settings_page()
 	await process_frame
 	var settings_page := menu.get("_settings_page") as VBoxContainer
@@ -35,6 +36,9 @@ func run() -> void:
 	check(settings_page.size.y > 200.0 and settings_scroll != null and settings_scroll.size.y > 100.0, "settings page receives usable height instead of clipping its options")
 	check(menu.get("_resolution").is_visible_in_tree(), "resolution control is actually visible after opening settings")
 	check((menu.get("_crt_strength") as OptionButton).item_count == 3, "settings expose Off, Low and Standard CRT levels")
+	menu._on_feedback_preview_pressed()
+	await process_frame
+	check((menu.get("_movement_feedback_preview") as MovementFeedbackPreview).is_processing(), "combat feedback preview cycles movement-school particles")
 	menu._show_history_page()
 	await process_frame
 	check((menu.get("_history_page") as VBoxContainer).visible, "pause menu exposes the recent communication page")

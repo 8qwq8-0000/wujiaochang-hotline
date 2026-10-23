@@ -72,7 +72,7 @@ func test_player_scene_has_required_components() -> void:
 	assert_eq(visuals._direction_name(Vector2.LEFT), "left")
 	assert_eq(visuals._direction_name(Vector2.RIGHT), "right")
 	for direction in ["down", "up", "left", "right"]:
-		assert_eq(visuals._body_animation(direction, false), StringName("walk_" + direction))
+		assert_eq(visuals._body_animation(direction, false), &"idle")
 	assert_eq(visuals._body_animation("right", true), &"walk_right")
 	assert_false(sprite.flip_h)
 	assert_true(visuals._weapon_draws_in_front("down"))

@@ -753,6 +753,9 @@ func perform_attack() -> void:
 	var direction := _attack_direction
 	if not is_instance_valid(_target):
 		return
+	var events := get_node_or_null("/root/CombatEvents")
+	if events != null:
+		events.publish_enemy_attack(self, &"kinetic", profile.role != EnemyProfile.Role.RANGED_SIGHTLINE)
 	visuals.play_impact(direction)
 	if profile.role == EnemyProfile.Role.RANGED_SIGHTLINE:
 		var projectile: CombatProjectile = PROJECTILE_SCENE.instantiate()

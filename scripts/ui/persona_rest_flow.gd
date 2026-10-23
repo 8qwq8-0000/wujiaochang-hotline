@@ -30,24 +30,45 @@ const PERSONA_DATA := {
 }
 
 const TALENT_TEXT := {
-	&"read_opening": ["识隙", "连续命中猎痕目标后强化失衡"],
-	&"gaze": ["凝视", "标记完成后由 AI 软校正一次攻击"],
-	&"blood_step": ["踏血", "猎痕击杀返还突进并短暂加速"],
-	&"borrowed_step": ["借步", "AI 对安全侧后位发起软接管突进"],
-	&"shared_hunt_resonance": ["共猎共振", "连续猎杀后进入强化处决状态"],
-	&"ceaseless_hunt": ["无间狩猎", "击杀后由 AI 短暂追击下一猎物"],
-	&"calibrated_window": ["校正窗口", "已解析招式的手动完美格挡窗口延长"],
-	&"proxy_stance": ["代拟架势", "AI 面向已解析威胁并发起普通格挡"],
-	&"refutation_reward": ["反证收益", "手动验证后清除武器冷却并加快解析"],
-	&"proxy_counter": ["代行一招", "首次已解析招式由 AI 尝试完美格挡"],
-	&"open_model": ["开放模型", "显示完全解析招式的预测轨迹"],
-	&"master_loop": ["宗师闭环", "完全解析后短暂自动拆招"],
-	&"steady_beat": ["稳定拍点", "连续命中延缓反馈衰减并略微降热"],
-	&"distortion_gain": ["破音增益", "高反馈缩短攻击冷却但产生更多热量"],
-	&"seamless_switch": ["无缝换台", "换枪保留反馈且下一次攻击不生热"],
-	&"overload_scream": ["过载嘶鸣", "过热前由 AI 打出一次强化终止攻击"],
-	&"dual_channel_performance": ["双通道演奏", "主副武器独立冷却，交替攻击延长反馈"],
-	&"encore_autopilot": ["安可托管", "满反馈时由 AI 短暂瞄准并持续攻击"],
+	&"read_opening": ["识隙", "命中猎痕目标，使其失衡 0.65 秒；同一目标冷却 2 秒。"],
+	&"gaze": ["凝视", "战斗中建立新猎痕时，AI 自动瞄准并发动一次 100% 武器伤害攻击；不生热且忽略冷却。"],
+	&"blood_step": ["踏血", "击杀猎痕目标后突进立即就绪，并在 2 秒内提高 20% 移动与突进速度。"],
+	&"borrowed_step": ["借步", "猎痕目标进入 40 像素时，AI 寻路至安全侧后方并以手刀造成 1 伤害与 0.65 秒失衡；每个目标一次。"],
+	&"shared_hunt_resonance": ["风林山火", "连续击杀 3 个猎痕目标，获得 6 秒全属性强化；强化期间免疫地形伤害。"],
+	&"ceaseless_hunt": ["无间狩猎", "击杀猎痕目标后立即选择下一目标；路径可达时以最多 3 段免费突进追至 40 像素内。"],
+	&"calibrated_window": ["校正窗口", "面对已解析攻击时，完美格挡窗口延长 0.2 秒；手动格挡成功后立即恢复格挡。"],
+	&"proxy_stance": ["代拟架势", "已解析攻击即将命中且玩家未行动时，AI 自动面向威胁并执行普通格挡。"],
+	&"refutation_reward": ["反证收益", "手动完美格挡已解析攻击后清除武器冷却；2 秒内下一击不生热且伤害 +1。"],
+	&"proxy_counter": ["代行一招", "每名敌人第一次使用已解析攻击时，AI 自动执行完美格挡；每名敌人整场一次。"],
+	&"open_model": ["开放模型", "显示已解析攻击的完整轨迹、命中范围与预计命中时间；每 2 次手动完美格挡恢复 1 耐久。"],
+	&"master_loop": ["宗师气场", "完成一种攻击的解析时，使 220 像素内敌人失衡 1 秒，并进入 4 秒极意状态。"],
+	&"steady_beat": ["稳定拍点", "命中后暂停战斗反馈衰减 1.5 秒；所有攻击热量降低 25%。"],
+	&"distortion_gain": ["破音增益", "战斗反馈达到 60%：攻击速度 +30%，每个独立目标伤害 +1，热量产生 +30%。"],
+	&"seamless_switch": ["无缝换台", "攻击后 1.2 秒内切换到另一武器，其第一次攻击不生热，发射反馈翻倍。"],
+	&"overload_scream": ["过载嘶鸣", "攻击结算后热量达到 85% 且未过热时，AI 以当前武器发动 200% 伤害范围终止攻击，随后立即过热。"],
+	&"dual_channel_performance": ["双通道演奏", "主副武器独立冷却；1.2 秒内交替攻击使双方剩余冷却 -30%，并暂停反馈衰减 1.5 秒。"],
+	&"encore_autopilot": ["核武器", "战斗反馈满时进入 2 秒狂热：移除攻击间隔，可在过热时攻击，热量积累翻倍并可溢出至 200%。"],
+}
+
+const TALENT_TERMS := {
+	&"read_opening": ["猎痕：优先标记低耐久、失衡、较近的敌人。", "失衡：暂时无法行动。"],
+	&"gaze": ["猎痕：优先标记低耐久、失衡、较近的敌人。", "软接管：移动、攻击、格挡或突进输入会立即取消。"],
+	&"blood_step": ["猎痕：优先标记低耐久、失衡、较近的敌人。"],
+	&"borrowed_step": ["安全侧后方：目标背面或侧面没有墙体、陷阱，并保留撤离空间。", "软接管：移动、攻击、格挡或突进输入会立即取消。"],
+	&"shared_hunt_resonance": ["连续击杀：击杀非猎痕目标不会增加计数，也不会中断已有计数。", "地形伤害：火、电、爆炸残留及炸药桶爆炸；不包括敌人的爆炸攻击。"],
+	&"ceaseless_hunt": ["软接管：移动、攻击、格挡或突进输入会立即取消。"],
+	&"calibrated_window": ["已解析攻击：同一敌人的同类攻击被观察两次后完全识别。", "完美格挡窗口：攻击命中前精确格挡，可反射弹丸或使近战敌人失衡。"],
+	&"proxy_stance": ["普通格挡：阻止伤害，但不触发完美格挡效果。", "软接管：玩家输入可立即取消。"],
+	&"refutation_reward": ["手动完美格挡：不包含 AI 自动执行的格挡。"],
+	&"proxy_counter": ["第一次：按敌人分别计算；同一敌人整场战斗只能触发一次。", "软接管：玩家输入可立即取消。"],
+	&"open_model": ["预计命中时间：由当前攻击前摇与弹道速度估算。"],
+	&"master_loop": ["极意状态：AI 只接管已解析、可格挡、非范围攻击，并立即以当前武器 100% 伤害反击。", "软接管：攻击、格挡、移动或突进会立即结束极意状态。"],
+	&"steady_beat": ["战斗反馈：发射按基础热量占有效热量上限的比例积累；每次攻击首次有效命中再积累同等数值。"],
+	&"distortion_gain": ["独立目标：同次攻击对同一目标只增加一次伤害，不按弹丸数量叠加。"],
+	&"seamless_switch": ["发射反馈：不包含首次有效命中的额外反馈。"],
+	&"overload_scream": ["终止攻击：保留当前武器弹道、范围与命中效果；首次有效命中追加与范围攻击义体一致的爆炸，且不会重复触发自身。", "过热：暂时不能普通攻击，并使当前战斗反馈降至原值的 35%。"],
+	&"dual_channel_performance": ["交替攻击：必须完成攻击；只切换武器不会触发。"],
+	&"encore_autopilot": ["狂热状态：反馈不再增加，并在 2 秒内线性衰减至 0；每个物理帧最多攻击一次。"],
 }
 
 var is_open := false
@@ -61,6 +82,9 @@ var _persona_buttons: Dictionary = {}
 var _talent_column: VBoxContainer
 var _close_button: Button
 var _pending_leak_message := ""
+var _talent_tooltip: PanelContainer
+var _talent_tooltip_label: RichTextLabel
+var _tooltip_request_serial := 0
 
 @onready var flow: SceneContainerManager = get_parent().get_node("SceneFlow")
 @onready var run: Node = get_node("/root/RunManager")
@@ -207,6 +231,7 @@ func _build_panel() -> void:
 	_talent_column = VBoxContainer.new()
 	_talent_column.add_theme_constant_override("separation", 7)
 	talent_margin.add_child(_talent_column)
+	_build_talent_tooltip()
 	var footer := HBoxContainer.new()
 	footer.add_theme_constant_override("separation", 12)
 	root_column.add_child(footer)
@@ -263,10 +288,11 @@ func _refresh_talents() -> void:
 		hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_talent_column.add_child(hint)
 		return
-	for tier in range(1, level + 1):
+	for tier in range(1, 4):
+		var locked := tier > level
 		var tier_label := Label.new()
-		tier_label.text = "第 %d 级｜二选一" % tier
-		tier_label.add_theme_color_override("font_color", CyberUITheme.HIGHLIGHT)
+		tier_label.text = "第 %d 级｜%s" % [tier, "需人格 Lv.%d" % tier if locked else "二选一"]
+		tier_label.add_theme_color_override("font_color", CyberUITheme.MUTED if locked else CyberUITheme.HIGHLIGHT)
 		_talent_column.add_child(tier_label)
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 6)
@@ -278,11 +304,90 @@ func _refresh_talents() -> void:
 			var button := Button.new()
 			button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			button.custom_minimum_size.y = 48
-			button.text = ("✓ " if selected == talent_id else "") + text[0] + "\n" + text[1]
+			button.text = ("锁定 " if locked else ("✓ " if selected == talent_id else "")) + text[0] + "\n" + text[1]
 			button.add_theme_font_size_override("font_size", 10)
-			button.tooltip_text = text[1]
-			button.pressed.connect(choose_talent.bind(tier, talent_id))
+			button.set_meta("talent_locked", locked)
+			if locked:
+				button.add_theme_color_override("font_color", CyberUITheme.MUTED)
+			button.focus_mode = Control.FOCUS_ALL
+			button.mouse_entered.connect(_request_talent_tooltip.bind(button, talent_id, tier, locked))
+			button.mouse_exited.connect(_hide_talent_tooltip)
+			button.focus_entered.connect(_show_talent_tooltip.bind(button, talent_id, tier, locked))
+			button.focus_exited.connect(_hide_talent_tooltip)
+			if not locked:
+				button.pressed.connect(choose_talent.bind(tier, talent_id))
 			row.add_child(button)
+
+
+func _build_talent_tooltip() -> void:
+	_talent_tooltip = PanelContainer.new()
+	_talent_tooltip.name = "TalentExplanation"
+	_talent_tooltip.custom_minimum_size = Vector2(330.0, 0.0)
+	_talent_tooltip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_talent_tooltip.z_index = 30
+	_talent_tooltip.add_theme_stylebox_override("panel", CyberUITheme.create_box(Color("061713f5"), CyberUITheme.HIGHLIGHT))
+	_overlay.add_child(_talent_tooltip)
+	_talent_tooltip_label = RichTextLabel.new()
+	_talent_tooltip_label.fit_content = true
+	_talent_tooltip_label.bbcode_enabled = true
+	_talent_tooltip_label.custom_minimum_size = Vector2(310.0, 80.0)
+	_talent_tooltip_label.add_theme_font_size_override("normal_font_size", 12)
+	_talent_tooltip.add_child(_talent_tooltip_label)
+	_talent_tooltip.hide()
+
+
+func _request_talent_tooltip(button: Control, talent_id: StringName, tier: int, locked: bool) -> void:
+	_tooltip_request_serial += 1
+	var serial := _tooltip_request_serial
+	await get_tree().create_timer(0.15, true).timeout
+	if serial == _tooltip_request_serial and is_instance_valid(button) and button.is_hovered():
+		_show_talent_tooltip(button, talent_id, tier, locked)
+
+
+func _show_talent_tooltip(button: Control, talent_id: StringName, tier: int, locked: bool) -> void:
+	_tooltip_request_serial += 1
+	if not TALENT_TEXT.has(talent_id):
+		return
+	var text: Array = TALENT_TEXT[talent_id]
+	var body := "[font_size=16][color=#9dfbe8]%s[/color][/font_size]\n%s" % [text[0], _dynamic_talent_effect(talent_id, String(text[1]))]
+	if locked:
+		body += "\n[color=#9aa8a8]需要人格 Lv.%d[/color]" % tier
+	var terms: Array = TALENT_TERMS.get(talent_id, [])
+	if not terms.is_empty():
+		body += "\n\n[color=#72c8ba]名词解释[/color]\n• " + "\n• ".join(terms)
+	_talent_tooltip_label.text = body
+	_talent_tooltip.show()
+	await get_tree().process_frame
+	var viewport_size := _overlay.get_viewport_rect().size
+	var button_rect := button.get_global_rect()
+	var tooltip_size := _talent_tooltip.size
+	var position := Vector2(button_rect.end.x + 8.0, button_rect.position.y)
+	if position.x + tooltip_size.x > viewport_size.x - 8.0:
+		position.x = button_rect.position.x - tooltip_size.x - 8.0
+	position.y = clampf(position.y, 8.0, maxf(8.0, viewport_size.y - tooltip_size.y - 8.0))
+	_talent_tooltip.global_position = position
+
+
+func _dynamic_talent_effect(talent_id: StringName, fallback: String) -> String:
+	if not is_instance_valid(_player):
+		return fallback
+	var weapon := _player.weapons.get_current_weapon()
+	if weapon == null:
+		return fallback
+	var max_heat := maxf(_player.heat.effective_max(), 1.0)
+	var firing_feedback := weapon.heat_per_attack / max_heat * 100.0
+	match talent_id:
+		&"steady_beat", &"distortion_gain", &"seamless_switch", &"dual_channel_performance", &"encore_autopilot":
+			return "%s\n[color=#9aa8a8]当前武器：发射 +%.1f 反馈；首次有效命中再 +%.1f。[/color]" % [fallback, firing_feedback, firing_feedback]
+		&"overload_scream":
+			return "%s\n[color=#9aa8a8]当前武器：触发线 %.1f / %.1f 热量。[/color]" % [fallback, max_heat * 0.85, max_heat]
+	return fallback
+
+
+func _hide_talent_tooltip() -> void:
+	_tooltip_request_serial += 1
+	if is_instance_valid(_talent_tooltip):
+		_talent_tooltip.hide()
 
 
 func _on_semantic_leak_unlocked(persona_id: StringName, _leak_id: StringName) -> void:

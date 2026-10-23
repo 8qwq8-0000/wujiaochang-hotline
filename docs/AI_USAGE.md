@@ -2,6 +2,8 @@
 
 | 日期 | 负责人 | 问题/提示词摘要 | 修改文件 | 审查及验证 | 提交编号/证据 |
 |---|---|---|---|---|---|
+| 2026-10-24 | 本任务维护者（待团队认领） | 以 grill 逐项盘问并确认三人格十八项天赋的精确规则，完成悬停术语说明、寻路软接管、攻击解析、反馈／热量溢出与切场 HUD 修复 | persona combat/talent/rest/HUD、weapon/heat/damage/guard/enemy events、人格设计说明与专项测试 | 保留全部内部天赋 ID 兼容存档；单元 89/89，人格战斗、人格整备、人格 HUD、冲刺与耐久 HUD 专项零失败；主菜单全流程受本机 `user://` 不可写的既有测试环境问题阻断，但同路径的初始及切场 HUD 可见性已由整备流程专项覆盖 | 本地实现，尚未提交 |
+| 2026-10-23 | 本任务维护者（待团队认领） | 通过逐项盘问，为普通冲刺与深渊忍者追击、借步、夺身猎步增加人格流派色程序化光粒子和同色残影 | movement feedback style/particle/preview、dash/player/persona/event/VFX、设置预览、测试与实施说明 | 不改变速度、无敌、碰撞和伤害；低性能与降低闪烁仍保留颜色和形状。编辑器扫描通过；单元 89/89；设置、冲刺与人格战斗专项零失败。主表现广测停在既有的过期 HUD 断言（分段表数量与 `_pause_button`），相关 HUD 与夹具未由本轮修改 | 本地实现，尚未提交 |
 | 2026-10-12 | 待团队认领 | 读取课程材料，按现有方案配置三人项目 | project.godot、主检查场景、导出预设、.NET 工程、协作文件、tools/ | 编译、启动和 Windows 导出通过；GUI 中文、W/右键输入、1000×800 黑边实测通过；详见 docs/team/SETUP_REPORT.md；合并前须人工复核 | chore/team-environment-setup；尚未提交 |
 | 2026-10-13 | yuyu-yuuuu | 实现 R 键重开当前战斗，死亡后可用 | scripts/bootstrap_main.gd、scripts/gameplay/player_controller.gd、project.godot、tests/integration/restart_room_check.gd、tests/README.md | 战斗中/死亡后/清场后连续三次重开通过；10 项原有规则测试通过；尚需人工试玩 | feature/restart-room，尚未提交；/tmp/wujiaochang-restart-test.log |
 | 2026-10-19 | 本任务维护者（待团队认领） | 按用户反馈完成双区域装备循环、主菜单、互通房型和开阔车间；炸药桶优先布置在敌人密集处并做种子随机 | scripts/gameplay/rooms/、scripts/gameplay/inventory/、scripts/gameplay/mobility/、scripts/ui/、resources/rooms/、对应场景和测试 | 两区 40、房型 128、炸药桶 170、门窗 48 项及连续三轮流程通过；尚需另一成员实际运行审核 | codex/status-electric；4f6eda6、86e4c6e；docs/technical/开阔车间与炸药桶布置.md |

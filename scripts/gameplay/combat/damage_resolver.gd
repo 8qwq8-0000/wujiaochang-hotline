@@ -19,8 +19,11 @@ static func resolve(
 		if guard_result != null:
 			_publish(guard_result)
 			return guard_result
+	var adjusted_base := packet.base_damage
+	if is_instance_valid(packet.source) and packet.source.has_method("modify_outgoing_damage"):
+		adjusted_base = int(packet.source.modify_outgoing_damage(packet, target, adjusted_base))
 	var multiplier := CombatFaction.damage_multiplier(packet.source_faction, target_faction, packet.reflected)
-	var requested_damage := maxi(int(round(packet.base_damage * multiplier)), 0)
+	var requested_damage := maxi(int(round(adjusted_base * multiplier)), 0)
 	if requested_damage <= 0:
 		_publish(result)
 		return result

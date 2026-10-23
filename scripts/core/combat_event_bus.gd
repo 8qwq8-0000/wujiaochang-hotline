@@ -12,6 +12,7 @@ signal environment_discharge_requested(position: Vector2, radius: float)
 signal fuel_explosion_requested(position: Vector2, radius: float)
 
 signal damage_resolved(result: DamageResult)
+signal enemy_attack_performed(source: Node, damage_type: StringName, is_melee: bool)
 signal perfect_guarded(result: DamageResult)
 signal entity_defeated(entity: Node)
 signal room_cleared(room: Node)
@@ -22,7 +23,17 @@ signal combat_notice_requested(notice: CombatNotice)
 signal operator_communication_requested(text: String)
 signal weapon_cue_requested(weapon_id: StringName, cue: StringName, world_position: Vector2)
 signal afterimage_requested(source: Node, sprite: AnimatedSprite2D)
+signal path_afterimage_requested(source: Node, sprite: AnimatedSprite2D, world_position: Vector2)
 signal afterimages_clear_requested(source: Node)
+signal movement_effect_requested(
+	source: Node,
+	effect_kind: StringName,
+	phase: StringName,
+	from: Vector2,
+	to: Vector2,
+	direction: Vector2,
+	cancelled: bool
+)
 signal combat_moment_requested(kind: StringName, world_position: Vector2)
 signal low_health_pulse_requested
 
@@ -31,6 +42,11 @@ func publish_damage(result: DamageResult) -> void:
 	damage_resolved.emit(result)
 	if result.outcome == DamageResult.Outcome.PERFECT_BLOCKED or result.outcome == DamageResult.Outcome.REFLECTED:
 		perfect_guarded.emit(result)
+
+
+func publish_enemy_attack(source: Node, damage_type: StringName, is_melee: bool) -> void:
+	if is_instance_valid(source):
+		enemy_attack_performed.emit(source, damage_type, is_melee)
 
 
 func publish_defeat(entity: Node) -> void:
@@ -94,9 +110,27 @@ func request_afterimage(source: Node, sprite: AnimatedSprite2D) -> void:
 		afterimage_requested.emit(source, sprite)
 
 
+func request_path_afterimage(source: Node, sprite: AnimatedSprite2D, world_position: Vector2) -> void:
+	if is_instance_valid(source) and is_instance_valid(sprite):
+		path_afterimage_requested.emit(source, sprite, world_position)
+
+
 func clear_afterimages(source: Node) -> void:
 	if is_instance_valid(source):
 		afterimages_clear_requested.emit(source)
+
+
+func request_movement_effect(
+	source: Node,
+	effect_kind: StringName,
+	phase: StringName,
+	from: Vector2,
+	to: Vector2,
+	direction: Vector2,
+	cancelled: bool = false
+) -> void:
+	if is_instance_valid(source):
+		movement_effect_requested.emit(source, effect_kind, phase, from, to, direction, cancelled)
 
 
 func publish_combat_moment(kind: StringName, world_position: Vector2) -> void:

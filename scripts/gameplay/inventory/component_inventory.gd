@@ -286,6 +286,7 @@ func drop_item(item: InventoryItem, destination: String, index: int = -1) -> boo
 	var dash_active: float = player.dash.get("_active_remaining")
 	var dash_direction: Vector2 = player.dash.get("_direction")
 	var dash_hits: Dictionary = player.dash.get("_hits").duplicate()
+	var dash_effect_kind := player.dash.active_effect_kind
 	var other := item_at(destination, index)
 	var moved := false
 	if source == "backpack" and destination == "backpack" and other != null:
@@ -327,6 +328,7 @@ func drop_item(item: InventoryItem, destination: String, index: int = -1) -> boo
 		player.dash.set("_active_remaining", dash_active)
 		player.dash.set("_direction", dash_direction)
 		player.dash.set("_hits", dash_hits)
+		player.dash.active_effect_kind = dash_effect_kind
 		changed.emit()
 		return false
 	changed.emit()
