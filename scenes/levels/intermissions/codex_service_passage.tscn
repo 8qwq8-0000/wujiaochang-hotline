@@ -1,0 +1,175 @@
+[gd_scene load_steps=16 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/rooms/codex_service_passage.gd" id="room"]
+[ext_resource type="PackedScene" path="res://scenes/actors/player/player.tscn" id="player"]
+[ext_resource type="Script" path="res://scripts/gameplay/rooms/codex_passage_interactable.gd" id="interactable"]
+[ext_resource type="Texture2D" path="res://assets/art/environment/refined/gpt_synthesist.png" id="art_mechanic"]
+[ext_resource type="Texture2D" path="res://assets/art/environment/warehouse/workbench_v2.png" id="art_workbench"]
+[ext_resource type="Texture2D" path="res://assets/art/environment/warehouse/elevator_east_v3.png" id="exit_art"]
+
+[ext_resource type="Texture2D" path="res://assets/art/effects/warehouse_sigils/deploy_complete.png" id="sigil_deploy"]
+[ext_resource type="Script" path="res://scripts/presentation/warehouse_door_sigil.gd" id="door_sigil"]
+
+[sub_resource type="AtlasTexture" id="Art_mechanic"]
+atlas = ExtResource("art_mechanic")
+region = Rect2(100, 12, 1017, 1376)
+
+[sub_resource type="AtlasTexture" id="Art_workbench"]
+atlas = ExtResource("art_workbench")
+region = Rect2(183, 76, 1163, 873)
+
+[sub_resource type="AtlasTexture" id="Art_exit"]
+atlas = ExtResource("exit_art")
+region = Rect2(148, 75, 652, 1717)
+
+[sub_resource type="RectangleShape2D" id="DoorShape"]
+size = Vector2(48, 64)
+
+[sub_resource type="RectangleShape2D" id="WorkbenchFootprint"]
+size = Vector2(72, 22)
+
+[sub_resource type="RectangleShape2D" id="WallHorizontal"]
+size = Vector2(572, 12)
+
+[sub_resource type="RectangleShape2D" id="WallVertical"]
+size = Vector2(16, 162)
+
+[node name="CodexServicePassage" type="Node2D" groups=["intermission"]]
+script = ExtResource("room")
+
+[node name="Player" parent="." instance=ExtResource("player")]
+position = Vector2(95, 270)
+
+[node name="Title" type="Label" parent="."]
+offset_left = 40.0
+offset_top = 38.0
+text = "02 / 03   检修通道"
+theme_override_colors/font_color = Color(0.65, 0.86, 0.78, 1)
+theme_override_font_sizes/font_size = 18
+
+[node name="Subtitle" type="Label" parent="."]
+offset_left = 40.0
+offset_top = 66.0
+text = "CODEX · 临时整备站 / 装备升级与义体复合"
+theme_override_colors/font_color = Color(0.4, 0.59, 0.55, 1)
+theme_override_font_sizes/font_size = 11
+
+[node name="Status" type="Label" parent="."]
+offset_left = 40.0
+offset_top = 326.0
+offset_right = 610.0
+text = "靠近 Codex 按 E 对话     WASD 移动 · Tab 配装"
+theme_override_colors/font_color = Color(0.65, 0.86, 0.78, 1)
+theme_override_font_sizes/font_size = 11
+
+[node name="Walls" type="StaticBody2D" parent="."]
+
+[node name="Top" type="CollisionShape2D" parent="Walls"]
+position = Vector2(320, 145)
+shape = SubResource("WallHorizontal")
+
+[node name="Bottom" type="CollisionShape2D" parent="Walls"]
+position = Vector2(320, 298)
+shape = SubResource("WallHorizontal")
+
+[node name="Left" type="CollisionShape2D" parent="Walls"]
+position = Vector2(35, 220)
+shape = SubResource("WallVertical")
+
+[node name="Right" type="CollisionShape2D" parent="Walls"]
+position = Vector2(606, 220)
+shape = SubResource("WallVertical")
+
+[node name="SynthesisNPC" type="Area2D" parent="."]
+self_modulate = Color(1, 1, 1, 0)
+position = Vector2(325, 184)
+collision_layer = 32
+collision_mask = 0
+script = ExtResource("interactable")
+action = "codex"
+metadata/_edit_group_ = true
+
+[node name="Shape" type="CollisionShape2D" parent="SynthesisNPC"]
+shape = SubResource("DoorShape")
+
+[node name="Name" type="Label" parent="SynthesisNPC"]
+z_index = 20
+offset_left = -95.0
+offset_top = 28.0
+offset_right = 70.0
+theme_override_colors/font_color = Color(0.72, 0.8, 0.82, 1)
+theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.08, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 10
+text = "Codex"
+horizontal_alignment = 1
+
+[node name="Prompt" type="Label" parent="SynthesisNPC"]
+visible = false
+z_index = 25
+offset_left = -70.0
+offset_top = 42.0
+offset_right = 70.0
+theme_override_colors/font_color = Color(0.72, 0.8, 0.82, 1)
+theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.08, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 10
+text = "[E] 对话 / 合成"
+horizontal_alignment = 1
+
+[node name="RefinedArt" type="Sprite2D" parent="SynthesisNPC"]
+texture_filter = 1
+position = Vector2(-7, 5)
+scale = Vector2(0.036337208, 0.036337208)
+texture = SubResource("Art_mechanic")
+
+[node name="Workbench" type="Node2D" parent="SynthesisNPC"]
+position = Vector2(-25, -45)
+
+[node name="Art" type="Sprite2D" parent="SynthesisNPC/Workbench"]
+texture_filter = 1
+scale = Vector2(0.061908856, 0.061908856)
+texture = SubResource("Art_workbench")
+
+[node name="Body" type="StaticBody2D" parent="SynthesisNPC/Workbench"]
+
+[node name="Shape" type="CollisionShape2D" parent="SynthesisNPC/Workbench/Body"]
+position = Vector2(0, 18)
+shape = SubResource("WorkbenchFootprint")
+
+[node name="ContinueExit" type="Area2D" parent="."]
+position = Vector2(560, 218)
+collision_layer = 32
+collision_mask = 0
+script = ExtResource("interactable")
+action = "exit"
+
+[node name="Shape" type="CollisionShape2D" parent="ContinueExit"]
+shape = SubResource("DoorShape")
+
+[node name="Art" type="Sprite2D" parent="ContinueExit"]
+texture_filter = 1
+position = Vector2(25.3, -6)
+scale = Vector2(0.051252183, 0.051252183)
+texture = SubResource("Art_exit")
+
+[node name="Prompt" type="Label" parent="ContinueExit"]
+visible = false
+z_index = 25
+offset_left = -55.0
+offset_top = 30.0
+offset_right = 55.0
+text = "[E] 前往第三层"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 10
+
+[node name="DoorSigil" type="Sprite2D" parent="ContinueExit"]
+z_index = -2
+z_as_relative = false
+texture_filter = 2
+position = Vector2(28, 8)
+scale = Vector2(0.225, 0.225)
+texture = ExtResource("sigil_deploy")
+script = ExtResource("door_sigil")

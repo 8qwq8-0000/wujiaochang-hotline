@@ -2,6 +2,7 @@ extends CanvasLayer
 
 const FLOOR_PATH := "res://scenes/levels/floors/combat_prototype.tscn"
 const BOSS_PATH := "res://scenes/levels/bosses/rooftop_boss_arena.tscn"
+const CODEX_PASSAGE_PATH := "res://scenes/levels/intermissions/codex_service_passage.tscn"
 var _player: PlayerController
 var _bound_scene: Node
 var _owns_pause := false
@@ -184,13 +185,20 @@ func return_to_warehouse() -> void:
 func continue_floor() -> void:
 	if _settled or not is_instance_valid(_player) or _player.health.is_dead():
 		return
+	if is_instance_valid(_bound_scene) and _bound_scene.is_in_group("intermission"):
+		return
 	var snapshot: Dictionary = _player.export_run_state()
 	var destination := BOSS_PATH if run.floor_index >= run.NORMAL_FLOOR_COUNT - 1 else FLOOR_PATH
-	if not flow.request_scene(destination, {"player_state": snapshot}):
+	var service_stop: bool = run.floor_index == 1
+	if service_stop:
+		destination = CODEX_PASSAGE_PATH
+	var payload := {"player_state": snapshot, "transit_heat": {"current": _player.heat.current_heat, "overheated": _player.heat.is_overheated}}
+	if not flow.request_scene(destination, payload):
 		_details.text = "下一层加载请求失败，请重试或返回搜刮。"
 		return
 	run.set_player_state(snapshot)
-	run.floor_index += 1
+	if not service_stop:
+		run.floor_index += 1
 	close_exit()
 
 

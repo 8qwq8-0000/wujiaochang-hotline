@@ -300,8 +300,23 @@ Following the user's correction, extracted the four existing colored half-sigils
 - User selected bullets breaking automatic doors. Projectile world impacts now notify the owning AutomaticDoor before consuming the bullet. Shared break handling preserves existing fragments, noise and collider removal; projectile breaks do not apply dash knockdown. Repeated hits cannot duplicate fragments, and zero-damage or paused hits do not break doors.
 - Regression first reproduced the missing behavior (4 failures). After implementation: automatic doors 28/28 in both headless and windowed runs, shield support 69/69, point-blank shooting 73/73, bomb runtime 13/13. Existing ObjectDB/resource-use diagnostics remain on test exit; no new script errors observed.
 
+## 2026-10-23 — Melee telegraph, warehouse terminal, Codex passage and equipment art
+
+- Fixed normal melee and shield soldiers banking windup during pursuit: only ranged enemies may precharge. Melee enters its full raised-hand windup in range, and leaving range/losing visibility cancels that preparation. Added timing, animation, continuous-precharge and re-entry regressions.
+- Restyled storage as a pixel terminal with two bordered inventories, larger item art, quality colors, capacity markers and an inline detail area. Retained native storage buttons, pause ownership and transfer/save behavior.
+- Added a service corridor only when continuing after floor two. Reused the warehouse's existing synthesist and bench; four dialogue pages unlock repeatable carried-equipment upgrades and irreversible cyberware fusion. Preserved inventory identities, health, heat and personas into floor three, with no extra persona authorization or permanent-warehouse writes. Props and door are wall-mounted; reused the doorway light ring and aligned floor numbers/guide line to it.
+- Used built-in imagegen for buffer armor, six distinct cyberware modules and compound cyberware. Full source art and per-image prompts are versioned in art_sources/ai_drafts/equipment_icons_v1/. Packaged 32px/64px transparent PNGs, wired inventory/workshop/storage/drop textures and upgraded old compound item icons.
+- Clean validation against origin/main in an isolated worktree: enemy combat upgrade; enemy native animation 348/348; warehouse 61/61; Codex passage 23/23; cyberware effects; armor blue-health 38/38; defense 40/40; extraction; victory 14/14; persona rest. All ten scripts exited successfully with zero assertion failures. Windowed captures also passed and were visually checked.
+- Limits: Godot 4.7.2 GDScript/Compatibility validation on macOS, not .NET/Windows export or another member's review. Existing resource/RID cleanup diagnostics remain; fresh import also emitted two file-access diagnostics while importing unchanged data/fonts. The old component_progression_check.gd still references removed mobility APIs and fails parsing at line 149; it is not counted as passed.
+- PR contains only this chat's work. Concurrent floor difficulty, boss-minion health, persona emergency movement, wall/crate navigation, raw reference media and unrelated editor imports remain outside this branch. Generated assets: project-local AI output, no newly imported third-party assets; team ownership pending assignment.
+
 ## 2026-10-23 — Resolve PR18 laser merge conflict
 
 - User explicitly selected PR18's implementation for the weapon_controller.gd beam conflict. Merged current origin/main into the PR18 head, retained PR18's 160px formation/penetration corridor and subsequent wall clipping, and did not retain main's conflicting projectile-style automatic-door impact block.
 - Updated the newly merged door assertions to match that explicit choice: distant blocking doors stay closed, the beam remains clipped, and the rear door remains protected. Laser beam integration: 33/33. Existing resource-use exit warnings remain; this updates the PR branch only, without merging it into main.
 - Settings assertions reported zero failures. The merged presentation_systems_check hits missing HUD affordances and a null get_global_rect call, preventing completion; it is not counted as passing and requires follow-up separate from this laser-conflict choice.
+
+## 2026-10-23 — Sync PR19 with merged PR18
+
+- Resolved the append-only AI_USAGE.md conflict by retaining both PR18's laser-resolution record and PR19's workshop/art record. Gameplay code auto-merged; kept PR18's selected beam behavior and PR19's service passage, melee preparation, storage UI and item art.
+- Validation after merging current main: Codex passage 23/23, warehouse 63/63, laser beam 33/33 and enemy combat upgrade zero failures. Existing resource cleanup diagnostics remain. Only the PR19 branch is updated; no direct main merge.

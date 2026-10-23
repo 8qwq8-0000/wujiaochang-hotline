@@ -7,6 +7,7 @@ const WHEEL_RAM_COOLDOWNS := [1.2, 1.0, 0.8]
 const ARMOR_RECOVERY_SECONDS := [12.0, 10.0, 10.0]
 const ARMOR_CAPACITY := [1, 1, 2]
 const QUALITY_COLORS := [Color("a8b1bd"), Color("e7edf3"), Color("70b7ff"), Color("cf99ff")]
+const COMPOUND_CYBERWARE_ICON := "res://assets/art/items/equipment_v1/compound_cyberware.png"
 
 static func quality_color(item: InventoryItem) -> Color:
 	return QUALITY_COLORS[quality(item)] if ordinary(item) else Color.WHITE
@@ -94,6 +95,8 @@ static func ensure(item: InventoryItem) -> void:
 	if _is_cyberware(item):
 		if not item.has_property("modules"):
 			item.set_property("modules", cyberware_modules(item))
+		if cyberware_modules(item).size() > 1:
+			item.set_property("image", COMPOUND_CYBERWARE_ICON)
 		return
 	if not ordinary(item):
 		return
@@ -212,6 +215,7 @@ static func fuse(a: InventoryItem, b: InventoryItem, rng: RandomNumberGenerator)
 				merged.append(module_id)
 		merged.sort()
 		result.set_property("modules", merged)
+		result.set_property("image", COMPOUND_CYBERWARE_ICON)
 		return result
 	var tier := mini(synthesis_quality(a) + 1, 3)
 	var result := create(a.get_prototype().get_prototype_id(), tier, rng)

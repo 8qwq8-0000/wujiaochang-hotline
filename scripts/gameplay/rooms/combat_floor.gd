@@ -23,6 +23,9 @@ func receive_scene_payload(payload: Dictionary) -> void:
 		return
 	if payload.has("player_state") and payload["player_state"] is Dictionary:
 		player.import_run_state(payload["player_state"])
+	if payload.has("transit_heat"):
+		player.heat.set_heat(float(payload.transit_heat.get("current", 0.0)))
+		player.heat.is_overheated = bool(payload.transit_heat.get("overheated", false))
 
 
 func _draw_background(canvas: Node2D) -> void:
