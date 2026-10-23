@@ -368,19 +368,11 @@ func _tick_shield_cover(delta: float, sees_target: bool) -> bool:
 	return true
 
 
-func should_retreat(distance: float) -> bool:
-	return profile.role == EnemyProfile.Role.RANGED_SIGHTLINE and distance < profile.attack_range * 0.65
-
-
 func _choose_tactical_intent(distance: float, delta: float) -> EnemyTacticalBrain.Intent:
 	if not profile.tactical_enabled:
-		if should_retreat(distance):
-			return EnemyTacticalBrain.Intent.RETREAT
 		return EnemyTacticalBrain.Intent.HOLD_AND_ATTACK if distance <= profile.attack_range else EnemyTacticalBrain.Intent.APPROACH
 	# Safety and attack windows are edge-triggered and must not wait for the
 	# regular decision interval. The interval only stabilizes repositioning.
-	if should_retreat(distance):
-		return EnemyTacticalBrain.Intent.RETREAT
 	if distance <= profile.attack_range:
 		if profile.role != EnemyProfile.Role.RANGED_SIGHTLINE or _attack_cooldown_remaining <= 0.0:
 			return EnemyTacticalBrain.Intent.HOLD_AND_ATTACK

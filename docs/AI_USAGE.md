@@ -320,3 +320,10 @@ Following the user's correction, extracted the four existing colored half-sigils
 
 - Resolved the append-only AI_USAGE.md conflict by retaining both PR18's laser-resolution record and PR19's workshop/art record. Gameplay code auto-merged; kept PR18's selected beam behavior and PR19's service passage, melee preparation, storage UI and item art.
 - Validation after merging current main: Codex passage 23/23, warehouse 63/63, laser beam 33/33 and enemy combat upgrade zero failures. Existing resource cleanup diagnostics remain. Only the PR19 branch is updated; no direct main merge.
+
+## 2026-10-23 — Ranged firing and synthesis selection follow-up
+
+- At the user's request, removed minimum-distance retreat from ranged tactical and non-tactical decisions. Outside firing range enemies approach instead of orbiting in the old 100%-108% strafe band; cooldown strafing and normal shot preparation remain. Added actual projectile emission checks at 8, 25, 80 and 150 pixels with tactics both enabled and disabled.
+- Successful synthesis clears both consumed selections and returns the active slot and keyboard focus to the subject. The next selected item fills the subject before advancing to material, including repeated cyberware synthesis.
+- Scoped on PR19's branch: no death-blood, floor clutter or concurrent uncommitted work is included. Requires PR19's synthesis passage and close-range melee fix.
+- Isolated validation: enemy_combat_upgrade_check and enemy_tactics_check zero failures; codex_service_passage_check 27/27; enemy_tactical_brain unit suite 4/4; git diff --check clean. The old enemy_loot_check still fails its cover-line-of-sight, cover-projectile and next-area-objective assertions (3 failures); it is not counted as passing. Existing ObjectDB/RID/resources-in-use exit diagnostics remain. No new external art assets or third-party code.

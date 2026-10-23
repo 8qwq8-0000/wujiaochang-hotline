@@ -289,7 +289,10 @@ func _refresh_preview() -> void:
 func _synthesize() -> void:
 	if room.synthesize(_materials[0], _materials[1]):
 		var result: InventoryItem = room.last_synthesis_result
+		_materials = [null, null]
+		_target = 0
 		refresh()
+		_material_buttons[0].grab_focus()
 		_preview.text = "[color=#8de3da][b]升级完成[/b][/color]\n" + "[color=#" + ComponentRolls.quality_color(result).to_html(false) + "]" + ComponentRolls.describe(result) + "[/color]\n\n已回到主体原位置"
 
 func _exit_tree() -> void:

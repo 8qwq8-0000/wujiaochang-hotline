@@ -25,11 +25,11 @@ func test_melee_approaches_solo_and_flanks_with_support() -> void:
 	assert_eq(right, EnemyTacticalBrain.Intent.FLANK_RIGHT)
 
 
-func test_ranged_retreats_strafes_and_attacks_by_spacing_and_cooldown() -> void:
+func test_ranged_strafes_on_cooldown_and_attacks_even_up_close() -> void:
 	var close := EnemyTacticalBrain.decide(_snapshot(EnemyProfile.Role.RANGED_SIGHTLINE, 80.0, 235.0, 0.0), 1.0)
 	var cooling := EnemyTacticalBrain.decide(_snapshot(EnemyProfile.Role.RANGED_SIGHTLINE, 190.0, 235.0, 0.6), -1.0)
 	var ready := EnemyTacticalBrain.decide(_snapshot(EnemyProfile.Role.RANGED_SIGHTLINE, 190.0, 235.0, 0.0), 1.0)
-	assert_eq(close, EnemyTacticalBrain.Intent.RETREAT)
+	assert_eq(close, EnemyTacticalBrain.Intent.HOLD_AND_ATTACK)
 	assert_eq(cooling, EnemyTacticalBrain.Intent.STRAFE_LEFT)
 	assert_eq(ready, EnemyTacticalBrain.Intent.HOLD_AND_ATTACK)
 
