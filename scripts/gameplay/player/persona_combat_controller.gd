@@ -226,7 +226,9 @@ func _tick_deep_ninja(delta: float) -> void:
 	_mark_refresh_remaining = maxf(_mark_refresh_remaining - delta, 0.0)
 	if not _is_live_enemy(marked_target) and _mark_refresh_remaining <= 0.0:
 		_mark_refresh_remaining = MARK_REFRESH_SECONDS
-		_set_mark(_select_execution_target())
+		# Entering a room may establish an initial hunt mark, but that is not a
+		# combat event and must not make Gaze fire as soon as the scene loads.
+		_set_mark(_select_execution_target(), false)
 	_gaze_remaining = maxf(_gaze_remaining - delta, 0.0)
 	if _gaze_attack_pending and _gaze_remaining <= 0.0 and _is_live_enemy(marked_target):
 		_gaze_attack_pending = false
@@ -326,7 +328,7 @@ func _on_incoming_result(result: DamageResult) -> void:
 
 func _on_deep_ninja_hit(enemy: EnemyController, result: DamageResult) -> void:
 	if not _is_live_enemy(marked_target) or enemy != marked_target:
-		_set_mark(enemy)
+		_set_mark(enemy, true)
 		_marked_hit_streak = 0
 	if result.final_damage <= 0:
 		return
@@ -347,7 +349,7 @@ func _on_deep_ninja_hit(enemy: EnemyController, result: DamageResult) -> void:
 		_marked_kill_streak = 0
 		_resonance_remaining = 4.0
 		_publish_notice(&"shared_hunt", "共猎共振", Color(0.75, 0.35, 1.0))
-	_set_mark(_select_execution_target(enemy))
+	_set_mark(_select_execution_target(enemy), true)
 	if _has_talent(&"ceaseless_hunt") and _is_live_enemy(marked_target):
 		_chase_remaining = 0.45
 
@@ -445,13 +447,13 @@ func _attack_key(packet: DamagePacket) -> String:
 	return "%s:%s:%s" % [source_kind, String(packet.damage_type), "melee" if packet.is_melee else "ranged"]
 
 
-func _set_mark(target: EnemyController) -> void:
+func _set_mark(target: EnemyController, trigger_gaze: bool = false) -> void:
 	if marked_target == target:
 		return
 	marked_target = target
 	_marked_hit_streak = 0
 	_borrowed_step_target_id = 0
-	if _is_live_enemy(marked_target) and _has_talent(&"gaze"):
+	if trigger_gaze and _is_live_enemy(marked_target) and _has_talent(&"gaze"):
 		player.aim_direction = player.global_position.direction_to(marked_target.global_position)
 		_gaze_remaining = 0.18
 		_gaze_attack_pending = true

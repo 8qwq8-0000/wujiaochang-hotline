@@ -18,7 +18,6 @@ config/icon="res://icon.svg"
 [autoload]
 
 Dialogic="*uid://ds2q0uclmolvu"
-_mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
 SceneLoader="*res://addons/maaacks_scene_loader/base/nodes/autoloads/scene_loader/scene_loader.tscn"
 SoundManager="*uid://6q1wagejt60k"
 SaveSystem="*uid://bxcgiyru0vapu"
@@ -26,6 +25,7 @@ CombatEvents="*res://scripts/core/combat_event_bus.gd"
 RunManager="*res://scripts/core/run_manager.gd"
 WarehouseStore="*res://scripts/core/warehouse_store.gd"
 GameSettings="*res://scripts/core/game_settings.gd"
+_mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
 
 [dialogic]
 

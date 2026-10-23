@@ -7,6 +7,7 @@ script = ExtResource("1")
 id = &"ranged_sightline"
 display_name = "狙击手"
 role = 1
+impact_material = 0
 max_health = 1
 move_speed = 58.0
 awareness_range = 1000.0

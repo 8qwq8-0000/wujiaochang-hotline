@@ -4,6 +4,7 @@ var failures := 0
 var checks := 0
 var store: Node
 const TEST_PATH := "user://warehouse-integration-test.json"
+const LOBBY_MUSIC := preload("res://assets/audio/music/lobby/lobby_theme.ogg")
 
 func _initialize() -> void:
 	call_deferred("run_checks")
@@ -35,6 +36,11 @@ func run_checks() -> void:
 	store = root.get_node("WarehouseStore")
 	store.save_path = TEST_PATH
 	DirAccess.remove_absolute(TEST_PATH)
+	# Reproduce the real menu hand-off: its music player remains "busy" while a
+	# 0.75 second fade-out is pending. The warehouse must cancel that fade.
+	root.get_node("SoundManager").play_music(LOBBY_MUSIC)
+	await process_frame
+	root.get_node("SoundManager").stop_music(0.75)
 	var main: Node = load("res://scenes/bootstrap/warehouse_main.tscn").instantiate()
 	main.get_node("SceneFlow").fade_duration = 0.01
 	root.add_child(main)
@@ -47,6 +53,8 @@ func run_checks() -> void:
 	var player: PlayerController = room.player
 	player.set_physics_process(false)
 	check(get_nodes_in_group("enemies").is_empty(), "warehouse is safe")
+	await create_timer(0.9).timeout
+	check(root.get_node("SoundManager").is_music_playing(LOBBY_MUSIC), "warehouse keeps the lobby music playing")
 	check(not main.get_node("CombatHUD/Overlay").visible, "warehouse hides combat HUD")
 	var inventory: ComponentInventory = player.inventory
 	var original_starter := inventory.weapon_slot.get_item()
@@ -169,6 +177,7 @@ func run_checks() -> void:
 	settlement.return_to_warehouse()
 	room = await wait_scene(main)
 	check(room.is_in_group("warehouse") and not paused, "return to warehouse restores world")
+	check(root.get_node("SoundManager").is_music_playing(LOBBY_MUSIC), "returning to the base restores lobby music")
 	check(room.chest.get_item_count() == 2 and room.player.inventory.backpack.get_item_count() == 5, "extraction preserves both safe and returned equipment")
 	await press_key(KEY_R)
 	check(current_scene == main and room.is_inside_tree(), "debug restart is ignored in the warehouse")

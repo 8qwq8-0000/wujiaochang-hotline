@@ -12,7 +12,10 @@ const UI_SECTION := &"UISettings"
 const CRT_STRENGTH_SETTING := &"CRTStrength"
 const HUD_SCALE_SETTING := &"HUDScale"
 const REDUCED_FLASHES_SETTING := &"ReducedFlashes"
+const CAMERA_SHAKE_SETTING := &"CameraShakeStrength"
+const FEEDBACK_QUALITY_SETTING := &"FeedbackQuality"
 const HUD_SCALES := [1.0, 1.25, 1.5]
+const CAMERA_SHAKE_STRENGTHS := [0.0, 0.5, 1.0]
 
 var _owns_pause := false
 var _settings_visible := false
@@ -25,6 +28,9 @@ var _resolution: OptionButton
 var _crt_strength: OptionButton
 var _hud_scale: OptionButton
 var _reduced_flashes: CheckButton
+var _camera_shake: OptionButton
+var _feedback_quality: OptionButton
+var _feedback_preview_layer: PlayerDamageFeedbackLayer
 var _fullscreen: CheckButton
 var _mute: CheckButton
 var _continuous_precharge: CheckButton
@@ -185,6 +191,22 @@ func _build_settings_page() -> VBoxContainer:
 	_reduced_flashes.text = "降低闪烁"
 	_reduced_flashes.toggled.connect(_on_reduced_flashes_toggled)
 	content.add_child(_reduced_flashes)
+	_camera_shake = OptionButton.new()
+	for label in ["关闭", "低", "标准"]:
+		_camera_shake.add_item(label)
+	_camera_shake.item_selected.connect(_on_camera_shake_selected)
+	_add_labeled_control(content, "镜头震动", _camera_shake)
+	_feedback_quality = OptionButton.new()
+	for label in ["低", "标准"]:
+		_feedback_quality.add_item(label)
+	_feedback_quality.item_selected.connect(_on_feedback_quality_selected)
+	_add_labeled_control(content, "战斗特效质量", _feedback_quality)
+	var preview_frame := PanelContainer.new()
+	preview_frame.custom_minimum_size = Vector2(360.0, 92.0)
+	_feedback_preview_layer = PlayerDamageFeedbackLayer.new()
+	_feedback_preview_layer.name = "FeedbackPreview"
+	preview_frame.add_child(_feedback_preview_layer)
+	content.add_child(preview_frame)
 	_confirm_row = HBoxContainer.new()
 	_confirm_row.add_theme_constant_override("separation", 10)
 	_confirm_label = Label.new()
@@ -204,6 +226,11 @@ func _build_settings_page() -> VBoxContainer:
 	_add_volume_slider(content, "总音量", AudioServer.get_bus_index(&"Master"))
 	_add_volume_slider(content, "音乐", AudioServer.get_bus_index(&"Music"))
 	_add_volume_slider(content, "音效", AudioServer.get_bus_index(&"SFX"))
+	_add_volume_slider(content, "战斗提示", AudioServer.get_bus_index(&"CombatCue"))
+	var preview := Button.new()
+	preview.text = "预览战斗反馈"
+	preview.pressed.connect(_on_feedback_preview_pressed)
+	content.add_child(preview)
 	_mute = CheckButton.new()
 	_mute.text = "全部静音"
 	_mute.toggled.connect(_on_mute_toggled)
@@ -308,6 +335,13 @@ func _sync_settings_controls() -> void:
 			scale_index = index
 	_hud_scale.select(scale_index)
 	_reduced_flashes.set_pressed_no_signal(bool(PlayerConfig.get_config(UI_SECTION, REDUCED_FLASHES_SETTING, false)))
+	var saved_shake := clampf(float(PlayerConfig.get_config(UI_SECTION, CAMERA_SHAKE_SETTING, 1.0)), 0.0, 1.0)
+	var shake_index := 0
+	for index in CAMERA_SHAKE_STRENGTHS.size():
+		if absf(float(CAMERA_SHAKE_STRENGTHS[index]) - saved_shake) < absf(float(CAMERA_SHAKE_STRENGTHS[shake_index]) - saved_shake):
+			shake_index = index
+	_camera_shake.select(shake_index)
+	_feedback_quality.select(clampi(int(PlayerConfig.get_config(UI_SECTION, FEEDBACK_QUALITY_SETTING, 1)), 0, 1))
 	var settings := get_node_or_null("/root/GameSettings")
 	if settings != null:
 		_continuous_precharge.set_pressed_no_signal(bool(settings.continuous_precharge))
@@ -415,6 +449,24 @@ func _on_hud_scale_selected(index: int) -> void:
 
 func _on_reduced_flashes_toggled(enabled: bool) -> void:
 	PlayerConfig.set_config(UI_SECTION, REDUCED_FLASHES_SETTING, enabled)
+
+
+func _on_camera_shake_selected(index: int) -> void:
+	if index < 0 or index >= CAMERA_SHAKE_STRENGTHS.size():
+		return
+	PlayerConfig.set_config(UI_SECTION, CAMERA_SHAKE_SETTING, float(CAMERA_SHAKE_STRENGTHS[index]))
+
+
+func _on_feedback_quality_selected(index: int) -> void:
+	PlayerConfig.set_config(UI_SECTION, FEEDBACK_QUALITY_SETTING, clampi(index, 0, 1))
+
+
+func _on_feedback_preview_pressed() -> void:
+	if _feedback_preview_layer != null:
+		_feedback_preview_layer.preview_feedback()
+	var audio := get_node_or_null("../AudioCueManager") as AudioCueManager
+	if audio != null:
+		audio.preview_combat_cue()
 
 
 func _on_continuous_precharge_toggled(enabled: bool) -> void:

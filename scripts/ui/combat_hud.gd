@@ -32,6 +32,9 @@ var _circuit_protection_active := false
 var _health_pulse_time := 0.0
 var _heat_flash_tween: Tween
 var _weapon_name_tween: Tween
+var _health_meter_tween: Tween
+var _damage_feedback: PlayerDamageFeedbackLayer
+var _last_health_damage_usec := -1_000_000
 
 
 func _ready() -> void:
@@ -95,6 +98,8 @@ func _bind_player(player: PlayerController) -> void:
 		player.talent_core.persona_changed.connect(_on_persona_changed)
 	if not player.weapons.weapon_changed.is_connected(_on_weapon_changed):
 		player.weapons.weapon_changed.connect(_on_weapon_changed)
+	if not player.health_changed.is_connected(_on_player_health_changed):
+		player.health_changed.connect(_on_player_health_changed)
 	_on_persona_changed(player.talent_core.current_persona_id)
 	_set_weapon_preview(player.weapons.get_current_weapon(), false)
 	player.tree_exiting.connect(func() -> void: _player = null, CONNECT_ONE_SHOT)
@@ -103,6 +108,10 @@ func _bind_player(player: PlayerController) -> void:
 func _build_minimal_hud() -> void:
 	overlay.theme = CyberUITheme.create_theme()
 	notice_queue.hide()
+	_damage_feedback = PlayerDamageFeedbackLayer.new()
+	_damage_feedback.name = "PlayerDamageFeedback"
+	overlay.add_child(_damage_feedback)
+	overlay.move_child(_damage_feedback, 0)
 	_top_left = Control.new()
 	_top_left.name = "MinimalStatus"
 	_top_left.position = Vector2(8.0, 8.0)
@@ -121,6 +130,7 @@ func _build_minimal_hud() -> void:
 	_health_meter.show_numeric = false
 	_health_meter.square_segments = true
 	_health_meter.empty_alpha = 0.08
+	_health_meter.show_loss_trail = true
 	_top_left.add_child(_health_meter)
 
 	_armor_meter = SegmentMeter.new()
@@ -325,6 +335,11 @@ func set_hud_scale(value: float) -> void:
 	_apply_hud_scale(clampf(value, 1.0, 1.5))
 
 
+func preview_combat_feedback() -> void:
+	if _damage_feedback != null:
+		_damage_feedback.preview_feedback()
+
+
 func _apply_hud_scale(value: float) -> void:
 	_top_left.scale = Vector2.ONE * value
 	_persona_root.scale = Vector2.ONE * value * 0.85
@@ -337,6 +352,27 @@ func _saved_hud_scale() -> float:
 
 func _on_circuit_protection_triggered() -> void:
 	_circuit_protection_active = true
+
+
+func _on_player_health_changed(_current: int, _maximum: int, delta: int) -> void:
+	if delta > 0:
+		if Time.get_ticks_usec() - _last_health_damage_usec <= 120_000:
+			return
+		_health_meter.modulate = Color(0.55, 1.25, 0.72, 1.0)
+		var heal_tween := create_tween().set_ignore_time_scale(true)
+		heal_tween.tween_property(_health_meter, "modulate", Color.WHITE, 0.22)
+		return
+	if delta >= 0:
+		return
+	_last_health_damage_usec = Time.get_ticks_usec()
+	if absi(delta) < 2:
+		return
+	if _health_meter_tween != null and _health_meter_tween.is_valid():
+		_health_meter_tween.kill()
+	_health_meter.position = Vector2(2.0, -1.0)
+	_health_meter_tween = create_tween().set_ignore_time_scale(true)
+	_health_meter_tween.tween_property(_health_meter, "position", Vector2(-2.0, 1.0), 0.035)
+	_health_meter_tween.tween_property(_health_meter, "position", Vector2.ZERO, 0.055)
 
 
 func _on_cyberware_triggered(module_id: StringName) -> void:

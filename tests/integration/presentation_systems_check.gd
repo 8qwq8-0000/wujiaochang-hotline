@@ -34,6 +34,9 @@ func run() -> void:
 	check(hud.find_children("*", "HoloCommsPanel", true, false).size() == 1, "AI communications use one collapsible holographic panel")
 	check(hud.find_children("CRTOverlay", "CRTOverlay", true, false).is_empty(), "CRT treatment no longer covers the whole combat screen")
 	check(hud.get("_pause_button") != null and hud.get("_weapon_preview") != null, "minimal HUD includes pause and current-weapon affordances")
+	check(hud.get("_damage_feedback") is PlayerDamageFeedbackLayer, "combat HUD owns a stable screen-space player damage feedback layer")
+	check((hud.get("_health_meter") as SegmentMeter).show_loss_trail, "health instrument keeps a delayed damage-loss trail")
+	check(AudioServer.get_bus_index(&"CombatCue") >= 0, "combat prompts use a dedicated adjustable audio bus")
 	hud.set_hud_scale(1.5)
 	await process_frame
 	var viewport_rect := (hud.get("overlay") as Control).get_global_rect()

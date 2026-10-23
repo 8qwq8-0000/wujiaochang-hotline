@@ -2,6 +2,7 @@ extends Node2D
 
 const COMBAT_PATH := "res://scenes/levels/floors/combat_prototype.tscn"
 const BOSS_TEST_PATH := "res://scenes/levels/bosses/rooftop_boss_arena.tscn"
+const LOBBY_MUSIC := preload("res://assets/audio/music/lobby/lobby_theme.ogg")
 const PANEL := preload("res://scripts/ui/warehouse_panel.gd")
 var chest: Inventory
 var panel: CanvasLayer
@@ -45,6 +46,7 @@ func _ready() -> void:
 	player.inventory.changed.connect(_queue_save)
 	_mutating = false
 	get_node("/root/RunManager").set_mandatory_enemy_count(0)
+	_play_base_music()
 	var camera := player.get_node("Camera2D") as Camera2D
 	camera.enabled = false
 	# World origin matches the project's 640×360 internal canvas.
@@ -57,6 +59,14 @@ func _ready() -> void:
 	elif not save_loadout():
 		$Instructions.text = store.error_message
 	queue_redraw()
+
+
+func _play_base_music() -> void:
+	var sound_manager := get_node_or_null("/root/SoundManager")
+	if sound_manager != null:
+		# Reissuing the same track is intentional: SoundManager reuses its player
+		# and cancels the fade-out started by the menu/combat scene transition.
+		sound_manager.play_music(LOBBY_MUSIC, 0.75)
 
 
 func _queue_save() -> void:
