@@ -23,18 +23,20 @@ func run() -> void:
 		mount.current_view.cancel_feedback()
 		player.visuals.update_visual(Vector2.RIGHT, Vector2.ZERO, GuardComponent.State.IDLE, 120)
 		player.visuals._on_idle_gesture_timeout()
-		check(not player.visuals._idle_gesture_active and player.visuals.body_sprite.animation == &"walk_right", id + " keeps its facing after switching and prolonged standing")
+		check(not player.visuals._idle_gesture_active and player.visuals.body_sprite.animation == &"idle", id + " keeps the idle loop after switching and prolonged standing")
 		for moving in [false,true]:
 			for step in 8:
 				var direction := Vector2.RIGHT.rotated(step*PI/4)
 				var target := player.global_position + direction*240
 				player.visuals.update_visual(direction,Vector2(100,0) if moving else Vector2.ZERO,GuardComponent.State.IDLE,120,0,target)
 				var expected_direction: String = player.visuals._direction_name(direction)
-				check(player.visuals.body_sprite.animation == StringName("walk_" + expected_direction), "standing and moving body face the aim direction")
-				check(player.visuals.wrist_socket.facing == StringName(expected_direction), "wrist uses the same direction as the body")
-				check(player.visuals.body_sprite.is_playing() == moving, "only moving plays the locomotion animation")
+				var expected_animation := StringName("walk_" + expected_direction) if moving else &"idle"
+				var expected_wrist_facing := StringName(expected_direction) if moving else &"left"
+				check(player.visuals.body_sprite.animation == expected_animation, "standing uses idle and moving faces the aim direction")
+				check(player.visuals.wrist_socket.facing == expected_wrist_facing, "wrist follows the active body animation")
+				check(player.visuals.body_sprite.is_playing(), "idle and locomotion animations keep playing")
 				player.visuals.body_sprite.pause()
-				for frame in (6 if moving else 1):
+				for frame in (6 if moving else 2):
 					if moving:
 						player.visuals.body_sprite.frame = frame
 					player.visuals.update_visual(direction,Vector2(100,0) if moving else Vector2.ZERO,GuardComponent.State.IDLE,120,0,target)
@@ -51,7 +53,7 @@ func run() -> void:
 	check(visuals.body_sprite.is_playing(), "walking resumes after standing with the same facing")
 	visuals.body_sprite.frame = 3
 	visuals.update_visual(Vector2.UP, Vector2.ZERO, GuardComponent.State.IDLE, 120)
-	check(not visuals.body_sprite.is_playing() and visuals.body_sprite.frame == 0, "stopping freezes the planted directional pose")
+	check(visuals.body_sprite.is_playing() and visuals.body_sprite.animation == &"idle", "stopping resumes the idle loop")
 	var gun_ids := ["service_pistol", "scattergun", "rail_cannon"]
 	for index in gun_ids.size():
 		var primary: WeaponComponentData = load("res://resources/weapons/" + gun_ids[index] + ".tres")
@@ -62,7 +64,7 @@ func run() -> void:
 			visuals.update_visual(direction, Vector2.ZERO, GuardComponent.State.IDLE, 120)
 			visuals._on_idle_gesture_timeout()
 			check(visuals.weapon_pivot.current_data == player.weapons.get_current_weapon(), "cycling updates the displayed gun for every weapon pair")
-			check(visuals.body_sprite.animation == StringName("walk_" + visuals._direction_name(direction)) and not visuals._idle_gesture_active, "cycling while stationary preserves forward-facing pose")
+			check(visuals.body_sprite.animation == &"idle" and visuals.body_sprite.is_playing() and not visuals._idle_gesture_active, "cycling while stationary preserves the idle loop")
 	room.queue_free()
 	await process_frame
 	print("Weapon wrist checks: ",checks,"; failures: ",failures)

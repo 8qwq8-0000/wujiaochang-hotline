@@ -11,6 +11,7 @@ const DEFAULT_ROOM := preload("res://scenes/levels/rooms/prototype_combat_room.t
 @export_range(0.0, 1.0, 0.01) var enemy_drop_chance := 0.20
 @export var room_spacing: Vector2 = Vector2(1000.0, 0.0)
 @export var room_pool: Array[RoomTemplateData] = []
+@export_range(0.0, 256.0, 1.0) var room_camera_north_extension := 0.0
 
 var _chosen_scene_paths := {}
 var generated_rooms: Array[Node] = []
@@ -57,6 +58,7 @@ func assemble() -> void:
 		if room is CombatRoom:
 			room.get_node("EnemySpawner").health_bonus = difficulty_step
 			room.extra_enemy_count = difficulty_step
+			room.camera_north_extension = room_camera_north_extension
 		if sequential_progression and room is CombatRoom:
 			room.configure_stage(index, room_count)
 		add_child(room)

@@ -181,3 +181,6 @@ godot --headless --path . --script res://tests/integration/boss_shortcut_check.g
 墙边窄道追击：`godot --headless --fixed-fps 60 --path . --script res://tests/integration/enemy_corner_passage_check.gd`。复现错位公寓随机箱子和左墙间的 36 px 窄道，检查短路可达、近战/盾兵实际攻击玩家及前排死亡后后排通过。导航烘焙采用 12 px 留边，匹配敌人 11 px 碰撞半径并保留 1 px 裕量。
 
 仓库道具碰撞与遮挡：`godot --headless --path . --script res://tests/integration/warehouse_collision_check.gd`，覆盖储物箱、货架、工作台、合成师、档案终端、杂物箱和四处入口的实体底座、落地排序点、双向通道及交互可达性。非 headless 追加 `-- --capture` 可检查各道具前后站位截图。
+Codex 通道整备：`godot --headless --path . --script res://tests/integration/codex_service_passage_check.gd`。23 项检查覆盖第二层继续后的独立通道、E 对话与中止恢复、解锁和重复整备、满包装备升级、义体复合、永久仓库存档隔离，以及第三层状态继承和正常人格整备。窗口模式追加 `-- --capture` 生成通道、对话、工坊、出口截图。
+
+装备图标验收：`tools/preview_equipment_icons.gd` 展示八类物品；`tools/preview_equipment_runtime.gd` 使用实际背包和地面掉落显示。素材来源和完整生成提示词见 `assets/art/items/equipment_v1/README.md`、`art_sources/ai_drafts/equipment_icons_v1/manifest.json`。

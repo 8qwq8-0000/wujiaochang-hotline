@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="BillboardAdCatalog" load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://scripts/presentation/billboard_ad_catalog.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/environment/billboard_ads/ti_hu_di_bo.tres" id="2_ti_hu_di_bo"]
+[ext_resource type="Resource" path="res://resources/environment/billboard_ads/rapid_growth_food.tres" id="3_rapid_growth_food"]
+[ext_resource type="Resource" path="res://resources/environment/billboard_ads/hero_stability_milk.tres" id="4_hero_stability_milk"]
+[ext_resource type="Resource" path="res://resources/environment/billboard_ads/royal_brain_cache.tres" id="5_royal_brain_cache"]
+[ext_resource type="Resource" path="res://resources/environment/billboard_ads/family_time_credit.tres" id="6_family_time_credit"]
+[ext_resource type="Resource" path="res://resources/environment/billboard_ads/forbidden_cat_vehicle_novel.tres" id="7_forbidden_cat_vehicle_novel"]
+[ext_resource type="Resource" path="res://resources/environment/billboard_ads/lifespan_withdrawal_scam.tres" id="8_lifespan_withdrawal_scam"]
+[ext_resource type="Resource" path="res://resources/environment/billboard_ads/private_air_stick.tres" id="9_private_air_stick"]
+[ext_resource type="Resource" path="res://resources/environment/billboard_ads/mens_13_in_1.tres" id="10_mens_13_in_1"]
+[ext_resource type="Resource" path="res://resources/environment/billboard_ads/anti_prayer_device.tres" id="11_anti_prayer_device"]
+
+[resource]
+script = ExtResource("1")
+entries = Array[Resource]([ExtResource("2_ti_hu_di_bo"), ExtResource("3_rapid_growth_food"), ExtResource("4_hero_stability_milk"), ExtResource("5_royal_brain_cache"), ExtResource("6_family_time_credit"), ExtResource("7_forbidden_cat_vehicle_novel"), ExtResource("8_lifespan_withdrawal_scam"), ExtResource("9_private_air_stick"), ExtResource("10_mens_13_in_1"), ExtResource("11_anti_prayer_device")])

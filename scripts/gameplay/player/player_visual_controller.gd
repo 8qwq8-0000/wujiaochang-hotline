@@ -76,15 +76,8 @@ func update_visual(
 		_cancel_idle_gesture()
 	if not moving and _idle_gesture_active:
 		animation = &"idle_gesture"
-	if body_sprite.sprite_frames.has_animation(animation):
-		if not moving and not _idle_gesture_active:
-			# The generic idle sheet has one fixed facing. Use the planted
-			# directional frame so every gun stays in front when standing.
-			body_sprite.animation = animation
-			body_sprite.pause()
-			body_sprite.set_frame_and_progress(0, 0.0)
-		elif animation != _last_animation or not body_sprite.is_playing():
-			body_sprite.play(animation)
+	if body_sprite.sprite_frames.has_animation(animation) and (animation != _last_animation or not body_sprite.is_playing()):
+		body_sprite.play(animation)
 		_last_animation = animation
 	if Time.get_ticks_usec() < _visual_hold_until_usec:
 		body_sprite.pause()
@@ -228,6 +221,8 @@ func _direction_name(direction: Vector2) -> String:
 
 
 func _body_animation(direction_name: String, moving: bool) -> StringName:
+	if not moving:
+		return &"idle"
 	return StringName("walk_" + direction_name)
 
 

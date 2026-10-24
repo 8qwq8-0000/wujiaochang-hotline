@@ -26,6 +26,7 @@ var _time_remaining: float = 0.0
 var _state_duration: float = 0.0
 var recovery_multiplier := 1.0
 var equipment_window_bonus := 0.0
+var _persona_window_bonus := 0.0
 
 
 func _physics_process(delta: float) -> void:
@@ -61,6 +62,16 @@ func get_state_progress() -> float:
 
 func reset_to_idle() -> void:
 	_enter_state(State.IDLE, 0.0)
+
+
+func extend_current_perfect_window(amount: float) -> void:
+	var bonus := maxf(amount, 0.0)
+	if bonus <= 0.0 or _persona_window_bonus > 0.0:
+		return
+	_persona_window_bonus = bonus
+	if state == State.PERFECT:
+		_time_remaining += bonus
+		_state_duration += bonus
 
 
 func advance_timing(delta: float) -> void:
@@ -143,7 +154,7 @@ func _is_inside_guard_arc(packet: DamagePacket, target_position: Vector2) -> boo
 func _advance_state() -> void:
 	match state:
 		State.STARTUP:
-			_enter_state(State.PERFECT, perfect_seconds + equipment_window_bonus)
+			_enter_state(State.PERFECT, perfect_seconds + equipment_window_bonus + _persona_window_bonus)
 		State.PERFECT:
 			_enter_state(State.NORMAL, normal_seconds)
 		State.NORMAL:
@@ -153,6 +164,8 @@ func _advance_state() -> void:
 
 
 func _enter_state(next_state: State, duration: float) -> void:
+	if next_state == State.IDLE:
+		_persona_window_bonus = 0.0
 	state = next_state
 	_time_remaining = maxf(duration, 0.0)
 	_state_duration = _time_remaining

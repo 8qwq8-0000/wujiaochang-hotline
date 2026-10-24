@@ -96,6 +96,22 @@ func run_checks() -> void:
 	player.hurt_box.clear_invulnerability()
 	player.dash.reset_transient_state()
 	await physics_frame
+	player.talent_core.set_persona_level(TalentCoreController.DEEP_NINJA, 3)
+	player.talent_core.set_talent_choice(TalentCoreController.DEEP_NINJA, 3, &"shared_hunt_resonance")
+	player.persona_combat.set("_resonance_remaining", 6.0)
+	player.hurt_box.clear_invulnerability()
+	var terrain_hit := DamagePacket.new()
+	terrain_hit.base_damage = 1
+	terrain_hit.source_faction = CombatFaction.Id.ENVIRONMENT
+	terrain_hit.is_area_damage = true
+	check(player.receive_damage(terrain_hit).final_damage == 0, "wind-fire buff ignores environmental and barrel-style terrain damage")
+	var enemy_explosion := terrain_hit.duplicate_packet()
+	enemy_explosion.source = enemy
+	enemy_explosion.source_faction = CombatFaction.Id.ENEMY
+	enemy_explosion.damage_type = &"explosive"
+	check(player.receive_damage(enemy_explosion).final_damage == 1, "enemy explosive attacks are not classified as terrain damage")
+	player.health.set_current_health(player.health.max_health)
+	player.hurt_box.clear_invulnerability()
 
 	# A level-one emergency takeover must create distance, regardless of facing.
 	for direction: Vector2 in [Vector2.RIGHT, Vector2.LEFT, Vector2.UP, Vector2.DOWN]:
@@ -153,8 +169,26 @@ func run_checks() -> void:
 	player.weapons.reset_transient_state()
 	player.heat.set_heat(0.0)
 	check(player.perform_persona_attack(Vector2.RIGHT), "rock persona can use ordinary weapon path")
-	check(player.persona_combat.rock_feedback > 0.0, "rock attack builds stage feedback")
-	check(player.heat.current_heat < player.weapons.get_current_weapon().heat_per_attack, "steady beat refunds part of attack heat")
+	check(is_equal_approx(player.persona_combat.rock_feedback, 10.0 / player.heat.effective_max() * 100.0), "rock firing feedback follows base heat divided by effective heat capacity")
+	check(is_equal_approx(player.heat.current_heat, 7.5), "steady beat reduces attack heat by 25 percent before accumulation")
+	player.talent_core.set_persona_level(TalentCoreController.ROCK_VIGILANTE, 3)
+	player.talent_core.set_talent_choice(TalentCoreController.ROCK_VIGILANTE, 3, &"encore_autopilot")
+	player.persona_combat.rock_feedback = 99.0
+	player.weapons.reset_transient_state()
+	player.heat.set_heat(0.0)
+	check(player.perform_persona_attack(Vector2.RIGHT) and player.persona_combat.is_nuclear_frenzy_active(), "full feedback enters the two-second nuclear frenzy")
+	player.heat.set_heat(player.heat.effective_max())
+	player.heat.is_overheated = true
+	player.weapons.set_cooldown_remaining(99.0)
+	var movement_input := InputEventAction.new()
+	movement_input.action = "move_right"
+	movement_input.pressed = true
+	player.persona_combat.notify_player_input(movement_input)
+	check(player.persona_combat.is_nuclear_frenzy_active(), "nuclear frenzy is not an AI soft takeover and player input does not cancel it")
+	check(player.perform_persona_attack(Vector2.RIGHT), "nuclear frenzy attacks through both cooldown and overheat")
+	check(player.heat.current_heat > player.heat.effective_max(), "nuclear frenzy stores doubled heat in the darker overflow channel")
+	player.persona_combat._tick_rock_vigilante(2.1)
+	check(not player.persona_combat.is_nuclear_frenzy_active() and player.heat.current_heat > player.heat.effective_max(), "overflow remains after frenzy until normal cooling removes it")
 
 	player.talent_core.consume_persona_drink(TalentCoreController.LEGENDARY_MASTER)
 	player.talent_core.consume_persona_drink(TalentCoreController.LEGENDARY_MASTER)
@@ -162,18 +196,21 @@ func run_checks() -> void:
 	player.talent_core.set_talent_choice(TalentCoreController.LEGENDARY_MASTER, 1, &"calibrated_window")
 	player.talent_core.set_talent_choice(TalentCoreController.LEGENDARY_MASTER, 3, &"open_model")
 	player.talent_core.set_persona(TalentCoreController.LEGENDARY_MASTER)
-	check(player.guard.equipment_window_bonus >= 0.039, "calibrated window extends perfect guard timing")
+	var calibration_hit := DamagePacket.new()
+	calibration_hit.source = enemy
+	calibration_hit.source_faction = CombatFaction.Id.ENEMY
+	calibration_hit.source_position = enemy.global_position
+	calibration_hit.travel_direction = Vector2.LEFT
+	calibration_hit.is_melee = true
 	for _sample in 2:
-		var incoming := DamagePacket.new()
-		incoming.base_damage = 0
-		incoming.source = enemy
-		incoming.source_faction = CombatFaction.Id.ENEMY
-		incoming.source_position = enemy.global_position
-		incoming.travel_direction = Vector2.LEFT
-		incoming.is_melee = true
-		player.receive_damage(incoming)
+		player.persona_combat._on_enemy_attack_performed(enemy, &"kinetic", true)
 	check(int(player.persona_combat.get_runtime_snapshot().analyzed_attack_count) == 1, "master analyzes a repeated attack pattern")
 	check(int(player.persona_combat.get_runtime_snapshot().prediction_source_count) == 1, "open model retains a prediction source for analyzed attacks")
+	player.guard.begin_guard(Vector2.RIGHT)
+	player.guard.advance_timing(player.guard.startup_seconds)
+	player.try_persona_guard(calibration_hit)
+	check(float(player.guard.get("_state_duration")) >= player.guard.perfect_seconds + 0.19, "calibrated window adds 0.2 seconds only for an analyzed attack")
+	player.guard.reset_to_idle()
 	for _validation in 3:
 		player.guard.reset_to_idle()
 		player.guard.begin_guard(Vector2.RIGHT)
@@ -191,6 +228,7 @@ func run_checks() -> void:
 	player.talent_core.respec_persona(TalentCoreController.LEGENDARY_MASTER)
 	player.talent_core.set_talent_choice(TalentCoreController.LEGENDARY_MASTER, 1, &"proxy_stance")
 	player.guard.reset_to_idle()
+	player.weapons.reset_transient_state()
 	var analyzed_incoming := DamagePacket.new()
 	analyzed_incoming.base_damage = 1
 	analyzed_incoming.source = enemy

@@ -4,6 +4,7 @@ extends McpTestSuite
 const COATING_SCRIPT := preload("res://scripts/presentation/procedural_coating_2d.gd")
 const STAIN_LAYER_SCRIPT := preload("res://scripts/presentation/cyber_stain_layer.gd")
 const IMPACT_SCRIPT := preload("res://scripts/presentation/impact_particle_effect.gd")
+const MOVEMENT_SCRIPT := preload("res://scripts/presentation/movement_particle_effect.gd")
 
 
 func suite_name() -> String:
@@ -106,6 +107,60 @@ func test_impact_particles_follow_weapon_material_and_accessibility_budget() -> 
 	assert_gt(heavy_count, standard_count)
 	assert_true(reduced_count < standard_count)
 	assert_gt(reduced_count, 1)
+
+
+func test_movement_feedback_uses_distinct_persona_palettes_and_shapes() -> void:
+	assert_ne(
+		MovementFeedbackStyle.primary_color(TalentCoreController.DEEP_NINJA),
+		MovementFeedbackStyle.primary_color(TalentCoreController.LEGENDARY_MASTER)
+	)
+	assert_ne(
+		MovementFeedbackStyle.visual_style(TalentCoreController.LEGENDARY_MASTER),
+		MovementFeedbackStyle.visual_style(TalentCoreController.ROCK_VIGILANTE)
+	)
+	assert_gt(MovementFeedbackStyle.effect_strength(&"ninja_takeover"), MovementFeedbackStyle.effect_strength(&"dash"))
+
+
+func test_movement_particles_keep_identity_when_quality_and_flashes_are_reduced() -> void:
+	var effect := track(MOVEMENT_SCRIPT.new()) as MovementParticleEffect
+	(Engine.get_main_loop() as SceneTree).root.add_child(effect)
+	effect.play(
+		Vector2.ZERO,
+		Vector2(48.0, 0.0),
+		TalentCoreController.ROCK_VIGILANTE,
+		&"dash",
+		&"path",
+		Vector2.RIGHT,
+		false,
+		false,
+		1.0
+	)
+	var standard_count := effect.get_particle_count()
+	effect.play(
+		Vector2.ZERO,
+		Vector2(48.0, 0.0),
+		TalentCoreController.ROCK_VIGILANTE,
+		&"dash",
+		&"path",
+		Vector2.RIGHT,
+		false,
+		true,
+		0.55
+	)
+	var reduced_count := effect.get_particle_count()
+	assert_gt(standard_count, reduced_count)
+	assert_gt(reduced_count, 1)
+
+
+func test_dash_exposes_presentation_kind_without_changing_dash_rules() -> void:
+	var dash := track(DashController.new()) as DashController
+	var body := track(CharacterBody2D.new()) as CharacterBody2D
+	assert_true(dash.start_dash(body, Vector2.RIGHT, Vector2.RIGHT, &"ninja_borrowed_step"))
+	assert_eq(dash.active_effect_kind, &"ninja_borrowed_step")
+	assert_true(dash.is_dashing())
+	dash.cancel_dash(false)
+	assert_false(dash.is_dashing())
+	assert_eq(dash.active_effect_kind, &"dash")
 
 
 func test_dense_hitstop_keeps_only_strongest_request_in_merge_window() -> void:

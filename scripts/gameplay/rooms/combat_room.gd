@@ -9,6 +9,7 @@ const SMALL_OBSTACLE_COUNT := 6
 var small_obstacles: Array[Rect2] = []
 
 @export var layout: CombatLayoutData
+@export_range(0.0, 256.0, 1.0) var camera_north_extension := 0.0
 
 signal room_cleared
 var cleared := false
@@ -272,7 +273,7 @@ func _configure_player_camera_if_inside() -> void:
 		return
 	var origin := global_position
 	player.camera.limit_left = floori(origin.x)
-	player.camera.limit_top = floori(origin.y)
+	player.camera.limit_top = floori(origin.y - camera_north_extension)
 	player.camera.limit_right = ceili(origin.x + ROOM_SIZE.x)
 	player.camera.limit_bottom = ceili(origin.y + ROOM_SIZE.y)
 	_try_operator_low_pressure_notice(player)

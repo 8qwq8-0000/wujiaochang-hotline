@@ -9,6 +9,8 @@ const STAIN_LAYER_SCRIPT := preload("res://scripts/presentation/red_blood_stain_
 const PERFECT_FEEDBACK := preload("res://scripts/presentation/perfect_parry_feedback.gd")
 const IMPACT_EFFECT := preload("res://scripts/presentation/impact_particle_effect.gd")
 const BLOOD_SPRAY := preload("res://scripts/presentation/death_blood_spray.gd")
+const DEATH_EFFECT := preload("res://scripts/presentation/death_burst_effect.gd")
+const MOVEMENT_EFFECT := preload("res://scripts/presentation/movement_particle_effect.gd")
 const AFTERIMAGE_COLOR := Color(0.25, 0.85, 1.0, 0.55)
 const AFTERIMAGE_DURATION := 0.25
 const FEEDBACK_GROUP_WINDOW_USEC := 90_000
@@ -20,6 +22,7 @@ const FEEDBACK_QUALITY_SETTING := &"FeedbackQuality"
 @export_range(1, 128, 1) var stain_budget: int = 48
 @export_range(1, 64, 1) var impact_budget: int = 24
 @export_range(1, 24, 1) var death_effect_budget: int = 10
+@export_range(4, 96, 1) var movement_effect_budget: int = 48
 
 var _available: Array[EffectFlash] = []
 var _active: Array[EffectFlash] = []
@@ -31,6 +34,9 @@ var _active_arcs: Array[Node2D] = []
 var _available_impacts: Array[ImpactParticleEffect] = []
 var _active_impacts: Array[ImpactParticleEffect] = []
 var _active_blood_sprays: Array[Node2D] = []
+var _active_deaths: Array[DeathBurstEffect] = []
+var _available_movements: Array[MovementParticleEffect] = []
+var _active_movements: Array[MovementParticleEffect] = []
 var _stain_layer: Variant
 var _stain_serial := 0
 var perfect_feedback: PerfectParryFeedback
@@ -49,13 +55,17 @@ func _ready() -> void:
 		_available_afterimages.append(_create_afterimage())
 	for _index in mini(prewarm_count, impact_budget):
 		_available_impacts.append(_create_impact())
+	for _index in mini(prewarm_count, movement_effect_budget):
+		_available_movements.append(_create_movement_effect())
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null:
 		events.damage_resolved.connect(_on_damage_resolved)
 		events.weapon_cue_requested.connect(_on_weapon_cue_requested)
 		events.combat_moment_requested.connect(_on_combat_moment_requested)
 		events.afterimage_requested.connect(spawn_afterimage)
+		events.path_afterimage_requested.connect(spawn_path_afterimage)
 		events.afterimages_clear_requested.connect(clear_afterimages)
+		events.movement_effect_requested.connect(_on_movement_effect_requested)
 		events.effect_requested.connect(spawn_flash)
 		events.electric_arc_requested.connect(_spawn_arc)
 		events.environment_discharge_requested.connect(func(point: Vector2, radius: float) -> void: spawn_flash(point, Color("69d6ec"), radius, 0.3))
@@ -68,6 +78,7 @@ func _ready() -> void:
 		scene_flow.scene_swapped.connect(
 			func(scene: Node, _payload: Dictionary) -> void:
 				perfect_feedback.clear()
+				_clear_movement_effects()
 				_attach_stain_layer(scene)
 		)
 
@@ -256,6 +267,13 @@ func _create_impact() -> ImpactParticleEffect:
 	return effect
 
 
+func _create_movement_effect() -> MovementParticleEffect:
+	var effect := MOVEMENT_EFFECT.new() as MovementParticleEffect
+	add_child(effect)
+	effect.finished.connect(_release_movement_effect)
+	return effect
+
+
 func _spawn_impact(
 	world_position: Vector2,
 	weapon_id: StringName,
@@ -309,7 +327,27 @@ func _release_damage_number(number: DamageNumber) -> void:
 
 
 func spawn_afterimage(source: Node, sprite: AnimatedSprite2D) -> void:
-	_spawn_afterimage_variant(source, sprite, AFTERIMAGE_COLOR, AFTERIMAGE_DURATION, Vector2.ZERO, 0.0)
+	var persona_id := MovementFeedbackStyle.persona_id_for(source)
+	var reduced_flashes := bool(PlayerConfig.get_config(&"UISettings", &"ReducedFlashes", false))
+	var color := MovementFeedbackStyle.afterimage_color(persona_id, reduced_flashes) if source is PlayerController else AFTERIMAGE_COLOR
+	_spawn_afterimage_variant(source, sprite, color, AFTERIMAGE_DURATION, Vector2.ZERO, 0.0)
+
+
+func spawn_path_afterimage(source: Node, sprite: AnimatedSprite2D, world_position: Vector2) -> void:
+	if _is_low_feedback_quality() and _active_afterimages.size() >= 3:
+		return
+	var afterimage: AfterimageEffect
+	if not _available_afterimages.is_empty():
+		afterimage = _available_afterimages.pop_back()
+	else:
+		afterimage = _active_afterimages.pop_front()
+		afterimage.stop()
+	_active_afterimages.append(afterimage)
+	var color := MovementFeedbackStyle.afterimage_color(TalentCoreController.DEEP_NINJA, bool(PlayerConfig.get_config(&"UISettings", &"ReducedFlashes", false)))
+	if afterimage.play(source, sprite, color, 0.22, Vector2.ZERO, 0.0):
+		afterimage.global_position += world_position - sprite.global_position
+	else:
+		_release_afterimage(afterimage)
 
 
 func _spawn_afterimage_variant(
@@ -347,6 +385,52 @@ func _release_afterimage(afterimage: AfterimageEffect) -> void:
 	_active_afterimages.erase(afterimage)
 	if not _available_afterimages.has(afterimage):
 		_available_afterimages.append(afterimage)
+
+
+func _on_movement_effect_requested(
+	source: Node,
+	effect_kind: StringName,
+	phase: StringName,
+	from: Vector2,
+	to: Vector2,
+	direction: Vector2,
+	cancelled: bool
+) -> void:
+	var effect: MovementParticleEffect
+	if not _available_movements.is_empty():
+		effect = _available_movements.pop_back()
+	elif _active_movements.size() < movement_effect_budget:
+		effect = _create_movement_effect()
+	else:
+		effect = _active_movements.pop_front()
+		effect.stop()
+		_available_movements.erase(effect)
+	_active_movements.append(effect)
+	var reduced_flashes := bool(PlayerConfig.get_config(&"UISettings", &"ReducedFlashes", false))
+	var quality_scale := 0.55 if _is_low_feedback_quality() else 1.0
+	effect.play(
+		from,
+		to,
+		MovementFeedbackStyle.persona_id_for(source),
+		effect_kind,
+		phase,
+		direction,
+		cancelled,
+		reduced_flashes,
+		quality_scale * _telegraph_clarity_scale(to)
+	)
+
+
+func _release_movement_effect(effect: MovementParticleEffect) -> void:
+	_active_movements.erase(effect)
+	if not _available_movements.has(effect):
+		_available_movements.append(effect)
+
+
+func _clear_movement_effects() -> void:
+	for effect in _active_movements.duplicate():
+		effect.stop()
+		_release_movement_effect(effect)
 
 
 func _on_damage_resolved(result: DamageResult) -> void:

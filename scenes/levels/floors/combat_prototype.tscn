@@ -19,6 +19,7 @@ script = ExtResource("3")
 room_count = 2
 sequential_progression = true
 room_pool = [ExtResource("room_b"), ExtResource("room_c"), ExtResource("room_d"), ExtResource("room_e")]
+room_camera_north_extension = 144.0
 
 [node name="Player" parent="." instance=ExtResource("2")]
 position = Vector2(111, 270)

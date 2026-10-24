@@ -29,6 +29,7 @@ var _swing_hits: Dictionary = {}
 var _swing_damage_multiplier := 1.0
 var _feedback_group_serial := 0
 var _active_feedback_group_id := 0
+var _active_terminal_attack := false
 
 @onready var heat_component: HeatComponent = get_node(heat_component_path)
 
@@ -98,11 +99,19 @@ func update_attack_pose(origin: Vector2, _direction: Vector2, source_node: Node)
 
 func try_attack(origin: Vector2, direction: Vector2, source_node: Node) -> bool:
 	var data := _current_weapon
-	if data == null or _cooldown_remaining > 0.0 or direction.is_zero_approx():
+	if data == null or direction.is_zero_approx():
 		return false
-	if not heat_component.try_add_heat(data.heat_per_attack):
+	var context := _attack_context(source_node, data)
+	if _cooldown_remaining > 0.0 and not bool(context.get("ignore_cooldown", false)):
 		return false
-	_perform_attack(data, origin, direction.normalized(), source_node, 1.0)
+	var heat_amount := data.heat_per_attack * maxf(float(context.get("heat_multiplier", 1.0)), 0.0)
+	if bool(context.get("allow_overheat", false)):
+		heat_component.add_overflow_heat(heat_amount)
+	elif not heat_component.try_add_heat(heat_amount):
+		return false
+	_perform_attack(data, origin, direction.normalized(), source_node, 1.0, context)
+	if source_node.has_method("on_persona_attack_committed"):
+		source_node.on_persona_attack_committed(data, context, _active_feedback_group_id)
 	return true
 
 
@@ -115,12 +124,45 @@ func try_forced_attack(
 	var data := _current_weapon
 	if data == null or direction.is_zero_approx():
 		return false
-	_perform_attack(data, origin, direction.normalized(), source_node, maxf(damage_multiplier, 0.0))
+	_perform_attack(data, origin, direction.normalized(), source_node, maxf(damage_multiplier, 0.0), {"forced": true, "ignore_cooldown": true})
+	return true
+
+
+func try_cooldown_free_attack(origin: Vector2, direction: Vector2, source_node: Node, damage_multiplier: float = 1.0) -> bool:
+	var data := _current_weapon
+	if data == null or direction.is_zero_approx() or heat_component.is_overheated:
+		return false
+	var context := _attack_context(source_node, data)
+	var heat_amount := data.heat_per_attack * maxf(float(context.get("heat_multiplier", 1.0)), 0.0)
+	if not heat_component.try_add_heat(heat_amount):
+		return false
+	context["ignore_cooldown"] = true
+	_perform_attack(data, origin, direction.normalized(), source_node, maxf(damage_multiplier, 0.0), context)
+	if source_node.has_method("on_persona_attack_committed"):
+		source_node.on_persona_attack_committed(data, context, _active_feedback_group_id)
+	return true
+
+
+func try_terminal_attack(origin: Vector2, direction: Vector2, source_node: Node) -> bool:
+	var data := _current_weapon
+	if data == null or direction.is_zero_approx():
+		return false
+	var context := _attack_context(source_node, data)
+	context.erase("seamless_free")
+	context.erase("refutation_bonus")
+	context["forced"] = true
+	context["terminal"] = true
+	context["ignore_cooldown"] = true
+	_perform_attack(data, origin, direction.normalized(), source_node, 2.0, context)
 	return true
 
 
 func get_cooldown_remaining() -> float:
 	return _cooldown_remaining
+
+
+func is_attack_active() -> bool:
+	return _swing_remaining > 0.0
 
 
 func set_cooldown_remaining(value: float) -> void:
@@ -136,11 +178,16 @@ func _perform_attack(
 	origin: Vector2,
 	direction: Vector2,
 	source_node: Node,
-	damage_multiplier: float
+	damage_multiplier: float,
+	context: Dictionary = {}
 ) -> void:
 	_feedback_group_serial += 1
 	_active_feedback_group_id = _feedback_group_serial
-	_cooldown_remaining = data.cooldown / maxf(attack_speed_multiplier, 0.01)
+	_active_terminal_attack = bool(context.get("terminal", false))
+	if source_node.has_method("prepare_persona_attack_group"):
+		source_node.prepare_persona_attack_group(_active_feedback_group_id, context)
+	if not bool(context.get("ignore_cooldown", false)):
+		_cooldown_remaining = data.cooldown / maxf(attack_speed_multiplier, 0.01)
 	match data.attack_kind:
 		WeaponComponentData.AttackKind.MELEE:
 			_begin_melee(data, direction.normalized(), damage_multiplier)
@@ -152,6 +199,19 @@ func _perform_attack(
 	if events != null and data.noise_radius > 0.0:
 		events.publish_noise(source_node, origin, data.noise_radius)
 	attack_performed.emit(data)
+	_active_terminal_attack = false
+
+
+func get_last_feedback_group_id() -> int:
+	return _active_feedback_group_id
+
+
+func _attack_context(source_node: Node, data: WeaponComponentData) -> Dictionary:
+	if source_node.has_method("get_persona_attack_context"):
+		var context: Variant = source_node.get_persona_attack_context(data)
+		if context is Dictionary:
+			return context
+	return {}
 
 
 func clamp_projectile_origin(actor_origin: Vector2, muzzle_origin: Vector2) -> Vector2:
@@ -265,6 +325,8 @@ func _perform_projectiles(
 		var cyberware := source_node.get_node_or_null("CyberwareController") as CyberwareController
 		if cyberware != null:
 			cyberware.configure_projectile(projectile, direction)
+		if _active_terminal_attack:
+			projectile.configure_explosion(48.0, 1)
 
 
 func _perform_beam(
@@ -355,6 +417,7 @@ func _make_packet(
 	packet.source_position = origin
 	packet.travel_direction = direction
 	packet.feedback_group_id = _active_feedback_group_id
+	packet.terminal_attack = _active_terminal_attack and data.attack_kind in [WeaponComponentData.AttackKind.MELEE, WeaponComponentData.AttackKind.BEAM]
 	return packet
 
 
