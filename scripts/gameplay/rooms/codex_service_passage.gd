@@ -1,5 +1,6 @@
 extends Node2D
 
+const GLASS_BACKDROP := preload("res://scripts/presentation/combat_glass_backdrop.gd")
 const FLOOR_PATH := "res://scenes/levels/floors/combat_prototype.tscn"
 var dialogue_completed := false
 var departing := false
@@ -15,6 +16,11 @@ var _art: Node2D = preload("res://scripts/presentation/warehouse_art.gd").new()
 func _ready() -> void:
 	add_to_group("intermission")
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	var backdrop := GLASS_BACKDROP.new() as CombatGlassBackdrop
+	backdrop.name = "GlassCurtainBackdrop"
+	backdrop.position = Vector2(0, 104)
+	backdrop.configure(1, 640.0, 640.0, run.run_seed)
+	add_child(backdrop)
 	var floor_art := Node2D.new()
 	floor_art.name = "FloorArt"
 	floor_art.z_index = -10
@@ -35,7 +41,9 @@ func _ready() -> void:
 	add_child(upgrade_panel)
 	player.camera.enabled = false
 	var camera := Camera2D.new()
-	camera.position = Vector2(320, 180)
+	camera.position = Vector2(320, 156)
+	# Frame the building edges without showing empty strips beside the walls.
+	camera.zoom = Vector2(640.0 / 592.0, 360.0 / 312.0)
 	add_child(camera)
 	camera.make_current()
 	player.import_run_state(run.get_player_state())
@@ -136,7 +144,7 @@ func _draw_floor(canvas: Node2D) -> void:
 
 func _draw() -> void:
 	# Architecture occludes the rear half of the complete doorway light ring.
-	for bounds in [Rect2(0, 0, 640, 104), Rect2(0, 312, 640, 48), Rect2(0, 104, 24, 208), Rect2(618, 104, 22, 208)]:
+	for bounds in [Rect2(0, 312, 640, 48), Rect2(0, 104, 24, 208), Rect2(618, 104, 22, 208)]:
 		draw_rect(bounds, Color("080e14"))
 	for x in range(44, 596, 128):
 		draw_texture_rect(_art.asset("wall_north_v2"), Rect2(x, 104, mini(128, 596 - x), 44), false)
