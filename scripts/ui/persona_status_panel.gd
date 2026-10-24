@@ -64,7 +64,7 @@ func update_status(core: TalentCoreController, state: Dictionary, alive: bool) -
 			_meter.maximum = 1
 			_meter.value = 1 if locked else 0
 			_add_tag(tags, core, &"blood_step", "踏血", float(state.get("blood_step_remaining", 0)) > 0)
-			_add_tag(tags, core, &"shared_hunt_resonance", "共猎共振", float(state.get("resonance_remaining", 0)) > 0)
+			_add_tag(tags, core, &"shared_hunt_resonance", "风林山火", float(state.get("resonance_remaining", 0)) > 0)
 			_add_tag(tags, core, &"gaze", "凝视", bool(state.get("gaze_active", false)))
 			_add_tag(tags, core, &"ceaseless_hunt", "追猎", bool(state.get("chase_active", false)))
 			_add_tag(tags, core, &"read_opening", "识隙", false)
@@ -76,7 +76,7 @@ func update_status(core: TalentCoreController, state: Dictionary, alive: bool) -
 			_meter.maximum = required
 			_meter.value = samples
 			_add_tag(tags, core, &"calibrated_window", "格挡强化", bool(state.get("guard_window_active", false)))
-			_add_tag(tags, core, &"master_loop", "闭环震慑", float(state.get("master_loop_remaining", 0)) > 0)
+			_add_tag(tags, core, &"master_loop", "宗师气场", float(state.get("master_loop_remaining", 0)) > 0)
 			if state.get("ai_guard_active", false):
 				tags.append(_tag("代行格挡中", true, "AI 正在代行格挡；玩家输入可打断软接管。"))
 			elif state.get("master_takeover_pending", false):
@@ -92,7 +92,7 @@ func update_status(core: TalentCoreController, state: Dictionary, alive: bool) -
 			_meter.maximum = 100
 			_meter.value = feedback
 			_add_tag(tags, core, &"seamless_switch", "无缝换台", bool(state.get("seamless_free_attack", false)))
-			_add_tag(tags, core, &"encore_autopilot", "安可托管", float(state.get("encore_remaining", 0)) > 0)
+			_add_tag(tags, core, &"encore_autopilot", "核武器", float(state.get("encore_remaining", 0)) > 0)
 			_add_tag(tags, core, &"distortion_gain", "破音增益", bool(state.get("distortion_active", false)))
 			_add_tag(tags, core, &"steady_beat", "稳定拍点", false)
 			_add_tag(tags, core, &"overload_scream", "过载嘶鸣", false)
@@ -117,15 +117,15 @@ static func talent_tooltip(talent: StringName) -> String:
 	var description := String(entry[1])
 	match talent:
 		&"seamless_switch":
-			description = "换枪保留战斗反馈，换枪后的下一次攻击不产生热量。"
+			description = "攻击后1.2秒内切换武器，另一武器首次攻击不生热且发射反馈翻倍。"
 		&"encore_autopilot":
-			description = "战斗反馈达到100%时，AI自动瞄准并持续攻击0.8秒；玩家操作可打断。"
+			description = "战斗反馈达到100%时进入2秒狂热：无攻击间隔、过热可攻击、热量翻倍并可溢出至200%。"
 		&"distortion_gain":
-			description = "战斗反馈达到60%时，攻速加成提高20%，攻击额外产生20%热量。"
+			description = "战斗反馈达到60%时，攻速+30%，每个独立目标伤害+1，热量产生+30%。"
 		&"calibrated_window":
-			description = "完美格挡窗口延长0.04秒。"
+			description = "面对已解析攻击时完美格挡窗口延长0.2秒；手动格挡成功后立即恢复。"
 		&"master_loop":
-			description = "完成敌人招式解析时，使该敌人硬直1秒。"
+			description = "完成解析时震慑220像素内敌人，并进入4秒极意状态自动完美格挡和反击。"
 	return "%s：%s" % [entry[0], description]
 
 func _draw() -> void:

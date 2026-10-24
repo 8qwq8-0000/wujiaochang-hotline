@@ -31,6 +31,7 @@ var _reduced_flashes: CheckButton
 var _camera_shake: OptionButton
 var _feedback_quality: OptionButton
 var _feedback_preview_layer: PlayerDamageFeedbackLayer
+var _movement_feedback_preview: MovementFeedbackPreview
 var _fullscreen: CheckButton
 var _mute: CheckButton
 var _continuous_precharge: CheckButton
@@ -202,10 +203,17 @@ func _build_settings_page() -> VBoxContainer:
 	_feedback_quality.item_selected.connect(_on_feedback_quality_selected)
 	_add_labeled_control(content, "战斗特效质量", _feedback_quality)
 	var preview_frame := PanelContainer.new()
-	preview_frame.custom_minimum_size = Vector2(360.0, 92.0)
+	preview_frame.custom_minimum_size = Vector2(360.0, 112.0)
+	var preview_stack := Control.new()
+	preview_stack.custom_minimum_size = Vector2(360.0, 112.0)
+	preview_frame.add_child(preview_stack)
 	_feedback_preview_layer = PlayerDamageFeedbackLayer.new()
 	_feedback_preview_layer.name = "FeedbackPreview"
-	preview_frame.add_child(_feedback_preview_layer)
+	preview_stack.add_child(_feedback_preview_layer)
+	_movement_feedback_preview = MovementFeedbackPreview.new()
+	_movement_feedback_preview.name = "MovementFeedbackPreview"
+	preview_stack.add_child(_movement_feedback_preview)
+	_movement_feedback_preview.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	content.add_child(preview_frame)
 	_confirm_row = HBoxContainer.new()
 	_confirm_row.add_theme_constant_override("separation", 10)
@@ -464,6 +472,8 @@ func _on_feedback_quality_selected(index: int) -> void:
 func _on_feedback_preview_pressed() -> void:
 	if _feedback_preview_layer != null:
 		_feedback_preview_layer.preview_feedback()
+	if _movement_feedback_preview != null:
+		_movement_feedback_preview.preview_cycle()
 	var audio := get_node_or_null("../AudioCueManager") as AudioCueManager
 	if audio != null:
 		audio.preview_combat_cue()

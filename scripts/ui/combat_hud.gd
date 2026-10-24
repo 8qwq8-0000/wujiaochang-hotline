@@ -19,6 +19,7 @@ var _top_left: Control
 var _health_meter: SegmentMeter
 var _armor_meter: SegmentMeter
 var _heat_meter: SegmentMeter
+var _overflow_heat_meter: SegmentMeter
 var _heat_warning: Label
 var _weapon_name: Label
 var _weapon_preview: TextureRect
@@ -35,6 +36,7 @@ var _weapon_name_tween: Tween
 var _health_meter_tween: Tween
 var _damage_feedback: PlayerDamageFeedbackLayer
 var _last_health_damage_usec := -1_000_000
+var _scene_transition_active := false
 
 
 func _ready() -> void:
@@ -49,12 +51,24 @@ func _ready() -> void:
 	var run_manager := get_node_or_null("/root/RunManager")
 	if run_manager != null:
 		run_manager.mandatory_enemy_count_changed.connect(_on_enemy_count_changed)
+	var scene_flow := get_node_or_null("../SceneFlow") as SceneContainerManager
+	if scene_flow != null:
+		_scene_transition_active = not scene_flow.initial_scene.is_empty()
+		scene_flow.load_started.connect(_on_scene_load_started)
+		scene_flow.scene_swapped.connect(_on_scene_swapped)
+		scene_flow.load_failed.connect(_on_scene_load_failed)
+	overlay.hide()
 	set_process(true)
 
 
 func _process(delta: float) -> void:
 	_health_pulse_time += delta
-	overlay.visible = get_tree().get_nodes_in_group("warehouse").is_empty() and get_tree().get_nodes_in_group("intermission").is_empty()
+	overlay.visible = (
+		not _scene_transition_active
+		and is_instance_valid(_player)
+		and get_tree().get_nodes_in_group("warehouse").is_empty()
+		and get_tree().get_nodes_in_group("intermission").is_empty()
+	)
 	if not is_instance_valid(_player):
 		_player = get_tree().get_first_node_in_group("player") as PlayerController
 		if is_instance_valid(_player):
@@ -81,6 +95,9 @@ func _process(delta: float) -> void:
 	var heat_ratio := float(heat_state.current) / maxf(float(heat_state.maximum), 1.0)
 	_heat_meter.meter_color = CyberUITheme.DANGER if heat_state.overheated else (CyberUITheme.WARNING if heat_ratio >= 0.7 else Color("79d8bf"))
 	_heat_meter.set_meter(float(heat_state.current), float(heat_state.maximum))
+	_overflow_heat_meter.visible = bool(heat_state.get("overflow_visible", false))
+	if _overflow_heat_meter.visible:
+		_overflow_heat_meter.set_meter(float(heat_state.get("overflow", 0.0)), float(heat_state.maximum))
 	_heat_warning.visible = heat_state.overheated
 	if is_instance_valid(_player.talent_core):
 		_operator_panel.set_takeover_state(_player.talent_core.takeover_charges, _player.talent_core.takeover_armed)
@@ -103,6 +120,20 @@ func _bind_player(player: PlayerController) -> void:
 	_on_persona_changed(player.talent_core.current_persona_id)
 	_set_weapon_preview(player.weapons.get_current_weapon(), false)
 	player.tree_exiting.connect(func() -> void: _player = null, CONNECT_ONE_SHOT)
+
+
+func _on_scene_load_started(_scene_path: String) -> void:
+	_scene_transition_active = true
+	_player = null
+	overlay.hide()
+
+
+func _on_scene_swapped(_scene: Node, _payload: Dictionary) -> void:
+	_scene_transition_active = false
+
+
+func _on_scene_load_failed(_scene_path: String, _error: String) -> void:
+	_scene_transition_active = false
 
 
 func _build_minimal_hud() -> void:
@@ -156,6 +187,20 @@ func _build_minimal_hud() -> void:
 	_heat_meter.show_numeric = false
 	_heat_meter.empty_alpha = 0.09
 	_top_left.add_child(_heat_meter)
+
+	_overflow_heat_meter = SegmentMeter.new()
+	_overflow_heat_meter.name = "OverflowHeatStrip"
+	_overflow_heat_meter.position = Vector2(0.0, 40.0)
+	_overflow_heat_meter.size = Vector2(112.0, 10.0)
+	_overflow_heat_meter.custom_minimum_size = _overflow_heat_meter.size
+	_overflow_heat_meter.caption = "溢出热量"
+	_overflow_heat_meter.segments = 10
+	_overflow_heat_meter.show_caption = false
+	_overflow_heat_meter.show_numeric = false
+	_overflow_heat_meter.empty_alpha = 0.06
+	_overflow_heat_meter.meter_color = Color("8b342f")
+	_overflow_heat_meter.hide()
+	_top_left.add_child(_overflow_heat_meter)
 
 	_heat_warning = Label.new()
 	_heat_warning.position = Vector2(118.0, 21.0)

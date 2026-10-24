@@ -40,6 +40,8 @@ func run_checks() -> void:
 	current_scene = main
 	var flow := main.get_node("SceneFlow") as SceneContainerManager
 	flow.fade_duration = 0.0
+	var combat_hud := main.get_node("CombatHUD")
+	check(not combat_hud.get_node("Overlay").visible, "combat HUD stays hidden while the initial scene is loading")
 	var rest: Node = await wait_for_rest(main)
 	check(rest != null, "first-floor persistent run opens mandatory persona rest")
 	if rest == null:
@@ -56,6 +58,12 @@ func run_checks() -> void:
 	check(player.talent_core.get_persona_level(TalentCoreController.DEEP_NINJA) == 1, "first drink installs level one")
 	check(not run.has_persona_authorization(0), "authorization cannot be reused on same floor")
 	check(not rest.choose_persona(TalentCoreController.ROCK_VIGILANTE), "second drink is rejected on same floor")
+	var talent_buttons: Array[Node] = rest.get("_talent_column").find_children("*", "Button", true, false)
+	check(talent_buttons.size() == 6, "rest screen shows all three talent tiers")
+	check(talent_buttons.filter(func(button: Button) -> bool: return bool(button.get_meta("talent_locked", false))).size() == 4, "future talent tiers remain visible, focusable, and locked")
+	await rest._show_talent_tooltip(talent_buttons[0], &"read_opening", 1, false)
+	check(rest.get("_talent_tooltip_label").get_parsed_text().contains("猎痕") and rest.get("_talent_tooltip_label").get_parsed_text().contains("失衡"), "talent hover exposes exact effect and glossary terms")
+	rest._hide_talent_tooltip()
 	check(rest.choose_talent(1, &"read_opening"), "unlocked talent can be selected at rest")
 	check(rest.close(), "rest can close after authorization is consumed")
 	check(not paused and player.is_input_enabled(), "closing rest returns control")
@@ -64,6 +72,7 @@ func run_checks() -> void:
 	run.set_player_state(snapshot)
 	run.floor_index = 1
 	check(flow.request_scene("res://scenes/levels/floors/combat_prototype.tscn", {"player_state": snapshot}), "next floor scene request succeeds")
+	check(not combat_hud.get_node("Overlay").visible, "combat HUD hides immediately when a scene transition starts")
 	player = await wait_for_floor(flow)
 	rest = await wait_for_rest(main)
 	check(rest != null and run.has_persona_authorization(1), "next floor grants exactly one new authorization")

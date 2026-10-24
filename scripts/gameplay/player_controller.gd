@@ -48,6 +48,7 @@ var _attack_released := false
 var _attack_held := false
 var _afterimage_active_remaining := 0.0
 var _afterimage_emit_remaining := 0.0
+var _movement_effect_last_position := Vector2.ZERO
 var _movement_noise_remaining := 0.0
 var _attack_buffer_remaining := 0.0
 var _attack_release_buffer_remaining := 0.0
@@ -152,6 +153,7 @@ func _physics_process(delta: float) -> void:
 		weapons.get_melee_swing_angle_offset(),
 		_logical_mouse_world_position()
 	)
+	_tick_movement_effect()
 	_tick_afterimages(delta)
 	_update_movement_audio()
 
@@ -237,6 +239,26 @@ func try_persona_guard(packet: DamagePacket) -> bool:
 	return persona_combat.try_proxy_guard(packet)
 
 
+func should_ignore_damage(packet: DamagePacket) -> bool:
+	return persona_combat.should_ignore_damage(packet)
+
+
+func get_persona_attack_context(data: WeaponComponentData) -> Dictionary:
+	return persona_combat.get_attack_context(data)
+
+
+func prepare_persona_attack_group(group_id: int, context: Dictionary) -> void:
+	persona_combat.prepare_attack_group(group_id, context)
+
+
+func on_persona_attack_committed(data: WeaponComponentData, context: Dictionary, group_id: int) -> void:
+	persona_combat.on_attack_committed(data, context, group_id)
+
+
+func modify_outgoing_damage(packet: DamagePacket, target: Node, base_damage: int) -> int:
+	return persona_combat.modify_outgoing_damage(packet, target, base_damage)
+
+
 func perform_persona_attack(direction: Vector2, forced: bool = false, damage_multiplier: float = 1.0) -> bool:
 	if _dead or direction.is_zero_approx():
 		return false
@@ -253,12 +275,34 @@ func perform_persona_attack(direction: Vector2, forced: bool = false, damage_mul
 	return weapons.try_forced_attack(attack.origin, attack.x.normalized(), self, damage_multiplier) if forced else weapons.try_attack(attack.origin, attack.x.normalized(), self)
 
 
+func perform_persona_cooldown_free_attack(direction: Vector2, damage_multiplier: float = 1.0) -> bool:
+	if _dead or direction.is_zero_approx():
+		return false
+	aim_direction = direction.normalized()
+	var attack := _get_attack_transform()
+	return weapons.try_cooldown_free_attack(attack.origin, attack.x.normalized(), self, damage_multiplier)
+
+
+func perform_persona_terminal_attack(direction: Vector2) -> bool:
+	if _dead or direction.is_zero_approx():
+		return false
+	aim_direction = direction.normalized()
+	var attack := _get_attack_transform()
+	return weapons.try_terminal_attack(attack.origin, attack.x.normalized(), self)
+
+
 func get_health_state() -> Dictionary:
 	return {"current": health.current_health, "maximum": health.max_health}
 
 
 func get_heat_state() -> Dictionary:
-	return {"current": heat.current_heat, "maximum": heat.effective_max(), "overheated": heat.is_overheated}
+	return {
+		"current": heat.current_heat,
+		"maximum": heat.effective_max(),
+		"overflow": maxf(heat.current_heat - heat.effective_max(), 0.0),
+		"overflow_visible": persona_combat.is_nuclear_frenzy_active() or heat.current_heat > heat.effective_max(),
+		"overheated": heat.is_overheated,
+	}
 
 
 func get_weapon_display_name() -> String:
@@ -364,6 +408,7 @@ func reset_transient_state() -> void:
 	_attack_held = false
 	_afterimage_active_remaining = 0.0
 	_afterimage_emit_remaining = 0.0
+	_movement_effect_last_position = global_position
 	_movement_noise_remaining = 0.0
 	_clear_afterimages()
 
@@ -541,16 +586,23 @@ func _on_attack_performed(_data: WeaponComponentData) -> void:
 	combat_feedback_requested.emit(&"attack", global_position)
 
 
-func _on_dash_started(_direction: Vector2) -> void:
+func _on_dash_started(direction: Vector2) -> void:
 	_afterimage_active_remaining = dash.config.dash_duration
 	_afterimage_emit_remaining = 0.0
+	_movement_effect_last_position = global_position
+	_request_movement_effect(&"start", global_position, global_position, direction)
 	_publish_movement_noise(MOBILITY_BURST_NOISE_RADIUS)
 	cyberware.on_dash_started(global_position)
 	dash_state_changed.emit(true, dash.cooldown_remaining)
 	combat_feedback_requested.emit(&"dash", global_position)
 
 
-func _on_dash_ended(_cancelled: bool) -> void:
+func _on_dash_ended(cancelled: bool) -> void:
+	var direction := dash.get_active_direction()
+	if _movement_effect_last_position.distance_squared_to(global_position) > 1.0:
+		_request_movement_effect(&"path", _movement_effect_last_position, global_position, direction)
+	_request_movement_effect(&"end", global_position, global_position, direction, cancelled)
+	_movement_effect_last_position = global_position
 	_afterimage_active_remaining = 0.0
 	dash_state_changed.emit(false, dash.cooldown_remaining)
 
@@ -592,6 +644,32 @@ func _tick_afterimages(delta: float) -> void:
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null:
 		events.request_afterimage(self, visuals.body_sprite)
+
+
+func _tick_movement_effect() -> void:
+	if not dash.is_dashing() or _dead:
+		return
+	if _movement_effect_last_position.distance_squared_to(global_position) < 4.0:
+		return
+	_request_movement_effect(
+		&"path",
+		_movement_effect_last_position,
+		global_position,
+		dash.get_active_direction()
+	)
+	_movement_effect_last_position = global_position
+
+
+func _request_movement_effect(
+	phase: StringName,
+	from: Vector2,
+	to: Vector2,
+	direction: Vector2,
+	cancelled: bool = false
+) -> void:
+	var events := get_node_or_null("/root/CombatEvents")
+	if events != null:
+		events.request_movement_effect(self, dash.active_effect_kind, phase, from, to, direction, cancelled)
 
 
 func _clear_afterimages() -> void:

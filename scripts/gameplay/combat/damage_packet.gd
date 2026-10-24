@@ -26,6 +26,10 @@ var feedback_group_id: int = 0
 ## Marks recurring damage so presentation can show one clear warning followed by
 ## restrained pulses instead of replaying the full hit package every tick.
 var is_continuous_damage: bool = false
+## Environmental floor/hazard damage. Enemy explosives deliberately leave this false.
+var is_terrain_damage: bool = false
+## Marks the non-projectile hit that should create Overload Scream's first-hit burst.
+var terminal_attack: bool = false
 
 
 func duplicate_packet() -> DamagePacket:
@@ -50,4 +54,6 @@ func duplicate_packet() -> DamagePacket:
 	copy.reflected = reflected
 	copy.feedback_group_id = feedback_group_id
 	copy.is_continuous_damage = is_continuous_damage
+	copy.is_terrain_damage = is_terrain_damage
+	copy.terminal_attack = terminal_attack
 	return copy

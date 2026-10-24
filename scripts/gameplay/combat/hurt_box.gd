@@ -27,6 +27,18 @@ func receive_hit(packet: DamagePacket) -> DamageResult:
 		friendly_hit.packet = packet
 		friendly_hit.target = actor
 		return friendly_hit
+	if actor.has_method("should_ignore_damage") and bool(actor.should_ignore_damage(packet)):
+		var persona_ignored := DamageResult.new()
+		persona_ignored.packet = packet
+		persona_ignored.target = actor
+		persona_ignored.ignore_reason = DamageResult.IgnoreReason.INVULNERABLE
+		var persona_loop := Engine.get_main_loop()
+		if persona_loop is SceneTree:
+			var persona_events := (persona_loop as SceneTree).root.get_node_or_null("CombatEvents")
+			if persona_events != null:
+				persona_events.publish_damage(persona_ignored)
+		hit_resolved.emit(persona_ignored)
+		return persona_ignored
 	if is_invulnerable():
 		var ignored := DamageResult.new()
 		ignored.packet = packet

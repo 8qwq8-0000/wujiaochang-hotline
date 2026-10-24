@@ -7,12 +7,12 @@ const PERSONA_NAMES := {
 	"rock_vigilante": "摇滚奇侠",
 }
 const TALENT_NAMES := {
-	"shared_hunt_resonance": "共猎共振",
+	"shared_hunt_resonance": "风林山火",
 	"ceaseless_hunt": "无尽狩猎",
 	"open_model": "开放模型",
-	"master_loop": "宗师循环",
+	"master_loop": "宗师气场",
 	"dual_channel_performance": "双通道演出",
-	"encore_autopilot": "返场托管",
+	"encore_autopilot": "核武器",
 }
 const LEAK_TEXT := {
 	"compute_containment_slip": "收容算力 / 销毁违禁设备：目标分类出现自相矛盾。",

@@ -4,6 +4,7 @@ var failures := 0
 var checks := 0
 var player: PlayerController
 var room: Node2D
+var movement_effects: Array[Dictionary] = []
 
 
 func _initialize() -> void:
@@ -47,6 +48,11 @@ func enemy_at(where: Vector2) -> EnemyController:
 
 
 func run() -> void:
+	var events := root.get_node("CombatEvents")
+	events.movement_effect_requested.connect(
+		func(_source: Node, effect_kind: StringName, phase: StringName, _from: Vector2, _to: Vector2, _direction: Vector2, cancelled: bool) -> void:
+			movement_effects.append({"kind": effect_kind, "phase": phase, "cancelled": cancelled})
+	)
 	room = Node2D.new()
 	root.add_child(room)
 	current_scene = room
@@ -70,6 +76,8 @@ func run() -> void:
 	check(enemy.health.current_health == 20 - config.collision_damage, "same dash never hits one enemy twice")
 	check(distant.health.current_health == 20, "enemy outside path receives no damage")
 	check(not player.dash.is_dashing() and player.position.x >= 80 and player.position.x < 100, "dash lasts about 84 pixels")
+	check(movement_effects.any(func(effect: Dictionary) -> bool: return effect.phase == &"start" and effect.kind == &"dash"), "dash publishes a presentation-only movement start")
+	check(movement_effects.any(func(effect: Dictionary) -> bool: return effect.phase == &"end" and not effect.cancelled), "completed dash publishes a normal landing effect")
 	check(player.velocity.length() <= config.walk_speed, "dash leaves no burst speed")
 	check(player.dash.can_attack() and player.dash.can_guard(), "weapon and guard stay available")
 	await ticks(90)
@@ -108,6 +116,7 @@ func run() -> void:
 	check(player.position.x < 32 and player.velocity.is_zero_approx(), "wall prevents penetration and leftover slide")
 	check(behind_wall.health.current_health == 20, "dash radius cannot damage through a wall")
 	check(player.dash.cooldown_remaining > 0.9, "wall impact retains cooldown")
+	check(movement_effects.any(func(effect: Dictionary) -> bool: return effect.phase == &"end" and effect.cancelled), "wall-cancelled dash publishes collision scatter instead of a normal landing")
 	room.queue_free()
 	await process_frame
 	print("Dash checks: ", checks, ", failures: ", failures)
