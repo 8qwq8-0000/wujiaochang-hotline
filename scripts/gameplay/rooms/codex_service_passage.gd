@@ -7,6 +7,7 @@ var departing := false
 var chest: Inventory
 var panel: CanvasLayer
 var upgrade_panel: CanvasLayer
+var safe_storage: Node2D
 var last_synthesis_result: InventoryItem
 var _mutating := false
 var _art: Node2D = preload("res://scripts/presentation/warehouse_art.gd").new()
@@ -39,6 +40,11 @@ func _ready() -> void:
 	upgrade_panel.heading_text = "Codex 的通道合成台"
 	upgrade_panel.empty_text = "没有可合成组件\n可继续前往第三层"
 	add_child(upgrade_panel)
+	safe_storage = preload("res://scripts/gameplay/rooms/codex_weapon_storage.gd").new()
+	safe_storage.name = "SafeWeaponStorage"
+	safe_storage.player = player
+	safe_storage.upgrade_panel = upgrade_panel
+	add_child(safe_storage)
 	player.camera.enabled = false
 	var camera := Camera2D.new()
 	camera.position = Vector2(320, 156)
@@ -60,7 +66,7 @@ func receive_scene_payload(payload: Dictionary) -> void:
 		player.heat.is_overheated = bool(payload.transit_heat.get("overheated", false))
 
 func talk_to_codex() -> void:
-	if departing or player.inventory.is_open or upgrade_panel.is_open or player.health.is_dead():
+	if departing or player.inventory.is_open or upgrade_panel.is_open or safe_storage.panel.is_open or player.health.is_dead():
 		return
 	if dialogue_completed:
 		upgrade_panel.open()
@@ -143,9 +149,8 @@ func _draw_floor(canvas: Node2D) -> void:
 			canvas.draw_texture_rect(_art.asset("floor"), Rect2(x, y, mini(32, 596 - x), mini(32, 288 - y)), false, Color("b7c4c8"))
 
 func _draw() -> void:
-	# Architecture occludes the rear half of the complete doorway light ring.
-	for bounds in [Rect2(0, 312, 640, 48), Rect2(0, 104, 24, 208), Rect2(618, 104, 22, 208)]:
-		draw_rect(bounds, Color("080e14"))
+	draw_line(Vector2(40, 47), Vector2(600, 47), Color("293d45"), 1)
+	draw_rect(Rect2(40, 15, 2, 22), Color("77c6ad"))
 	for x in range(44, 596, 128):
 		draw_texture_rect(_art.asset("wall_north_v2"), Rect2(x, 104, mini(128, 596 - x), 44), false)
 		draw_texture_rect(_art.asset("wall_south_v2"), Rect2(x, 288, mini(128, 596 - x), 24), false)
@@ -153,7 +158,6 @@ func _draw() -> void:
 	draw_texture_rect(_art.asset("wall_east_v2"), Rect2(596, 108, 22, 202), false)
 	for x in [88, 248, 408, 520]:
 		draw_texture_rect(_art.asset("lamp"), Rect2(x, 116, 44, 10), false, Color("9be9ce"))
-	draw_texture_rect(_art.asset("terminal"), Rect2(148, 119, 40, 42), false)
 	draw_texture_rect(_art.asset("crates"), Rect2(418, 135, 68, 29), false)
 	# Both floor numbers and the guide line share the doorway ring's centerline.
 	var lane_y: float = $ContinueExit.position.y + $ContinueExit/DoorSigil.position.y

@@ -69,7 +69,7 @@ func receive_hit(packet: DamagePacket) -> DamageResult:
 	var result := DamageResult.new()
 	result.packet = packet
 	result.target = self
-	if not is_inside_tree() or opened or get_tree().paused or packet == null or not packet.is_projectile or packet.base_damage <= 0:
+	if not is_inside_tree() or opened or get_tree().paused or packet == null or not (packet.is_projectile or packet.is_beam) or packet.base_damage <= 0:
 		return result
 	var normal := global_transform.x.normalized()
 	var direction := normal if packet.travel_direction.dot(normal) >= 0 else -normal

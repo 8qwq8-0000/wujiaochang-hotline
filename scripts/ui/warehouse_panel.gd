@@ -3,6 +3,8 @@ extends CanvasLayer
 var heading_text := "仓库 / 储物箱"
 var open_message := "点击装备存取 · 取出进入背包 · 自动保存"
 var fixed_chest_catalog := false
+var deposit_only := false
+var weapons_only := false
 var room: Node2D
 var is_open := false
 var _owns_pause := false
@@ -62,7 +64,7 @@ func _ready() -> void:
 	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(columns)
 	_bag_list = _make_list(columns, "01 / 随身装备", "点击存入  →  储物箱")
-	_chest_list = _make_list(columns, "02 / 安全储存", "点击取出  →  背包")
+	_chest_list = _make_list(columns, "02 / 安全储存", "已永久保存 · 回仓库取用" if deposit_only else "点击取出  →  背包")
 	var detail_panel := PanelContainer.new()
 	detail_panel.add_theme_stylebox_override("panel", _box(Color("0d2119"), CyberUITheme.DIM_GREEN, 6))
 	column.add_child(detail_panel)
@@ -160,17 +162,18 @@ func refresh() -> void:
 	var inventory: ComponentInventory = room.player.inventory
 	_count.text = "背包 %d / 6     储物箱 %d 件" % [inventory.backpack.get_item_count(), room.chest.get_item_count()]
 	_bag_meter.text = "随身容量 " + "■".repeat(inventory.backpack.get_item_count()) + "□".repeat(maxi(0, 6 - inventory.backpack.get_item_count()))
-	_detail.text = "物品详情 / 指向卡片查看属性\n已装备物品不占背包格 · 取出物品进入背包"
+	_detail.text = "物品详情 / 指向卡片查看属性\n寄存武器死亡后仍保留 · 回仓库取用" if deposit_only else "物品详情 / 指向卡片查看属性\n已装备物品不占背包格 · 取出物品进入背包"
 	for entry in [{"slot": inventory.weapon_slot, "name": "主武器"}, {"slot": inventory.secondary_weapon_slot, "name": "副武器"}, {"slot": inventory.cyberware_slot, "name": "义体"}, {"slot": inventory.defense_slot, "name": "防御"}, {"slot": inventory.blackbox_slot, "name": "黑匣"}]:
 		var item: InventoryItem = entry.slot.get_item()
-		if item != null:
+		if item != null and (not weapons_only or item.get_property("slot", "") == "weapon"):
 			_add_item(_bag_list, item, entry.name + " · ", true)
 	for item in inventory.backpack.get_items():
-		_add_item(_bag_list, item, "背包 · ", true)
+		if not weapons_only or item.get_property("slot", "") == "weapon":
+			_add_item(_bag_list, item, "背包 · ", true)
 	for item in _chest_display_items():
 		_add_item(_chest_list, item, "", false)
 	if _bag_list.get_child_count() == 0:
-		_show_empty(_bag_list, "随身物品为空", "从右侧取出组件，准备下一次行动")
+		_show_empty(_bag_list, "没有可寄存武器" if weapons_only else "随身物品为空", "主副武器及背包武器可寄存" if deposit_only else "从右侧取出组件，准备下一次行动")
 	if room.chest.get_item_count() == 0:
 		_show_empty(_chest_list, "等待战利品入库", "点击左侧卡片，将物品存入安全储物箱")
 
@@ -242,7 +245,11 @@ func _add_item(parent: Control, item: InventoryItem, prefix: String, deposit: bo
 	var details := ComponentRolls.describe(item).replace("\n", "  ·  ")
 	button.mouse_entered.connect(func() -> void: _detail.text = details)
 	button.focus_entered.connect(func() -> void: _detail.text = details)
-	button.pressed.connect(func() -> void: room.transfer(item, deposit))
+	if deposit_only and not deposit:
+		action.text = "已保存"
+		button.mouse_default_cursor_shape = Control.CURSOR_ARROW
+	else:
+		button.pressed.connect(func() -> void: room.transfer(item, deposit))
 
 func _ignore_pointer(control: Control) -> void:
 	control.mouse_filter = Control.MOUSE_FILTER_IGNORE

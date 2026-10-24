@@ -179,7 +179,7 @@ func _build_panel() -> void:
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 22)
+		margin.add_theme_constant_override("margin_" + side, 16)
 	_overlay.add_child(margin)
 	var root_column := VBoxContainer.new()
 	root_column.add_theme_constant_override("separation", 8)
@@ -188,7 +188,7 @@ func _build_panel() -> void:
 	root_column.add_child(header)
 	_title = Label.new()
 	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_title.add_theme_font_size_override("font_size", 20)
+	_title.add_theme_font_size_override("font_size", 18)
 	header.add_child(_title)
 	_authorization = Label.new()
 	_authorization.add_theme_color_override("font_color", CyberUITheme.WARNING)
@@ -210,7 +210,9 @@ func _build_panel() -> void:
 	for persona_id in TalentCoreController.PERSONA_IDS:
 		var button := Button.new()
 		button.name = String(persona_id).to_pascal_case()
-		button.custom_minimum_size = Vector2(265, 70)
+		button.custom_minimum_size = Vector2(240, 64)
+		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		button.clip_text = true
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.icon = PERSONA_DATA[persona_id].icon
@@ -228,9 +230,15 @@ func _build_panel() -> void:
 	for side in ["left", "right", "top", "bottom"]:
 		talent_margin.add_theme_constant_override("margin_" + side, 8)
 	talent_panel.add_child(talent_margin)
+	var talent_scroll := ScrollContainer.new()
+	talent_scroll.name = "TalentScroll"
+	talent_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	talent_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	talent_margin.add_child(talent_scroll)
 	_talent_column = VBoxContainer.new()
+	_talent_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_talent_column.add_theme_constant_override("separation", 7)
-	talent_margin.add_child(_talent_column)
+	talent_scroll.add_child(_talent_column)
 	_build_talent_tooltip()
 	var footer := HBoxContainer.new()
 	footer.add_theme_constant_override("separation", 12)
@@ -303,9 +311,12 @@ func _refresh_talents() -> void:
 			var text: Array = TALENT_TEXT[talent_id]
 			var button := Button.new()
 			button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			button.custom_minimum_size.y = 48
+			button.custom_minimum_size.y = 72
+			button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			button.clip_text = true
+			button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 			button.text = ("锁定 " if locked else ("✓ " if selected == talent_id else "")) + text[0] + "\n" + text[1]
-			button.add_theme_font_size_override("font_size", 10)
+			button.add_theme_font_size_override("font_size", 11)
 			button.set_meta("talent_locked", locked)
 			if locked:
 				button.add_theme_color_override("font_color", CyberUITheme.MUTED)
@@ -355,7 +366,11 @@ func _show_talent_tooltip(button: Control, talent_id: StringName, tier: int, loc
 	var terms: Array = TALENT_TERMS.get(talent_id, [])
 	if not terms.is_empty():
 		body += "\n\n[color=#72c8ba]名词解释[/color]\n• " + "\n• ".join(terms)
+	var available_width := _overlay.get_viewport_rect().size.x - 16.0
+	_talent_tooltip.custom_minimum_size.x = minf(330.0, available_width)
+	_talent_tooltip_label.custom_minimum_size.x = minf(310.0, available_width - 20.0)
 	_talent_tooltip_label.text = body
+	_talent_tooltip.reset_size()
 	_talent_tooltip.show()
 	await get_tree().process_frame
 	var viewport_size := _overlay.get_viewport_rect().size
@@ -364,6 +379,7 @@ func _show_talent_tooltip(button: Control, talent_id: StringName, tier: int, loc
 	var position := Vector2(button_rect.end.x + 8.0, button_rect.position.y)
 	if position.x + tooltip_size.x > viewport_size.x - 8.0:
 		position.x = button_rect.position.x - tooltip_size.x - 8.0
+	position.x = clampf(position.x, 8.0, maxf(8.0, viewport_size.x - tooltip_size.x - 8.0))
 	position.y = clampf(position.y, 8.0, maxf(8.0, viewport_size.y - tooltip_size.y - 8.0))
 	_talent_tooltip.global_position = position
 
@@ -406,7 +422,9 @@ func _input(event: InputEvent) -> void:
 	if not is_open or event.is_echo():
 		return
 	if event.is_action_pressed("pause"):
-		close()
+		# Leaving rest is an explicit confirmation, never an Esc shortcut.
+		_hide_talent_tooltip()
+		_message.text = "请先选择一瓶人格饮料。" if run.has_persona_authorization(run.floor_index) else "确认天赋配置后，请点击“离开整备处”。"
 		get_viewport().set_input_as_handled()
 
 

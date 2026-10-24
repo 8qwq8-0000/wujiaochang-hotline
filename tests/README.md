@@ -165,7 +165,7 @@ godot --headless --path . --script res://tests/integration/boss_shortcut_check.g
 
 激光炮正式掉落：`godot --headless --path . --script res://tests/integration/rail_cannon_loot_check.gd`，覆盖随机掉落、品质词条、实例序列化、实际拾取、副槽装备切换、炮身特效节点、射击伤害与热量；贴身命中检查使用正式激光炮资源。
 
-长条范围激光：`godot --headless --path . --script res://tests/integration/laser_beam_check.gd`，覆盖 1000×48 范围内多目标同时受伤、每发仅结算一次、范围外及自身免伤、墙体阻挡、显示与伤害长度一致、无普通子弹及光束回收，以及光束引爆油桶、墙后和范围外油桶保护。
+长条范围激光：`godot --headless --path . --script res://tests/integration/laser_beam_check.gd`，覆盖 1000×48 范围内多目标同时受伤、每发仅结算一次、范围外及自身免伤、墙体阻挡、显示与伤害长度一致、无普通子弹及光束回收，以及光束引爆油桶、墙后和范围外油桶保护；激光正面、边缘与近距离破门，破门解除碰撞，墙后及光束范围外的门保持关闭。
 
 人格永久档案：`godot --headless --path . --script res://tests/integration/persona_archive_check.gd`，覆盖普通结算收录人格与三级语义泄漏、下一局人格清零、临时档案载荷剥离、完整胜利记录与重复结算拒绝。
 
@@ -184,3 +184,5 @@ godot --headless --path . --script res://tests/integration/boss_shortcut_check.g
 Codex 通道整备：`godot --headless --path . --script res://tests/integration/codex_service_passage_check.gd`。23 项检查覆盖第二层继续后的独立通道、E 对话与中止恢复、解锁和重复整备、满包装备升级、义体复合、永久仓库存档隔离，以及第三层状态继承和正常人格整备。窗口模式追加 `-- --capture` 生成通道、对话、工坊、出口截图。
 
 装备图标验收：`tools/preview_equipment_icons.gd` 展示八类物品；`tools/preview_equipment_runtime.gd` 使用实际背包和地面掉落显示。素材来源和完整生成提示词见 `assets/art/items/equipment_v1/README.md`、`art_sources/ai_drafts/equipment_icons_v1/manifest.json`。
+
+Codex 通道安全寄存与小血瓶：`godot --headless --path . --script res://tests/integration/codex_supplies_check.gd`，33 项覆盖真实 E 打开寄存箱、只列出武器、已装备/背包武器永久寄存、既有安全配装去重、保存失败回滚与热量保留、防重复寄存、死亡后重新读档及回仓取出；桌上血瓶满血不消耗、恢复 1 格、使用后消失、同次行动重载不刷新与新行动补充。非 headless 追加 `-- --capture` 保存 `/tmp/codex-supplies-*.png`。

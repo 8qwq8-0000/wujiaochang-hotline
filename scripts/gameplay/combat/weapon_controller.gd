@@ -353,8 +353,11 @@ func _perform_beam(
 	var remaining_range := data.attack_range - penetration_distance
 	sweep.motion = direction * remaining_range
 	var length := penetration_distance
+	var contact_length := penetration_distance
 	if not starts_in_wall:
-		length += remaining_range * space.cast_motion(sweep)[0]
+		var motion_result := space.cast_motion(sweep)
+		length += remaining_range * motion_result[0]
+		contact_length += remaining_range * motion_result[1]
 	if length <= 0.0:
 		return
 	var shape := RectangleShape2D.new()
@@ -366,6 +369,23 @@ func _perform_beam(
 	query.collide_with_areas = true
 	query.collide_with_bodies = false
 	query.margin = 0.0
+	# Static door leaves have no hurtbox. Include the clipped contact face so
+	# cast_motion's safe distance does not leave the blocking door untouched.
+	var door_shape := RectangleShape2D.new()
+	door_shape.size = Vector2(contact_length + 1.0, data.beam_width)
+	var door_query := PhysicsShapeQueryParameters2D.new()
+	door_query.shape = door_shape
+	door_query.transform = Transform2D(direction.angle(), origin + direction * contact_length * 0.5)
+	door_query.collision_mask = 1
+	door_query.margin = 0.0
+	for hit in space.intersect_shape(door_query, 256):
+		var door := hit.collider.get_parent() as AutomaticDoor
+		if door == null or CombatProjectile.room_for_actor(door) != room:
+			continue
+		var distance := clampf((door.global_position - origin).dot(direction), 0.0, length)
+		var packet := _make_packet(data, origin, direction, source_node, damage_multiplier * _beam_damage_multiplier(data, distance))
+		packet.is_beam = true
+		door.receive_hit(packet)
 	var hit_actors := {}
 	for hit in space.intersect_shape(query, 256):
 		var area := hit.collider as Area2D
@@ -381,6 +401,7 @@ func _perform_beam(
 		var beam_multiplier := _beam_damage_multiplier(data, actor_distance)
 		var packet := _make_packet(data, origin, direction, source_node, damage_multiplier * beam_multiplier)
 		packet.is_area_damage = true
+		packet.is_beam = true
 		area.receive_hit(packet)
 	var beam := Node2D.new()
 	beam.set_script(LASER_BEAM)

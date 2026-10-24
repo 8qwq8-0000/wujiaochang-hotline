@@ -95,7 +95,7 @@ func run() -> void:
 	await process_frame
 	check(is_instance_valid(barrels[0].patch) and barrels[0].patch.burning and barrels[0].patch.explosion_count == 1, "beam-hit barrel explodes exactly once")
 	await create_timer(0.4).timeout
-	# PR18 clips at distant blocking doors without applying a projectile impact.
+	# A beam breaks its blocking door, while this shot still ends at that leaf.
 	var door: AutomaticDoor = load("res://scenes/environment/automatic_door.tscn").instantiate()
 	door.position = Vector2(350,200)
 	room.add_child(door)
@@ -107,16 +107,16 @@ func run() -> void:
 	player.weapons.reset_transient_state()
 	player.heat.set_heat(0)
 	check(player.weapons.try_attack(Vector2(150,200), Vector2.RIGHT, player), "rail cannon fires at closed door")
-	check(not door.opened, "PR18 beam clips at the first closed door without breaking it")
+	check(door.opened and not door.slammed, "beam breaks the first closed door without a dash slam")
 	check(not hidden_door.opened, "beam cannot break a door behind the first blocker")
 	beams = get_nodes_in_group("laser_beams")
-	check(beams.size() == 1 and beams[0].get("beam_length") < 201, "PR18 beam still ends at blocking door")
+	check(beams.size() == 1 and beams[0].get("beam_length") < 201, "breaking impact still ends at the blocking door")
 	await physics_frame
 	await physics_frame
 	player.weapons.reset_transient_state()
 	player.heat.set_heat(0)
 	player.weapons.try_attack(Vector2(150,200), Vector2.RIGHT, player)
-	check(not hidden_door.opened, "first blocking door continues protecting the rear door")
+	check(not hidden_door.opened, "solid wall continues protecting the rear door after the front door breaks")
 	# Only the edge of the 48px beam touches this horizontal leaf.
 	door = load("res://scenes/environment/automatic_door.tscn").instantiate()
 	door.position = Vector2(350,226)
@@ -127,7 +127,27 @@ func run() -> void:
 	player.weapons.reset_transient_state()
 	player.heat.set_heat(0)
 	player.weapons.try_attack(Vector2(150,200), Vector2.RIGHT, player)
-	check(not door.opened, "PR18 beam does not break the rotated blocking door")
+	check(door.opened, "full beam width breaks a rotated door touched only at the edge")
+	await physics_frame
+	await physics_frame
+	check(door.get_node("Body/Shape").disabled, "beam-broken door releases its blocking collider")
+	var near_door: AutomaticDoor = load("res://scenes/environment/automatic_door.tscn").instantiate()
+	near_door.position = Vector2(260, 200)
+	room.add_child(near_door)
+	var off_axis_door: AutomaticDoor = load("res://scenes/environment/automatic_door.tscn").instantiate()
+	off_axis_door.position = Vector2(350, 300)
+	room.add_child(off_axis_door)
+	await physics_frame
+	await physics_frame
+	player.weapons.reset_transient_state()
+	player.heat.set_heat(0)
+	player.weapons.try_attack(Vector2(150, 200), Vector2.RIGHT, player)
+	check(near_door.opened, "beam also breaks doors inside the wall-penetration formation distance")
+	check(not off_axis_door.opened, "door outside beam width stays closed")
+	check(not hidden_door.opened, "solid wall protects the rear door across repeated shots")
+	var beam_packet := DamagePacket.new()
+	beam_packet.is_beam = true
+	check(beam_packet.duplicate_packet().is_beam, "damage packet duplication preserves beam identity")
 	room.queue_free()
 	await process_frame
 	print("Laser beam checks: ", checks, "; failures: ", failures)
