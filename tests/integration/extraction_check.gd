@@ -53,7 +53,7 @@ func run_checks() -> void:
 	for frame in 4:
 		await physics_frame
 	check(not paused and ui.get("_overlay").visible, "real cleared exit opens choice without pausing")
-	check(ui.get("_overlay").size.x <= 300, "exit choice is a small panel")
+	check(ui.get("_overlay").anchor_top == 1.0 and ui.get("_overlay").size.x > 300, "exit choice uses the bottom dialogue layout")
 	player.global_position = exit.global_position - Vector2(100, 0)
 	for frame in 4:
 		await physics_frame

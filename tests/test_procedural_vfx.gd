@@ -180,3 +180,15 @@ func test_kill_chain_tail_only_emits_for_multi_kill() -> void:
 	manager._reset_kill_chain(true)
 	assert_eq(ended_stages, [CombatFeedbackManager.KILL_CHAIN_MAX_STAGE])
 	manager.free()
+
+
+func test_screen_damage_feedback_survives_existing_perfect_flash() -> void:
+	var layer := track(PlayerDamageFeedbackLayer.new()) as PlayerDamageFeedbackLayer
+	layer._add_effect(PlayerDamageFeedbackLayer.Kind.PERFECT_BLOCK, Vector2.UP, 1.0)
+	layer._add_effect(PlayerDamageFeedbackLayer.Kind.DAMAGE, Vector2.RIGHT, 1.0)
+	assert_eq(layer._effects.size(), 2)
+	assert_eq(layer._effects[1].kind, PlayerDamageFeedbackLayer.Kind.DAMAGE)
+	layer._add_effect(PlayerDamageFeedbackLayer.Kind.DAMAGE, Vector2.LEFT, 1.0, true)
+	assert_eq(layer._effects.size(), 2)
+	assert_eq(layer._effects[1].direction, Vector2.LEFT)
+	assert_true(layer._effects[1].heavy)

@@ -158,7 +158,7 @@ func _add_effect(kind: Kind, direction: Vector2, strength: float, heavy: bool = 
 				effect.heavy = bool(effect.heavy) or heavy
 				effect.age = 0.0
 				effect.duration = duration
-			return
+				return
 	_effects.append({
 		"kind": kind,
 		"direction": direction,

@@ -109,3 +109,24 @@ func test_weapon_controller_stamps_weapon_identity_on_direct_packets() -> void:
 	var rail := load("res://resources/weapons/rail_cannon.tres") as WeaponComponentData
 	var packet := controller._make_packet(rail, Vector2.ZERO, Vector2.RIGHT, controller)
 	assert_eq(packet.weapon_id, &"rail_cannon")
+
+
+func test_perfect_window_reflects_multiple_projectiles_without_extending() -> void:
+	var guard := GuardComponent.new()
+	var target := Node2D.new()
+	var packet := DamagePacket.new()
+	packet.source_faction = CombatFaction.Id.ENEMY
+	packet.source_position = Vector2(20, 0)
+	packet.travel_direction = Vector2.LEFT
+	packet.is_projectile = true
+	packet.reflectable = true
+	guard.begin_guard(Vector2.RIGHT)
+	guard.advance_timing(0.021)
+	assert_true(guard.try_resolve(packet, target, CombatFaction.Id.PLAYER).reflected)
+	guard.advance_timing(0.19)
+	assert_true(guard.try_resolve(packet, target, CombatFaction.Id.PLAYER).reflected)
+	guard.advance_timing(0.01)
+	assert_eq(guard.state, GuardComponent.State.NORMAL)
+	assert_false(guard.try_resolve(packet, target, CombatFaction.Id.PLAYER).reflected)
+	target.free()
+	guard.free()

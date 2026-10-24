@@ -305,3 +305,33 @@ Following the user's correction, extracted the four existing colored half-sigils
 - User explicitly selected PR18's implementation for the weapon_controller.gd beam conflict. Merged current origin/main into the PR18 head, retained PR18's 160px formation/penetration corridor and subsequent wall clipping, and did not retain main's conflicting projectile-style automatic-door impact block.
 - Updated the newly merged door assertions to match that explicit choice: distant blocking doors stay closed, the beam remains clipped, and the rear door remains protected. Laser beam integration: 33/33. Existing resource-use exit warnings remain; this updates the PR branch only, without merging it into main.
 - Settings assertions reported zero failures. The merged presentation_systems_check hits missing HUD affordances and a null get_global_rect call, preventing completion; it is not counted as passing and requires follow-up separate from this laser-conflict choice.
+
+## 2026-10-23 — Per-region floor difficulty scaling
+
+- User requested increasing enemy health and count by floor, then clarified that each region on floor 2 must contain seven enemies. Normal floors 1/2/3 now add 0/1/2 HP to each spawned enemy's original profile and 0/1/2 melee enemies per region (six/seven/eight per region in the four shipped maps). Profiles are duplicated before scaling; boss and training spawners retain their defaults.
+- Added deterministic spawn markers before the spawn plan and prop placement are finalized, with wall/cover/window/turret, door, station, entrance, exit and enemy spacing checks. Added enemies participate in the same objective and clear handling.
+- Validation: floor difficulty integration 1298/1298 across four maps, three floors and three seeds (including actual health/counts, extra-spawn navigation reachability, and clearing both regions); dual-area 46/46; rooftop boss 84/84; parry training 50/50. Existing ObjectDB/resource-use exit diagnostics remain. No push performed.
+
+## 2026-10-23 — Boss-room minions gain three HP
+
+- User requested +3 HP for all boss-room minions. Both opening and summoned support waves now use four HP for melee/ranged soldiers and six HP for shield soldiers. The arena still duplicates profiles, leaving ordinary-floor profiles and boss health unchanged.
+- Updated the existing real-arena integration assertions for both waves and total opening health. Rooftop boss integration passed 99/99, including nonfatal minion hits, one boss HP lost per confirmed support defeat, delayed shield-soldier self-destruction and final boss defeat. Existing ObjectDB/resource-use exit diagnostics remain.
+
+## 2026-10-23 — Ninja emergency takeover retreats from enemies
+
+- User corrected the one-HP ninja emergency relocation: it should escape away from enemies rather than move beside a marked target. Candidate landings now originate at the player, prefer the direction away from the nearest live enemy in the same room, and maximize minimum separation from nearby enemies. Only distance-increasing, collision-safe landings are accepted; obstructed routes can use diagonal/side alternatives. Existing room bounds, anti-stuck checks, dash cancellation, one-charge consumption and 0.8-second invulnerability remain in place.
+- Updated the design text and real persona integration checks. Before the change, new direction/separation checks reproduced nine failures. After the change, the suite passed with zero failures, including four enemy directions, a blocking wall, multiple threats and an actual level-one one-HP trigger; subsequent master/rock persona checks also passed. Existing ObjectDB/resource-use exit diagnostics remain. No push performed.
+
+## 2026-10-23 — Wall/crate passage navigation fix
+
+- Investigated the screenshot's left-wall crowding using actual room geometry. Interlinked-apartment seeds 10 and 27 generate a 56 px crate centered at (80, 464), leaving a 36 px wall passage. Enemy collision radius is 11 px, but the former 20 px navigation bake closed this physically traversable route. Changed the shared room navigation bake to 12 px, retaining a 1 px collision margin and existing soft avoidance.
+- Added a real-physics regression with melee and shield soldiers, checking short-path availability, actual damage to a wall-side player and a queued follower reaching the player after the front enemy dies. Original bake failed 8 of 24 assertions; corrected bake passed 24/24. Existing 16-agent navigation check had zero failures; room-layout integration passed 196/196 and floor-difficulty integration passed 1298/1298. Updated the room-layout objective expectation for the earlier user-approved per-region floor scaling, and made floor navigation checks wait for region synchronization. Existing ObjectDB/resource-use exit diagnostics remain.
+- Preserved pre-existing concurrent enemy-controller/precharge and combat-upgrade test edits. No push performed.
+
+
+## 2026-10-23 — Sync main and retain local gameplay fixes
+
+- User requested syncing the completed combat feedback implementation. Fetched origin/main and fast-forwarded codex/floor-difficulty-scaling from 6ab265c to c478ab7, then restored all existing tracked and untracked work from a retained stash backup. Resolved the AI usage document by retaining both histories. Four parry screenshot import files now tracked upstream retain upstream metadata; their original versions remain in the backup.
+- Kept the local parry timing, single-perfect popup, melee counter damage/stun, two-zone training/heal/health displays, bundled Chinese font fallback, warehouse prop collision/depth, floor scaling, persona escape and Codex intermission work. Added an independent damage feedback layer in training because its formal combat HUD is intentionally hidden.
+- Reproduced and fixed an upstream screen-feedback merge bug: an existing non-damage effect caused the loop to return before appending a new damage effect. A real melee hit after a perfect now displays the red directional feedback, hit shader and impact particles. Captured the restored feedback in a windowed run.
+- Validation: unit checks 82/82; training 88/88; warehouse collision 50/50; warehouse 63/63; floor difficulty 1298/1298; Codex passage 23/23; laser beam 33/33; font coverage 860 unique Chinese characters across both font resources, no missing glyphs. Existing exit-time ObjectDB/resource/texture-release diagnostics remain. No push performed; restored work remains uncommitted as before.

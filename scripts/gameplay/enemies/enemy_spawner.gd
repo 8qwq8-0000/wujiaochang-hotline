@@ -13,6 +13,7 @@ const ENEMY_SCENE_PATH := "res://scenes/actors/enemies/enemy.tscn"
 
 @export var auto_spawn := true
 @export var report_to_run_manager := true
+var health_bonus := 0
 var _plan_ready := false
 var _spawn_plan: Array[EnemySpawnMarker] = []
 
@@ -42,6 +43,10 @@ func spawn_all() -> void:
 	for marker in _spawn_plan:
 		var enemy: EnemyController = enemy_scene.instantiate()
 		enemy.profile = marker.profile
+		if health_bonus > 0:
+			# Profiles are shared resources; scaling one floor must not alter others.
+			enemy.profile = marker.profile.duplicate() as EnemyProfile
+			enemy.profile.max_health += health_bonus
 		enemy.mandatory = marker.mandatory
 		# Set the final local position before _ready records the patrol anchor.
 		enemy.position = spawn_parent.to_local(marker.global_position)

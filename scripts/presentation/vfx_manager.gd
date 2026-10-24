@@ -5,10 +5,10 @@ const EFFECT_SCENE := preload("res://scenes/presentation/effect_flash.tscn")
 const DAMAGE_NUMBER_SCENE := preload("res://scenes/presentation/damage_number.tscn")
 const AFTERIMAGE_SCENE := preload("res://scenes/presentation/afterimage_effect.tscn")
 const ARC_EFFECT := preload("res://scripts/presentation/electric_arc_effect.gd")
-const STAIN_LAYER_SCRIPT := preload("res://scripts/presentation/cyber_stain_layer.gd")
+const STAIN_LAYER_SCRIPT := preload("res://scripts/presentation/red_blood_stain_layer.gd")
 const PERFECT_FEEDBACK := preload("res://scripts/presentation/perfect_parry_feedback.gd")
 const IMPACT_EFFECT := preload("res://scripts/presentation/impact_particle_effect.gd")
-const DEATH_EFFECT := preload("res://scripts/presentation/death_burst_effect.gd")
+const BLOOD_SPRAY := preload("res://scripts/presentation/death_blood_spray.gd")
 const AFTERIMAGE_COLOR := Color(0.25, 0.85, 1.0, 0.55)
 const AFTERIMAGE_DURATION := 0.25
 const FEEDBACK_GROUP_WINDOW_USEC := 90_000
@@ -30,7 +30,7 @@ var _active_afterimages: Array[AfterimageEffect] = []
 var _active_arcs: Array[Node2D] = []
 var _available_impacts: Array[ImpactParticleEffect] = []
 var _active_impacts: Array[ImpactParticleEffect] = []
-var _active_deaths: Array[DeathBurstEffect] = []
+var _active_blood_sprays: Array[Node2D] = []
 var _stain_layer: Variant
 var _stain_serial := 0
 var perfect_feedback: PerfectParryFeedback
@@ -85,7 +85,7 @@ func _attach_stain_layer(host: Node) -> void:
 	if is_instance_valid(_stain_layer):
 		_stain_layer.queue_free()
 	_stain_layer = STAIN_LAYER_SCRIPT.new()
-	_stain_layer.name = "CyberStainLayer"
+	_stain_layer.name = "RedBloodStainLayer"
 	_stain_layer.stain_budget = stain_budget
 	host.add_child(_stain_layer)
 	# Root-level custom drawing and floor assemblers should render first, while
@@ -138,27 +138,28 @@ func get_stain_count() -> int:
 func _on_entity_defeated(entity: Node) -> void:
 	if entity is EnemyController:
 		var enemy := entity as EnemyController
-		_spawn_death_effect(enemy)
-		spawn_death_stain(
-			enemy.global_position,
-			enemy.profile,
-			enemy.death_motion_direction,
-			enemy.death_impact_direction
-		)
+		_spawn_blood_spray(enemy)
 
-
-func _spawn_death_effect(enemy: EnemyController) -> void:
-	if _active_deaths.size() >= death_effect_budget:
-		_active_deaths.pop_front().stop()
-	var effect := DEATH_EFFECT.new() as DeathBurstEffect
-	add_child(effect)
-	_active_deaths.append(effect)
-	effect.finished.connect(func(finished_effect: DeathBurstEffect) -> void:
-		_active_deaths.erase(finished_effect)
-		finished_effect.queue_free()
-	)
-	var quality_scale := 0.58 if _is_low_feedback_quality() else 1.0
-	effect.play(enemy, enemy.death_weapon_id, _telegraph_clarity_scale(enemy.global_position) * quality_scale)
+func _spawn_blood_spray(enemy: EnemyController) -> void:
+	var host := CombatProjectile.room_for_actor(enemy)
+	if not is_instance_valid(host) or host.is_queued_for_deletion():
+		return
+	if _active_blood_sprays.size() >= death_effect_budget:
+		var oldest: Node2D = _active_blood_sprays.pop_front()
+		oldest.finish()
+	var effect := BLOOD_SPRAY.new()
+	host.add_child(effect)
+	_active_blood_sprays.append(effect)
+	effect.tree_exiting.connect(func() -> void: _active_blood_sprays.erase(effect))
+	var direction := enemy.death_impact_direction
+	if direction.is_zero_approx():
+		direction = enemy.death_motion_direction if not enemy.death_motion_direction.is_zero_approx() else enemy.facing
+	var point := enemy.global_position
+	var profile := enemy.profile
+	effect.settled.connect(func() -> void:
+		spawn_death_stain(point, profile, direction, direction)
+	, CONNECT_ONE_SHOT)
+	effect.start(enemy.global_position, direction, 0.7 if _is_low_feedback_quality() else 1.0)
 
 
 func _spawn_arc(from: Vector2, to: Vector2, room: Node) -> void:

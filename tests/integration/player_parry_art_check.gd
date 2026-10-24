@@ -48,23 +48,25 @@ func run() -> void:
 	var mouse := InputEventMouseButton.new()
 	mouse.button_index = MOUSE_BUTTON_RIGHT
 	mouse.pressed = true
-	Input.parse_input_event(mouse)
+	root.push_input(mouse, true)
 	await process_frame
+	# The synced controller consumes buffered right-click input on its physics tick.
+	player._physics_process(0.0)
 	check(player.guard.state == GuardComponent.State.STARTUP and sprite.visible, "right mouse input reaches player guard and displays effect")
 	mouse = InputEventMouseButton.new()
 	mouse.button_index = MOUSE_BUTTON_RIGHT
 	mouse.pressed = false
-	Input.parse_input_event(mouse)
+	root.push_input(mouse, true)
 	player.set_input_enabled(false)
 	player.guard.reset_to_idle()
 	check(player.guard.begin_guard(Vector2.RIGHT), "normal guard input starts effect")
 	for index in 4:
 		if index > 0:
-			step(0.015)
+			step(0.005)
 		check(sprite.visible and sprite.frame == index, "startup frame %d" % (index + 1))
-	step(0.016)
+	step(0.006)
 	check(player.guard.state == GuardComponent.State.PERFECT and sprite.frame == 4, "perfect window holds approved fifth frame")
-	check(is_equal_approx(player.guard.startup_seconds, 0.06) and is_equal_approx(player.guard.perfect_seconds, 0.12), "art preserves gameplay timings")
+	check(is_equal_approx(player.guard.startup_seconds, 0.02) and is_equal_approx(player.guard.perfect_seconds, 0.20), "art follows more forgiving gameplay timings")
 	for direction in [Vector2.RIGHT, Vector2.DOWN, Vector2.LEFT, Vector2.UP, Vector2(1, -1).normalized()]:
 		visual.update_guard(player.guard.state, direction, player.guard.guard_arc_degrees)
 		check(sprite.position.is_equal_approx(visual.body_center + direction * visual.shield_distance), "shield stays on aimed side: %s" % direction)
@@ -73,7 +75,7 @@ func run() -> void:
 		check(sprite.texture == visual.DIRECTION_TEXTURES[visual.direction_name], "selects independent directional atlas: %s" % direction)
 		if visual.direction_name == &"up":
 			check(visual.get_index() < player.visuals.body_sprite.get_index(), "upward shield orders behind body without negative world Z")
-	step(0.12)
+	step(0.20)
 	check(sprite.frame == 5 and player.guard.is_guard_active(), "normal block uses frame six")
 	step(0.091)
 	check(sprite.frame == 6, "normal block progresses to frame seven")
@@ -93,9 +95,9 @@ func run() -> void:
 	packet.reflectable = true
 	var result := player.guard.try_resolve(packet, player, CombatFaction.Id.PLAYER)
 	check(result != null and result.reflected and result.packet.travel_direction == Vector2.RIGHT, "front projectile still reflects")
-	check(sprite.frame == 4 and player.guard.state == GuardComponent.State.NORMAL, "successful reflection briefly preserves peak frame")
-	visual._process(0.081)
-	check(sprite.frame == 5, "impact hold returns to normal animation")
+	check(sprite.frame == 4 and player.guard.state == GuardComponent.State.PERFECT, "reflection preserves the remaining perfect window and peak frame")
+	step(0.16)
+	check(sprite.frame == 5, "original perfect window expires into normal animation without extension")
 	packet.source_position = player.global_position + Vector2.LEFT * 40
 	check(player.guard.try_resolve(packet, player, CombatFaction.Id.PLAYER) == null, "art does not protect the player's back")
 	player.guard.reset_to_idle()
@@ -137,7 +139,7 @@ func run() -> void:
 		check(sprite.frame == 0 and sprite.visible, "directional startup starts cleanly: %s" % direction)
 		step(0.061)
 		check(sprite.frame == 4, "directional perfect peak: %s" % direction)
-		step(0.121)
+		step(0.161)
 		check(sprite.frame == 5, "directional normal begins: %s" % direction)
 		step(0.091)
 		check(sprite.frame == 6, "directional normal progresses: %s" % direction)

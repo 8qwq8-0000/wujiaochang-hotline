@@ -49,10 +49,14 @@ func assemble() -> void:
 	_loot_rng.seed = seed_value + 7919 * (run_manager.floor_index + 1 if run_manager != null else 1)
 	_drop_chance_rng.seed = _loot_rng.seed + 104729
 	var floor_number: int = run_manager.floor_index + 1 if run_manager != null else 1
+	var difficulty_step := floor_number - 1 if floor_number >= 1 and floor_number <= 3 else 0
 	for index in room_count:
 		var packed := _choose_room(random, floor_number)
 		var room := packed.instantiate()
 		room.position = room_spacing * index
+		if room is CombatRoom:
+			room.get_node("EnemySpawner").health_bonus = difficulty_step
+			room.extra_enemy_count = difficulty_step
 		if sequential_progression and room is CombatRoom:
 			room.configure_stage(index, room_count)
 		add_child(room)

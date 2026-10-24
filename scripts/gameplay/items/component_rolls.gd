@@ -7,6 +7,7 @@ const WHEEL_RAM_COOLDOWNS := [1.2, 1.0, 0.8]
 const ARMOR_RECOVERY_SECONDS := [12.0, 10.0, 10.0]
 const ARMOR_CAPACITY := [1, 1, 2]
 const QUALITY_COLORS := [Color("a8b1bd"), Color("e7edf3"), Color("70b7ff"), Color("cf99ff")]
+const COMPOUND_CYBERWARE_ICON := "res://assets/art/items/equipment_v1/compound_cyberware.png"
 
 static func quality_color(item: InventoryItem) -> Color:
 	return QUALITY_COLORS[quality(item)] if ordinary(item) else Color.WHITE
@@ -94,6 +95,8 @@ static func ensure(item: InventoryItem) -> void:
 	if _is_cyberware(item):
 		if not item.has_property("modules"):
 			item.set_property("modules", cyberware_modules(item))
+		if cyberware_modules(item).size() > 1:
+			item.set_property("image", COMPOUND_CYBERWARE_ICON)
 		return
 	if not ordinary(item):
 		return
@@ -186,20 +189,25 @@ static func compatible(a: InventoryItem, b: InventoryItem) -> bool:
 	if _is_cyberware(a):
 		var a_modules := cyberware_modules(a)
 		var b_modules := cyberware_modules(b)
-		var union := a_modules.duplicate()
 		for module_id in b_modules:
-			if module_id not in union:
-				union.append(module_id)
-		if union.size() > 4:
-			return false
-		for module_id in b_modules:
-			if module_id not in a_modules:
-				return true
-		for module_id in a_modules:
-			if module_id not in b_modules:
-				return true
-		return false
+			if module_id in a_modules:
+				return false
+		return a_modules.size() + b_modules.size() <= 4
 	return synthesis_quality(a) == synthesis_quality(b)
+
+static func cyberware_overlap_error(a: InventoryItem, b: InventoryItem) -> String:
+	if not _is_cyberware(a) or not _is_cyberware(b):
+		return ""
+	var existing := cyberware_modules(a)
+	var names := PackedStringArray()
+	for module_id in cyberware_modules(b):
+		if module_id in existing:
+			var data := load(cyberware_resource_path(StringName(module_id))) as CyberwareData
+			names.append(data.display_name if data != null else module_id)
+	if names.is_empty():
+		return ""
+	return "无法合成：主体已包含%s，不能重复加入。材料未消耗。" % "、".join(names)
+
 
 static func fuse(a: InventoryItem, b: InventoryItem, rng: RandomNumberGenerator) -> InventoryItem:
 	if not compatible(a, b):
@@ -212,6 +220,7 @@ static func fuse(a: InventoryItem, b: InventoryItem, rng: RandomNumberGenerator)
 				merged.append(module_id)
 		merged.sort()
 		result.set_property("modules", merged)
+		result.set_property("image", COMPOUND_CYBERWARE_ICON)
 		return result
 	var tier := mini(synthesis_quality(a) + 1, 3)
 	var result := create(a.get_prototype().get_prototype_id(), tier, rng)

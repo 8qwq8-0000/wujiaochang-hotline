@@ -329,7 +329,9 @@ func export_settlement_state(preserve_inventory: bool) -> Dictionary:
 	if _has_persona_archive_content(archive):
 		state["persona_archive"] = archive
 	state.talent_core = talent_core.export_fresh_run_state()
-	if not preserve_inventory:
+	if preserve_inventory:
+		state.inventory = inventory.export_settlement_inventory()
+	else:
 		state.inventory = inventory.export_recovery_inventory()
 	state.current_health = config.max_health
 	state.circuit_breaker.equipped = inventory.blackbox_slot.get_item() != null and inventory.blackbox_slot.get_item().get_property("slot", "") == "insurance"

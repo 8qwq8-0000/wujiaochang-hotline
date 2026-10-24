@@ -38,7 +38,9 @@ func navigation_polygon() -> NavigationPolygon:
 	for rect in navigation_obstacles:
 		geometry.add_obstruction_outline(_outline(rect))
 	_navigation = NavigationPolygon.new()
-	_navigation.agent_radius = 20.0
+	# Enemies have an 11 px body radius. A 20 px bake closes wall/crate
+	# passages that their actual collider can safely traverse.
+	_navigation.agent_radius = 12.0
 	NavigationServer2D.bake_from_source_geometry_data(_navigation, geometry)
 	return _navigation
 

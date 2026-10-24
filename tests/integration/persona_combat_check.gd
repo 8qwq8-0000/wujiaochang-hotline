@@ -97,6 +97,53 @@ func run_checks() -> void:
 	player.dash.reset_transient_state()
 	await physics_frame
 
+	# A level-one emergency takeover must create distance, regardless of facing.
+	for direction: Vector2 in [Vector2.RIGHT, Vector2.LEFT, Vector2.UP, Vector2.DOWN]:
+		player.global_position = Vector2(400, 300)
+		enemy.global_position = player.global_position + direction * 80.0
+		enemy.facing = direction
+		await physics_frame
+		var landing := player.persona_combat._find_safe_takeover_landing(enemy)
+		check(not landing.is_empty(), "emergency retreat finds an open landing in every direction")
+		if not landing.is_empty():
+			var motion: Vector2 = landing.position - player.global_position
+			check(motion.dot(-direction) > 0.0, "retreat moves away from enemy instead of behind its back")
+			check(landing.position.distance_to(enemy.global_position) > 80.0, "retreat increases enemy separation")
+	player.global_position = Vector2(400, 300)
+	enemy.global_position = Vector2(480, 300)
+	var retreat_wall := make_wall(arena, Vector2(350, 300), Vector2(12, 50))
+	await physics_frame
+	var side_landing := player.persona_combat._find_safe_takeover_landing(enemy)
+	check(not side_landing.is_empty(), "blocked retreat can find a safe diagonal alternative")
+	if not side_landing.is_empty():
+		check(not player.test_move(player.global_transform, side_landing.position - player.global_position), "retreat never crosses the blocking wall")
+		check(side_landing.position.distance_to(enemy.global_position) > 80.0, "diagonal retreat still increases separation")
+	retreat_wall.queue_free()
+	await physics_frame
+	var second_enemy := load("res://scenes/actors/enemies/enemy.tscn").instantiate() as EnemyController
+	second_enemy.stationary_test_target = true
+	second_enemy.position = Vector2(300, 300)
+	arena.add_child(second_enemy)
+	await physics_frame
+	var crowd_landing := player.persona_combat._find_safe_takeover_landing(enemy)
+	check(not crowd_landing.is_empty(), "retreat finds an escape between multiple threats")
+	if not crowd_landing.is_empty():
+		check(crowd_landing.position.distance_to(enemy.global_position) > 80 and crowd_landing.position.distance_to(second_enemy.global_position) > 80, "retreat does not escape one enemy into another")
+	second_enemy.queue_free()
+	await physics_frame
+	var retreat_origin := player.global_position
+	player.talent_core.refill_takeover_charges()
+	player.health.set_current_health(1)
+	await process_frame
+	await process_frame
+	check(player.global_position.distance_to(enemy.global_position) > retreat_origin.distance_to(enemy.global_position), "actual one-HP level-one takeover retreats from enemy")
+	check(player.talent_core.takeover_charges == 0 and player.hurt_box.is_invulnerable(), "successful retreat consumes one charge and grants invulnerability")
+	player.health.configure_max_health(3)
+	player.hurt_box.clear_invulnerability()
+	player.global_position = Vector2(100, 100)
+	enemy.global_position = Vector2(150, 100)
+	await physics_frame
+
 	player.talent_core.consume_persona_drink(TalentCoreController.ROCK_VIGILANTE)
 	player.talent_core.set_talent_choice(TalentCoreController.ROCK_VIGILANTE, 1, &"steady_beat")
 	player.talent_core.set_persona(TalentCoreController.ROCK_VIGILANTE)

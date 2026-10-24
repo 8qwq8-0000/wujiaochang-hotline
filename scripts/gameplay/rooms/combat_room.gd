@@ -17,6 +17,7 @@ var area_index := 0
 var area_total := 1
 var active := true
 var reward_count := 0
+var extra_enemy_count := 0
 
 @onready var spawner: EnemySpawner = $EnemySpawner
 @onready var exit_elevator: Area2D = $ExitElevator
@@ -40,6 +41,7 @@ func _ready() -> void:
 		layout.power_position = EncounterPropPlacement.choose_power_position(layout, seed_value)
 		_add_small_obstacles()
 		_apply_layout()
+	_add_floor_enemies()
 	_place_barrel()
 	if layout != null:
 		_apply_workshop_art()
@@ -61,6 +63,53 @@ func _on_all_required_defeated() -> void:
 		var detail := "通道已开放，掉落请在敌人倒下处拾取" if area_index + 1 < area_total else "最终出口已开放"
 		var message := "区域 %d/%d 清场 · %s" % [area_index + 1, area_total, detail] if sequence_managed else "区域清理完成，出口电梯已启用"
 		events.publish_notice(&"room_cleared", message, Color(0.35, 1.0, 0.55), CombatNotice.Priority.NORMAL, 0.0, 2.0)
+
+
+func _add_floor_enemies() -> void:
+	if extra_enemy_count <= 0:
+		return
+	var markers := $EnemySpawnPoints.get_children()
+	var positions: Array[Vector2] = []
+	for marker in markers:
+		if marker is EnemySpawnMarker and marker.profile != null:
+			positions.append(marker.position)
+	if positions.is_empty():
+		push_error("Cannot add floor enemies without authored spawn points")
+		return
+	var blockers: Array[Rect2] = []
+	var doors: Array[Vector4] = []
+	if layout != null:
+		blockers.append_array(layout.covers)
+		blockers.append_array(layout.windows)
+		blockers.append_array(layout.navigation_obstacles)
+		doors.assign(layout.doors)
+	else:
+		for cover in [$CoverA, $CoverB]:
+			var shape := cover.get_node("CollisionShape2D").shape as RectangleShape2D
+			blockers.append(Rect2(cover.position - shape.size * 0.5, shape.size))
+	var candidates: Array[Vector2] = []
+	for y in range(48, int(ROOM_SIZE.y) - 38, 24):
+		for x in range(48, int(ROOM_SIZE.x) - 38, 24):
+			var point := Vector2(x, y)
+			if not EncounterPropPlacement.is_safe(point, positions, blockers, doors, $PowerBox.position, ROOM_SIZE):
+				continue
+			# Keep reinforcements in an existing enemy's reachable open space.
+			if positions.any(func(anchor: Vector2) -> bool: return anchor.distance_to(point) <= 160 and EncounterPropPlacement.clear_segment(anchor, point, blockers)):
+				candidates.append(point)
+	var random := RandomNumberGenerator.new()
+	var run := get_node_or_null("/root/RunManager")
+	random.seed = (run.run_seed if run != null else 1) + area_index * 97 + 32452843
+	for index in extra_enemy_count:
+		if candidates.is_empty():
+			push_error("No safe position for additional floor enemy")
+			return
+		var point := candidates[random.randi_range(0, candidates.size() - 1)]
+		var marker := EnemySpawnMarker.new()
+		marker.position = point
+		marker.profile = preload("res://resources/enemies/melee_pressure.tres")
+		$EnemySpawnPoints.add_child(marker)
+		positions.append(point)
+		candidates = candidates.filter(func(candidate: Vector2) -> bool: return candidate.distance_to(point) >= EncounterPropPlacement.MIN_ENEMY_DISTANCE)
 
 
 func configure_stage(index: int, total: int) -> void:
@@ -378,3 +427,6 @@ func _apply_workshop_art() -> void:
 	var blood_decals := preload("res://scripts/presentation/floor_blood_decals.gd").new()
 	blood_decals.name = "FloorBloodDecals"
 	add_child(blood_decals)
+	var clutter := preload("res://scripts/presentation/floor_clutter.gd").new()
+	clutter.name = "FloorClutter"
+	add_child(clutter)

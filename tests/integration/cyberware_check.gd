@@ -189,6 +189,18 @@ func run() -> void:
 	await process_frame
 	restored.inventory.import_run_state(run_state)
 	check(restored.cyberware.has_module(CyberwareController.SMART_FIRE) and restored.cyberware.has_module(CyberwareController.EXPLOSIVE_MAGAZINE), "serialized compound restores its complete module set")
+	var bag_cyberware := ComponentRolls.create("optical_intruder", 1, rng)
+	check(player.inventory.backpack.add_item(bag_cyberware), "settlement fixture includes backpack cyberware")
+	var before_settlement := player.inventory.export_run_state()
+	var settlement := player.export_settlement_state(true)
+	check(settlement.inventory.cyberware.is_empty(), "successful settlement clears equipped cyberware")
+	var expected_bag: Array = []
+	for item in player.inventory.backpack.get_items():
+		if item.get_property("slot", "") != "cyberware":
+			expected_bag.append(item.serialize())
+	check(settlement.inventory.backpack.get("items", []) == expected_bag, "successful settlement removes backpack cyberware and preserves ordinary items")
+	check(settlement.inventory.primary == before_settlement.primary and settlement.inventory.defense == before_settlement.defense, "successful settlement retains ordinary equipped items")
+	check(player.inventory.export_run_state() == before_settlement, "building settlement does not mutate the current run on save failure")
 	var recovery := player.inventory.export_recovery_inventory()
 	check(recovery.cyberware.is_empty(), "action recovery clears equipped cyberware")
 

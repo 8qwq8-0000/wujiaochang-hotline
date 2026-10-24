@@ -258,7 +258,8 @@ func _synthesis_feedback(message: String) -> void:
 
 func synthesize(subject: InventoryItem, material: InventoryItem) -> bool:
 	if _mutating or _departing or not owns_synthesis_item(subject) or not owns_synthesis_item(material) or not ComponentRolls.compatible(subject, material):
-		_synthesis_feedback("请选择两件可兼容的同槽组件；义体必须包含不同模块")
+		var overlap_error := ComponentRolls.cyberware_overlap_error(subject, material)
+		_synthesis_feedback(overlap_error if not overlap_error.is_empty() else "请选择两件可兼容的同槽组件；义体必须包含不同模块")
 		return false
 	var result := ComponentRolls.fuse(subject, material, RandomNumberGenerator.new())
 	var inv: ComponentInventory = player.inventory

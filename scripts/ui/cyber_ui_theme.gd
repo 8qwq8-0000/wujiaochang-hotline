@@ -9,7 +9,7 @@ const HIGHLIGHT := Color("d8ffe2")
 const WARNING := Color("ffc857")
 const DANGER := Color("ff4055")
 const MUTED := Color("7fa890")
-const FONT: Font = preload("res://assets/fonts/[可商用]ark pixel font/ark-pixel-font-12px-monospaced-ttf-v2026.07.20/ark-pixel-12px-monospaced-zh_cn.ttf")
+const FONT: Font = preload("res://resources/ui/chinese_font_12.tres")
 
 
 static func create_theme() -> Theme:

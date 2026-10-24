@@ -4,9 +4,14 @@
 [ext_resource type="PackedScene" path="res://scenes/actors/player/player.tscn" id="2"]
 
 [sub_resource type="RectangleShape2D" id="Horizontal"]
-size = Vector2(416, 8)
+size = Vector2(848, 8)
 [sub_resource type="RectangleShape2D" id="Vertical"]
 size = Vector2(8, 276)
+
+[sub_resource type="RectangleShape2D" id="DividerUpper"]
+size = Vector2(8, 144)
+[sub_resource type="RectangleShape2D" id="DividerLower"]
+size = Vector2(8, 68)
 
 [node name="ParryTraining" type="Node2D"]
 script = ExtResource("1")
@@ -21,17 +26,24 @@ position = Vector2(320, 180)
 
 [node name="Walls" type="StaticBody2D" parent="."]
 [node name="Top" type="CollisionShape2D" parent="Walls"]
-position = Vector2(424, 64)
+position = Vector2(640, 64)
 shape = SubResource("Horizontal")
 [node name="Bottom" type="CollisionShape2D" parent="Walls"]
-position = Vector2(424, 340)
+position = Vector2(640, 340)
 shape = SubResource("Horizontal")
 [node name="Left" type="CollisionShape2D" parent="Walls"]
 position = Vector2(216, 202)
 shape = SubResource("Vertical")
 [node name="Right" type="CollisionShape2D" parent="Walls"]
-position = Vector2(632, 202)
+position = Vector2(1064, 202)
 shape = SubResource("Vertical")
+
+[node name="DividerUpper" type="CollisionShape2D" parent="Walls"]
+position = Vector2(640, 136)
+shape = SubResource("DividerUpper")
+[node name="DividerLower" type="CollisionShape2D" parent="Walls"]
+position = Vector2(640, 306)
+shape = SubResource("DividerLower")
 
 [node name="UI" type="CanvasLayer" parent="."]
 layer = 20

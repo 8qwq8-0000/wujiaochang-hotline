@@ -241,6 +241,11 @@ func _physics_process(delta: float) -> void:
 	if _tick_shield_cover(delta, sees_target):
 		return
 	_tick_precharge(delta, sees_target)
+	var distance := global_position.distance_to(_target.global_position)
+	# Melee preparation belongs to this close-range attack, never to pursuit.
+	if state == State.WINDUP and profile.role != EnemyProfile.Role.RANGED_SIGHTLINE and (not sees_target or distance > profile.attack_range):
+		_windup_remaining = 0.0
+		state = State.CHASE
 	if state == State.WINDUP:
 		_windup_remaining -= delta
 		_stop_navigation_motion()
@@ -252,7 +257,6 @@ func _physics_process(delta: float) -> void:
 				_attack_cooldown_remaining = profile.attack_cooldown
 		queue_redraw()
 		return
-	var distance := global_position.distance_to(_target.global_position)
 	var desired_velocity := Vector2.ZERO
 	if not sees_target:
 		state = State.CHASE
@@ -364,19 +368,11 @@ func _tick_shield_cover(delta: float, sees_target: bool) -> bool:
 	return true
 
 
-func should_retreat(distance: float) -> bool:
-	return profile.role == EnemyProfile.Role.RANGED_SIGHTLINE and distance < profile.attack_range * 0.65
-
-
 func _choose_tactical_intent(distance: float, delta: float) -> EnemyTacticalBrain.Intent:
 	if not profile.tactical_enabled:
-		if should_retreat(distance):
-			return EnemyTacticalBrain.Intent.RETREAT
 		return EnemyTacticalBrain.Intent.HOLD_AND_ATTACK if distance <= profile.attack_range else EnemyTacticalBrain.Intent.APPROACH
 	# Safety and attack windows are edge-triggered and must not wait for the
 	# regular decision interval. The interval only stabilizes repositioning.
-	if should_retreat(distance):
-		return EnemyTacticalBrain.Intent.RETREAT
 	if distance <= profile.attack_range:
 		if profile.role != EnemyProfile.Role.RANGED_SIGHTLINE or _attack_cooldown_remaining <= 0.0:
 			return EnemyTacticalBrain.Intent.HOLD_AND_ATTACK
@@ -407,6 +403,9 @@ func _nearby_alerted_allies() -> int:
 
 
 func _ensure_precharge() -> void:
+	if profile.role != EnemyProfile.Role.RANGED_SIGHTLINE:
+		_cancel_precharge()
+		return
 	if state in [State.WINDUP, State.STAGGERED, State.DEAD, State.SELF_DESTRUCT] or _precharge_active or _attack_precharged:
 		return
 	var settings: Node = get_node_or_null("/root/GameSettings")
@@ -420,7 +419,7 @@ func _ensure_precharge() -> void:
 
 
 func _tick_precharge(delta: float, sees_target: bool) -> void:
-	if not sees_target:
+	if profile.role != EnemyProfile.Role.RANGED_SIGHTLINE or not sees_target:
 		_cancel_precharge()
 		return
 	if not _precharge_active:
@@ -805,6 +804,8 @@ func _on_died(packet: DamagePacket) -> void:
 			death_impact_direction = packet.travel_direction.normalized()
 		elif not packet.knockback.is_zero_approx():
 			death_impact_direction = packet.knockback.normalized()
+		elif (not packet.source_position.is_zero_approx() or is_instance_valid(packet.source)) and not global_position.is_equal_approx(packet.source_position):
+			death_impact_direction = packet.source_position.direction_to(global_position)
 	_cancel_precharge()
 	_cancel_investigation()
 	if profile.self_destruct_enabled:

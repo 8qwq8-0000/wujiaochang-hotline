@@ -172,6 +172,12 @@ godot --headless --path . --script res://tests/integration/boss_shortcut_check.g
 完整通关与遗产酒谱：`godot --headless --path . --script res://tests/integration/victory_flow_check.gd`，覆盖第三层转入生产楼顶、胜利入口唯一铸造、回仓、酒谱显示和最后人格瓶型。仓库 BOSS 测试捷径仍由 `boss_shortcut_check.gd` 验证，不会生成遗产记录。
 盾兵飞行屏障与远程配合：`godot --headless --path . --script res://tests/integration/shield_support_check.gd`，61 项覆盖四方向、独立移动、墙体、干净身体、初始冷却、提前一秒跑位及友伤。带窗口追加 `-- --capture` 输出四方向截图。
 
-盾反训练营：`godot --headless --path . --script tests/integration/parry_training_check.gd`，覆盖仓库入口、三只前方扇形机器人、顺序单发、血量与间隔滑块、固定弹速、死亡跳过、真实弹道反射、连续两次 PERFECT! 与断连、真实 R 重置及参数保留、暂停和正式存档隔离。非 headless 追加 `-- --capture` 可生成训练营截图。
+盾反训练营：`godot --headless --path . --script tests/integration/parry_training_check.gd`，覆盖仓库入口、三只前方扇形机器人、顺序单发、血量与间隔滑块、固定弹速、死亡跳过、真实弹道反射、每次完美弹反立即显示 PERFECT!、近战反伤与眩晕、普通格挡无反伤及反伤击杀、真实 R 重置及参数保留、暂停和正式存档隔离。非 headless 追加 `-- --capture` 可生成训练营截图。
 
 `bomb_runtime_check.gd` 验证元素反应关闭时，真实枪弹仍能引爆炸弹箱、生成动画和碎片，并产生爆炸及持续火区伤害；普通油区仍遵守元素反应开关。窗口验证可使用 `godot --path . --windowed --script res://tests/integration/bomb_runtime_check.gd -- --capture`。
+
+逐层难度：`godot --headless --path . --script res://tests/integration/floor_difficulty_check.gd`。普通战斗第 1/2/3 层每区生成 6/7/8 只小怪，每只最大生命在原型基础上增加 0/1/2；覆盖四种地图、三个固定种子、新增出生点可达性、共享原型隔离和清场计数。
+
+墙边窄道追击：`godot --headless --fixed-fps 60 --path . --script res://tests/integration/enemy_corner_passage_check.gd`。复现错位公寓随机箱子和左墙间的 36 px 窄道，检查短路可达、近战/盾兵实际攻击玩家及前排死亡后后排通过。导航烘焙采用 12 px 留边，匹配敌人 11 px 碰撞半径并保留 1 px 裕量。
+
+仓库道具碰撞与遮挡：`godot --headless --path . --script res://tests/integration/warehouse_collision_check.gd`，覆盖储物箱、货架、工作台、合成师、档案终端、杂物箱和四处入口的实体底座、落地排序点、双向通道及交互可达性。非 headless 追加 `-- --capture` 可检查各道具前后站位截图。

@@ -57,7 +57,7 @@ func run() -> void:
 				else:
 					check(pair_at_zero == pair, "same seed and floor regenerate identical layouts")
 			await settle()
-			check(run_manager.mandatory_enemies_remaining == 12, "all layouts preserve two-area objectives")
+			check(run_manager.mandatory_enemies_remaining == (6 + level) * 2, "all layouts preserve floor-scaled two-area objectives")
 			assembler.passages[0].unlock()
 			var entry := CombatLayoutData._scaled_point(Vector2(74,180), CombatRoom.ROOM_SCALE, CombatRoom.BASE_ROOM_SIZE)
 			var next_entry: Vector2 = assembler.generated_rooms[1].to_global(entry)

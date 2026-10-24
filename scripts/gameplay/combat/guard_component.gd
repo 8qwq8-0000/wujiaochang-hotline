@@ -14,8 +14,8 @@ enum State {
 }
 
 @export_range(1.0, 360.0, 1.0) var guard_arc_degrees: float = 120.0
-@export_range(0.0, 1.0, 0.01) var startup_seconds: float = 0.06
-@export_range(0.01, 1.0, 0.01) var perfect_seconds: float = 0.12
+@export_range(0.0, 1.0, 0.01) var startup_seconds: float = 0.02
+@export_range(0.01, 1.0, 0.01) var perfect_seconds: float = 0.20
 @export_range(0.01, 1.0, 0.01) var normal_seconds: float = 0.18
 @export_range(0.0, 1.0, 0.01) var recovery_seconds: float = 0.22
 @export_range(0.0, 100.0, 1.0) var perfect_heat_refund: float = 18.0
@@ -96,14 +96,38 @@ func try_resolve(packet: DamagePacket, target: Node2D, target_faction: CombatFac
 			result.packet = reflected_packet
 		else:
 			result.outcome = DamageResult.Outcome.PERFECT_BLOCKED
-			if packet.is_melee and is_instance_valid(packet.source) and packet.source.has_method("apply_stagger"):
-				packet.source.apply_stagger(maxf(packet.stagger_seconds, 0.65))
+			if packet.is_melee:
+				_counter_melee_attack(packet, target, target_faction)
 		heat_refund_requested.emit(perfect_heat_refund)
 		perfect_guarded.emit(result)
-		_enter_state(State.NORMAL, normal_seconds)
+		# Reflect every projectile arriving in the remaining perfect window.
+		# A reflection never restarts or extends that window.
+		if not result.reflected:
+			_enter_state(State.NORMAL, normal_seconds)
 	else:
 		result.outcome = DamageResult.Outcome.BLOCKED
 	return result
+
+
+func _counter_melee_attack(packet: DamagePacket, defender: Node2D, defender_faction: CombatFaction.Id) -> void:
+	var attacker := packet.source
+	if not is_instance_valid(attacker):
+		return
+	var hurt_box := attacker.get_node_or_null("HurtBox") as HurtBox2DComponent
+	if hurt_box != null:
+		var counter := DamagePacket.new()
+		counter.base_damage = 1
+		counter.source = defender
+		counter.source_faction = defender_faction
+		counter.source_position = defender.global_position
+		counter.travel_direction = defender.global_position.direction_to(hurt_box.global_position)
+		counter.is_melee = true
+		counter.reflected = true
+		counter.blockable = false
+		counter.allow_status_reactions = false
+		hurt_box.receive_hit(counter)
+	if is_instance_valid(attacker) and attacker.has_method("apply_stagger"):
+		attacker.apply_stagger(maxf(packet.stagger_seconds, 0.8))
 
 
 func _is_inside_guard_arc(packet: DamagePacket, target_position: Vector2) -> bool:

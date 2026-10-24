@@ -49,11 +49,10 @@ static func decide(snapshot: Dictionary, preferred_side: float = 1.0) -> Intent:
 
 	match role:
 		EnemyProfile.Role.RANGED_SIGHTLINE:
-			if distance_ratio < 0.62:
-				return Intent.RETREAT
 			if distance_ratio <= 1.0 and cooldown_ready:
 				return Intent.HOLD_AND_ATTACK
-			if distance_ratio <= 1.08:
+			# Strafing outside firing range can orbit forever without a shot.
+			if distance_ratio <= 1.0:
 				return Intent.STRAFE_LEFT if side_left else Intent.STRAFE_RIGHT
 			return Intent.APPROACH
 		EnemyProfile.Role.HEAVY_ANCHOR:

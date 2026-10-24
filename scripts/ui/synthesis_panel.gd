@@ -3,6 +3,8 @@ extends CanvasLayer
 const DRAG := preload("res://scripts/ui/synthesis_drag_button.gd")
 const CYAN := Color("8de3da")
 const GOLD := Color("e6bc73")
+var heading_text := "GPT 的合成工坊"
+var empty_text := "暂无可合成组件\n出击收集后再来找 GPT"
 var room: Node2D
 var is_open := false
 var _owns_pause := false
@@ -51,7 +53,7 @@ func _ready() -> void:
 	margin.add_child(column)
 	var header := HBoxContainer.new()
 	column.add_child(header)
-	var title := _label("GPT 的合成工坊", 21, CYAN)
+	var title := _label(heading_text, 21, CYAN)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
 	var close_button := Button.new()
@@ -59,7 +61,7 @@ func _ready() -> void:
 	close_button.add_theme_font_size_override("font_size", 12)
 	close_button.pressed.connect(close)
 	header.add_child(close_button)
-	column.add_child(_label("武装/防御同品质升级；不同义体模块取并集，复合后不可拆分。", 11, Color("a6b9c4")))
+	column.add_child(_label("武装/防御同品质升级；义体最多四种模块，重复模块不可合成。", 11, Color("a6b9c4")))
 	var body := HBoxContainer.new()
 	body.add_theme_constant_override("separation", 12)
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -193,7 +195,7 @@ func refresh() -> void:
 			if ComponentRolls.synthesizable(item) and (_filter == "all" or item.get_property("slot") == _filter):
 				_add_item(item, location)
 	if _list.get_child_count() == 0:
-		_list.add_child(_label("暂无可合成组件\n出击收集后再来找 GPT", 12))
+		_list.add_child(_label(empty_text, 12))
 	_refresh_preview()
 
 func _add_item(item: InventoryItem, location: String) -> void:
@@ -224,6 +226,7 @@ func select_material(index: int, item: InventoryItem) -> void:
 	if item != null and _materials[1 - index] == item:
 		_materials[1 - index] = null
 	_target = 1 if index == 0 and item != null else index
+	show_message("")
 	refresh()
 
 func _refresh_preview() -> void:
@@ -246,6 +249,11 @@ func _refresh_preview() -> void:
 			return
 		if b.get_property("slot") != "cyberware":
 			_preview.text = "[color=#efad8c]槽位不匹配[/color]\n\n义体只能与义体敲合"
+			return
+		var overlap_error := ComponentRolls.cyberware_overlap_error(a, b)
+		if not overlap_error.is_empty():
+			_preview.text = "[color=#efad8c][b]义体模块重复[/b][/color]\n\n" + overlap_error
+			show_message(overlap_error)
 			return
 		for module_id in ComponentRolls.cyberware_modules(b):
 			if module_id not in modules:
@@ -287,7 +295,10 @@ func _refresh_preview() -> void:
 func _synthesize() -> void:
 	if room.synthesize(_materials[0], _materials[1]):
 		var result: InventoryItem = room.last_synthesis_result
+		_materials = [null, null]
+		_target = 0
 		refresh()
+		_material_buttons[0].grab_focus()
 		_preview.text = "[color=#8de3da][b]升级完成[/b][/color]\n" + "[color=#" + ComponentRolls.quality_color(result).to_html(false) + "]" + ComponentRolls.describe(result) + "[/color]\n\n已回到主体原位置"
 
 func _exit_tree() -> void:

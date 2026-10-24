@@ -499,6 +499,17 @@ func export_run_state() -> Dictionary:
 	}
 
 
+func export_settlement_inventory() -> Dictionary:
+	var snapshot := export_run_state()
+	snapshot.cyberware = {}
+	var retained_items: Array = []
+	for item in backpack.get_items():
+		if item.get_property("slot", "") != "cyberware":
+			retained_items.append(item.serialize())
+	snapshot.backpack["items"] = retained_items
+	return snapshot
+
+
 func get_extraction_items() -> Array[Dictionary]:
 	# Copy each instance, including properties/quality added by future item systems.
 	var result: Array[Dictionary] = []

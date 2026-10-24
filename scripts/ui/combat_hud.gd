@@ -1,5 +1,32 @@
 extends CanvasLayer
 
+class CyberwareIcon extends TextureRect:
+	func _make_custom_tooltip(for_text: String) -> Object:
+		var panel := TerminalPanel.new()
+		panel.title = "CYBERWARE / 义体效果"
+		panel.theme = CyberUITheme.create_theme()
+		panel.panel_color = CyberUITheme.BACKGROUND
+		panel.custom_minimum_size.x = 232.0
+		var label := Label.new()
+		label.text = for_text
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		label.custom_minimum_size.x = 212.0
+		label.add_theme_color_override("font_color", CyberUITheme.HIGHLIGHT)
+		panel.add_child(label)
+		return panel
+
+const CYBERWARE_ICONS := {
+	&"smart_fire": preload("res://assets/art/items/equipment_v1/smart_fire_64.png"),
+	&"explosive_magazine": preload("res://assets/art/items/equipment_v1/explosive_magazine_64.png"),
+	&"tactical_coprocessor": preload("res://assets/art/items/equipment_v1/tactical_coprocessor_64.png"),
+	&"optical_intruder": preload("res://assets/art/items/equipment_v1/optical_intruder_64.png"),
+	&"kill_heat_sink": preload("res://assets/art/items/equipment_v1/kill_heat_sink_64.png"),
+	&"heat_threshold_pulser": preload("res://assets/art/items/equipment_v1/heat_threshold_pulser_64.png"),
+}
+const EQUIPMENT_TINT := Color(0.8, 0.95, 1.0, 0.65)
+const CYBERWARE_ICON_SIZE := 36.0
+const CYBERWARE_ICON_GAP := 4.0
+
 const CONNECT_SOUND := preload("res://assets/audio/ui/hotline_connect.wav")
 const PORTRAIT_JOHNNY := preload("res://assets/art/ui/start_menu/persona_johnny_ghost.png")
 const PORTRAIT_NARAKU := preload("res://assets/art/ui/start_menu/persona_naraku_ghost.png")
@@ -22,6 +49,8 @@ var _heat_meter: SegmentMeter
 var _heat_warning: Label
 var _weapon_name: Label
 var _weapon_preview: TextureRect
+var _equipment_preview: Control
+var _cyberware_preview: HBoxContainer
 var _persona_root: Control
 var _operator_panel: HoloCommsPanel
 var _persona_status: PersonaStatusPanel
@@ -54,7 +83,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_health_pulse_time += delta
-	overlay.visible = get_tree().get_nodes_in_group("warehouse").is_empty()
+	overlay.visible = get_tree().get_nodes_in_group("warehouse").is_empty() and get_tree().get_nodes_in_group("intermission").is_empty()
 	if not is_instance_valid(_player):
 		_player = get_tree().get_first_node_in_group("player") as PlayerController
 		if is_instance_valid(_player):
@@ -102,11 +131,15 @@ func _bind_player(player: PlayerController) -> void:
 		player.health_changed.connect(_on_player_health_changed)
 	_on_persona_changed(player.talent_core.current_persona_id)
 	_set_weapon_preview(player.weapons.get_current_weapon(), false)
+	if not player.cyberware.cyberware_changed.is_connected(_refresh_cyberware_preview):
+		player.cyberware.cyberware_changed.connect(_refresh_cyberware_preview)
+	_refresh_cyberware_preview(player.cyberware.modules)
 	player.tree_exiting.connect(func() -> void: _player = null, CONNECT_ONE_SHOT)
 
 
 func _build_minimal_hud() -> void:
 	overlay.theme = CyberUITheme.create_theme()
+	overlay.theme.set_stylebox("panel", "TooltipPanel", StyleBoxEmpty.new())
 	notice_queue.hide()
 	_damage_feedback = PlayerDamageFeedbackLayer.new()
 	_damage_feedback.name = "PlayerDamageFeedback"
@@ -210,17 +243,59 @@ func _build_minimal_hud() -> void:
 
 
 func _build_weapon_preview() -> void:
+	_equipment_preview = Control.new()
+	_equipment_preview.name = "EquipmentPreview"
+	_equipment_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(_equipment_preview)
+	_equipment_preview.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	_equipment_preview.offset_left = -8.0
+	_equipment_preview.offset_right = -8.0
+	_equipment_preview.offset_top = -8.0
+	_equipment_preview.offset_bottom = -8.0
 	_weapon_preview = TextureRect.new()
 	_weapon_preview.name = "CurrentWeaponPreview"
-	_weapon_preview.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	_weapon_preview.position = Vector2(-158.0, -54.0)
+	_weapon_preview.position = Vector2(-150.0, -46.0)
 	_weapon_preview.size = Vector2(150.0, 46.0)
-	_weapon_preview.pivot_offset = _weapon_preview.size
 	_weapon_preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_weapon_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_weapon_preview.modulate = Color(0.8, 0.95, 1.0, 0.5)
+	_weapon_preview.modulate = EQUIPMENT_TINT
 	_weapon_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	overlay.add_child(_weapon_preview)
+	_equipment_preview.add_child(_weapon_preview)
+	_cyberware_preview = HBoxContainer.new()
+	_cyberware_preview.name = "EquippedCyberware"
+	_cyberware_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_cyberware_preview.add_theme_constant_override("separation", int(CYBERWARE_ICON_GAP))
+	_equipment_preview.add_child(_cyberware_preview)
+
+
+func _refresh_cyberware_preview(modules: PackedStringArray) -> void:
+	for icon in _cyberware_preview.get_children():
+		_cyberware_preview.remove_child(icon)
+		icon.queue_free()
+	for module_id in modules:
+		var id := StringName(module_id)
+		var data := load(ComponentRolls.cyberware_resource_path(id)) as CyberwareData
+		if data == null or not CYBERWARE_ICONS.has(id):
+			continue
+		var icon := CyberwareIcon.new()
+		icon.name = module_id
+		icon.texture = CYBERWARE_ICONS[id]
+		icon.custom_minimum_size = Vector2.ONE * CYBERWARE_ICON_SIZE
+		icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		icon.modulate = EQUIPMENT_TINT
+		# Hover reveals the effect, while attack/guard clicks still reach gameplay.
+		icon.mouse_filter = Control.MOUSE_FILTER_PASS
+		icon.tooltip_text = "%s\n%s" % [data.display_name, data.description]
+		_cyberware_preview.add_child(icon)
+	var count := _cyberware_preview.get_child_count()
+	var width := count * CYBERWARE_ICON_SIZE + maxi(count - 1, 0) * CYBERWARE_ICON_GAP
+	_cyberware_preview.position = Vector2(-width, -46.0)
+	_cyberware_preview.size = Vector2(width, 46.0)
+	_cyberware_preview.visible = count > 0
+	_weapon_preview.position.x = -150.0 - (width + 10.0 if count > 0 else 0.0)
 
 
 func _on_pause_pressed() -> void:
@@ -343,7 +418,7 @@ func preview_combat_feedback() -> void:
 func _apply_hud_scale(value: float) -> void:
 	_top_left.scale = Vector2.ONE * value
 	_persona_root.scale = Vector2.ONE * value * 0.85
-	_weapon_preview.scale = Vector2.ONE * value
+	_equipment_preview.scale = Vector2.ONE * value
 
 
 func _saved_hud_scale() -> float:

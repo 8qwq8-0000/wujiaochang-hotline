@@ -59,8 +59,6 @@ func _on_damage_resolved(result: DamageResult) -> void:
 		return
 	combo_count = mini(combo_count + 1, 2)
 	_remaining = COMBO_SECONDS
-	if combo_count < 2:
-		return
 	popups_shown += 1
 	_origin = player.global_position + Vector2(0, -72)
 	_elapsed = 0.0

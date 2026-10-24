@@ -8,8 +8,8 @@ const ROCK_FEEDBACK_MAX := 100.0
 const ROCK_FEEDBACK_DECAY := 18.0
 const ROCK_DECAY_DELAY := 0.65
 const MASTER_ANALYSIS_SAMPLES := 2
-const TAKEOVER_LANDING_RADII := [42.0, 56.0, 70.0]
-const TAKEOVER_LANDING_ANGLES := [0.0, PI / 4.0, -PI / 4.0, PI / 2.0, -PI / 2.0, PI]
+const TAKEOVER_LANDING_RADII := [96.0, 80.0, 64.0, 48.0]
+const TAKEOVER_LANDING_ANGLES := [0.0, PI / 4.0, -PI / 4.0, PI / 2.0, -PI / 2.0]
 const TAKEOVER_ESCAPE_PROBE := 14.0
 
 @onready var player: PlayerController = get_parent() as PlayerController
@@ -566,22 +566,38 @@ func _execute_deep_takeover() -> void:
 	player.global_position = landing.position
 	player.aim_direction = player.global_position.direction_to(marked_target.global_position)
 	hurt_box.set_invulnerable(0.8)
-	_complete_takeover("夺身猎步：安全位移完成")
+	_complete_takeover("夺身猎步：紧急撤离完成")
 
 
 func _find_safe_takeover_landing(target: EnemyController) -> Dictionary:
-	var enemy_facing := target.facing.normalized()
-	if enemy_facing.is_zero_approx():
-		enemy_facing = target.global_position.direction_to(player.global_position)
-	if enemy_facing.is_zero_approx():
-		enemy_facing = Vector2.RIGHT
-	var preferred_direction := -enemy_facing
+	var threats: Array[Vector2] = []
+	var nearest := target.global_position
+	var initial_clearance := player.global_position.distance_to(nearest)
+	for candidate in get_tree().get_nodes_in_group("enemies"):
+		if not _is_live_enemy(candidate) or not _same_room(candidate):
+			continue
+		threats.append(candidate.global_position)
+		var distance := player.global_position.distance_to(candidate.global_position)
+		if distance < initial_clearance:
+			initial_clearance = distance
+			nearest = candidate.global_position
+	var preferred_direction := nearest.direction_to(player.global_position)
+	if preferred_direction.is_zero_approx():
+		preferred_direction = -player.aim_direction.normalized()
+	if preferred_direction.is_zero_approx():
+		preferred_direction = Vector2.LEFT
+	var best_landing: Dictionary = {}
+	var best_clearance := initial_clearance
 	for radius: float in TAKEOVER_LANDING_RADII:
 		for angle: float in TAKEOVER_LANDING_ANGLES:
-			var destination := target.global_position + preferred_direction.rotated(angle) * radius
-			if _is_safe_takeover_landing(destination):
-				return {"position": destination}
-	return {}
+			var destination := player.global_position + preferred_direction.rotated(angle) * radius
+			var clearance := destination.distance_to(target.global_position)
+			for threat in threats:
+				clearance = minf(clearance, destination.distance_to(threat))
+			if clearance > best_clearance + 0.1 and _is_safe_takeover_landing(destination):
+				best_clearance = clearance
+				best_landing = {"position": destination}
+	return best_landing
 
 
 func _is_safe_takeover_landing(destination: Vector2) -> bool:

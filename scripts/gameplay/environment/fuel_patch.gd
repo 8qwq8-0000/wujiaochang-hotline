@@ -2,6 +2,8 @@ class_name FuelPatch
 extends Area2D
 
 @export var radius := 64.0
+@export var explosion_radius := 96.0
+@export_range(0.1, 1.0, 0.01) var ground_depth_ratio := 0.55
 var burning := false
 var is_bomb_hazard := false
 var remaining := 8.0
@@ -15,8 +17,12 @@ func _ready() -> void:
 	monitoring = false
 	z_index = 0
 	var collider := CollisionShape2D.new()
-	var shape := CircleShape2D.new()
-	shape.radius = radius
+	var shape := ConvexPolygonShape2D.new()
+	var outline := PackedVector2Array()
+	for index in 64:
+		var angle := index * TAU / 64.0
+		outline.append(Vector2(cos(angle), sin(angle) * ground_depth_ratio) * radius)
+	shape.points = outline
 	collider.shape = shape
 	add_child(collider)
 	add_to_group("fuel_patches")
@@ -55,17 +61,23 @@ func _explode() -> void:
 	explosion_count += 1
 	var animation := FuelExplosionEffect.new()
 	animation.name = "ExplosionAnimation"
+	animation.radius = explosion_radius
+	animation.ground_depth_ratio = ground_depth_ratio
 	add_child(animation)
-	_affect_actors(96.0, true)
+	_affect_actors(explosion_radius, true)
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null:
 		events.publish_noise(self,global_position,240)
-		events.fuel_explosion_requested.emit(global_position,96.0)
+		events.fuel_explosion_requested.emit(global_position,explosion_radius)
 
 func _affect_actors(reach: float, deal_damage: bool) -> void:
 	if not _hazard_enabled():
 		return
 	for actor in EnvironmentArea.visible_actors(self,reach):
+		# Measure on the same projected ground plane as the visible ellipse.
+		var offset := (actor.global_position - global_position) / Vector2(1.0, ground_depth_ratio)
+		if offset.length() > reach:
+			continue
 		var hurt := actor.get_node("HurtBox") as HurtBox2DComponent
 		if deal_damage:
 			var packet := DamagePacket.new()
@@ -87,12 +99,12 @@ func _hazard_enabled() -> bool:
 	return settings == null or settings.are_elemental_reactions_enabled()
 
 func _draw() -> void:
+	draw_set_transform(Vector2.ZERO, 0, Vector2(1, ground_depth_ratio))
 	if not burning:
 		draw_circle(Vector2.ZERO, radius, Color(0.34, 0.3, 0.16, 0.4))
 		return
 	# Scorched floor and flickering tongues keep the lingering hazard readable
 	# without covering the explosion animation in an opaque orange disk.
-	draw_set_transform(Vector2.ZERO, 0, Vector2(1, 0.55))
 	draw_circle(Vector2.ZERO, radius, Color(0.2, 0.1, 0.06, 0.25))
 	draw_arc(Vector2.ZERO, radius, 0, TAU, 40, Color(0.95, 0.48, 0.12, 0.35), 1)
 	draw_set_transform(Vector2.ZERO)
@@ -105,6 +117,6 @@ func _draw() -> void:
 		_flame_texture = atlas
 	for index in 11:
 		var angle := index * TAU / 11.0
-		var point := Vector2(cos(angle) * radius * 0.65, sin(angle) * radius * 0.36)
+		var point := Vector2(cos(angle) * radius * 0.65, sin(angle) * radius * 0.65 * ground_depth_ratio)
 		var height := 11 + sin(remaining * 13 + index * 1.9) * 4
 		draw_texture_rect(_flame_texture, Rect2(point + Vector2(-8, -height), Vector2(16, height)), false, Color(1, 1, 1, 0.85))
