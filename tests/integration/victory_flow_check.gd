@@ -59,7 +59,7 @@ func run_checks() -> void:
 	arena.exit_elevator.set_enabled(true)
 	run.set_mandatory_enemy_count(0)
 	ui.open_exit(arena.exit_elevator)
-	check(ui.get("_overlay").visible and ui.get("_title").text.begins_with("完整通关"), "cleared production rooftop offers legacy minting")
+	check(ui.get("_overlay").visible and ui.get("_title").text == "通关", "cleared production rooftop offers legacy record saving")
 	check(ui.get("_buttons").get_child_count() == 1, "rooftop victory has no ordinary extraction or continue option")
 	ui.complete_victory()
 	check(paused and run.run_finished, "legacy minting settles and pauses the completed run")
@@ -72,8 +72,8 @@ func run_checks() -> void:
 	check(warehouse.get_node_or_null("ArchiveTerminal") != null, "warehouse exposes the archive terminal")
 	warehouse.archive_panel.open()
 	var archive_text: String = warehouse.archive_panel.get("_content").text
-	check(paused and archive_text.contains("遗产饮料 · 1 瓶"), "archive panel renders the saved legacy drink")
-	check(archive_text.contains("黑匣封型：深渊忍者瓶型"), "archive renders the final persona bottle silhouette")
+	check(paused and archive_text.contains("遗产饮料（1 瓶）"), "archive panel renders the saved legacy drink")
+	check(archive_text.contains("最后使用的人格：深渊忍者"), "archive renders the final persona")
 	warehouse.archive_panel.close()
 	main.queue_free()
 	await process_frame

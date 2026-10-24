@@ -360,7 +360,7 @@ func _home_button(value: String, rect: Rect2, action: Callable, primary := false
 
 
 func _home_title() -> void:
-	var edition := _label("WUJIAOCHANG HOTLINE  //  EMERGENCY LINE", 14, CYAN)
+	var edition := _label("WUJIAOCHANG HOTLINE", 14, CYAN)
 	edition.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.9))
 	edition.add_theme_constant_override("shadow_offset_x", 2)
 	edition.add_theme_constant_override("shadow_offset_y", 2)
@@ -455,7 +455,7 @@ func show_character() -> void:
 		return
 	_clear_page("character")
 	_heading("标准机体")
-	place(_label("携带制式手枪出发 · " + {"low_pressure": "低压", "standard": "标准", "high_pressure": "高压"}.get(_difficulty, "标准"), 21, MUTED), Rect2(0, 190, 460, 38), _content)
+	place(_label("携带制式手枪出发，当前难度：" + {"low_pressure": "低压", "standard": "标准", "high_pressure": "高压"}.get(_difficulty, "标准"), 21, MUTED), Rect2(0, 190, 460, 38), _content)
 	_button("开始行动", Rect2(0, 342, 360, 60), request_new_game, true)
 	var back := _button("返回", Rect2(0, 420, 200, 48), show_difficulty)
 	back.add_theme_font_size_override("font_size", 19)

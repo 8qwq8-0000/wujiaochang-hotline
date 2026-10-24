@@ -97,17 +97,17 @@ func settle_death() -> void:
 	_overlay.show()
 	_clear_buttons()
 	if not store.commit(profile.chest, recovery):
-		_title.text = "死亡结算保存失败"
-		_details.text = store.error_message + "。请重试，尚未返回仓库。"
+		_title.text = "结算没有保存"
+		_details.text = store.error_message + "。请重试；成功前不会返回仓库。"
 		_add_button("重试保存", settle_death)
 		return
 	_death_pending = false
 	run.run_finished = true
 	run.set_player_state(recovery)
 	_settled = true
-	_title.text = "线路中断 · 行动结束"
+	_title.text = "行动失败"
 	var protected := _player.inventory.blackbox_slot.get_item()
-	_details.text = "黑匣保留：%s\n未保护的普通装备和背包物品已丢失。\n仓库箱内物品不受影响；回仓时保证有武器可用。" % (protected.get_title() if protected != null else "无")
+	_details.text = "黑匣保留：%s\n其余随身装备已经丢失。仓库里的装备不受影响，回去后仍有武器可用。" % (protected.get_title() if protected != null else "无")
 	_add_button("返回仓库", return_to_warehouse)
 
 
@@ -127,14 +127,14 @@ func open_exit(exit: ExitElevator = null) -> void:
 		var arena := _bound_scene as RooftopBossArena
 		if not run.persistent_run or arena.phase != RooftopBossArena.Phase.CLEARED:
 			return
-		_title.text = "完整通关 · 遗产记录待铸造"
-		_details.text = "本次人格、三级天赋与战斗特征将被封存为一瓶遗产饮料。\n此记录只在楼顶 Boss 被完整击败后生成。"
+		_title.text = "通关"
+		_details.text = "完成记录后，本次行动会加入遗产酒谱。"
 		_clear_buttons()
-		_add_button("铸造遗产饮料", complete_victory)
+		_add_button("保存通关记录", complete_victory)
 		_overlay.show()
 		return
 	_title.text = "本层已清理"
-	_details.text = "撤离带出物品，继续保留配装。\n走出出口范围即可关闭。"
+	_details.text = "现在撤离会带出随身装备；也可以继续前往下一层。走出出口范围即可关闭。"
 	_clear_buttons()
 	_add_button("撤离结算", extract)
 	_add_button("继续下一层", continue_floor)
@@ -163,11 +163,11 @@ func extract() -> void:
 	_owns_pause = not get_tree().paused
 	get_tree().paused = true
 	_player.set_input_enabled(false)
-	_title.text = "撤离成功 · 第 %d 层" % run.extraction_result.floor
+	_title.text = "撤离成功"
 	var lines := PackedStringArray()
 	for entry in run.extraction_result.items:
 		lines.append("%s：%s" % [entry.location, entry.name])
-	_details.text = "带出物品（%d 件）\n\n%s\n\n装备已保存，回到仓库后可存入箱子。" % [lines.size(), "\n".join(lines)]
+	_details.text = "从第 %d 层带出 %d 件装备\n\n%s\n\n记录已经保存，回到仓库后可存入箱子。" % [run.extraction_result.floor, lines.size(), "\n".join(lines)]
 	_clear_buttons()
 	_add_button("返回仓库", return_to_warehouse)
 
@@ -176,7 +176,7 @@ func return_to_warehouse() -> void:
 	if not _settled:
 		return
 	if not flow.request_scene("res://scenes/levels/base/warehouse.tscn"):
-		_details.text += "\n仓库加载失败，请重试。"
+		_details.text += "\n暂时无法返回仓库，请重试。"
 		return
 	_settled = false
 	close_exit()
@@ -194,7 +194,7 @@ func continue_floor() -> void:
 		destination = CODEX_PASSAGE_PATH
 	var payload := {"player_state": snapshot, "transit_heat": {"current": _player.heat.current_heat, "overheated": _player.heat.is_overheated}}
 	if not flow.request_scene(destination, payload):
-		_details.text = "下一层加载请求失败，请重试或返回搜刮。"
+		_details.text = "暂时无法进入下一层，请重试或继续搜刮。"
 		return
 	run.set_player_state(snapshot)
 	if not service_stop:
@@ -215,26 +215,26 @@ func complete_victory() -> void:
 		run.run_finished = false
 		run.victory_result.clear()
 		run.set_player_state(_player.export_run_state())
-		_details.text = store.error_message + "，遗产记录尚未生成，请重试。"
+		_details.text = store.error_message + "。通关记录还没有保存，请重试。"
 		return
 	_settled = true
 	_set_layout(true)
 	_owns_pause = not get_tree().paused
 	get_tree().paused = true
 	_player.set_input_enabled(false)
-	_title.text = "遗产饮料已铸造 · 完整通关"
+	_title.text = "通关记录已保存"
 	var persona_lines := PackedStringArray()
 	for entry: Dictionary in record.get("personas", []):
 		var talent := String(entry.get("tier_3_talent", ""))
 		persona_lines.append("%s Lv.%d%s" % [
 			entry.get("name", "未知人格"),
 			int(entry.get("level", 0)),
-			" · " + talent if not talent.is_empty() else "",
+			"（三级天赋：" + talent + "）" if not talent.is_empty() else "",
 		])
-	_details.text = "瓶号 %s\n通关用时 %.1f 秒\n\n%s\n\n最高连续标记击杀 %d · 手动完美格挡 %d\n摇滚峰值 %.1f · 摇滚攻击 %d" % [
+	_details.text = "编号 %s\n通关用时 %.1f 秒\n\n%s\n\n最高连续标记击杀 %d，手动完美格挡 %d\n摇滚峰值 %.1f，摇滚攻击 %d" % [
 		record.get("id", "--"),
 		float(record.get("clear_seconds", 0.0)),
-		"\n".join(persona_lines) if not persona_lines.is_empty() else "未记录到人格副本",
+		"\n".join(persona_lines) if not persona_lines.is_empty() else "未使用人格",
 		int(record.get("highest_marked_kill_chain", 0)),
 		int(record.get("manual_perfect_guards", 0)),
 		float(record.get("peak_rock_feedback", 0.0)),

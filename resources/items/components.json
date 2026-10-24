@@ -6,6 +6,15 @@
 		"image": "res://assets/art/items/baton.svg",
 		"maximum_stack_size": 1.0
 	},
+	"calamity_flame": {
+		"name": "灾厄之炎",
+		"slot": "weapon",
+		"effect": "res://resources/weapons/calamity_flame.tres",
+		"image": "res://assets/art/weapons/placeholder/placeholder_arm_lock_baton_unpainted.png",
+		"maximum_stack_size": 1.0,
+		"bound": true,
+		"persona_weapon": "deep_ninja"
+	},
 	"pistol": {
 		"name": "制式手枪",
 		"slot": "weapon",

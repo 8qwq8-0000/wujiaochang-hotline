@@ -107,7 +107,7 @@ func skip_boot() -> void:
 
 
 func _build_header() -> void:
-	var header := _make_panel(self, "WJC COMBAT TERMINAL // 接线员链路: ONLINE", Rect2(8, 5, 624, 27))
+	var header := _make_panel(self, "战斗终端", Rect2(8, 5, 624, 27))
 	header.name = "SystemHeader"
 
 
@@ -117,17 +117,17 @@ func _build_footer() -> void:
 
 
 func _build_combat_workspace() -> void:
-	var status := _make_panel(_combat_workspace, "机体状态 / UNIT", Rect2(8, 39, 205, 91))
+	var status := _make_panel(_combat_workspace, "机体状态", Rect2(8, 39, 205, 91))
 	var status_stack := VBoxContainer.new()
 	status_stack.add_theme_constant_override("separation", 2)
 	status.add_child(status_stack)
 	status_stack.add_child(_meter("耐久", 3, 4, 4, CyberUITheme.PHOSPHOR))
 	status_stack.add_child(_meter("接管", 2, 3, 3, CyberUITheme.HIGHLIGHT))
 	var circuit := Label.new()
-	circuit.text = "断路保险  ARMED"
+	circuit.text = "断路保险就绪"
 	status_stack.add_child(circuit)
 
-	var objective := _make_panel(_combat_workspace, "任务 / OBJECTIVE", Rect2(427, 39, 205, 74))
+	var objective := _make_panel(_combat_workspace, "任务", Rect2(427, 39, 205, 74))
 	var objective_stack := VBoxContainer.new()
 	objective_stack.add_theme_constant_override("separation", 2)
 	objective.add_child(objective_stack)
@@ -136,24 +136,24 @@ func _build_combat_workspace() -> void:
 	objective_stack.add_child(objective_label)
 	objective_stack.add_child(_meter("警戒", 2, 3, 3, CyberUITheme.WARNING))
 
-	var mobility := _make_panel(_combat_workspace, "机动 / MOBILITY", Rect2(8, 258, 205, 70))
+	var mobility := _make_panel(_combat_workspace, "机动", Rect2(8, 258, 205, 70))
 	var mobility_stack := VBoxContainer.new()
 	mobility.add_child(mobility_stack)
 	var mobility_name := Label.new()
-	mobility_name.text = "四足套件  READY"
+	mobility_name.text = "四足套件就绪"
 	mobility_stack.add_child(mobility_name)
 	mobility_stack.add_child(_meter("充能", 8, 10, 10, CyberUITheme.PHOSPHOR))
 
-	var weapons := _make_panel(_combat_workspace, "火控 / WEAPON", Rect2(427, 220, 205, 108))
+	var weapons := _make_panel(_combat_workspace, "火控", Rect2(427, 220, 205, 108))
 	var weapon_stack := VBoxContainer.new()
 	weapon_stack.add_theme_constant_override("separation", 1)
 	weapons.add_child(weapon_stack)
 	var slot_a := Label.new()
-	slot_a.text = "> SLOT-A  制式手枪"
+	slot_a.text = "> 主武器  制式手枪"
 	weapon_stack.add_child(slot_a)
 	weapon_stack.add_child(_meter("热量", 64, 100, 10, CyberUITheme.WARNING))
 	var slot_b := Label.new()
-	slot_b.text = "  SLOT-B  警棍"
+	slot_b.text = "  副武器  警棍"
 	weapon_stack.add_child(slot_b)
 	weapon_stack.add_child(_meter("热量", 18, 100, 10, CyberUITheme.PHOSPHOR))
 
@@ -164,12 +164,12 @@ func _build_combat_workspace() -> void:
 	notices.add_theme_constant_override("separation", 3)
 	_combat_workspace.add_child(notices)
 	notices.add_child(_notice("接线员", "保持移动，火控链路正常。", CyberUITheme.PHOSPHOR))
-	notices.add_child(_notice("ALERT", "同房间敌人已响应。", CyberUITheme.WARNING))
-	notices.add_child(_notice("GUARD", "完美格挡：反射完成。", CyberUITheme.HIGHLIGHT))
+	notices.add_child(_notice("警报", "同房间敌人已响应。", CyberUITheme.WARNING))
+	notices.add_child(_notice("格挡", "完美格挡：反射完成。", CyberUITheme.HIGHLIGHT))
 
 
 func _build_settings_workspace() -> void:
-	var panel := _make_panel(_settings_workspace, "系统设置 / SYSTEM CONFIG", Rect2(95, 43, 450, 282))
+	var panel := _make_panel(_settings_workspace, "系统设置", Rect2(95, 43, 450, 282))
 	var content := VBoxContainer.new()
 	content.add_theme_constant_override("separation", 5)
 	panel.add_child(content)
@@ -210,7 +210,7 @@ func _build_settings_workspace() -> void:
 	difficulty_title.text = "┤ 难度"
 	content.add_child(difficulty_title)
 	var difficulty := CheckButton.new()
-	difficulty.text = "[OFF] 高压难度  // 标准响应 320 px"
+	difficulty.text = "高压难度：关闭"
 	content.add_child(difficulty)
 	var hint := Label.new()
 	hint.theme_type_variation = &"TerminalMutedLabel"
@@ -219,12 +219,12 @@ func _build_settings_workspace() -> void:
 
 
 func _build_boot_panel() -> void:
-	_boot_panel = _make_panel(self, "WJC BOOT SEQUENCE", Rect2(155, 96, 330, 164), CyberUITheme.HIGHLIGHT)
+	_boot_panel = _make_panel(self, "系统启动", Rect2(155, 96, 330, 164), CyberUITheme.HIGHLIGHT)
 	_boot_panel.name = "BootPanel"
 	var lines := VBoxContainer.new()
 	lines.add_theme_constant_override("separation", 8)
 	_boot_panel.add_child(lines)
-	for text in ["WJC COMBAT TERMINAL", "耐久系统 ........ ONLINE", "武器与机动接口 ... ONLINE", "接线员链路 ....... CONNECTED"]:
+	for text in ["战斗终端", "耐久系统已连接", "武器与机动接口已连接", "接线员已接通"]:
 		var label := Label.new()
 		label.text = text
 		label.modulate.a = 0.0

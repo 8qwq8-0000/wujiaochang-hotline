@@ -129,6 +129,8 @@ func run() -> void:
 	check(feedback.combo_count == 1 and not feedback.sprite.visible, "first perfect does not show popup")
 	hit(camp.player, 0.061)
 	check(feedback.popups_shown == 1 and feedback.sprite.visible, "second perfect shows approved purple popup")
+	feedback._process(feedback.GROW_SECONDS)
+	check(is_equal_approx(feedback.sprite.texture.get_width() * feedback.sprite.scale.x, 72.0), "perfect popup matches the 72-pixel guard shield footprint")
 	feedback._process(0.7)
 	hit(camp.player, 0.061)
 	check(feedback.popups_shown == 2 and feedback.sprite.visible, "third consecutive perfect replays popup after previous fade")

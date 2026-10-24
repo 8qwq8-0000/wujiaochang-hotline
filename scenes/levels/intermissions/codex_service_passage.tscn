@@ -43,14 +43,14 @@ position = Vector2(95, 270)
 [node name="Title" type="Label" parent="."]
 offset_left = 40.0
 offset_top = 38.0
-text = "02 / 03   检修通道"
+text = "02/03   检修通道"
 theme_override_colors/font_color = Color(0.65, 0.86, 0.78, 1)
 theme_override_font_sizes/font_size = 18
 
 [node name="Subtitle" type="Label" parent="."]
 offset_left = 40.0
 offset_top = 66.0
-text = "CODEX · 临时整备站 / 装备升级与义体复合"
+text = "Codex 装备工坊"
 theme_override_colors/font_color = Color(0.4, 0.59, 0.55, 1)
 theme_override_font_sizes/font_size = 11
 
@@ -58,7 +58,7 @@ theme_override_font_sizes/font_size = 11
 offset_left = 40.0
 offset_top = 326.0
 offset_right = 610.0
-text = "靠近 Codex 按 E 对话     WASD 移动 · Tab 配装"
+text = "靠近 Codex 按 E 交谈。WASD 移动，Tab 配装"
 theme_override_colors/font_color = Color(0.65, 0.86, 0.78, 1)
 theme_override_font_sizes/font_size = 11
 
@@ -116,7 +116,7 @@ theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.08, 1)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
 theme_override_font_sizes/font_size = 10
-text = "[E] 对话 / 合成"
+text = "[E] 与 Codex 交谈"
 horizontal_alignment = 1
 
 [node name="RefinedArt" type="Sprite2D" parent="SynthesisNPC"]

@@ -6,6 +6,6 @@
 script = ExtResource("1")
 module_id = &"kill_heat_sink"
 display_name = "击破散热器"
-description = "亲手击破敌人时移除30%最大热量，每0.5秒最多触发一次。"
+description = "亲手击破敌人时减少最大热量的 30%；每 0.5 秒最多触发一次。"
 kill_cooling_ratio = 0.3
 trigger_cooldown = 0.5

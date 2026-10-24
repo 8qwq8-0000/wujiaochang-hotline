@@ -5,7 +5,7 @@ const TUTORIAL_ID := &"controls_tutorial"
 
 @export_range(1, 6, 1) var max_visible: int = 3
 @export_range(0.05, 1.0, 0.05) var fade_seconds: float = 0.35
-@export_multiline var tutorial_text := "WASD 移动 · 鼠标战斗 · Space 机动 · Tab 背包"
+@export_multiline var tutorial_text := "WASD 移动，鼠标战斗，Space 机动，Tab 背包"
 
 var _entries: Array[Dictionary] = []
 var _sequence := 0

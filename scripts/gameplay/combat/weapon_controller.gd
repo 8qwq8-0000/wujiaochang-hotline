@@ -19,6 +19,7 @@ var weapons: Array[WeaponComponentData] = []
 var current_index: int = 0
 var debug_loadout_enabled: bool = false
 var attack_speed_multiplier := 1.0
+var persona_attack_speed_bonus := 0.0
 var _current_weapon: WeaponComponentData = DEFAULT_WEAPON
 var _cooldown_remaining: float = 0.0
 var _swing_remaining: float = 0.0
@@ -187,7 +188,7 @@ func _perform_attack(
 	if source_node.has_method("prepare_persona_attack_group"):
 		source_node.prepare_persona_attack_group(_active_feedback_group_id, context)
 	if not bool(context.get("ignore_cooldown", false)):
-		_cooldown_remaining = data.cooldown / maxf(attack_speed_multiplier, 0.01)
+		_cooldown_remaining = data.cooldown / maxf(attack_speed_multiplier + persona_attack_speed_bonus, 0.01)
 	match data.attack_kind:
 		WeaponComponentData.AttackKind.MELEE:
 			_begin_melee(data, direction.normalized(), damage_multiplier)

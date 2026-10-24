@@ -5,6 +5,7 @@ extends Node
 signal changed
 signal feedback(text: String, cue: StringName)
 const CAPACITY := 6
+const CALAMITY_FLAME_ID := "calamity_flame"
 const PROTOTYPES: JSON = preload("res://resources/items/components.json")
 const PANEL_SCENE := preload("res://scenes/ui/inventory/inventory_panel.tscn")
 var backpack: Inventory
@@ -20,6 +21,7 @@ var is_open := false
 var _owns_pause := false
 var _serial := 0
 var _has_picked_up_weapon := false
+var _calamity_flame_granted := false
 @onready var player: PlayerController = get_parent()
 
 func _ready() -> void:
@@ -61,6 +63,10 @@ func _ready() -> void:
 	backpack.item_removed.connect(_on_backpack_item_removed)
 	changed.emit()
 	player.get_node("HealthComponent").died.connect(_on_player_died)
+	var talent_core := player.get_node_or_null("TalentCoreController") as TalentCoreController
+	if talent_core != null:
+		talent_core.persona_changed.connect(_on_persona_changed)
+		call_deferred("_grant_calamity_flame_if_active")
 
 func _create_slot(slot_name: String) -> ItemSlot:
 	var slot := ItemSlot.new()
@@ -133,23 +139,25 @@ func pickup(component_id: String, rolled_item: InventoryItem = null) -> bool:
 		return false
 	var prototype := item.get_prototype()
 	if prototype == null or prototype.get_prototype_id() != component_id:
-		_notify("组件数据无效，请重新进入房间", &"full")
+		_notify("这件装备无法使用，请重新进入房间", &"full")
 		return false
 	ComponentRolls.ensure(item)
 	# The first weapon can go straight into a free reserve even if the bag is full.
 	var stored := secondary_weapon_slot.equip(item) if auto_secondary else backpack.add_item(item)
 	if not stored:
-		_notify("背包已满（6/6），组件留在地上", &"full")
+		_notify("背包已满（6/6），装备留在地上", &"full")
 		return false
 	if not item.has_property("instance_id"):
 		_assign_instance_id(item)
 	if is_weapon:
 		_has_picked_up_weapon = true
+	if component_id == CALAMITY_FLAME_ID:
+		_calamity_flame_granted = true
 	if auto_secondary:
 		_apply_equipment()
 	changed.emit()
 	if auto_secondary:
-		_notify("首次武器已装入副槽：%s · Q/滚轮切换" % item.get_title(), &"pickup")
+		_notify("首次武器已装入副武器槽。按 Q 或滚轮切换：%s" % item.get_title(), &"pickup")
 	else:
 		_notify("已拾取：%s" % item.get_title(), &"pickup")
 	return true
@@ -166,9 +174,54 @@ func try_pick_nearest() -> bool:
 			distance = candidate
 			nearest = pickup_node
 	if nearest == null:
-		_notify("靠近组件后按 E 拾取", &"full")
+		_notify("靠近装备后按 E 拾取", &"full")
 		return false
 	return nearest.try_pickup(self)
+
+
+func _on_persona_changed(persona_id: StringName) -> void:
+	if persona_id == TalentCoreController.DEEP_NINJA:
+		call_deferred("_grant_calamity_flame_if_active")
+
+
+func _grant_calamity_flame_if_active() -> bool:
+	if _calamity_flame_granted or not is_instance_valid(player):
+		return false
+	var talent_core := player.get_node_or_null("TalentCoreController") as TalentCoreController
+	if talent_core == null or talent_core.current_persona_id != TalentCoreController.DEEP_NINJA or talent_core.get_persona_level(TalentCoreController.DEEP_NINJA) <= 0:
+		return false
+	if _has_component(CALAMITY_FLAME_ID):
+		_calamity_flame_granted = true
+		return false
+	var item := ComponentRolls.make_item(CALAMITY_FLAME_ID)
+	if item == null or item.get_prototype() == null:
+		return false
+	ComponentRolls.ensure(item)
+	_assign_instance_id(item)
+	if backpack.add_item(item):
+		_calamity_flame_granted = true
+		changed.emit()
+		_notify("忍者人格武器已放入背包：灾厄之炎", &"pickup")
+		return true
+	var destination := CombatProjectile.room_for_actor(player)
+	if destination == null:
+		return false
+	var pickup_node: ComponentPickup = load("res://scenes/items/component_pickup.tscn").instantiate()
+	pickup_node.component_id = CALAMITY_FLAME_ID
+	pickup_node.rolled_item = item
+	pickup_node.set_meta("persona_weapon_grant", true)
+	destination.add_child(pickup_node)
+	pickup_node.global_position = player.global_position
+	_calamity_flame_granted = true
+	_notify("背包已满，灾厄之炎已掉落在脚边", &"full")
+	return true
+
+
+func _has_component(component_id: String) -> bool:
+	for item in backpack.get_items() + [weapon_slot.get_item(), secondary_weapon_slot.get_item()]:
+		if item != null and item.get_prototype() != null and item.get_prototype().get_prototype_id() == component_id:
+			return true
+	return false
 
 func equip(index: int, weapon_position: int = 0) -> bool:
 	if not can_change_equipment():
@@ -498,6 +551,7 @@ func export_run_state() -> Dictionary:
 		"blackbox": blackbox_slot.serialize(),
 		"active_weapon": player.weapons.current_index,
 		"has_picked_up_weapon": _has_picked_up_weapon,
+		"calamity_flame_granted": _calamity_flame_granted,
 	}
 
 
@@ -516,7 +570,7 @@ func get_extraction_items() -> Array[Dictionary]:
 
 
 func _append_extraction_item(result: Array[Dictionary], seen: Dictionary, item: InventoryItem, location: String) -> void:
-	if item.get_property("slot", "") == "cyberware":
+	if item.get_property("slot", "") == "cyberware" or bool(item.get_property("bound", false)):
 		return
 	var id := str(item.get_property("instance_id", str(item.get_instance_id())))
 	if seen.has(id):
@@ -545,8 +599,10 @@ func import_run_state(state: Dictionary) -> void:
 	for item in backpack.get_items() + [weapon_slot.get_item(), secondary_weapon_slot.get_item(), cyberware_slot.get_item(), defense_slot.get_item(), blackbox_slot.get_item()]:
 		if item != null:
 			ComponentRolls.ensure(item)
+	_calamity_flame_granted = bool(state.get("calamity_flame_granted", _has_component(CALAMITY_FLAME_ID)))
 	_apply_equipment()
 	changed.emit()
+	call_deferred("_grant_calamity_flame_if_active")
 	if removed_legacy_mobility:
 		_notify("旧版机动装备已移除；固有突进现已默认启用", &"equip")
 
@@ -560,6 +616,7 @@ func export_recovery_inventory() -> Dictionary:
 	snapshot.defense = {}
 	snapshot.active_weapon = 0
 	snapshot.has_picked_up_weapon = false
+	snapshot.calamity_flame_granted = false
 	return snapshot
 
 
@@ -590,5 +647,5 @@ func discard_backpack_item(item: InventoryItem) -> bool:
 	destination.add_child(pickup_node)
 	pickup_node.global_position = player.global_position
 	changed.emit()
-	_notify("已丢到脚边：%s · 关闭背包后按 E 拾回" % ComponentRolls.title(item), &"equip")
+	_notify("已丢到脚边：%s。关闭背包后按 E 拾回" % ComponentRolls.title(item), &"equip")
 	return true

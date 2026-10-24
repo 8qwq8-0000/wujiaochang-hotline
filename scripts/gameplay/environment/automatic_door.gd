@@ -117,7 +117,7 @@ func _knock_down(direction: Vector2, source: Node2D) -> void:
 		knocked_count += 1
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null:
-		events.publish_message("冲刺撞门 · 门后敌人击倒 %.1f 秒" % knockdown_seconds,Color("f1cf85"))
+		events.publish_message("冲刺撞开门，门后的敌人倒地 %.1f 秒" % knockdown_seconds,Color("f1cf85"))
 
 
 func _spawn_break_fragments(direction: Vector2) -> void:

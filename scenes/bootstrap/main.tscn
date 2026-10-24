@@ -100,6 +100,7 @@ enemy_death_sound = ExtResource("14")
 reinforcement_approach_sound = ExtResource("20")
 weapon_cues = {
 &"baton:swing": ExtResource("16"),
+&"calamity_flame:swing": ExtResource("16"),
 &"initial_baton:swing": ExtResource("16"),
 &"service_pistol:fire": ExtResource("15"),
 &"cyberware:thermal_pulse": ExtResource("12")

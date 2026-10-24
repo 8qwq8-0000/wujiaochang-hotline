@@ -144,7 +144,7 @@ func _draw_freight_markings() -> void:
 		for index in range(4):
 			var from := rect.position + Vector2(index * 9, 0)
 			draw_line(from, from + Vector2(8, 9), yellow, 2)
-	for entry in [[Vector2(45, 132), "CHECK 03"], [Vector2(215, 90), "CONTROL"], [Vector2(449, 91), "POWER / 03"], [Vector2(240, 244), "FREIGHT 03"], [Vector2(150, 338), "BAY A"], [Vector2(371, 338), "BAY B"]]:
+	for entry in [[Vector2(45, 132), "检修 03"], [Vector2(215, 90), "控制"], [Vector2(449, 91), "电力 03"], [Vector2(240, 244), "货运 03"], [Vector2(150, 338), "A 区"], [Vector2(371, 338), "B 区"]]:
 		draw_string(CyberUITheme.FONT, entry[0] * scale_factor, entry[1], HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(0.62, 0.73, 0.70, 0.35))
 
 
@@ -171,7 +171,7 @@ func _draw_depot_markings() -> void:
 			var center := Vector2(x, y) * ratio
 			draw_polyline(PackedVector2Array([center + Vector2(-5, -6), center + Vector2(3, 0), center + Vector2(-5, 6)]), pale, 2)
 		draw_string(CyberUITheme.FONT, Vector2(462, y + 5) * ratio, "%02d" % (index + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, pale)
-	for entry in [[Vector2(277, 35), "A // FREIGHT"], [Vector2(583, 35), "B // FREIGHT"], [Vector2(418, 510), "TRANSFER 04"]]:
+	for entry in [[Vector2(277, 35), "货运 A"], [Vector2(583, 35), "货运 B"], [Vector2(418, 510), "转运 04"]]:
 		draw_string(CyberUITheme.FONT, entry[0] * ratio, entry[1], HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(0.65, 0.65, 0.46, 0.47))
 
 

@@ -6,9 +6,9 @@ const PORTRAIT_NARAKU := preload("res://assets/art/ui/start_menu/persona_naraku_
 const PORTRAIT_XIANGSHAN := preload("res://assets/art/ui/start_menu/persona_xiangshan_ghost.png")
 
 const PERSONA_PRESENTATION := {
-	TalentCoreController.DEEP_NINJA: {"name": "奈落 / NARAKU", "color": Color("ff4b55"), "portrait": PORTRAIT_NARAKU},
-	TalentCoreController.LEGENDARY_MASTER: {"name": "相山 / XIANGSHAN", "color": Color("55d9ff"), "portrait": PORTRAIT_XIANGSHAN},
-	TalentCoreController.ROCK_VIGILANTE: {"name": "强尼 / JOHNNY", "color": Color("ffe34a"), "portrait": PORTRAIT_JOHNNY},
+	TalentCoreController.DEEP_NINJA: {"name": "深渊忍者", "color": Color("ff4b55"), "portrait": PORTRAIT_NARAKU},
+	TalentCoreController.LEGENDARY_MASTER: {"name": "传奇宗师", "color": Color("55d9ff"), "portrait": PORTRAIT_XIANGSHAN},
+	TalentCoreController.ROCK_VIGILANTE: {"name": "摇滚奇侠", "color": Color("ffe34a"), "portrait": PORTRAIT_JOHNNY},
 }
 
 @onready var overlay: Control = $Overlay
@@ -28,6 +28,7 @@ var _operator_panel: HoloCommsPanel
 var _persona_status: PersonaStatusPanel
 var _operator_audio: AudioStreamPlayer
 var _comms: CombatCommsController
+var _dialogue: PersonaDialogueController
 var _circuit_value: Label
 var _circuit_protection_active := false
 var _health_pulse_time := 0.0
@@ -57,6 +58,8 @@ func _ready() -> void:
 		scene_flow.load_started.connect(_on_scene_load_started)
 		scene_flow.scene_swapped.connect(_on_scene_swapped)
 		scene_flow.load_failed.connect(_on_scene_load_failed)
+	_dialogue.bind_feedback_manager(get_node_or_null("../CombatFeedbackManager") as CombatFeedbackManager)
+	_dialogue.bind_rest_flow(get_node_or_null("../PersonaRestFlow"))
 	overlay.hide()
 	set_process(true)
 
@@ -117,6 +120,7 @@ func _bind_player(player: PlayerController) -> void:
 		player.weapons.weapon_changed.connect(_on_weapon_changed)
 	if not player.health_changed.is_connected(_on_player_health_changed):
 		player.health_changed.connect(_on_player_health_changed)
+	_dialogue.bind_player(player)
 	_on_persona_changed(player.talent_core.current_persona_id)
 	_set_weapon_preview(player.weapons.get_current_weapon(), false)
 	player.tree_exiting.connect(func() -> void: _player = null, CONNECT_ONE_SHOT)
@@ -242,6 +246,10 @@ func _build_minimal_hud() -> void:
 	_comms.message_started.connect(_on_comms_message_started)
 	_comms.collapsed.connect(_on_comms_collapsed)
 	add_child(_comms)
+	_dialogue = PersonaDialogueController.new()
+	_dialogue.name = "PersonaDialogueController"
+	_dialogue.line_requested.connect(_on_dialogue_line_requested)
+	add_child(_dialogue)
 
 	_operator_audio = AudioStreamPlayer.new()
 	_operator_audio.name = "HotlineConnectAudio"
@@ -329,10 +337,26 @@ func _show_operator_communication(text: String) -> void:
 	_push_ai_message(text, CombatCommsController.Priority.NORMAL)
 
 
-func _push_ai_message(text: String, priority: CombatCommsController.Priority, seconds: float = -1.0) -> void:
-	var persona_id := _player.talent_core.current_persona_id if is_instance_valid(_player) else TalentCoreController.LEGENDARY_MASTER
-	var presentation: Dictionary = PERSONA_PRESENTATION.get(persona_id, PERSONA_PRESENTATION[TalentCoreController.LEGENDARY_MASTER])
-	_comms.push_message(text, priority, persona_id, String(presentation.name), seconds)
+func _push_ai_message(
+	text: String,
+	priority: CombatCommsController.Priority,
+	seconds: float = -1.0,
+	persona_id: StringName = &"",
+	queue_policy: CombatCommsController.QueuePolicy = CombatCommsController.QueuePolicy.LATEST
+) -> void:
+	var speaker_id := persona_id if not persona_id.is_empty() else (_player.talent_core.current_persona_id if is_instance_valid(_player) else TalentCoreController.LEGENDARY_MASTER)
+	var presentation: Dictionary = PERSONA_PRESENTATION.get(speaker_id, PERSONA_PRESENTATION[TalentCoreController.LEGENDARY_MASTER])
+	_comms.push_message(text, priority, speaker_id, String(presentation.name), seconds, queue_policy)
+
+
+func _on_dialogue_line_requested(text: String, priority: int, persona_id: StringName, queue_policy: int) -> void:
+	_push_ai_message(
+		text,
+		priority,
+		-1.0,
+		persona_id,
+		queue_policy
+	)
 
 
 func _on_comms_message_started(entry: Dictionary, connection_started: bool) -> void:
@@ -438,13 +462,13 @@ func _update_circuit_status() -> void:
 	if _circuit_protection_active:
 		_health_meter.caption = "保护中"
 		_health_meter.meter_color = CyberUITheme.WARNING
-		_circuit_value.text = "断路保险触发 · 保护中"
+		_circuit_value.text = "断路保险正在保护"
 	elif not circuit.equipped:
 		_health_meter.meter_color = CyberUITheme.PHOSPHOR
-		_circuit_value.text = "断路保险  未装备"
+		_circuit_value.text = "未装备断路保险"
 	elif circuit.circuit_breaker_used:
 		_health_meter.meter_color = CyberUITheme.WARNING
-		_circuit_value.text = "断路保险  已消耗"
+		_circuit_value.text = "断路保险已使用"
 	else:
 		_health_meter.meter_color = CyberUITheme.PHOSPHOR
-		_circuit_value.text = "断路保险  就绪"
+		_circuit_value.text = "断路保险就绪"

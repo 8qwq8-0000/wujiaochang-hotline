@@ -66,19 +66,19 @@ func commit(
 	}
 	next = ComponentRolls.migrate_snapshot(next)
 	if not _valid_profile(next):
-		error_message = "装备数据异常，未保存"
+		error_message = "装备没有保存，请重试"
 		return false
 	var temp_path := save_path + ".tmp"
 	var file := FileAccess.open(temp_path, FileAccess.WRITE)
 	if file == null:
-		error_message = "无法写入仓库存档，本次操作已取消"
+		error_message = "操作没有保存，请检查可用空间后重试"
 		return false
 	file.store_string(JSON.stringify(next))
 	file.flush()
 	var write_error := file.get_error()
 	file.close()
 	if write_error != OK or DirAccess.rename_absolute(temp_path, save_path) != OK:
-		error_message = "仓库存档写入失败，本次操作已取消"
+		error_message = "操作没有保存，请检查可用空间后重试"
 		return false
 	_profile = next
 	error_message = ""
@@ -163,14 +163,14 @@ func has_saved_profile() -> bool:
 
 func create_new_profile(difficulty: String = "standard") -> bool:
 	if difficulty not in ["low_pressure", "standard", "high_pressure"]:
-		error_message = "无效的难度选项"
+		error_message = "请选择一个可用难度"
 		return false
 	# Back up the raw file, including an unreadable/legacy profile, before replacing
 	# anything. Merely entering character selection never writes to the save.
 	if has_saved_profile():
 		var backup := "%s.backup-%d-%d" % [save_path, int(Time.get_unix_time_from_system()), Time.get_ticks_usec()]
 		if DirAccess.copy_absolute(save_path, backup) != OK:
-			error_message = "旧存档备份失败，未创建新存档"
+			error_message = "无法安全保留旧记录，因此没有新建存档"
 			return false
 	var previous := _profile.duplicate(true)
 	var was_loaded := _loaded

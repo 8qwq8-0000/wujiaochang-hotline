@@ -2,10 +2,10 @@ extends CanvasLayer
 
 signal completed
 const LINES := [
-	"你居然真从下面走上来了。先别急，第三层的门还没开，我把这段检修通道隔离出来了。这里暂时安全。",
-	"把背包里的零件放到台上。同类、同品质的武器和防御组件，我可以替你合成升级。主体放左边，材料放右边。",
-	"义体也能在这里复合。不同模块可以装进同一件义体，最多四种；重复的效果不会叠加，合上以后也不能再拆开。",
-	"这些义体只陪你走完这次行动。趁它们还在，把能用的都接好。准备好了就走右边，我替你把第三层的线路接通。",
+	"第三层还没接通，这里暂时安全。",
+	"把想升级的东西放上工作台。我能合成武器、防具，也能复合义体。",
+	"选好再动手。复合后的义体拆不开，而且带不出这次行动。",
+	"准备好了就去右边，我替你接通第三层。",
 ]
 var player: PlayerController
 var is_open := false
@@ -39,7 +39,7 @@ func _ready() -> void:
 	column.add_theme_constant_override("separation", 8)
 	box.add_child(column)
 	var title := Label.new()
-	title.text = "Codex / 临时维修站"
+	title.text = "Codex"
 	title.add_theme_font_size_override("font_size", 16)
 	column.add_child(title)
 	_text = Label.new()
@@ -69,7 +69,7 @@ func open() -> void:
 
 func _refresh() -> void:
 	_text.text = LINES[_page]
-	_progress.text = "%02d / %02d    [E] 继续   [Esc] 暂停对话" % [_page + 1, LINES.size()]
+	_progress.text = "%02d/%02d    [E] 继续    [Esc] 退出" % [_page + 1, LINES.size()]
 	_next.text = "打开合成台 [E]" if _page == LINES.size() - 1 else "继续对话 [E]"
 
 func advance() -> void:

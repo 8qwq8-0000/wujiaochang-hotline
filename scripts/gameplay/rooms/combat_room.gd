@@ -60,7 +60,7 @@ func _on_all_required_defeated() -> void:
 	if events != null:
 		events.publish_room_cleared(self)
 		var detail := "通道已开放，掉落请在敌人倒下处拾取" if area_index + 1 < area_total else "最终出口已开放"
-		var message := "区域 %d/%d 清场 · %s" % [area_index + 1, area_total, detail] if sequence_managed else "区域清理完成，出口电梯已启用"
+		var message := "区域 %d/%d 已清理。%s" % [area_index + 1, area_total, detail] if sequence_managed else "区域清理完成，出口电梯已启用"
 		events.publish_notice(&"room_cleared", message, Color(0.35, 1.0, 0.55), CombatNotice.Priority.NORMAL, 0.0, 2.0)
 
 

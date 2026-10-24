@@ -6,4 +6,4 @@
 script = ExtResource("1")
 module_id = &"tactical_coprocessor"
 display_name = "战术协处理器"
-description = "兼容枪械按住持续射击，过热恢复后自动续射。"
+description = "兼容枪械可以按住连续射击；过热恢复后自动续射。"

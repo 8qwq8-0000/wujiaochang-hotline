@@ -6,6 +6,6 @@
 script = ExtResource("1")
 module_id = &"smart_fire"
 display_name = "智能火控"
-description = "实体弹丸生成时在准星扇区内锁定一次目标。"
+description = "发射实体弹丸时，自动锁定准星附近的一名敌人。"
 targeting_half_angle_degrees = 25.0
 homing_turn_degrees_per_second = 360.0

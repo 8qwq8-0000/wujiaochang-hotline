@@ -96,3 +96,12 @@ func test_issued_pistol_is_unbound_and_uses_normal_synthesis_rules() -> void:
 	var another_starter := ComponentRolls.create("pistol", 1, rng)
 	var from_starters := ComponentRolls.fuse(starter, another_starter, rng)
 	assert_true(ComponentRolls.affixes(from_starters).size() >= 1)
+
+
+func test_calamity_flame_is_bound_and_outside_random_progression() -> void:
+	var item := ComponentRolls.create("calamity_flame", 3, RandomNumberGenerator.new())
+	assert_true(bool(item.get_property("bound", false)))
+	assert_eq(ComponentRolls.quality(item), 0)
+	assert_true(ComponentRolls.affixes(item).is_empty())
+	assert_false(ComponentRolls.ordinary(item))
+	assert_false(ComponentRolls.synthesizable(item))

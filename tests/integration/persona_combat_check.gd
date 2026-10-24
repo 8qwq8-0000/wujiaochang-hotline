@@ -36,6 +36,7 @@ func run_checks() -> void:
 	arena.add_child(player)
 	var enemy := load("res://scenes/actors/enemies/enemy.tscn").instantiate() as EnemyController
 	enemy.stationary_test_target = true
+	enemy.profile = load("res://resources/enemies/heavy_anchor.tres")
 	enemy.global_position = Vector2(150.0, 100.0)
 	arena.add_child(enemy)
 	await process_frame
@@ -54,6 +55,7 @@ func run_checks() -> void:
 	check(ai_attacks[0] == 0, "initial scene mark never triggers an automatic shot")
 	var next_enemy := load("res://scenes/actors/enemies/enemy.tscn").instantiate() as EnemyController
 	next_enemy.stationary_test_target = true
+	next_enemy.profile = load("res://resources/enemies/heavy_anchor.tres")
 	next_enemy.global_position = Vector2(210.0, 100.0)
 	arena.add_child(next_enemy)
 	await process_frame
@@ -112,6 +114,10 @@ func run_checks() -> void:
 	check(player.receive_damage(enemy_explosion).final_damage == 1, "enemy explosive attacks are not classified as terrain damage")
 	player.health.set_current_health(player.health.max_health)
 	player.hurt_box.clear_invulnerability()
+	var enemy_rock_safe_position := enemy.global_position
+	var next_enemy_rock_safe_position := next_enemy.global_position
+	enemy.global_position = Vector2(5000.0, 5000.0)
+	next_enemy.global_position = Vector2(5100.0, 5000.0)
 
 	player.talent_core.consume_persona_drink(TalentCoreController.ROCK_VIGILANTE)
 	player.talent_core.set_talent_choice(TalentCoreController.ROCK_VIGILANTE, 1, &"steady_beat")
@@ -124,14 +130,98 @@ func run_checks() -> void:
 	check(player.perform_persona_attack(Vector2.RIGHT), "rock persona can use ordinary weapon path")
 	check(is_equal_approx(player.persona_combat.rock_feedback, 10.0 / player.heat.effective_max() * 100.0), "rock firing feedback follows base heat divided by effective heat capacity")
 	check(is_equal_approx(player.heat.current_heat, 7.5), "steady beat reduces attack heat by 25 percent before accumulation")
+	player.persona_combat._set_rock_feedback(50.0)
+	check(is_equal_approx(player.dash.persona_walk_speed_bonus, 0.10), "half feedback grants half of the movement bonus")
+	check(is_equal_approx(player.heat.persona_cooling_bonus, 0.25), "half feedback grants half of the cooling bonus")
+	check(is_equal_approx(player.weapons.persona_attack_speed_bonus, 0.15), "half feedback grants half of the attack-speed bonus")
+	check(is_zero_approx(player.dash.equipment_speed_bonus), "rock feedback does not increase dash speed")
+
+	player.talent_core.set_talent_choice(TalentCoreController.ROCK_VIGILANTE, 1, &"distortion_gain")
+	var pistol := load("res://resources/weapons/service_pistol.tres") as WeaponComponentData
+	player.equip_weapon(pistol)
+	player.persona_combat._set_rock_feedback(60.0)
+	var burst_primary := load("res://scenes/actors/enemies/enemy.tscn").instantiate() as EnemyController
+	burst_primary.stationary_test_target = true
+	burst_primary.profile = load("res://resources/enemies/heavy_anchor.tres")
+	burst_primary.global_position = Vector2(150.0, 100.0)
+	arena.add_child(burst_primary)
+	var burst_neighbor := load("res://scenes/actors/enemies/enemy.tscn").instantiate() as EnemyController
+	burst_neighbor.stationary_test_target = true
+	burst_neighbor.profile = load("res://resources/enemies/heavy_anchor.tres")
+	burst_neighbor.global_position = Vector2(180.0, 100.0)
+	arena.add_child(burst_neighbor)
+	await physics_frame
+	var distortion_context := player.persona_combat.get_attack_context(pistol)
+	check(bool(distortion_context.get("distortion_burst", false)), "distortion is stamped when a projectile is fired at sixty percent feedback")
+	player.persona_combat.prepare_attack_group(9001, distortion_context)
+	var distortion_hit := DamageResult.new()
+	distortion_hit.packet = DamagePacket.new()
+	distortion_hit.packet.source = player
+	distortion_hit.packet.source_faction = CombatFaction.Id.PLAYER
+	distortion_hit.packet.weapon_id = pistol.id
+	distortion_hit.packet.feedback_group_id = 9001
+	distortion_hit.target = burst_primary
+	distortion_hit.final_damage = 1
+	var neighbor_health := burst_neighbor.health.current_health
+	var primary_health := burst_primary.health.current_health
+	player.persona_combat._on_damage_resolved(distortion_hit)
+	player.persona_combat._on_damage_resolved(distortion_hit)
+	check(burst_neighbor.health.current_health == neighbor_health - 1, "one firing group produces only one distortion burst")
+	check(burst_primary.health.current_health == primary_health, "distortion burst does not damage the direct-hit target again")
+	burst_neighbor.global_position = Vector2(240.0, 100.0)
+	var blocked_neighbor := load("res://scenes/actors/enemies/enemy.tscn").instantiate() as EnemyController
+	blocked_neighbor.stationary_test_target = true
+	blocked_neighbor.profile = load("res://resources/enemies/heavy_anchor.tres")
+	blocked_neighbor.global_position = Vector2(190.0, 100.0)
+	arena.add_child(blocked_neighbor)
+	var burst_wall := make_wall(arena, Vector2(170.0, 100.0), Vector2(6.0, 34.0))
+	await physics_frame
+	player.persona_combat.prepare_attack_group(9002, distortion_context)
+	distortion_hit.packet.feedback_group_id = 9002
+	var blocked_health := blocked_neighbor.health.current_health
+	player.persona_combat._on_damage_resolved(distortion_hit)
+	check(blocked_neighbor.health.current_health == blocked_health, "distortion burst cannot damage an enemy through a wall")
+	burst_wall.queue_free()
+	burst_primary.queue_free()
+	burst_neighbor.queue_free()
+	blocked_neighbor.queue_free()
+	await physics_frame
+
+	player.talent_core.set_persona_level(TalentCoreController.ROCK_VIGILANTE, 2)
+	player.talent_core.set_talent_choice(TalentCoreController.ROCK_VIGILANTE, 2, &"overload_scream")
+	var wave_target := load("res://scenes/actors/enemies/enemy.tscn").instantiate() as EnemyController
+	wave_target.stationary_test_target = true
+	wave_target.profile = load("res://resources/enemies/heavy_anchor.tres")
+	wave_target.global_position = Vector2(170.0, 100.0)
+	arena.add_child(wave_target)
+	var wave_wall := make_wall(arena, Vector2(135.0, 100.0), Vector2(6.0, 34.0))
+	await physics_frame
+	var wave_health := wave_target.health.current_health
+	player.heat.set_heat(player.heat.effective_max())
+	player.heat.is_overheated = true
+	player.persona_combat._on_overheated()
+	check(wave_target.health.current_health == wave_health - 1, "overload scream pulses immediately and passes through walls")
+	player.persona_combat._tick_rock_vigilante(1.0)
+	check(wave_target.health.current_health == wave_health - 2, "overload scream repeats once per overheated second")
+	player.heat.is_overheated = false
+	player.persona_combat._on_heat_recovered()
+	wave_wall.queue_free()
+	wave_target.queue_free()
+	await physics_frame
+
 	player.talent_core.set_persona_level(TalentCoreController.ROCK_VIGILANTE, 3)
 	player.talent_core.set_talent_choice(TalentCoreController.ROCK_VIGILANTE, 3, &"encore_autopilot")
 	player.persona_combat.rock_feedback = 99.0
 	player.weapons.reset_transient_state()
 	player.heat.set_heat(0.0)
-	check(player.perform_persona_attack(Vector2.RIGHT) and player.persona_combat.is_nuclear_frenzy_active(), "full feedback enters the two-second nuclear frenzy")
+	check(player.perform_persona_attack(Vector2.RIGHT) and player.persona_combat.is_nuclear_frenzy_active(), "full feedback enters the four-second nuclear frenzy")
+	check(is_equal_approx(float(player.persona_combat.get("_encore_remaining")), 4.0), "nuclear frenzy starts with four full seconds")
 	player.heat.set_heat(player.heat.effective_max())
 	player.heat.is_overheated = true
+	var encore_before_overheat := float(player.persona_combat.get("_encore_remaining"))
+	var feedback_before_overheat := player.persona_combat.rock_feedback
+	player.persona_combat._on_overheated()
+	check(is_equal_approx(float(player.persona_combat.get("_encore_remaining")), encore_before_overheat) and is_equal_approx(player.persona_combat.rock_feedback, feedback_before_overheat), "overheating does not shorten frenzy or cut its feedback")
 	player.weapons.set_cooldown_remaining(99.0)
 	var movement_input := InputEventAction.new()
 	movement_input.action = "move_right"
@@ -141,24 +231,56 @@ func run_checks() -> void:
 	check(player.perform_persona_attack(Vector2.RIGHT), "nuclear frenzy attacks through both cooldown and overheat")
 	check(player.heat.current_heat > player.heat.effective_max(), "nuclear frenzy stores doubled heat in the darker overflow channel")
 	player.persona_combat._tick_rock_vigilante(2.1)
-	check(not player.persona_combat.is_nuclear_frenzy_active() and player.heat.current_heat > player.heat.effective_max(), "overflow remains after frenzy until normal cooling removes it")
+	check(player.persona_combat.is_nuclear_frenzy_active() and is_equal_approx(player.persona_combat.rock_feedback, 47.5), "frenzy remains active after two seconds and feedback falls linearly")
+	player.persona_combat._tick_rock_vigilante(2.0)
+	check(not player.persona_combat.is_nuclear_frenzy_active() and player.heat.current_heat > player.heat.effective_max(), "overflow remains after the four-second frenzy until normal cooling removes it")
 
 	player.talent_core.consume_persona_drink(TalentCoreController.LEGENDARY_MASTER)
 	player.talent_core.consume_persona_drink(TalentCoreController.LEGENDARY_MASTER)
 	player.talent_core.consume_persona_drink(TalentCoreController.LEGENDARY_MASTER)
 	player.talent_core.set_talent_choice(TalentCoreController.LEGENDARY_MASTER, 1, &"calibrated_window")
-	player.talent_core.set_talent_choice(TalentCoreController.LEGENDARY_MASTER, 3, &"open_model")
+	player.talent_core.set_talent_choice(TalentCoreController.LEGENDARY_MASTER, 3, &"master_loop")
 	player.talent_core.set_persona(TalentCoreController.LEGENDARY_MASTER)
+	enemy.global_position = enemy_rock_safe_position
+	next_enemy.global_position = next_enemy_rock_safe_position
+	enemy.health.set_current_health(enemy.health.max_health)
+	next_enemy.health.set_current_health(next_enemy.health.max_health)
+	await physics_frame
 	var calibration_hit := DamagePacket.new()
 	calibration_hit.source = enemy
 	calibration_hit.source_faction = CombatFaction.Id.ENEMY
 	calibration_hit.source_position = enemy.global_position
 	calibration_hit.travel_direction = Vector2.LEFT
 	calibration_hit.is_melee = true
-	for _sample in 2:
-		player.persona_combat._on_enemy_attack_performed(enemy, &"kinetic", true)
-	check(int(player.persona_combat.get_runtime_snapshot().analyzed_attack_count) == 1, "master analyzes a repeated attack pattern")
-	check(int(player.persona_combat.get_runtime_snapshot().prediction_source_count) == 1, "open model retains a prediction source for analyzed attacks")
+	player.persona_combat._tick_master_analysis(1.0)
+	check(int(player.persona_combat.get_runtime_snapshot().analysis_samples) == 1, "master shows partial progress after one visible second")
+	var enemy_analysis_position := enemy.global_position
+	var next_enemy_analysis_position := next_enemy.global_position
+	enemy.global_position = Vector2(5000.0, 5000.0)
+	next_enemy.global_position = Vector2(5100.0, 5000.0)
+	player.persona_combat._tick_master_analysis(0.1)
+	enemy.global_position = enemy_analysis_position
+	next_enemy.global_position = next_enemy_analysis_position
+	player.persona_combat._tick_master_analysis(1.0)
+	check(int(player.persona_combat.get_runtime_snapshot().analysis_samples) == 1, "los interruption resets unfinished analysis progress")
+	player.persona_combat._tick_master_analysis(1.0)
+	check(int(player.persona_combat.get_runtime_snapshot().analyzed_attack_count) == 2, "master analyzes all visible enemies in parallel after two continuous seconds")
+	check(int(player.persona_combat.get_runtime_snapshot().prediction_source_count) == 2, "master retains every visible analyzed source")
+	check(is_equal_approx(float(player.persona_combat.get_runtime_snapshot().master_loop_remaining), 6.0), "master loop starts with the full six-second duration")
+	var master_input := InputEventAction.new()
+	master_input.action = &"move_right"
+	master_input.pressed = true
+	player.persona_combat.notify_player_input(master_input)
+	check(is_equal_approx(float(player.persona_combat.get_runtime_snapshot().master_loop_remaining), 3.0), "player combat input caps master loop at three seconds without cancelling it")
+	player.persona_combat._tick_temporary_bonuses(1.0)
+	player.persona_combat.notify_player_input(master_input)
+	check(is_equal_approx(float(player.persona_combat.get_runtime_snapshot().master_loop_remaining), 2.0), "repeated input neither cancels nor extends the reduced master loop")
+	player.persona_combat._trigger_master_loop_once()
+	check(is_equal_approx(float(player.persona_combat.get_runtime_snapshot().master_loop_remaining), 6.0), "a new analysis trigger refreshes the full master loop")
+	Input.action_press(&"move_right")
+	player.persona_combat._trigger_master_loop_once()
+	Input.action_release(&"move_right")
+	check(is_equal_approx(float(player.persona_combat.get_runtime_snapshot().master_loop_remaining), 3.0), "master loop starts reduced when player control is already held")
 	player.guard.begin_guard(Vector2.RIGHT)
 	player.guard.advance_timing(player.guard.startup_seconds)
 	player.try_persona_guard(calibration_hit)

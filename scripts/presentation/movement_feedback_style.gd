@@ -92,10 +92,10 @@ static func effect_strength(effect_kind: StringName) -> float:
 static func display_name(persona_id: StringName) -> String:
 	match persona_id:
 		DEEP_NINJA:
-			return "深渊忍者 · 裂光"
+			return "深渊忍者：裂光"
 		LEGENDARY_MASTER:
-			return "传奇宗师 · 校准光"
+			return "传奇宗师：校准光"
 		ROCK_VIGILANTE:
-			return "摇滚奇侠 · 波形光"
+			return "摇滚奇侠：波形光"
 		_:
-			return "未装载人格 · 冷白光"
+			return "未选择人格：冷白光"

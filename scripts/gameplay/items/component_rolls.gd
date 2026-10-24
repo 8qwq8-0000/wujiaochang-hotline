@@ -152,7 +152,7 @@ static func create_issued_pistol() -> InventoryItem:
 static func title(item: InventoryItem) -> String:
 	if _is_cyberware(item):
 		return cyberware_title(cyberware_modules(item))
-	return "%s · %s" % [QUALITIES[quality(item)], item.get_title()] if ordinary(item) else item.get_title()
+	return "%s %s" % [QUALITIES[quality(item)], item.get_title()] if ordinary(item) else item.get_title()
 
 static func describe(item: InventoryItem) -> String:
 	var lines: Array[String] = [title(item)]
@@ -164,7 +164,7 @@ static func describe(item: InventoryItem) -> String:
 				lines.append("• %s：%s" % [data.display_name, data.description])
 		return "\n".join(lines)
 	if item.get_property("slot", "") == "defense":
-		lines.append("蓝血 %d 格 · 每格恢复 %.0f 秒" % [ARMOR_CAPACITY[quality(item) - 1], ARMOR_RECOVERY_SECONDS[quality(item) - 1]])
+		lines.append("护甲 %d 格，每格恢复 %.0f 秒" % [ARMOR_CAPACITY[quality(item) - 1], ARMOR_RECOVERY_SECONDS[quality(item) - 1]])
 	for key in affixes(item):
 		if AFFIXES.has(key):
 			lines.append("%s +%s%s" % [AFFIXES[key][0], affixes(item)[key], "毫秒" if key == "guard" else "%"])

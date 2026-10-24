@@ -707,7 +707,7 @@ func _on_died(packet: DamagePacket) -> void:
 	combat_feedback_requested.emit(&"death", global_position)
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null:
-		events.publish_notice(&"player_defeated", "线路中断 · 按 R 重开战斗", Color(1.0, 0.35, 0.25), CombatNotice.Priority.HIGH, 0.0, 4.0)
+		events.publish_notice(&"player_defeated", "行动失败。按 R 重开战斗", Color(1.0, 0.35, 0.25), CombatNotice.Priority.HIGH, 0.0, 4.0)
 
 
 func _emit_public_state() -> void:

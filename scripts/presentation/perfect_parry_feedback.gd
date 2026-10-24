@@ -4,7 +4,7 @@ extends Node2D
 const TEXTURE := preload("res://assets/art/ui/feedback/perfect_purple.png")
 const COMBO_SECONDS := 1.2
 const DISPLAY_SECONDS := 0.7
-const WIDTH := 156.0
+const WIDTH := 72.0
 const GROW_SECONDS := 0.22
 var sprite: Sprite2D
 var combo_count := 0

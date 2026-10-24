@@ -2,7 +2,7 @@
 class_name TerminalNotice
 extends TerminalPanel
 
-@export_multiline var message := "SYSTEM READY" :
+@export_multiline var message := "系统就绪" :
 	set(value):
 		message = value
 		_refresh_message()

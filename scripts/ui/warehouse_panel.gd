@@ -1,7 +1,7 @@
 extends CanvasLayer
 
-var heading_text := "仓库 / 储物箱"
-var open_message := "点击装备存取 · 取出进入背包 · 自动保存"
+var heading_text := "储物箱"
+var open_message := "点击装备即可存取，改动会自动保存。"
 var fixed_chest_catalog := false
 var room: Node2D
 var is_open := false
@@ -44,10 +44,10 @@ func _ready() -> void:
 	titles.add_theme_constant_override("separation", 2)
 	titles.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	heading.add_child(titles)
-	_label(titles, "WJC / SAFEHOUSE     ·     STORAGE TERMINAL", 10, CyberUITheme.MUTED)
+	_label(titles, "仓库终端", 10, CyberUITheme.MUTED)
 	_title = _label(titles, heading_text, 18, CyberUITheme.HIGHLIGHT)
 	var close_button := Button.new()
-	close_button.text = "关闭 [E / Esc]"
+	close_button.text = "关闭 [Esc]"
 	close_button.custom_minimum_size = Vector2(98, 28)
 	close_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	close_button.pressed.connect(close)
@@ -61,8 +61,8 @@ func _ready() -> void:
 	columns.add_theme_constant_override("separation", 10)
 	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(columns)
-	_bag_list = _make_list(columns, "01 / 随身装备", "点击存入  →  储物箱")
-	_chest_list = _make_list(columns, "02 / 安全储存", "点击取出  →  背包")
+	_bag_list = _make_list(columns, "随身装备", "点击装备存入储物箱")
+	_chest_list = _make_list(columns, "安全储存", "点击装备取回背包")
 	var detail_panel := PanelContainer.new()
 	detail_panel.add_theme_stylebox_override("panel", _box(Color("0d2119"), CyberUITheme.DIM_GREEN, 6))
 	column.add_child(detail_panel)
@@ -158,21 +158,21 @@ func refresh() -> void:
 			list.remove_child(child)
 			child.queue_free()
 	var inventory: ComponentInventory = room.player.inventory
-	_count.text = "背包 %d / 6     储物箱 %d 件" % [inventory.backpack.get_item_count(), room.chest.get_item_count()]
+	_count.text = "背包 %d/6     储物箱 %d 件" % [inventory.backpack.get_item_count(), room.chest.get_item_count()]
 	_bag_meter.text = "随身容量 " + "■".repeat(inventory.backpack.get_item_count()) + "□".repeat(maxi(0, 6 - inventory.backpack.get_item_count()))
-	_detail.text = "物品详情 / 指向卡片查看属性\n已装备物品不占背包格 · 取出物品进入背包"
+	_detail.text = "指向装备可查看属性。\n已装备的物品不占背包格，取出后进入背包。"
 	for entry in [{"slot": inventory.weapon_slot, "name": "主武器"}, {"slot": inventory.secondary_weapon_slot, "name": "副武器"}, {"slot": inventory.cyberware_slot, "name": "义体"}, {"slot": inventory.defense_slot, "name": "防御"}, {"slot": inventory.blackbox_slot, "name": "黑匣"}]:
 		var item: InventoryItem = entry.slot.get_item()
 		if item != null:
-			_add_item(_bag_list, item, entry.name + " · ", true)
+			_add_item(_bag_list, item, entry.name, true)
 	for item in inventory.backpack.get_items():
-		_add_item(_bag_list, item, "背包 · ", true)
+		_add_item(_bag_list, item, "背包", true)
 	for item in _chest_display_items():
 		_add_item(_chest_list, item, "", false)
 	if _bag_list.get_child_count() == 0:
-		_show_empty(_bag_list, "随身物品为空", "从右侧取出组件，准备下一次行动")
+		_show_empty(_bag_list, "随身装备为空", "从右侧取出装备，准备下一次行动")
 	if room.chest.get_item_count() == 0:
-		_show_empty(_chest_list, "等待战利品入库", "点击左侧卡片，将物品存入安全储物箱")
+		_show_empty(_chest_list, "储物箱为空", "点击左侧装备，将其存入储物箱")
 
 func _chest_display_items() -> Array:
 	var items: Array = room.chest.get_items()
@@ -194,7 +194,7 @@ func _chest_display_items() -> Array:
 func _add_item(parent: Control, item: InventoryItem, prefix: String, deposit: bool) -> void:
 	var button := Button.new()
 	# Preserve the row's accessible name and native button input handling.
-	button.text = prefix + ComponentRolls.title(item)
+	button.text = (prefix + "：" if not prefix.is_empty() else "") + ComponentRolls.title(item)
 	button.custom_minimum_size = Vector2(0, 48)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.clip_contents = true
@@ -232,14 +232,14 @@ func _add_item(parent: Control, item: InventoryItem, prefix: String, deposit: bo
 	words.alignment = BoxContainer.ALIGNMENT_CENTER
 	words.add_theme_constant_override("separation", 3)
 	row.add_child(words)
-	var category := prefix.trim_suffix(" · ") if not prefix.is_empty() else "箱内组件"
-	_label(words, category + (" / 已绑定" if button.disabled else ""), 10, CyberUITheme.MUTED)
+	var category := prefix if not prefix.is_empty() else "箱内装备"
+	_label(words, category + ("（已绑定）" if button.disabled else ""), 10, CyberUITheme.MUTED)
 	var title := _label(words, ComponentRolls.title(item), 12, quality)
 	title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	var action := _label(row, "锁定" if button.disabled else ("存入 >" if deposit else "取出 >"), 10, CyberUITheme.MUTED if button.disabled else CyberUITheme.PHOSPHOR)
 	action.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_ignore_pointer(inset)
-	var details := ComponentRolls.describe(item).replace("\n", "  ·  ")
+	var details := ComponentRolls.describe(item).replace("\n", "；")
 	button.mouse_entered.connect(func() -> void: _detail.text = details)
 	button.focus_entered.connect(func() -> void: _detail.text = details)
 	button.pressed.connect(func() -> void: room.transfer(item, deposit))

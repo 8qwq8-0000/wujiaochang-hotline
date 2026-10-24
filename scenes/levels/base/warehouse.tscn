@@ -89,7 +89,7 @@ script = ExtResource("1")
 offset_left = 24.0
 offset_top = 12.0
 theme_override_font_sizes/font_size = 18
-text = "五角场 / 地下整备站"
+text = "地下整备站"
 
 [node name="Instructions" type="Label" parent="." unique_id=1709399595]
 offset_left = 26.0
@@ -157,7 +157,7 @@ theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.08, 1)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
 theme_override_font_sizes/font_size = 10
-text = "[E] 存入 / 取出"
+text = "[E] 存取装备"
 
 [node name="Art" type="Sprite2D" parent="Chest" unique_id=2018653989]
 texture_filter = 1
@@ -294,7 +294,7 @@ theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.08, 1)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
 theme_override_font_sizes/font_size = 10
-text = "BOSS 测试入口"
+text = "楼顶测试入口"
 horizontal_alignment = 1
 
 [node name="Prompt" type="Label" parent="BossTest" unique_id=1191546031]
@@ -348,7 +348,7 @@ theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.08, 1)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
 theme_override_font_sizes/font_size = 10
-text = "合成师 · GPT"
+text = "Codex"
 horizontal_alignment = 1
 
 [node name="Prompt" type="Label" parent="SynthesisNPC" unique_id=145803590]
@@ -362,7 +362,7 @@ theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.08, 1)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
 theme_override_font_sizes/font_size = 10
-text = "[E] 合成 / 升级武器"
+text = "[E] 与 Codex 交谈"
 horizontal_alignment = 1
 
 [node name="RefinedArt" type="Sprite2D" parent="SynthesisNPC" unique_id=266293597]
@@ -407,7 +407,7 @@ theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.08, 1)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
 theme_override_font_sizes/font_size = 10
-text = "人格档案 / 遗产酒谱"
+text = "遗产酒谱"
 
 [node name="Prompt" type="Label" parent="ArchiveTerminal" unique_id=1760265591]
 visible = false

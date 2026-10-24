@@ -5,6 +5,7 @@ const COATING_SCRIPT := preload("res://scripts/presentation/procedural_coating_2
 const STAIN_LAYER_SCRIPT := preload("res://scripts/presentation/cyber_stain_layer.gd")
 const IMPACT_SCRIPT := preload("res://scripts/presentation/impact_particle_effect.gd")
 const MOVEMENT_SCRIPT := preload("res://scripts/presentation/movement_particle_effect.gd")
+const ROCK_WAVE_SCRIPT := preload("res://scripts/presentation/rock_wave_effect.gd")
 
 
 func suite_name() -> String:
@@ -107,6 +108,13 @@ func test_impact_particles_follow_weapon_material_and_accessibility_budget() -> 
 	assert_gt(heavy_count, standard_count)
 	assert_true(reduced_count < standard_count)
 	assert_gt(reduced_count, 1)
+	effect.play(Vector2.ZERO, &"calamity_flame", false, Vector2.RIGHT, false, 1.0)
+	var flame_count := effect.get_particle_count()
+	effect.play(Vector2.ZERO, &"calamity_flame", false, Vector2.RIGHT, true, 0.56)
+	var reduced_flame_count := effect.get_particle_count()
+	assert_gt(flame_count, standard_count)
+	assert_true(reduced_flame_count <= ceili(flame_count * 0.6))
+	assert_true(reduced_flame_count >= floori(flame_count * 0.45))
 
 
 func test_movement_feedback_uses_distinct_persona_palettes_and_shapes() -> void:
@@ -150,6 +158,15 @@ func test_movement_particles_keep_identity_when_quality_and_flashes_are_reduced(
 	var reduced_count := effect.get_particle_count()
 	assert_gt(standard_count, reduced_count)
 	assert_gt(reduced_count, 1)
+
+
+func test_rock_wave_never_draws_beyond_gameplay_radius() -> void:
+	var effect := track(ROCK_WAVE_SCRIPT.new()) as RockWaveEffect
+	(Engine.get_main_loop() as SceneTree).root.add_child(effect)
+	effect.play(Vector2.ZERO, Color("ffe34a"), 96.0, 0.25)
+	assert_true(effect.current_outer_radius() <= 96.0)
+	effect._process(0.24)
+	assert_true(effect.current_outer_radius() <= 96.0)
 
 
 func test_dash_exposes_presentation_kind_without_changing_dash_rules() -> void:
@@ -199,6 +216,11 @@ func test_player_damage_overlay_merges_dense_hurt_feedback() -> void:
 	assert_eq(layer._effects[0].direction, Vector2.RIGHT)
 	assert_true(layer._effects[0].heavy)
 	layer.free()
+
+
+func test_player_damage_overlay_omits_screen_wide_guard_shapes() -> void:
+	assert_false(PlayerDamageFeedbackLayer.Kind.has("BLOCK"))
+	assert_false(PlayerDamageFeedbackLayer.Kind.has("PERFECT_BLOCK"))
 
 
 func test_kill_chain_accepts_player_direct_damage_and_rejects_environment() -> void:

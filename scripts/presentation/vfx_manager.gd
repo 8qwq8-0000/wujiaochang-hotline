@@ -10,6 +10,7 @@ const PERFECT_FEEDBACK := preload("res://scripts/presentation/perfect_parry_feed
 const IMPACT_EFFECT := preload("res://scripts/presentation/impact_particle_effect.gd")
 const DEATH_EFFECT := preload("res://scripts/presentation/death_burst_effect.gd")
 const MOVEMENT_EFFECT := preload("res://scripts/presentation/movement_particle_effect.gd")
+const ROCK_WAVE_EFFECT := preload("res://scripts/presentation/rock_wave_effect.gd")
 const AFTERIMAGE_COLOR := Color(0.25, 0.85, 1.0, 0.55)
 const AFTERIMAGE_DURATION := 0.25
 const FEEDBACK_GROUP_WINDOW_USEC := 90_000
@@ -65,6 +66,7 @@ func _ready() -> void:
 		events.afterimages_clear_requested.connect(clear_afterimages)
 		events.movement_effect_requested.connect(_on_movement_effect_requested)
 		events.effect_requested.connect(spawn_flash)
+		events.rock_wave_requested.connect(spawn_rock_wave)
 		events.electric_arc_requested.connect(_spawn_arc)
 		events.environment_discharge_requested.connect(func(point: Vector2, radius: float) -> void: spawn_flash(point, Color("69d6ec"), radius, 0.3))
 		events.entity_defeated.connect(_on_entity_defeated)
@@ -229,6 +231,13 @@ func spawn_flash(world_position: Vector2, color: Color, radius: float, duration:
 	else:
 		effect = _active.pop_front()
 	_active.append(effect)
+	effect.play(world_position, color, radius, duration)
+
+
+func spawn_rock_wave(world_position: Vector2, color: Color, radius: float, duration: float) -> void:
+	var effect := ROCK_WAVE_EFFECT.new() as RockWaveEffect
+	add_child(effect)
+	effect.finished.connect(func(finished_effect: RockWaveEffect) -> void: finished_effect.queue_free())
 	effect.play(world_position, color, radius, duration)
 
 
@@ -537,6 +546,8 @@ func _weapon_color(weapon_id: StringName) -> Color:
 			return Color("85f5ff")
 		&"thermal_pulse":
 			return Color("ff5b38")
+		&"calamity_flame":
+			return Color("ff1838")
 		&"baton", &"initial_baton":
 			return Color("dbeeff")
 		_:
