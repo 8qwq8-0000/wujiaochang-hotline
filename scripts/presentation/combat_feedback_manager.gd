@@ -8,6 +8,7 @@ signal kill_chain_ended(stage: int)
 ## knockback remain gameplay-owned; this node only changes presentation.
 const MERGE_WINDOW_USEC := 80_000
 const LOCAL_HOLD_SECONDS := 0.025
+const CALAMITY_FLAME_HOLD_SECONDS := 0.045
 const GLOBAL_TIME_SCALE := 0.16
 const KILL_MERGE_WINDOW_USEC := 80_000
 const KILL_FEEDBACK_DELAY_USEC := 45_000
@@ -86,6 +87,7 @@ func _on_damage_resolved(result: DamageResult) -> void:
 	if result.outcome != DamageResult.Outcome.DAMAGED or result.final_damage <= 0:
 		return
 	var weapon_id := result.packet.weapon_id if result.packet != null else &""
+	var calamity_flame := weapon_id == &"calamity_flame"
 	var target_is_player := result.target is PlayerController
 	if target_is_player:
 		_last_player_hurt_usec = Time.get_ticks_usec()
@@ -101,10 +103,11 @@ func _on_damage_resolved(result: DamageResult) -> void:
 	if strong_event:
 		_request_global_slow(0.075 if target_is_heavy or target_is_player else 0.065)
 	else:
-		_hold_visual(result.target, LOCAL_HOLD_SECONDS)
+		var hold_seconds := CALAMITY_FLAME_HOLD_SECONDS if calamity_flame else LOCAL_HOLD_SECONDS
+		_hold_visual(result.target, hold_seconds)
 		if result.packet != null:
-			_hold_visual(result.packet.source, LOCAL_HOLD_SECONDS)
-	var reaction_strength := 1.0 if strong_event else (0.72 if weapon_id == &"scattergun" else 0.48)
+			_hold_visual(result.packet.source, hold_seconds)
+	var reaction_strength := 1.0 if strong_event else (0.82 if calamity_flame else (0.72 if weapon_id == &"scattergun" else 0.48))
 	_play_reactions(result, direction, reaction_strength)
 	_request_camera_shake(direction, reaction_strength * (0.85 if target_is_player else 0.42))
 	if qualifies_kill:
@@ -186,14 +189,17 @@ func _emit_pending_kill() -> void:
 	var stage := int(_pending_kill.get("stage", 1))
 	var offscreen := bool(_pending_kill.get("offscreen", false))
 	var boss_final := bool(_pending_kill.get("boss_final", false))
+	var weapon_id: StringName = _pending_kill.get("weapon_id", &"")
 	if boss_final:
 		_request_global_slow(0.08)
 		_request_camera_zoom(0.9)
 		if not suppressed:
 			_request_camera_shake(Vector2.ZERO, 0.9)
 	elif not offscreen and not suppressed:
+		if weapon_id == &"calamity_flame":
+			_request_global_slow(0.065)
 		_request_camera_shake(Vector2.ZERO, 0.12 + 0.045 * stage)
-	kill_chain_feedback.emit(position, stage, _pending_kill.get("weapon_id", &""), offscreen, boss_final, suppressed)
+	kill_chain_feedback.emit(position, stage, weapon_id, offscreen, boss_final, suppressed)
 	_pending_kill.clear()
 
 
@@ -257,6 +263,8 @@ func _on_weapon_cue_requested(weapon_id: StringName, cue: StringName, _world_pos
 	var strength := 0.14
 	if weapon_id == &"scattergun":
 		strength = 0.34
+	elif weapon_id == &"calamity_flame":
+		strength = 0.3
 	elif weapon_id == &"rail_cannon":
 		strength = 0.62
 		_request_global_slow(0.055)

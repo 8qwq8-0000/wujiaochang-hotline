@@ -8,14 +8,14 @@ const PERSONA_NAMES := {
 }
 const TALENT_NAMES := {
 	"shared_hunt_resonance": "风林山火",
-	"ceaseless_hunt": "无尽狩猎",
+	"ceaseless_hunt": "无间狩猎",
 	"open_model": "开放模型",
 	"master_loop": "宗师气场",
-	"dual_channel_performance": "双通道演出",
+	"dual_channel_performance": "双通道演奏",
 	"encore_autopilot": "核武器",
 }
 const LEAK_TEXT := {
-	"compute_containment_slip": "收容算力 / 销毁违禁设备：目标分类出现自相矛盾。",
+	"compute_containment_slip": "系统先将目标标为“收容算力”，随后又要求销毁违禁设备。",
 	"operator_root_routing": "回收算力未进入市政仓库，而是汇入接线根节点。",
 	"self_renewing_authority": "维稳命令没有人类签署者，紧急权限正在自行续签。",
 }
@@ -45,17 +45,17 @@ func _ready() -> void:
 	var header := HBoxContainer.new()
 	column.add_child(header)
 	var title := Label.new()
-	title.text = "接线员人格档案 / 遗产酒谱"
+	title.text = "遗产酒谱"
 	title.add_theme_font_size_override("font_size", 22)
 	title.add_theme_color_override("font_color", Color("80e0d9"))
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
 	var close_button := Button.new()
-	close_button.text = "关闭 [E / Esc]"
+	close_button.text = "关闭 [Esc]"
 	close_button.pressed.connect(close)
 	header.add_child(close_button)
 	var note := Label.new()
-	note.text = "永久记录仅供查阅，不提供属性；行动中的人格等级、天赋与关系仍会在结算后清空。"
+	note.text = "这里只保存发现和通关记录，不提供属性。行动结束后，人格等级、天赋和关系会清空。"
 	note.add_theme_color_override("font_color", Color("a9bac5"))
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(note)
@@ -118,9 +118,9 @@ func refresh() -> void:
 		for leak_id: Variant in leaks:
 			lines.append("• %s" % LEAK_TEXT.get(String(leak_id), String(leak_id)))
 	lines.append("")
-	lines.append("[font_size=18][color=#e7c77a]遗产饮料 · %d 瓶[/color][/font_size]" % drinks.size())
+	lines.append("[font_size=18][color=#e7c77a]遗产饮料（%d 瓶）[/color][/font_size]" % drinks.size())
 	if drinks.is_empty():
-		lines.append("击败楼顶 Boss 并完整通关后，酒谱会在这里铸入一条无属性记录。")
+		lines.append("完整通关后，本次行动会保存到遗产酒谱。")
 	else:
 		for index in drinks.size():
 			_append_drink(lines, drinks[index], index + 1)
@@ -130,13 +130,13 @@ func refresh() -> void:
 func _append_drink(lines: PackedStringArray, record: Dictionary, index: int) -> void:
 	var date := Time.get_datetime_dict_from_unix_time(int(record.get("created_unix", 0)))
 	lines.append("")
-	lines.append("[font_size=16][color=#80e0d9]#%02d  %04d-%02d-%02d · %s[/color][/font_size]" % [
+	lines.append("[font_size=16][color=#80e0d9]#%02d  %04d-%02d-%02d  %s[/color][/font_size]" % [
 		index, int(date.get("year", 0)), int(date.get("month", 0)), int(date.get("day", 0)), record.get("id", "无编号")
 	])
-	lines.append("通关 %.1f 秒 · 行动种子 %d" % [float(record.get("clear_seconds", 0.0)), int(record.get("run_seed", 0))])
+	lines.append("通关用时 %.1f 秒，行动种子 %d" % [float(record.get("clear_seconds", 0.0)), int(record.get("run_seed", 0))])
 	var last_persona_id := String(record.get("last_persona_id", ""))
 	if not last_persona_id.is_empty():
-		lines.append("黑匣封型：%s瓶型" % PERSONA_NAMES.get(last_persona_id, last_persona_id))
+		lines.append("最后使用的人格：%s" % PERSONA_NAMES.get(last_persona_id, last_persona_id))
 	for entry: Variant in record.get("personas", []):
 		if not entry is Dictionary:
 			continue
@@ -144,15 +144,15 @@ func _append_drink(lines: PackedStringArray, record: Dictionary, index: int) -> 
 		lines.append("• %s Lv.%d%s" % [
 			entry.get("name", PERSONA_NAMES.get(String(entry.get("id", "")), "未知人格")),
 			int(entry.get("level", 0)),
-			" · 三级：" + TALENT_NAMES.get(talent, talent) if not talent.is_empty() else "",
+			"（三级天赋：" + TALENT_NAMES.get(talent, talent) + "）" if not talent.is_empty() else "",
 		])
-	lines.append("猎痕连杀 %d · 手动完美格挡 %d · 摇滚峰值 %.1f · 摇滚攻击 %d" % [
+	lines.append("猎痕连杀 %d，手动完美格挡 %d\n摇滚峰值 %.1f，摇滚攻击 %d" % [
 		int(record.get("highest_marked_kill_chain", 0)), int(record.get("manual_perfect_guards", 0)),
 		float(record.get("peak_rock_feedback", 0.0)), int(record.get("rock_attacks", 0)),
 	])
 	var leaks: Array = record.get("semantic_leaks", [])
 	if not leaks.is_empty():
-		lines.append("本局泄漏：%s" % ", ".join(leaks))
+		lines.append("本次发现：%s" % "、".join(leaks))
 
 
 func _input(event: InputEvent) -> void:

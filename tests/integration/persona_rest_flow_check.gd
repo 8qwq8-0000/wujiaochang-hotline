@@ -71,6 +71,7 @@ func run_checks() -> void:
 	check(player.talent_core.get_persona_level(TalentCoreController.DEEP_NINJA) == 1, "first drink installs level one")
 	check(not run.has_persona_authorization(0), "authorization cannot be reused on same floor")
 	check(not rest.choose_persona(TalentCoreController.ROCK_VIGILANTE), "second drink is rejected on same floor")
+	check(rest.has_unselected_active_talents(), "newly installed persona reports its unlocked empty talent tier")
 	await press_escape()
 	check(rest.is_open and paused and not player.is_input_enabled(), "Esc after drinking cannot skip talent selection")
 	check(not main.get_node("PauseSettingsMenu").visible, "handled Esc cannot reach the global pause menu")
@@ -91,17 +92,36 @@ func run_checks() -> void:
 	await process_frame
 
 	check(talent_buttons.filter(func(button: Button) -> bool: return bool(button.get_meta("talent_locked", false))).size() == 4, "future talent tiers remain visible, focusable, and locked")
+	var viewport_size: Vector2 = (rest.get("_overlay") as Control).get_viewport_rect().size
+	for button: Button in talent_buttons:
+		var button_rect := button.get_global_rect()
+		check(button_rect.position.x >= 0.0 and button_rect.position.y >= 0.0 and button_rect.end.x <= viewport_size.x + 0.5 and button_rect.end.y <= viewport_size.y + 0.5, "talent button stays inside the 640x360 viewport")
 	await rest._show_talent_tooltip(talent_buttons[0], &"read_opening", 1, false)
 	check(rest.get("_talent_tooltip_label").get_parsed_text().contains("猎痕") and rest.get("_talent_tooltip_label").get_parsed_text().contains("失衡"), "talent hover exposes exact effect and glossary terms")
+	var tooltip: Control = rest.get("_talent_tooltip")
+	var tooltip_rect := tooltip.get_global_rect()
+	check(tooltip.visible, "talent hover opens the explanation")
+	check(tooltip_rect.position.x >= 7.5 and tooltip_rect.position.y >= 7.5 and tooltip_rect.end.x <= viewport_size.x - 7.5 and tooltip_rect.end.y <= viewport_size.y - 7.5, "talent explanation is clamped to every viewport edge")
+	check(tooltip.size.x <= 250.5 and tooltip.size.y <= 236.5, "talent explanation uses the compact bounded size")
+	check(rest.get("_talent_tooltip_label").scroll_active, "long talent explanations can scroll instead of leaving the screen")
 	check(viewport_bounds.encloses(rest.get("_talent_tooltip").get_global_rect()), "talent effect tooltip stays inside the viewport")
 	await press_escape()
 	check(not rest.get("_talent_tooltip").visible and rest.is_open, "Esc dismisses explanation while keeping talent selection open")
 	rest._hide_talent_tooltip()
+	check(rest.close(), "rest may close while an unlocked talent is still empty")
+	check(not paused and player.is_input_enabled(), "closing an incomplete rest screen returns control")
+	var escape := InputEventAction.new()
+	escape.action = &"pause"
+	escape.pressed = true
+	rest._input(escape)
+	check(rest.is_open and paused and not player.is_input_enabled(), "escape reopens persona rest before the pause menu while the active talent is empty")
 	check(rest.choose_talent(1, &"read_opening"), "unlocked talent can be selected at rest")
+	check(not rest.has_unselected_active_talents(), "selecting every unlocked tier restores normal pause behavior")
 	await press_escape()
 	check(rest.is_open and paused and player.talent_core.get_talent_choice(TalentCoreController.DEEP_NINJA, 1) == &"read_opening", "Esc after configuring keeps rest open and preserves selected talent")
 	check(rest.close(), "rest can close after authorization is consumed")
 	check(not paused and player.is_input_enabled(), "closing rest returns control")
+	check(not rest._can_reopen_from_pause(), "completed active build no longer intercepts escape")
 	player.talent_core.takeover_charges = 0
 	var snapshot := player.export_run_state()
 	run.set_player_state(snapshot)

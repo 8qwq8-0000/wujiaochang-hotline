@@ -4,8 +4,6 @@ extends Control
 enum Kind {
 	DAMAGE,
 	AREA_DAMAGE,
-	BLOCK,
-	PERFECT_BLOCK,
 	ARMOR,
 	PHASE,
 	CIRCUIT_BREAKER,
@@ -48,7 +46,6 @@ func _process(delta: float) -> void:
 func preview_feedback() -> void:
 	_add_effect(Kind.DAMAGE, Vector2(-0.82, -0.25), 0.85, true)
 	_add_effect(Kind.ARMOR, Vector2(0.82, 0.15), 0.75)
-	_add_effect(Kind.PERFECT_BLOCK, Vector2.UP, 0.8)
 
 
 func _on_tree_node_added(node: Node) -> void:
@@ -94,10 +91,10 @@ func _on_damage_resolved(result: DamageResult) -> void:
 		_add_effect(Kind.CIRCUIT_BREAKER, direction, 1.0, true)
 		return
 	if result.perfect:
-		_add_effect(Kind.PERFECT_BLOCK, direction, 1.0)
 		return
 	if result.outcome == DamageResult.Outcome.BLOCKED:
-		_add_effect(Kind.ARMOR if result.absorbed_damage > 0 else Kind.BLOCK, direction, 0.8)
+		if result.absorbed_damage > 0:
+			_add_effect(Kind.ARMOR, direction, 0.8)
 		return
 	if result.outcome != DamageResult.Outcome.DAMAGED or result.final_damage <= 0:
 		return
@@ -146,7 +143,7 @@ func _add_effect(kind: Kind, direction: Vector2, strength: float, heavy: bool = 
 	var duration := 0.42 if reduced else 0.24
 	if kind == Kind.CIRCUIT_BREAKER:
 		duration = 0.62 if reduced else 0.46
-	elif kind in [Kind.PERFECT_BLOCK, Kind.PHASE]:
+	elif kind == Kind.PHASE:
 		duration = 0.34 if reduced else 0.22
 	if kind in [Kind.DAMAGE, Kind.AREA_DAMAGE]:
 		for effect in _effects:
@@ -184,10 +181,6 @@ func _draw() -> void:
 				_draw_damage_arc(center, radius, effect.direction, Color(1.0, 0.16, 0.3, alpha), bool(effect.heavy))
 			Kind.AREA_DAMAGE:
 				draw_arc(center, radius - 8.0 * ratio, 0.0, TAU, 64, Color(1.0, 0.14, 0.28, alpha * 0.72), 4.0, true)
-			Kind.BLOCK:
-				_draw_wide_arc(center, radius, effect.direction, Color(0.35, 0.9, 1.0, alpha), 0.95)
-			Kind.PERFECT_BLOCK:
-				_draw_star_wave(center, radius * (0.82 + ratio * 0.12), Color(1.0, 0.9, 0.45, alpha))
 			Kind.ARMOR:
 				_draw_segmented_hex(center, radius - 10.0, Color(0.46, 0.9, 1.0, alpha * 0.88))
 			Kind.PHASE:
@@ -214,11 +207,6 @@ func _draw_damage_arc(center: Vector2, radius: float, direction: Vector2, color:
 		draw_line(Vector2(size.x, 0.0), size, edge, 8.0)
 
 
-func _draw_wide_arc(center: Vector2, radius: float, direction: Vector2, color: Color, span: float) -> void:
-	var angle := direction.angle() if not direction.is_zero_approx() else -PI * 0.5
-	draw_arc(center, radius, angle - span, angle + span, 32, color, 4.0, true)
-
-
 func _draw_segmented_hex(center: Vector2, radius: float, color: Color) -> void:
 	var points := PackedVector2Array()
 	for index in 6:
@@ -227,12 +215,6 @@ func _draw_segmented_hex(center: Vector2, radius: float, color: Color) -> void:
 		var start := points[index].lerp(points[(index + 1) % 6], 0.08)
 		var end := points[index].lerp(points[(index + 1) % 6], 0.78)
 		draw_line(start, end, color, 3.0, true)
-
-
-func _draw_star_wave(center: Vector2, radius: float, color: Color) -> void:
-	for index in 8:
-		var direction := Vector2.from_angle(index * TAU / 8.0)
-		draw_line(center + direction * (radius - 18.0), center + direction * radius, color, 3.0, true)
 
 
 func _draw_phase_line(center: Vector2, radius: float, direction: Vector2, color: Color) -> void:

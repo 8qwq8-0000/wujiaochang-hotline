@@ -46,21 +46,23 @@ func update_status(core: TalentCoreController, state: Dictionary, alive: bool) -
 	var level := core.get_persona_level(id)
 	var enabled := level > 0 and alive
 	_accent = {TalentCoreController.DEEP_NINJA: Color("ff4b55"), TalentCoreController.LEGENDARY_MASTER: Color("55d9ff"), TalentCoreController.ROCK_VIGILANTE: Color("ffe34a")}.get(id, Color("55d9ff"))
-	_title.text = "%s · Lv.%d" % [core.get_persona_display_name(id), level] if level > 0 else "人格尚未装载"
+	_title.text = "%s Lv.%d" % [core.get_persona_display_name(id), level] if level > 0 else "尚未选择人格"
 	_title.add_theme_color_override("font_color", _accent if enabled else CyberUITheme.MUTED)
 	_detail.add_theme_color_override("font_color", Color("d8e8e9"))
 	_meter.meter_color = _accent
 	_meter.visible = enabled
+	_meter.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_meter.tooltip_text = ""
 	if not enabled:
 		_effects.text = ""
-		_detail.text = "前往整备处饮用人格酒" if alive else "生命信号中断"
+		_detail.text = "前往整备处选择人格" if alive else "行动失败"
 		queue_redraw()
 		return
 	var tags: Array[String] = []
 	match id:
 		TalentCoreController.DEEP_NINJA:
 			var locked := int(state.get("marked_target_id", 0)) != 0
-			_detail.text = "猎痕 · 已锁定目标" if locked else "猎痕 · 搜寻目标"
+			_detail.text = "已锁定猎痕目标" if locked else "正在寻找猎痕目标"
 			_meter.maximum = 1
 			_meter.value = 1 if locked else 0
 			_add_tag(tags, core, &"blood_step", "踏血", float(state.get("blood_step_remaining", 0)) > 0)
@@ -72,15 +74,15 @@ func update_status(core: TalentCoreController, state: Dictionary, alive: bool) -
 		TalentCoreController.LEGENDARY_MASTER:
 			var samples := int(state.get("analysis_samples", 0))
 			var required := int(state.get("analysis_required", 2))
-			_detail.text = "威胁解析 · %d/%d%s" % [samples, required, " 已解析" if samples >= required else ""] if state.get("analysis_has_threat", false) else "威胁解析 · 等待交锋"
+			_detail.text = "威胁解析 %d/%d%s" % [samples, required, "，已完成" if samples >= required else ""] if state.get("analysis_has_threat", false) else "等待敌人出招"
 			_meter.maximum = required
 			_meter.value = samples
 			_add_tag(tags, core, &"calibrated_window", "格挡强化", bool(state.get("guard_window_active", false)))
 			_add_tag(tags, core, &"master_loop", "宗师气场", float(state.get("master_loop_remaining", 0)) > 0)
 			if state.get("ai_guard_active", false):
-				tags.append(_tag("代行格挡中", true, "AI 正在代行格挡；玩家输入可打断软接管。"))
+				tags.append(_tag("代行格挡中", true, "正在自动格挡；任何玩家输入都会立即中止。"))
 			elif state.get("master_takeover_pending", false):
-				tags.append(_tag("拆招待命", false, "紧急接管已待命，等待可格挡的攻击；成功接管后消耗次数。"))
+				tags.append(_tag("拆招待命", false, "正在等待可格挡的攻击；自动拆招后消耗 1 次接管。"))
 			if not state.get("ai_guard_active", false) and not state.get("master_takeover_pending", false):
 				_add_tag(tags, core, &"proxy_stance", "代拟架势", false)
 				_add_tag(tags, core, &"proxy_counter", "代行一招", false)
@@ -88,14 +90,20 @@ func update_status(core: TalentCoreController, state: Dictionary, alive: bool) -
 			_add_tag(tags, core, &"open_model", "预测轨迹", int(state.get("prediction_source_count", 0)) > 0)
 		TalentCoreController.ROCK_VIGILANTE:
 			var feedback := float(state.get("rock_feedback", 0))
-			_detail.text = "战斗反馈 · %d%%" % int(feedback)
+			_detail.text = "战斗反馈 %d%%" % int(feedback)
 			_meter.maximum = 100
 			_meter.value = feedback
+			_meter.mouse_filter = Control.MOUSE_FILTER_PASS
+			_meter.tooltip_text = "移速 +%d%%\n散热 +%d%%\n攻速 +%d%%" % [
+				floori(float(state.get("rock_move_bonus_percent", 0.0)) + 0.501),
+				floori(float(state.get("rock_cooling_bonus_percent", 0.0)) + 0.501),
+				floori(float(state.get("rock_attack_speed_bonus_percent", 0.0)) + 0.501),
+			]
 			_add_tag(tags, core, &"seamless_switch", "无缝换台", bool(state.get("seamless_free_attack", false)))
 			_add_tag(tags, core, &"encore_autopilot", "核武器", float(state.get("encore_remaining", 0)) > 0)
 			_add_tag(tags, core, &"distortion_gain", "破音增益", bool(state.get("distortion_active", false)))
 			_add_tag(tags, core, &"steady_beat", "稳定拍点", false)
-			_add_tag(tags, core, &"overload_scream", "过载嘶鸣", false)
+			_add_tag(tags, core, &"overload_scream", "过载嘶鸣", bool(state.get("overload_scream_active", false)))
 			_add_tag(tags, core, &"dual_channel_performance", "双通道", false)
 	var next_text := "  ".join(tags) if not tags.is_empty() else "[color=#83949e]尚未选择天赋[/color]"
 	if _effects.text != next_text:
@@ -114,19 +122,7 @@ static func talent_tooltip(talent: StringName) -> String:
 	var entry: Array = PersonaRestFlow.TALENT_TEXT.get(talent, [])
 	if entry.is_empty():
 		return ""
-	var description := String(entry[1])
-	match talent:
-		&"seamless_switch":
-			description = "攻击后1.2秒内切换武器，另一武器首次攻击不生热且发射反馈翻倍。"
-		&"encore_autopilot":
-			description = "战斗反馈达到100%时进入2秒狂热：无攻击间隔、过热可攻击、热量翻倍并可溢出至200%。"
-		&"distortion_gain":
-			description = "战斗反馈达到60%时，攻速+30%，每个独立目标伤害+1，热量产生+30%。"
-		&"calibrated_window":
-			description = "面对已解析攻击时完美格挡窗口延长0.2秒；手动格挡成功后立即恢复。"
-		&"master_loop":
-			description = "完成解析时震慑220像素内敌人，并进入4秒极意状态自动完美格挡和反击。"
-	return "%s：%s" % [entry[0], description]
+	return "%s：%s" % [entry[0], entry[1]]
 
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, PANEL_SIZE), Color("071017", 0.82))

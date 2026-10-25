@@ -218,6 +218,6 @@ offset_left = 160.0
 offset_top = 20.0
 offset_right = 480.0
 offset_bottom = 60.0
-text = "AREA CLEARED"
+text = "区域已清理"
 horizontal_alignment = 1
 vertical_alignment = 1

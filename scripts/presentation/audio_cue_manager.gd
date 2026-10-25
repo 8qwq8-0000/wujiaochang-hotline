@@ -498,6 +498,8 @@ func _weapon_kill_pitch_offset(weapon_id: StringName) -> float:
 			return -0.018
 		&"rail_cannon":
 			return 0.025
+		&"calamity_flame":
+			return -0.02
 		&"baton", &"initial_baton":
 			return -0.01
 	return 0.0

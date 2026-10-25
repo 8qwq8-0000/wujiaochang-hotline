@@ -30,7 +30,7 @@ func _restart_combat() -> void:
 		var profile: Dictionary = store.get_profile()
 		if player == null or not store.commit(profile.chest, player.export_recovery_state()):
 			_restart_requested = false
-			get_node("/root/CombatEvents").publish_message("放弃行动失败：" + store.error_message)
+			get_node("/root/CombatEvents").publish_message("没能放弃行动。" + store.error_message)
 			return
 		var flow: SceneContainerManager = get_node("SceneFlow")
 		if not flow.request_scene("res://scenes/levels/base/warehouse.tscn"):

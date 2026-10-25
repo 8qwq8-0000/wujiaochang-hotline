@@ -1,0 +1,52 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/presentation/calamity_flame_weapon_view.gd" id="1_view"]
+[ext_resource type="Texture2D" path="res://assets/art/weapons/placeholder/placeholder_arm_lock_baton_unpainted.png" id="2_texture"]
+[ext_resource type="Script" path="res://scripts/presentation/procedural_coating_2d.gd" id="3_coating"]
+
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_flame"]
+blend_mode = 1
+
+[node name="CalamityFlameView" type="Node2D"]
+texture_filter = 1
+material = SubResource("CanvasItemMaterial_flame")
+script = ExtResource("1_view")
+recoil_distance = 1.5
+feedback_seconds = 0.14
+
+[node name="BodyRoot" type="Node2D" parent="."]
+
+[node name="BodySprite" type="Sprite2D" parent="BodyRoot"]
+texture_filter = 1
+position = Vector2(24, 0)
+modulate = Color(0.62, 0.18, 0.22, 1)
+texture = ExtResource("2_texture")
+
+[node name="Coating" type="Node2D" parent="BodyRoot"]
+z_index = 2
+script = ExtResource("3_coating")
+seed_key = &"calamity_flame"
+mark_count = 3
+safe_rects = Array[Rect2]([Rect2(5, -4, 11, 8), Rect2(19, -4, 12, 8), Rect2(34, -3, 9, 6)])
+accent_colors = Array[Color]([Color(0.73, 0.015, 0.08, 1), Color(1, 0.075, 0.18, 1), Color(0.12, 0.035, 0.055, 1)])
+
+[node name="MuzzleSocket" type="Marker2D" parent="."]
+position = Vector2(48, 0)
+
+[node name="MuzzleFlash" type="Polygon2D" parent="MuzzleSocket"]
+visible = false
+polygon = PackedVector2Array(0, -3, 9, 0, 0, 3, 3, 0)
+color = Color(1, 0.08, 0.2, 1)
+
+[node name="EffectSocket" type="Marker2D" parent="."]
+position = Vector2(2, 0)
+
+[node name="MeleeTrail" type="Line2D" parent="EffectSocket"]
+visible = false
+points = PackedVector2Array(1, -7, 24, -10, 48, 0, 24, 10, 1, 7)
+width = 6.0
+default_color = Color(0.95, 0.025, 0.13, 0.9)
+antialiased = false
+
+[node name="FlameTip" type="Marker2D" parent="EffectSocket"]
+position = Vector2(46, 0)

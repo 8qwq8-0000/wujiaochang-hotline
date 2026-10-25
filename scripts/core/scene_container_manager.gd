@@ -38,7 +38,8 @@ func request_scene(scene_path: String, payload: Dictionary = {}) -> bool:
 	if _is_loading:
 		return false
 	if scene_path.is_empty() or not ResourceLoader.exists(scene_path, "PackedScene"):
-		load_failed.emit(scene_path, "场景路径不存在或不是 PackedScene")
+		push_error("SceneContainerManager: invalid PackedScene path: %s" % scene_path)
+		load_failed.emit(scene_path, "暂时无法进入目标区域")
 		return false
 	_is_loading = true
 	_request_serial += 1
@@ -46,7 +47,7 @@ func request_scene(scene_path: String, payload: Dictionary = {}) -> bool:
 	_pending_payload = payload.duplicate(true)
 	var error := ResourceLoader.load_threaded_request(scene_path, "PackedScene")
 	if error != OK:
-		_finish_with_error("线程加载请求失败：%s" % error_string(error))
+		_finish_with_error("暂时无法进入目标区域", "threaded load request failed: %s" % error_string(error))
 		return false
 	load_started.emit(scene_path)
 	set_process(true)
@@ -66,13 +67,13 @@ func _process(_delta: float) -> void:
 			set_process(false)
 			_swap_loaded_scene()
 		ResourceLoader.THREAD_LOAD_FAILED, ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
-			_finish_with_error("线程加载失败，状态码：%d" % status)
+			_finish_with_error("暂时无法进入目标区域", "threaded load failed with status %d" % status)
 
 
 func _swap_loaded_scene() -> void:
 	var resource := ResourceLoader.load_threaded_get(_requested_path)
 	if not resource is PackedScene:
-		_finish_with_error("加载结果不是 PackedScene")
+		_finish_with_error("暂时无法进入目标区域", "loaded resource is not a PackedScene")
 		return
 	await _fade_to(1.0)
 	for child in _scene_container.get_children():
@@ -99,8 +100,8 @@ func _fade_to(alpha: float) -> void:
 	await tween.finished
 
 
-func _finish_with_error(message: String) -> void:
+func _finish_with_error(message: String, technical_detail: String = "") -> void:
 	_is_loading = false
 	set_process(false)
 	load_failed.emit(_requested_path, message)
-	push_error("SceneContainerManager: %s" % message)
+	push_error("SceneContainerManager: %s" % (technical_detail if not technical_detail.is_empty() else message))

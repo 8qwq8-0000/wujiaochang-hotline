@@ -44,7 +44,7 @@ func _ready() -> void:
 	column.add_theme_constant_override("separation", 5)
 	margin.add_child(column)
 	var title := Label.new()
-	title.text = "组件背包                         Tab / Esc 关闭"
+	title.text = "装备背包                         [Tab] 关闭"
 	title.add_theme_font_size_override("font_size", 17)
 	column.add_child(title)
 	_status = Label.new()
@@ -124,7 +124,7 @@ func set_open(value: bool) -> void:
 	_discard_menu.hide()
 	_discard_target = null
 	if value:
-		_message.text = "拖动物品到主 / 副武器、义体、防御槽或黑匣；义体不能放入黑匣。右键背包物品可丢到地上。"
+		_message.text = "拖动装备到高亮槽位；右键背包装备可丢弃。"
 		refresh()
 	else:
 		for button in _buttons + [_weapon, _secondary, _cyberware, _defense, _blackbox]:
@@ -136,25 +136,25 @@ func _process(_delta: float) -> void:
 	if inventory.player.health.is_dead():
 		inventory.set_open(false)
 		return
-	_status.text = "背包 %d / 6    黑匣 1 格独立保护    %s" % [inventory.backpack.get_item_count(), "安全区" if inventory.can_change_equipment() else "战斗暂停中"]
+	_status.text = "背包 %d/6    黑匣保护 1 格    %s" % [inventory.backpack.get_item_count(), "可以换装" if inventory.can_change_equipment() else "战斗中不能换装"]
 
 func refresh() -> void:
 	for index in _buttons.size():
 		var item := inventory.item_at("backpack", index)
-		_buttons[index].text = ComponentRolls.title(item).replace("（绑定）", "") if item != null else "空位 · 拖入"
+		_buttons[index].text = ComponentRolls.title(item).replace("（绑定）", "") if item != null else "空位（可拖入）"
 		ComponentRolls.apply_quality_color(_buttons[index], item)
 		_buttons[index].icon = item.get_texture() if item != null else null
-		_buttons[index].tooltip_text = (ComponentRolls.describe(item) + "\n" if item != null else "") + "拖到装备槽或黑匣，也可拖到其它背包物品上交换位置；右键可丢到地上" if item != null else "把槽内物品拖回背包"
+		_buttons[index].tooltip_text = (ComponentRolls.describe(item) + "\n拖到槽位即可装备或交换；右键可丢弃" if item != null else "把槽内装备拖到这里")
 		# Empty cells stay enabled so Godot can deliver drops to them.
 	for entry in [{"button": _weapon, "location": "weapon", "title": "主武器"}, {"button": _secondary, "location": "weapon_secondary", "title": "副武器"}, {"button": _cyberware, "location": "cyberware", "title": "义体槽"}, {"button": _defense, "location": "defense", "title": "防御槽"}, {"button": _blackbox, "location": "blackbox", "title": "黑匣"}]:
 		var item := inventory.item_at(entry.location)
-		var name := ComponentRolls.title(item).replace("（绑定）", "") if item != null else "空位 · 拖入"
+		var name := ComponentRolls.title(item).replace("（绑定）", "") if item != null else "空位（可拖入）"
 		if entry.location == "blackbox" and item != null:
-			name += " · 已触发" if bool(item.get_property("circuit_breaker_used", false)) else (" · 保险就绪" if item.get_property("slot", "") == "insurance" else " · 死亡保留")
-		entry.button.text = "%s · %s" % [entry.title, name]
+			name += "（已触发）" if bool(item.get_property("circuit_breaker_used", false)) else ("（保险就绪）" if item.get_property("slot", "") == "insurance" else "（死亡保留）")
+		entry.button.text = "%s：%s" % [entry.title, name]
 		ComponentRolls.apply_quality_color(entry.button, item)
 		entry.button.icon = item.get_texture() if item != null else null
-		entry.button.tooltip_text = (ComponentRolls.describe(item) + "\n" if item != null else "") + "%s：%s\n拖入物品装备或交换；拖回背包取出。不兼容的交换会保留原状。" % [entry.title, name]
+		entry.button.tooltip_text = (ComponentRolls.describe(item) + "\n" if item != null else "") + "%s：%s\n拖入可装备或交换，拖回背包可取出。" % [entry.title, name]
 
 
 func show_discard_menu(item: InventoryItem) -> void:

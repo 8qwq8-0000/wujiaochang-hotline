@@ -12,6 +12,7 @@ const DEFAULT_CONFIG := preload("res://resources/player/default_dash_config.tres
 var cooldown_remaining := 0.0
 var terrain_tag: StringName = &"normal"
 var equipment_speed_bonus := 0.0
+var persona_walk_speed_bonus := 0.0
 var active_effect_kind: StringName = &"dash"
 var _active_remaining := 0.0
 var _direction := Vector2.ZERO
@@ -33,7 +34,7 @@ func tick(
 		_tick_dash(body, delta)
 	else:
 		var locomotion := body.velocity - external_velocity
-		var desired := input_vector.normalized() * config.walk_speed * (1.0 + equipment_speed_bonus)
+		var desired := input_vector.normalized() * config.walk_speed * (1.0 + equipment_speed_bonus + persona_walk_speed_bonus)
 		var rate := config.braking if input_vector.is_zero_approx() or locomotion.dot(input_vector) < 0.0 else config.acceleration
 		body.velocity = locomotion.move_toward(desired, rate * delta) * _terrain_multiplier() + external_velocity
 		body.move_and_slide()
@@ -143,7 +144,7 @@ func _tick_dash(body: CharacterBody2D, delta: float) -> void:
 			break
 	_active_remaining = maxf(_active_remaining - step, 0.0)
 	if not is_dashing():
-		body.velocity = body.velocity.limit_length(config.walk_speed * (1.0 + equipment_speed_bonus))
+		body.velocity = body.velocity.limit_length(config.walk_speed * (1.0 + equipment_speed_bonus + persona_walk_speed_bonus))
 		_finish_dash()
 
 

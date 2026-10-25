@@ -5,6 +5,7 @@ signal noise_emitted(source: Node, origin: Vector2, radius: float)
 signal movement_noise_emitted(source: Node, origin: Vector2, radius: float)
 signal enemy_alerted(enemy: Node, world_position: Vector2)
 signal effect_requested(world_position: Vector2, color: Color, radius: float, duration: float)
+signal rock_wave_requested(world_position: Vector2, color: Color, radius: float, duration: float)
 
 signal electric_arc_requested(from: Vector2, to: Vector2, room: Node)
 signal environment_discharge_requested(position: Vector2, radius: float)
@@ -99,6 +100,11 @@ func publish_enemy_alert(enemy: Node, world_position: Vector2) -> void:
 func request_effect(world_position: Vector2, color: Color, radius: float, duration: float = 0.18) -> void:
 	if radius > 0.0 and duration > 0.0:
 		effect_requested.emit(world_position, color, radius, duration)
+
+
+func request_rock_wave(world_position: Vector2, color: Color, radius: float, duration: float) -> void:
+	if radius > 0.0 and duration > 0.0:
+		rock_wave_requested.emit(world_position, color, radius, duration)
 
 
 func publish_weapon_cue(weapon_id: StringName, cue: StringName, world_position: Vector2) -> void:

@@ -54,4 +54,4 @@ func absorb(damage: int) -> int:
 func display_state() -> String:
 	if equipped_item() == null:
 		return "防御  未装备"
-	return "蓝血 %d/%d" % [charges(), capacity()] + (" · 恢复中 %.1fs" % remaining_seconds() if remaining_seconds() > 0.0 else " · 就绪")
+	return "护甲 %d/%d" % [charges(), capacity()] + ("（%.1f 秒后恢复）" % remaining_seconds() if remaining_seconds() > 0.0 else "（就绪）")

@@ -135,7 +135,7 @@ theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.08, 1)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
 theme_override_font_sizes/font_size = 10
-text = "[E] 对话 / 合成"
+text = "[E] 与 Codex 交谈"
 horizontal_alignment = 1
 
 [node name="RefinedArt" type="Sprite2D" parent="SynthesisNPC" unique_id=1657406353]

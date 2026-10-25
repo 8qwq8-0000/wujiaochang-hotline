@@ -6,6 +6,6 @@
 script = ExtResource("1")
 module_id = &"explosive_magazine"
 display_name = "爆裂弹仓"
-description = "普通实体弹丸首次有效碰撞时产生一次范围伤害。"
+description = "实体弹丸第一次命中时造成一次范围伤害。"
 explosion_radius = 48.0
 explosion_damage = 1

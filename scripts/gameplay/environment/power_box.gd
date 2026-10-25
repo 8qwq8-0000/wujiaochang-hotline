@@ -58,7 +58,7 @@ func interact(actor: Node2D) -> void:
 	set_deferred("collision_layer", 0)
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null:
-		events.publish_message("充电台：%s · 本区域清场后失效" % RoomBuffComponent.TITLES[id], Color("9fe8ba"))
+		events.publish_message("获得增益：%s。本区域清理后失效" % RoomBuffComponent.TITLES[id], Color("9fe8ba"))
 	$ActiveSigil.refresh()
 	queue_redraw()
 
@@ -112,7 +112,7 @@ func _process(_delta: float) -> void:
 	if state == State.READY:
 		prompt.text = "本区域已清场" if scope_room().get("cleared") == true else "E 领取随机增益"
 	elif state == State.CLAIMED:
-		prompt.text = "已领取增益 · 本区域清场失效"
+		prompt.text = "增益已领取（本区域清理后失效）"
 	else:
 		prompt.text = "充电台不可用"
 	if prompt.visible:

@@ -1,7 +1,7 @@
 class_name ComponentPickup
 extends Node2D
 
-@export_enum("pistol", "scattergun", "rail_cannon", "wheel", "armor") var component_id := "pistol"
+@export_enum("pistol", "scattergun", "rail_cannon", "calamity_flame", "wheel", "armor") var component_id := "pistol"
 var rolled_item: InventoryItem
 var _picked := false
 var _label: Label
@@ -25,7 +25,7 @@ func _ready() -> void:
 	_label.add_theme_font_size_override("font_size", 12)
 	_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	_label.add_theme_constant_override("outline_size", 3)
-	_label.text = "E 拾取 · %s" % ComponentRolls.title(rolled_item)
+	_label.text = "按 E 拾取：%s" % ComponentRolls.title(rolled_item)
 	ComponentRolls.apply_quality_color(_label, rolled_item)
 	_label.visible = false
 	add_child(_label)

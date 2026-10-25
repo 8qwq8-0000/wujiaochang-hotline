@@ -183,6 +183,8 @@ godot --headless --path . --script res://tests/integration/boss_shortcut_check.g
 仓库道具碰撞与遮挡：`godot --headless --path . --script res://tests/integration/warehouse_collision_check.gd`，覆盖储物箱、货架、工作台、合成师、档案终端、杂物箱和四处入口的实体底座、落地排序点、双向通道及交互可达性。非 headless 追加 `-- --capture` 可检查各道具前后站位截图。
 Codex 通道整备：`godot --headless --path . --script res://tests/integration/codex_service_passage_check.gd`。23 项检查覆盖第二层继续后的独立通道、E 对话与中止恢复、解锁和重复整备、满包装备升级、义体复合、永久仓库存档隔离，以及第三层状态继承和正常人格整备。窗口模式追加 `-- --capture` 生成通道、对话、工坊、出口截图。
 
+人格战斗台词：`godot --headless --path . --script res://tests/integration/persona_dialogue_check.gd`，覆盖 48 条 CSV 数据加载、12 类事件、关系阶段向下回退、冷却与优先级，以及切换人格时先退场后接入的发言顺序。
+
 装备图标验收：`tools/preview_equipment_icons.gd` 展示八类物品；`tools/preview_equipment_runtime.gd` 使用实际背包和地面掉落显示。素材来源和完整生成提示词见 `assets/art/items/equipment_v1/README.md`、`art_sources/ai_drafts/equipment_icons_v1/manifest.json`。
 
 Codex 通道安全寄存与小血瓶：`godot --headless --path . --script res://tests/integration/codex_supplies_check.gd`，33 项覆盖真实 E 打开寄存箱、只列出武器、已装备/背包武器永久寄存、既有安全配装去重、保存失败回滚与热量保留、防重复寄存、死亡后重新读档及回仓取出；桌上血瓶满血不消耗、恢复 1 格、使用后消失、同次行动重载不刷新与新行动补充。非 headless 追加 `-- --capture` 保存 `/tmp/codex-supplies-*.png`。

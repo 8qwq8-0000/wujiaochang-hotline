@@ -127,8 +127,8 @@ func get_persona_display_name(persona_id: StringName = current_persona_id) -> St
 
 func get_operator_title() -> String:
 	if get_persona_level(current_persona_id) <= 0:
-		return "接线员｜未装载"
-	return "接线员｜%s" % get_persona_display_name()
+		return "接线员：未选择人格"
+	return "接线员：%s" % get_persona_display_name()
 
 
 func set_persona(persona_id: StringName) -> bool:

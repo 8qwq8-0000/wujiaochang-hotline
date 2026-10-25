@@ -13,7 +13,7 @@ dest_files=["res://data/tables/ai-dialogue-lines-v1.persona.translation", "res:/
 
 [params]
 
-compress=1
+compress=0
 delimiter=0
 unescape_keys=false
 unescape_translations=true

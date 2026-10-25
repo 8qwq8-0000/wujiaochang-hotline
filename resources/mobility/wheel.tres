@@ -5,7 +5,7 @@
 [resource]
 script = ExtResource("1")
 id = &"wheel"
-display_name = "轮式推进组件"
+display_name = "轮式推进套件"
 max_speed = 150.0
 acceleration = 2200.0
 braking = 3000.0

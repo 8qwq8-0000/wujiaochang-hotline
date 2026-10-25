@@ -106,7 +106,7 @@ func _build_ui() -> void:
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_overlay.add_child(center)
 	var panel := TerminalPanel.new()
-	panel.title = "WJC COMBAT TERMINAL // SYSTEM"
+	panel.title = "系统菜单"
 	panel.custom_minimum_size = Vector2(520, 330)
 	center.add_child(panel)
 	var pages := VBoxContainer.new()
@@ -243,7 +243,7 @@ func _build_settings_page() -> VBoxContainer:
 	_mute.text = "全部静音"
 	_mute.toggled.connect(_on_mute_toggled)
 	content.add_child(_mute)
-	_add_section_title(content, "AI 测试")
+	_add_section_title(content, "测试选项")
 	_continuous_precharge = CheckButton.new()
 	_continuous_precharge.text = "连续蓄力"
 	_continuous_precharge.toggled.connect(_on_continuous_precharge_toggled)

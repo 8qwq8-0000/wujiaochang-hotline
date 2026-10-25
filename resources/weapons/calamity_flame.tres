@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="WeaponComponentData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/combat/weapon_data.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/calamity_flame.tscn" id="2_view"]
+
+[resource]
+script = ExtResource("1")
+id = &"calamity_flame"
+display_name = "灾厄之炎"
+view_scene = ExtResource("2_view")
+attack_kind = 0
+trigger_mode = 1
+damage = 1
+cooldown = 0.168
+heat_per_attack = 0.0
+attack_range = 36.0
+melee_active_seconds = 0.14
+melee_arc_degrees = 150.0
+melee_hit_radius = 12.0
+damage_type = &"impact"
+status_tags = PackedStringArray("stagger")

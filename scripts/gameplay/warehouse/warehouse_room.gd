@@ -108,7 +108,7 @@ func transfer(item: InventoryItem, deposit: bool) -> bool:
 		moved = false
 	_mutating = false
 	if moved:
-		panel.show_message("已存入箱子 · 已保存" if deposit else "已取出到背包 · 已保存")
+		panel.show_message("已存入箱子，记录已保存" if deposit else "已取出到背包，记录已保存")
 	elif not store.error_message.is_empty():
 		panel.show_message(store.error_message)
 	elif deposit:
@@ -144,7 +144,7 @@ func depart() -> bool:
 		return false
 	if not flow.request_scene(COMBAT_PATH, {"player_state": snapshot}):
 		store.commit(chest_data(), snapshot)
-		$Instructions.text = "出击加载失败，装备仍在仓库"
+		$Instructions.text = "暂时无法出击，装备仍在仓库"
 		return false
 	_departing = true
 	flow.load_failed.connect(func(_path: String, _error: String) -> void:
@@ -152,7 +152,7 @@ func depart() -> bool:
 		if not save_loadout():
 			$Instructions.text = store.error_message
 		else:
-			$Instructions.text = "出击加载失败，装备已恢复，请重试"
+			$Instructions.text = "暂时无法出击，装备已恢复，请重试"
 	, CONNECT_ONE_SHOT)
 	var run: Node = get_node("/root/RunManager")
 	run.begin_run()
@@ -189,7 +189,7 @@ func _open_trial() -> void:
 	if error != OK:
 		_departing = false
 		player.set_input_enabled(true)
-		$Instructions.text = "试验场加载失败，请重试"
+		$Instructions.text = "暂时无法进入试验场，请重试"
 		return
 
 
@@ -198,7 +198,7 @@ func enter_boss_test() -> bool:
 		return false
 	var flow := get_parent().get_parent().get_node_or_null("SceneFlow") as SceneContainerManager
 	if flow == null:
-		$Instructions.text = "请从项目主入口运行，再进入 BOSS 测试"
+		$Instructions.text = "请从主入口进入楼顶测试"
 		return false
 	if not save_loadout():
 		$Instructions.text = store.error_message
@@ -211,14 +211,14 @@ func enter_boss_test() -> bool:
 		"player_state": snapshot,
 		"boss_test": true,
 	}):
-		$Instructions.text = "BOSS 测试场景加载失败，请重试"
+		$Instructions.text = "暂时无法进入楼顶测试，请重试"
 		return false
 	_departing = true
 	player.set_input_enabled(false)
 	flow.load_failed.connect(func(_path: String, _error: String) -> void:
 		_departing = false
 		player.set_input_enabled(true)
-		$Instructions.text = "BOSS 测试场景加载失败，请重试"
+		$Instructions.text = "暂时无法进入楼顶测试，请重试"
 	, CONNECT_ONE_SHOT)
 	return true
 
@@ -234,7 +234,7 @@ func enter_parry_training() -> bool:
 		$Instructions.text = store.error_message
 		return false
 	if not flow.request_scene("res://scenes/debug/parry_training.tscn"):
-		$Instructions.text = "盾反训练营加载失败，请重试"
+		$Instructions.text = "暂时无法进入盾反训练营，请重试"
 		return false
 	get_node("/root/RunManager").begin_run()
 	_departing = true
@@ -242,7 +242,7 @@ func enter_parry_training() -> bool:
 	flow.load_failed.connect(func(_path: String, _error: String) -> void:
 		_departing = false
 		player.set_input_enabled(true)
-		$Instructions.text = "盾反训练营加载失败，请重试"
+		$Instructions.text = "暂时无法进入盾反训练营，请重试"
 	, CONNECT_ONE_SHOT)
 	return true
 
@@ -308,7 +308,7 @@ func synthesize(subject: InventoryItem, material: InventoryItem) -> bool:
 		inv.changed.emit()
 		last_synthesis_result = result
 	_mutating = false
-	_synthesis_feedback("升级完成 · " + ComponentRolls.title(result) if saved else store.error_message)
+	_synthesis_feedback("升级完成：" + ComponentRolls.title(result) if saved else store.error_message)
 	panel.refresh()
 	upgrade_panel.refresh()
 	return saved

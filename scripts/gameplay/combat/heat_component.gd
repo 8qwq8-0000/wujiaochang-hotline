@@ -14,6 +14,7 @@ var is_overheated: bool = false
 var cooling_multiplier := 1.0
 var equipment_capacity_bonus := 0.0
 var equipment_cooling_bonus := 0.0
+var persona_cooling_bonus := 0.0
 var overflow_enabled := false
 
 func effective_max() -> float:
@@ -23,7 +24,7 @@ func effective_max() -> float:
 func _physics_process(delta: float) -> void:
 	if current_heat <= 0.0:
 		return
-	set_heat(current_heat - dissipation_per_second * cooling_multiplier * (1.0 + equipment_cooling_bonus) * delta)
+	set_heat(current_heat - dissipation_per_second * cooling_multiplier * (1.0 + equipment_cooling_bonus) * (1.0 + persona_cooling_bonus) * delta)
 	if is_overheated and current_heat <= effective_max() * recovery_ratio:
 		is_overheated = false
 		recovered.emit()

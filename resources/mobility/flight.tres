@@ -5,7 +5,7 @@
 [resource]
 script = ExtResource("1")
 id = &"flight"
-display_name = "悬浮飞行组件"
+display_name = "悬浮飞行套件"
 max_speed = 175.0
 acceleration = 740.0
 braking = 640.0

@@ -10,11 +10,17 @@ enum Priority {
 	CRITICAL,
 }
 
+enum QueuePolicy {
+	LATEST,
+	DROP_IF_BUSY,
+	APPEND,
+}
+
 const MAX_LINE_CHARACTERS := 28
 const MAX_HISTORY := 10
 
 var _current: Dictionary = {}
-var _pending: Dictionary = {}
+var _pending: Array[Dictionary] = []
 var _remaining := 0.0
 var _history: Array[Dictionary] = []
 
@@ -26,8 +32,7 @@ func _process(delta: float) -> void:
 	if _remaining > 0.0:
 		return
 	if not _pending.is_empty():
-		var next := _pending
-		_pending = {}
+		var next: Dictionary = _pending.pop_front()
 		_start(next, false)
 		return
 	_current = {}
@@ -39,7 +44,8 @@ func push_message(
 	priority: Priority = Priority.NORMAL,
 	persona_id: StringName = &"",
 	persona_name: String = "",
-	display_seconds: float = -1.0
+	display_seconds: float = -1.0,
+	queue_policy: QueuePolicy = QueuePolicy.LATEST
 ) -> void:
 	var chunks := _split_message(text)
 	for index in chunks.size():
@@ -50,12 +56,12 @@ func push_message(
 			"persona_name": persona_name,
 			"display_seconds": display_seconds,
 		}
-		_enqueue(entry, index == 0)
+		_enqueue(entry, index == 0, queue_policy if index == 0 else QueuePolicy.APPEND)
 
 
 func clear() -> void:
 	_current = {}
-	_pending = {}
+	_pending.clear()
 	_remaining = 0.0
 	collapsed.emit()
 
@@ -68,18 +74,25 @@ func is_expanded() -> bool:
 	return not _current.is_empty()
 
 
-func _enqueue(entry: Dictionary, may_interrupt: bool) -> void:
+func _enqueue(entry: Dictionary, may_interrupt: bool, queue_policy: QueuePolicy) -> void:
 	if _current.is_empty():
 		_start(entry, true)
 		return
 	if String(_current.get("text", "")) == String(entry.text):
 		_remaining = maxf(_remaining, _duration_for(entry))
 		return
-	if may_interrupt and int(entry.priority) >= Priority.CRITICAL:
+	if may_interrupt and queue_policy != QueuePolicy.APPEND and int(entry.priority) >= Priority.CRITICAL:
+		_pending.clear()
 		_start(entry, false)
 		return
-	if _pending.is_empty() or int(entry.priority) >= int(_pending.get("priority", Priority.NORMAL)):
-		_pending = entry
+	match queue_policy:
+		QueuePolicy.DROP_IF_BUSY:
+			return
+		QueuePolicy.APPEND:
+			_pending.append(entry)
+		_:
+			_pending.clear()
+			_pending.append(entry)
 
 
 func _start(entry: Dictionary, connection_started: bool) -> void:

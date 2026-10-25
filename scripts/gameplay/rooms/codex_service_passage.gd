@@ -37,8 +37,8 @@ func _ready() -> void:
 	add_child(panel)
 	upgrade_panel = preload("res://scripts/ui/synthesis_panel.gd").new()
 	upgrade_panel.room = self
-	upgrade_panel.heading_text = "Codex 的通道合成台"
-	upgrade_panel.empty_text = "没有可合成组件\n可继续前往第三层"
+	upgrade_panel.heading_text = "Codex 装备工坊"
+	upgrade_panel.empty_text = "没有可合成的装备\n可以继续前往第三层"
 	add_child(upgrade_panel)
 	safe_storage = preload("res://scripts/gameplay/rooms/codex_weapon_storage.gd").new()
 	safe_storage.name = "SafeWeaponStorage"
@@ -75,7 +75,7 @@ func talk_to_codex() -> void:
 
 func _on_dialogue_completed() -> void:
 	dialogue_completed = true
-	$Status.text = "整备已开放 / 装备升级 · 义体复合     准备好后向右前往第三层"
+	$Status.text = "装备工坊已开放。准备好后向右前往第三层"
 	upgrade_panel.call_deferred("open")
 
 func owns_synthesis_item(item: InventoryItem) -> bool:
@@ -102,7 +102,7 @@ func synthesize(subject: InventoryItem, material: InventoryItem) -> bool:
 	if not placed:
 		player.import_run_state(before)
 		_mutating = false
-		upgrade_panel.show_message("合成未完成，材料已恢复")
+		upgrade_panel.show_message("合成失败，装备没有消耗")
 		return false
 	if location == "backpack":
 		inv.backpack.move_item(inv.backpack.get_item_index(result), mini(index, inv.backpack.get_item_count() - 1))
@@ -111,7 +111,7 @@ func synthesize(subject: InventoryItem, material: InventoryItem) -> bool:
 	last_synthesis_result = result
 	run.set_player_state(player.export_run_state())
 	_mutating = false
-	upgrade_panel.show_message("合成完成 · 已放回主体位置；可继续合成，或关闭后前往第三层")
+	upgrade_panel.show_message("合成完成，装备已放回原处。可以继续合成或前往第三层")
 	upgrade_panel.refresh()
 	return true
 
@@ -119,7 +119,7 @@ func depart() -> bool:
 	if departing or get_tree().paused or player.health.is_dead():
 		return false
 	if not dialogue_completed:
-		$Status.text = "第三层线路尚未接通 / 请先靠近 Codex，按 E 与她对话"
+		$Status.text = "第三层尚未接通。请先与 Codex 交谈"
 		return false
 	var flow := get_parent().get_parent().get_node_or_null("SceneFlow") as SceneContainerManager
 	if flow == null:
@@ -127,7 +127,7 @@ func depart() -> bool:
 	var snapshot := player.export_run_state()
 	var payload := {"player_state": snapshot, "transit_heat": {"current": player.heat.current_heat, "overheated": player.heat.is_overheated}}
 	if not flow.request_scene(FLOOR_PATH, payload):
-		$Status.text = "第三层加载失败，请重试出口"
+		$Status.text = "暂时无法进入第三层，请重试"
 		return false
 	departing = true
 	player.set_input_enabled(false)
@@ -138,7 +138,7 @@ func depart() -> bool:
 		departing = false
 		run.floor_index = previous_floor
 		player.set_input_enabled(true)
-		$Status.text = "第三层加载失败，装备保留，请重试"
+		$Status.text = "暂时无法进入第三层，装备仍在，请重试"
 	, CONNECT_ONE_SHOT)
 	return true
 

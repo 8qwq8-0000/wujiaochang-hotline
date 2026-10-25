@@ -74,7 +74,7 @@ func open() -> void:
 
 func _refresh() -> void:
 	_text.text = LINES[_page]
-	_progress.text = "%02d / %02d    [E] 继续   [Esc] 暂停对话" % [_page + 1, LINES.size()]
+	_progress.text = "%02d/%02d    [E] 继续    [Esc] 退出" % [_page + 1, LINES.size()]
 	_next.text = "打开合成台 [E]" if _page == LINES.size() - 1 else "继续对话 [E]"
 
 func advance() -> void:

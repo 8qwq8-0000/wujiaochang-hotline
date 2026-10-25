@@ -6,7 +6,7 @@
 script = ExtResource("1")
 module_id = &"heat_threshold_pulser"
 display_name = "热阈震荡器"
-description = "武器过热时释放64像素震荡脉冲，使普通敌人硬直0.8秒；冷却8秒。"
+description = "武器过热时释放震荡脉冲，使附近的普通敌人硬直 0.8 秒。冷却 8 秒。"
 trigger_cooldown = 8.0
 overheat_pulse_radius = 64.0
 overheat_pulse_stagger_seconds = 0.8

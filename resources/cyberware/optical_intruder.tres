@@ -6,5 +6,5 @@
 script = ExtResource("1")
 module_id = &"optical_intruder"
 display_name = "光学入侵器"
-description = "突进开始时让索敌单位脱锁并短暂禁止重新索敌。"
+description = "突进开始时让正在索敌的敌人脱锁，并暂时无法重新锁定。"
 optical_reacquire_delay = 0.6

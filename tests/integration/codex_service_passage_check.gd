@@ -97,7 +97,11 @@ func run_checks() -> void:
 	await capture("room")
 	check(not passage.depart(), "third-floor exit requires Codex conversation first")
 	inv = player.inventory
-	var material: InventoryItem = inv.backpack.get_items()[0]
+	var material: InventoryItem
+	for candidate: InventoryItem in inv.backpack.get_items():
+		if candidate.get_prototype().get_prototype_id() == "pistol":
+			material = candidate
+			break
 	check(not passage.synthesize(inv.weapon_slot.get_item(), material), "workshop is locked before conversation")
 	player.position = passage.get_node("SynthesisNPC").position + Vector2(0, 47)
 	for frame in 3:
