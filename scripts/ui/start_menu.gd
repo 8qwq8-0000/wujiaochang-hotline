@@ -9,6 +9,7 @@ const HOME_WEAPON := preload("res://assets/art/ui/start_menu/start_menu_weapon_v
 const PERSONA_NARAKU := preload("res://assets/art/ui/start_menu/persona_naraku_ghost.png")
 const PERSONA_XIANGSHAN := preload("res://assets/art/ui/start_menu/persona_xiangshan_ghost.png")
 const PERSONA_JOHNNY := preload("res://assets/art/ui/start_menu/persona_johnny_ghost.png")
+const SETTINGS_MENU_SCENE := preload("res://scenes/ui/pause_settings_menu.tscn")
 const MUTED := Color("8b9fae")
 const LIGHT := Color("ebf1f3")
 const CYAN := Color("75e8df")
@@ -34,6 +35,8 @@ var _reveal_active := false
 var _reveal_played := false
 var _reveal_tween: Tween
 var _continue: Button
+var _settings_button: Button
+var _settings_menu: PauseSettingsMenu
 var _status: Label
 var _busy := false
 var _difficulty := "standard"
@@ -80,6 +83,10 @@ func _ready() -> void:
 	place(portrait, Rect2(560, 24, 710, 672), _legacy_art)
 	_content = Control.new()
 	place(_content, Rect2(96, 72, 520, 576), _canvas)
+	_settings_menu = SETTINGS_MENU_SCENE.instantiate()
+	_settings_menu.name = "MainMenuSettings"
+	_settings_menu.closed.connect(_on_settings_closed)
+	add_child(_settings_menu)
 	resized.connect(_resize_canvas)
 	_resize_canvas()
 	show_home()
@@ -417,7 +424,8 @@ func show_home() -> void:
 	_continue = _home_button("继续游戏", Rect2(0, 292, 392, 58), continue_game, true)
 	_continue.disabled = not exists or not valid
 	var new_game := _home_button("开始新存档", Rect2(0, 360, 392, 58), show_difficulty)
-	_home_button("退出游戏", Rect2(0, 428, 392, 58), func() -> void: get_tree().quit())
+	_settings_button = _home_button("设置", Rect2(0, 428, 392, 58), _open_settings)
+	_home_button("退出游戏", Rect2(0, 496, 392, 58), func() -> void: get_tree().quit())
 	var summary := "暂无存档"
 	if exists and valid:
 		var profile: Dictionary = store.get_profile()
@@ -426,12 +434,23 @@ func show_home() -> void:
 		summary = store.error_message + "；可开始新存档。"
 	_status = _label(summary, 17, MUTED if valid else AMBER)
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	place(_status, Rect2(20, 520, 460, 64), _content)
+	place(_status, Rect2(20, 568, 460, 60), _content)
 	if not _continue.disabled:
 		_continue.grab_focus()
 	else:
 		new_game.grab_focus()
 	_play_home_reveal()
+
+
+func _open_settings() -> void:
+	if _reveal_active:
+		_finish_home_reveal()
+	_settings_menu.open_settings_only()
+
+
+func _on_settings_closed() -> void:
+	if is_instance_valid(_settings_button):
+		_settings_button.grab_focus()
 
 
 func show_difficulty() -> void:

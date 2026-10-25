@@ -70,7 +70,13 @@ func run() -> void:
 	check(home.get("_continue").disabled, "no save disables continue")
 	check(not FileAccess.file_exists(SAVE), "opening home never creates save")
 	check(root.gui_get_focus_owner().text == "开始新存档", "first game keyboard focus selects new save")
+	check(home.get("_settings_button") != null and home.get("_settings_button").text == "设置", "home exposes settings alongside game actions")
 	await screenshot("/tmp/hotline-start-home.png")
+	await click(home, "设置")
+	check((home.get("_settings_menu") as PauseSettingsMenu).visible, "home settings opens the shared settings UI")
+	(home.get("_settings_menu") as PauseSettingsMenu)._leave_settings_page()
+	await process_frame
+	check(not (home.get("_settings_menu") as PauseSettingsMenu).visible and root.gui_get_focus_owner() == home.get("_settings_button"), "closing settings returns focus to the home action")
 	await click(home, "开始新存档")
 	check(home.page == "difficulty", "new game opens difficulty selection through mouse")
 	check(not home.get("_home_art").visible and home.get("_legacy_art").visible, "difficulty restores the legacy menu art layer")
