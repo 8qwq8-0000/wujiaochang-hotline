@@ -1,6 +1,8 @@
 class_name PauseSettingsMenu
 extends CanvasLayer
 
+signal closed
+
 const RESOLUTIONS: Array[Vector2i] = [
 	Vector2i(1280, 720),
 	Vector2i(1600, 900),
@@ -8,6 +10,7 @@ const RESOLUTIONS: Array[Vector2i] = [
 	Vector2i(2560, 1440),
 ]
 const DISPLAY_CONFIRM_SECONDS := 10.0
+const START_MENU_SCENE := "res://scenes/ui/start_menu.tscn"
 const UI_SECTION := &"UISettings"
 const CRT_STRENGTH_SETTING := &"CRTStrength"
 const HUD_SCALE_SETTING := &"HUDScale"
@@ -19,6 +22,7 @@ const CAMERA_SHAKE_STRENGTHS := [0.0, 0.5, 1.0]
 
 var _owns_pause := false
 var _settings_visible := false
+var _settings_only := false
 var _overlay: ColorRect
 var _menu_page: VBoxContainer
 var _settings_page: VBoxContainer
@@ -63,17 +67,19 @@ func _process(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_echo() or not event.is_action_pressed("pause"):
+	var pause_pressed := InputMap.has_action(&"pause") and event.is_action_pressed("pause")
+	var settings_back_pressed := _settings_only and event.is_action_pressed("ui_cancel")
+	if event.is_echo() or not (pause_pressed or settings_back_pressed):
 		return
 	if visible:
-		if _display_change_pending:
-			_revert_display_change()
-		elif _settings_visible or (_history_page != null and _history_page.visible):
+		if _settings_visible:
+			_leave_settings_page()
+		elif _history_page != null and _history_page.visible:
 			_show_main_page()
 		else:
 			close_menu()
 		get_viewport().set_input_as_handled()
-	elif not get_tree().paused:
+	elif pause_pressed and not get_tree().paused:
 		open_menu()
 		get_viewport().set_input_as_handled()
 
@@ -81,19 +87,31 @@ func _unhandled_input(event: InputEvent) -> void:
 func open_menu() -> void:
 	if visible:
 		return
+	_settings_only = false
 	_owns_pause = not get_tree().paused
 	get_tree().paused = true
 	show()
 	_show_main_page()
 
 
+func open_settings_only() -> void:
+	if visible:
+		return
+	_settings_only = true
+	_owns_pause = not get_tree().paused
+	get_tree().paused = true
+	show()
+	_show_settings_page()
+
+
 func close_menu() -> void:
 	if _display_change_pending:
-		_revert_display_change()
+		_confirm_display_change()
 	hide()
 	if _owns_pause:
 		get_tree().paused = false
 		_owns_pause = false
+	closed.emit()
 
 
 func _build_ui() -> void:
@@ -148,6 +166,10 @@ func _build_main_page() -> VBoxContainer:
 	history.text = "最近通讯"
 	history.pressed.connect(_show_history_page)
 	page.add_child(history)
+	var return_to_menu := Button.new()
+	return_to_menu.text = "返回主菜单"
+	return_to_menu.pressed.connect(_return_to_main_menu)
+	page.add_child(return_to_menu)
 	page.set_meta("focus", resume)
 	return page
 
@@ -250,7 +272,7 @@ func _build_settings_page() -> VBoxContainer:
 	content.add_child(_continuous_precharge)
 	var back := Button.new()
 	back.text = "返回"
-	back.pressed.connect(_show_main_page)
+	back.pressed.connect(_leave_settings_page)
 	page.add_child(back)
 	page.set_meta("focus", _resolution)
 	return page
@@ -317,6 +339,23 @@ func _show_main_page() -> void:
 	_history_page.hide()
 	_menu_page.show()
 	(_menu_page.get_meta("focus") as Control).grab_focus()
+
+
+func _leave_settings_page() -> void:
+	if _display_change_pending:
+		_confirm_display_change()
+	if _settings_only:
+		close_menu()
+	else:
+		_show_main_page()
+
+
+func _return_to_main_menu() -> void:
+	close_menu()
+	var error := get_tree().change_scene_to_file(START_MENU_SCENE)
+	if error != OK:
+		push_error("无法返回主菜单，错误码：%d" % error)
+		open_menu()
 
 
 func _show_settings_page() -> void:

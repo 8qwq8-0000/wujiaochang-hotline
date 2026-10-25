@@ -28,6 +28,10 @@ func run() -> void:
 	check(menu.get("_reduced_flashes") != null, "settings expose reduced-flashes accessibility toggle")
 	check(menu.get("_feedback_quality") != null and (menu.get("_feedback_quality") as OptionButton).item_count == 2, "settings expose low and standard combat effect quality")
 	check(menu.get("_movement_feedback_preview") is MovementFeedbackPreview, "settings expose the three-persona movement feedback preview")
+	var has_return_to_menu := false
+	for button in (menu.get("_menu_page") as VBoxContainer).find_children("*", "Button", true, false):
+		has_return_to_menu = has_return_to_menu or button.text == "返回主菜单"
+	check(has_return_to_menu, "pause menu exposes a return-to-main-menu action")
 	menu._show_settings_page()
 	await process_frame
 	var settings_page := menu.get("_settings_page") as VBoxContainer
@@ -54,6 +58,19 @@ func run() -> void:
 	game_settings.set_continuous_precharge(false, false)
 	menu.close_menu()
 	check(not menu.visible and not paused, "continue closes the menu and resumes play")
+	menu.open_settings_only()
+	check(menu.visible and paused and menu.get("_settings_visible"), "main-menu mode opens directly on settings")
+	check(not (menu.get("_menu_page") as VBoxContainer).visible, "main-menu mode hides pause-only actions")
+	menu._leave_settings_page()
+	check(not menu.visible and not paused, "leaving main-menu settings closes the overlay")
+	menu.open_menu()
+	menu._return_to_main_menu()
+	await process_frame
+	await process_frame
+	check(not paused, "returning to the main menu clears the paused state")
+	check(current_scene != null and current_scene.scene_file_path == PauseSettingsMenu.START_MENU_SCENE, "return action loads the main-menu scene")
+	if current_scene != null:
+		current_scene.queue_free()
 	menu.queue_free()
 	await process_frame
 	print("Settings menu failures: ", failures)
