@@ -97,7 +97,11 @@ func run_checks() -> void:
 	await capture("room")
 	check(not passage.depart(), "third-floor exit requires Codex conversation first")
 	inv = player.inventory
-	var material: InventoryItem = inv.backpack.get_items()[0]
+	var material: InventoryItem
+	for candidate: InventoryItem in inv.backpack.get_items():
+		if candidate.get_prototype().get_prototype_id() == "pistol":
+			material = candidate
+			break
 	check(not passage.synthesize(inv.weapon_slot.get_item(), material), "workshop is locked before conversation")
 	player.position = passage.get_node("SynthesisNPC").position + Vector2(0, 47)
 	for frame in 3:
@@ -116,6 +120,9 @@ func run_checks() -> void:
 	passage.upgrade_panel.select_material(0, subject)
 	passage.upgrade_panel.select_material(1, material)
 	passage.upgrade_panel.get("_synthesis_button").pressed.emit()
+	check(passage.upgrade_panel.get("_target") == 0, "successful synthesis resets selection to subject")
+	check(passage.upgrade_panel.get("_materials") == [null, null], "successful synthesis clears both consumed inputs")
+	check(root.gui_get_focus_owner() == passage.upgrade_panel.get("_material_buttons")[0], "successful synthesis returns keyboard focus to subject")
 	check(ComponentRolls.quality(inv.weapon_slot.get_item()) == 2 and inv.backpack.get_item_count() == 5, "workshop upgrades equipped gun while consuming its material from a full bag")
 	check(not passage.owns_synthesis_item(subject) and not passage.owns_synthesis_item(material), "consumed input instances cannot be reused")
 	check(not passage.synthesize(subject, material), "duplicate synthesis request cannot duplicate equipment")
@@ -123,9 +130,27 @@ func run_checks() -> void:
 	for item in inv.backpack.get_items():
 		if item.get_property("slot") == "cyberware":
 			cyber_material = item
-	check(passage.synthesize(inv.cyberware_slot.get_item(), cyber_material), "carried cyberware can be fused inside the run")
+	passage.upgrade_panel.select_material(passage.upgrade_panel.get("_target"), inv.cyberware_slot.get_item())
+	check(passage.upgrade_panel.get("_materials")[0] == inv.cyberware_slot.get_item() and passage.upgrade_panel.get("_target") == 1, "next selection fills subject and advances to material")
+	passage.upgrade_panel.select_material(passage.upgrade_panel.get("_target"), cyber_material)
+	passage.upgrade_panel.get("_synthesis_button").pressed.emit()
+	check(passage.upgrade_panel.get("_target") == 0 and passage.upgrade_panel.get("_materials") == [null, null], "repeated cyberware synthesis also returns to an empty subject slot")
 	check(player.cyberware.has_module(CyberwareController.SMART_FIRE) and player.cyberware.has_module(CyberwareController.EXPLOSIVE_MAGAZINE), "equipped compound activates both modules immediately")
 	var result := inv.cyberware_slot.get_item()
+	var duplicate_module := ComponentRolls.create("smart_fire", 1, rng)
+	check(inv.backpack.add_item(duplicate_module), "duplicate module fixture enters backpack")
+	var before_duplicate := player.export_run_state()
+	passage.upgrade_panel.select_material(0, result)
+	passage.upgrade_panel.select_material(1, duplicate_module)
+	check(passage.upgrade_panel.get("_synthesis_button").disabled, "overlapping cyberware disables synthesis")
+	check(passage.upgrade_panel.get("_message").text.contains("主体已包含智能火控"), "duplicate module names the conflicting effect in the error")
+	check(passage.upgrade_panel.get("_preview").text.contains("义体模块重复"), "duplicate module replaces success preview with an error")
+	check(not passage.synthesize(result, duplicate_module), "backend also rejects existing module")
+	check(player.export_run_state() == before_duplicate, "duplicate rejection consumes neither equipped compound nor material")
+	passage.upgrade_panel.select_material(1, null)
+	check(passage.upgrade_panel.get("_message").text.is_empty(), "changing selection clears stale duplicate error")
+	inv.backpack.remove_item(duplicate_module)
+
 	check(not passage.synthesize(result, ComponentRolls.create("optical_intruder", 1, rng)), "unowned material is rejected")
 	check(FileAccess.get_file_as_string(SAVE_PATH) == disk_before, "in-run synthesis never writes carried gear or cyberware to permanent warehouse storage")
 	await key(KEY_ESCAPE)

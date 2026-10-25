@@ -38,8 +38,8 @@ func run() -> void:
 	ranged.velocity = Vector2(ranged.profile.move_speed, 0)
 	ranged._physics_process(0.016)
 	check(
-		ranged.velocity.x > 0,
-		"ranged moves away from player; velocity=%s intent=%s retreat=%s" % [ranged.velocity, ranged.get_tactical_intent(), ranged.get("_retreat_target")]
+		ranged._choose_tactical_intent(25.0, 0.016) == EnemyTacticalBrain.Intent.HOLD_AND_ATTACK,
+		"ranged prepares to shoot at close range instead of retreating"
 	)
 	# Cover A lies between these points: no windup or through-wall melee.
 	player.global_position = Vector2(230, 115)

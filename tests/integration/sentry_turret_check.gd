@@ -70,6 +70,29 @@ func run() -> void:
 		for shot in shots:
 			shot.queue_free()
 		await settle()
+	# Use real simultaneous turret projectiles and the real guard clock.
+	player.position = turret.position + Vector2(0, 100)
+	player.guard.reset_to_idle()
+	player.hurt_box.clear_invulnerability()
+	await settle()
+	var reflected := [0]
+	var count_reflection := func(result: DamageResult) -> void:
+		if result.target == player and result.reflected:
+			reflected[0] += 1
+	root.get_node("CombatEvents").damage_resolved.connect(count_reflection)
+	var volley_health := player.health.current_health
+	player.guard.begin_guard(Vector2.UP)
+	var double_shot := turret.fire_volley(Vector2.DOWN)
+	check(double_shot.size() == 2, "parry regression launches actual double-row volley")
+	for frame in 60:
+		await physics_frame
+		if reflected[0] == 2:
+			break
+	check(reflected[0] == 2, "one perfect window reflects both actual turret rounds")
+	check(player.health.current_health == volley_health, "double parry takes no damage")
+	root.get_node("CombatEvents").damage_resolved.disconnect(count_reflection)
+	turret.stop_firing()
+	player.guard.reset_to_idle()
 	player.position = Vector2(400, 520)
 	await settle()
 	turret.gun.rotation = 0
@@ -134,7 +157,7 @@ func run() -> void:
 	turret.get_node("HurtBox").receive_hit(hit)
 	await settle()
 	check(turret.destroyed and turret.health.is_dead() and not arena.obstacle_removed, "destroyed turret retains its navigation obstacle")
-	check(turret.collision_layer == 128 and turret.fire_volley(Vector2.DOWN).is_empty(), "destroyed turret stays solid but cannot fire")
+	check(turret.collision_layer == (128 | 1) and turret.fire_volley(Vector2.DOWN).is_empty(), "destroyed turret stays solid but cannot fire")
 	check(turret.get_node("HurtBox").collision_layer == 0, "wreck cannot receive further attacks")
 	for frame in 40:
 		player.velocity = Vector2.RIGHT * 180
@@ -151,6 +174,25 @@ func run() -> void:
 			await physics_frame
 			player.dash.tick(player, direction, direction, 1.0 / 60.0)
 		check((player.position - turret.position).dot(direction) < -40, "turret wreck blocks dash from %s" % direction)
+	# Wrecks retain the visible obstacle for both factions, including fast shots.
+	player.position = Vector2(800, 600)
+	await settle()
+	for shot_faction in [CombatFaction.Id.PLAYER, CombatFaction.Id.ENEMY]:
+		for heading in [Vector2.LEFT, Vector2.RIGHT, Vector2.UP, Vector2.DOWN]:
+			for shot_speed in [420.0, 30000.0]:
+				var shot := load("res://scenes/combat/projectile.tscn").instantiate() as CombatProjectile
+				shot.position = turret.position - heading * 100.0
+				shot.setup(null, shot_faction, heading, 1, shot_speed)
+				arena.add_child(shot)
+				shot.set_physics_process(false)
+				for step in 20:
+					shot._physics_process(1.0 / 60.0)
+					if shot.is_queued_for_deletion():
+						break
+				check(shot.is_queued_for_deletion() and (shot.position - turret.position).dot(heading) < -40.0, "wreck stops faction %d projectile at speed %.0f from %s" % [shot_faction, shot_speed, heading])
+				if not shot.is_queued_for_deletion():
+					shot.queue_free()
+				await settle()
 	world.queue_free()
 	await settle()
 	DirAccess.remove_absolute("user://sentry-turret-check.json")

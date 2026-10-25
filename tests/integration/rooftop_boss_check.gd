@@ -56,11 +56,11 @@ func run() -> void:
 	var remaining := 3
 	for enemy: EnemyController in arena.get_node("Enemies").get_children():
 		check(enemy.profile.full_room_awareness and enemy.profile.awareness_range == 1000 and enemy.profile.vision_angle_degrees == 360, "opening guard has full arena awareness")
-		check(enemy.health.max_health == (3 if enemy.profile.role == EnemyProfile.Role.HEAVY_ANCHOR else 1), "opening shields retain three health while other guards have one")
+		check(enemy.health.max_health == (6 if enemy.profile.role == EnemyProfile.Role.HEAVY_ANCHOR else 4), "opening shields have six health while other guards have four")
 	var total_opening_health := 0
 	for enemy: EnemyController in arena.get_node("Enemies").get_children():
 		total_opening_health += enemy.health.max_health
-	check(total_opening_health == 5, "opening melee and ranged have one health, shield has three")
+	check(total_opening_health == 14, "opening melee and ranged have four health, shield has six")
 	for enemy: EnemyController in arena.get_node("Enemies").get_children():
 		if enemy.profile.self_destruct_enabled:
 			heavy = enemy
@@ -95,8 +95,8 @@ func run() -> void:
 	for enemy: EnemyController in arena.get_node("SupportEnemies").get_children():
 		check(enemy.profile.full_room_awareness and enemy.profile.awareness_range == 1000 and enemy.profile.vision_angle_degrees == 360, "second phase guard has full arena awareness")
 		check(enemy.is_physics_processing() and not enemy.health.is_dead(), "support fights alongside boss")
-		var expected_health := 3 if enemy.profile.role == EnemyProfile.Role.HEAVY_ANCHOR else 1
-		check(enemy.health.max_health == expected_health and enemy.health.current_health == expected_health, "both waves use three-health shields and one-health other guards")
+		var expected_health := 6 if enemy.profile.role == EnemyProfile.Role.HEAVY_ANCHOR else 4
+		check(enemy.health.max_health == expected_health and enemy.health.current_health == expected_health, "both waves use six-health shields and four-health other guards")
 		if enemy.profile.self_destruct_enabled:
 			support_heavy = enemy
 		else:

@@ -6,6 +6,7 @@ const DURATION := 0.85
 const SHEET := "res://assets/art/effects/bomb/explosion_sheet_v1.png"
 var elapsed := 0.0
 var radius := 96.0
+var ground_depth_ratio := 0.55
 
 func _ready() -> void:
 	z_index = 5
@@ -28,8 +29,8 @@ func _ready() -> void:
 	var poses := [0.45, 0.68, 0.9, 1.0, 0.95, 0.9, 0.85, 0.75]
 	var update_pose := func() -> void:
 		var factor: float = poses[sprite.frame]
-		sprite.scale = Vector2.ONE * 176.0 / cell.x * factor
-		sprite.position.y = -80 * factor
+		sprite.scale = Vector2.ONE * (radius * 2.0) / cell.x * factor
+		sprite.position.y = -radius * 0.83 * factor
 	sprite.frame_changed.connect(update_pose)
 	update_pose.call()
 	sprite.play("explode")
@@ -42,6 +43,9 @@ func _process(delta: float) -> void:
 		queue_redraw()
 
 func _draw() -> void:
+	draw_set_transform(Vector2.ZERO, 0, Vector2(1, ground_depth_ratio))
 	var progress := clampf(elapsed / DURATION, 0, 1)
 	var expansion := 1.0 - pow(1.0 - progress, 3)
+	# Fixed outer boundary always matches the instantaneous damage radius.
+	draw_arc(Vector2.ZERO, radius, 0, TAU, 64, Color(1, 0.45, 0.12, 0.75 * (1.0 - progress)), 1)
 	draw_arc(Vector2.ZERO, radius * expansion, 0, TAU, 48, Color(1, 0.6, 0.2, 0.3 * (1.0 - progress)), 1)

@@ -110,6 +110,9 @@ func _on_destroyed(_packet: DamagePacket) -> void:
 	$StatusComponent.clear_all()
 	# The intact wreck remains a solid obstacle. Keep navigation and physical
 	# collision consistent with its visible silhouette after disabling combat.
+	# Live turrets receive shots through their hurt box; a wreck has no hurt
+	# box, so join the world layer used by projectile step sweeps instead.
+	set_deferred("collision_layer", collision_layer | 1)
 	$HurtBox.set_deferred("collision_layer", 0)
 	$Visuals.modulate = Color(0.34, 0.32, 0.31)
 	var events := get_node_or_null("/root/CombatEvents")

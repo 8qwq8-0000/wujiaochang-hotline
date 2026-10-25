@@ -189,20 +189,25 @@ static func compatible(a: InventoryItem, b: InventoryItem) -> bool:
 	if _is_cyberware(a):
 		var a_modules := cyberware_modules(a)
 		var b_modules := cyberware_modules(b)
-		var union := a_modules.duplicate()
 		for module_id in b_modules:
-			if module_id not in union:
-				union.append(module_id)
-		if union.size() > 4:
-			return false
-		for module_id in b_modules:
-			if module_id not in a_modules:
-				return true
-		for module_id in a_modules:
-			if module_id not in b_modules:
-				return true
-		return false
+			if module_id in a_modules:
+				return false
+		return a_modules.size() + b_modules.size() <= 4
 	return synthesis_quality(a) == synthesis_quality(b)
+
+static func cyberware_overlap_error(a: InventoryItem, b: InventoryItem) -> String:
+	if not _is_cyberware(a) or not _is_cyberware(b):
+		return ""
+	var existing := cyberware_modules(a)
+	var names := PackedStringArray()
+	for module_id in cyberware_modules(b):
+		if module_id in existing:
+			var data := load(cyberware_resource_path(StringName(module_id))) as CyberwareData
+			names.append(data.display_name if data != null else module_id)
+	if names.is_empty():
+		return ""
+	return "无法合成：主体已包含%s，不能重复加入。材料未消耗。" % "、".join(names)
+
 
 static func fuse(a: InventoryItem, b: InventoryItem, rng: RandomNumberGenerator) -> InventoryItem:
 	if not compatible(a, b):

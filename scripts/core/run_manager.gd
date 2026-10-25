@@ -17,6 +17,7 @@ var extraction_result: Dictionary = {}
 var victory_result: Dictionary = {}
 var run_finished := false
 var persistent_run := false
+var codex_medical_supply_used := false
 var operator_hack_announced := false
 var persona_authorization_floor := -1
 var persona_authorization_pending := false
@@ -33,6 +34,7 @@ func begin_run(seed_value: int = 0) -> void:
 	victory_result.clear()
 	run_finished = false
 	persistent_run = false
+	codex_medical_supply_used = false
 	operator_hack_announced = false
 	persona_authorization_floor = -1
 	persona_authorization_pending = false

@@ -31,6 +31,16 @@ func wait_for_floor(flow: SceneContainerManager) -> PlayerController:
 	return null
 
 
+func press_escape() -> void:
+	for pressed in [true, false]:
+		var event := InputEventKey.new()
+		event.keycode = KEY_ESCAPE
+		event.physical_keycode = KEY_ESCAPE
+		event.pressed = pressed
+		root.push_input(event, true)
+		await process_frame
+
+
 func run_checks() -> void:
 	var run: Node = root.get_node("RunManager")
 	run.begin_run(20261021)
@@ -53,14 +63,34 @@ func run_checks() -> void:
 	check(paused and not player.is_input_enabled(), "rest pauses combat and disables player input")
 	check(run.has_persona_authorization(0), "first floor grants one pending authorization")
 	check(player.talent_core.get_persona_level(TalentCoreController.LEGENDARY_MASTER) == 0, "fresh run has no preinstalled persona")
+	await press_escape()
+	check(rest.is_open and paused and not player.is_input_enabled(), "Esc before drinking cannot skip mandatory rest")
+	check(run.has_persona_authorization(0) and not main.get_node("PauseSettingsMenu").visible, "Esc preserves authorization and does not open pause menu")
 	check(rest.choose_persona(TalentCoreController.DEEP_NINJA), "drink consumes first-floor authorization")
 	check(player.talent_core.current_persona_id == TalentCoreController.DEEP_NINJA, "drink activates selected persona")
 	check(player.talent_core.get_persona_level(TalentCoreController.DEEP_NINJA) == 1, "first drink installs level one")
 	check(not run.has_persona_authorization(0), "authorization cannot be reused on same floor")
 	check(not rest.choose_persona(TalentCoreController.ROCK_VIGILANTE), "second drink is rejected on same floor")
 	check(rest.has_unselected_active_talents(), "newly installed persona reports its unlocked empty talent tier")
+	await press_escape()
+	check(rest.is_open and paused and not player.is_input_enabled(), "Esc after drinking cannot skip talent selection")
+	check(not main.get_node("PauseSettingsMenu").visible, "handled Esc cannot reach the global pause menu")
 	var talent_buttons: Array[Node] = rest.get("_talent_column").find_children("*", "Button", true, false)
 	check(talent_buttons.size() == 6, "rest screen shows all three talent tiers")
+	for layout_frame in 3:
+		await process_frame
+	var viewport_bounds: Rect2 = rest.get("_overlay").get_global_rect()
+	check(viewport_bounds.encloses(rest.get("_close_button").get_global_rect()), "leave confirmation remains fully inside the talent screen")
+	var talent_scroll := rest.get("_talent_column").get_parent() as ScrollContainer
+	check(talent_scroll != null, "talent descriptions have a scrollable reading area")
+	for button: Button in talent_buttons:
+		check(button.get_global_rect().position.x >= talent_scroll.get_global_rect().position.x and button.get_global_rect().end.x <= talent_scroll.get_global_rect().end.x, "long talent text cannot push either choice off the right edge")
+	talent_scroll.ensure_control_visible(talent_buttons[-1])
+	await process_frame
+	check(talent_scroll.get_global_rect().encloses(talent_buttons[-1].get_global_rect()), "scrolling reaches the complete final talent choice")
+	talent_scroll.ensure_control_visible(talent_buttons[0])
+	await process_frame
+
 	check(talent_buttons.filter(func(button: Button) -> bool: return bool(button.get_meta("talent_locked", false))).size() == 4, "future talent tiers remain visible, focusable, and locked")
 	var viewport_size: Vector2 = (rest.get("_overlay") as Control).get_viewport_rect().size
 	for button: Button in talent_buttons:
@@ -74,6 +104,9 @@ func run_checks() -> void:
 	check(tooltip_rect.position.x >= 7.5 and tooltip_rect.position.y >= 7.5 and tooltip_rect.end.x <= viewport_size.x - 7.5 and tooltip_rect.end.y <= viewport_size.y - 7.5, "talent explanation is clamped to every viewport edge")
 	check(tooltip.size.x <= 250.5 and tooltip.size.y <= 236.5, "talent explanation uses the compact bounded size")
 	check(rest.get("_talent_tooltip_label").scroll_active, "long talent explanations can scroll instead of leaving the screen")
+	check(viewport_bounds.encloses(rest.get("_talent_tooltip").get_global_rect()), "talent effect tooltip stays inside the viewport")
+	await press_escape()
+	check(not rest.get("_talent_tooltip").visible and rest.is_open, "Esc dismisses explanation while keeping talent selection open")
 	rest._hide_talent_tooltip()
 	check(rest.close(), "rest may close while an unlocked talent is still empty")
 	check(not paused and player.is_input_enabled(), "closing an incomplete rest screen returns control")
@@ -84,6 +117,8 @@ func run_checks() -> void:
 	check(rest.is_open and paused and not player.is_input_enabled(), "escape reopens persona rest before the pause menu while the active talent is empty")
 	check(rest.choose_talent(1, &"read_opening"), "unlocked talent can be selected at rest")
 	check(not rest.has_unselected_active_talents(), "selecting every unlocked tier restores normal pause behavior")
+	await press_escape()
+	check(rest.is_open and paused and player.talent_core.get_talent_choice(TalentCoreController.DEEP_NINJA, 1) == &"read_opening", "Esc after configuring keeps rest open and preserves selected talent")
 	check(rest.close(), "rest can close after authorization is consumed")
 	check(not paused and player.is_input_enabled(), "closing rest returns control")
 	check(not rest._can_reopen_from_pause(), "completed active build no longer intercepts escape")
@@ -101,7 +136,10 @@ func run_checks() -> void:
 	check(player.talent_core.get_persona_level(TalentCoreController.DEEP_NINJA) == 1, "switch preserves inactive persona level")
 	check(player.talent_core.get_talent_choice(TalentCoreController.DEEP_NINJA, 1) == &"read_opening", "switch preserves inactive persona build")
 	check(player.talent_core.get_persona_level(TalentCoreController.ROCK_VIGILANTE) == 1, "new persona installs at level one")
-	rest.close()
+	await press_escape()
+	check(rest.is_open and paused and player.talent_core.current_persona_id == TalentCoreController.ROCK_VIGILANTE, "Esc cannot skip talent selection on subsequent floors")
+	rest.get("_close_button").pressed.emit()
+	check(not rest.is_open and not paused and player.is_input_enabled(), "explicit leave button still returns control")
 	main.queue_free()
 	await process_frame
 	print("Persona rest flow failures: ", failures)

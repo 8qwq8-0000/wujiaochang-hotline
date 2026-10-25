@@ -4,12 +4,12 @@ const SAVE_PATH := "user://warehouse-layout-check.json"
 const SCENE_PATH := "user://warehouse-layout-roundtrip.tscn"
 const MOVABLE := {
 	"Chest": ["Art", "Body/Shape", "Shape"],
-	"Deploy": ["Art", "Shape", "DoorSigil"],
-	"Trial": ["Art", "Shape", "DoorSigil"],
-	"BossTest": ["Art", "Shape", "DoorSigil"],
-	"ParryTraining": ["Art", "Shape", "DoorSigil"],
-	"ArchiveTerminal": ["Art", "Shape"],
-	"SynthesisNPC": ["RefinedArt", "Workbench/Art", "Workbench/Body/Shape", "Shape"],
+	"Deploy": ["Art", "Shape", "DoorSigil", "Body/Shape"],
+	"Trial": ["Art", "Shape", "DoorSigil", "Body/Shape"],
+	"BossTest": ["Art", "Shape", "DoorSigil", "Body/Shape"],
+	"ParryTraining": ["Art", "Shape", "DoorSigil", "Body/Shape"],
+	"ArchiveTerminal": ["Art", "Shape", "Body/Shape"],
+	"SynthesisNPC": ["RefinedArt", "Workbench/Art", "Workbench/Body/Shape", "Shape", "Body/Shape"],
 	"PartsRack": ["Art", "Body/Shape"],
 	"CratesLeft": ["Art", "Body/Shape"],
 	"CratesRight": ["Art", "Body/Shape"],

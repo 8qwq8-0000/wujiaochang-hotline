@@ -55,7 +55,7 @@ func run_checks() -> void:
 	var saved_before: Dictionary = store.get_profile()
 	var player: PlayerController = warehouse.player
 	player.set_physics_process(false)
-	player.position = Vector2(420.0, 270.0)
+	player.global_position = warehouse.get_node("BossTest").global_position + Vector2(0, 24)
 	for _frame in 4:
 		await physics_frame
 	var shortcut: Node = warehouse.get_node("BossTest")

@@ -17,6 +17,7 @@ var stagger_seconds: float = 0.0
 var blockable: bool = true
 var reflectable: bool = false
 var is_projectile: bool = false
+var is_beam: bool = false
 var is_melee: bool = false
 var is_area_damage: bool = false
 var reflected: bool = false
@@ -49,6 +50,7 @@ func duplicate_packet() -> DamagePacket:
 	copy.blockable = blockable
 	copy.reflectable = reflectable
 	copy.is_projectile = is_projectile
+	copy.is_beam = is_beam
 	copy.is_melee = is_melee
 	copy.is_area_damage = is_area_damage
 	copy.reflected = reflected

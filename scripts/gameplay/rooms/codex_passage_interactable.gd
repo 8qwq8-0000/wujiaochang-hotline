@@ -1,6 +1,6 @@
 extends Area2D
 
-@export_enum("codex", "exit") var action := "codex"
+@export_enum("codex", "exit", "storage") var action := "codex"
 @onready var room: Node2D = get_parent()
 
 func can_interact(actor: Node2D) -> bool:
@@ -11,6 +11,8 @@ func interact(actor: Node2D) -> void:
 		return
 	if action == "codex":
 		room.talk_to_codex()
+	elif action == "storage":
+		room.safe_storage.open()
 	else:
 		room.depart()
 

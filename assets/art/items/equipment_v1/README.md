@@ -20,5 +20,3 @@
 验收截图：`docs/art/validation/equipment_icons_v1/catalog.png`、`ground.png`、`inventory.png`。复现工具为 `tools/preview_equipment_icons.gd` 与 `tools/preview_equipment_runtime.gd`，均使用 Godot 实际渲染。
 
 装甲蓝血 38 项、防御组件 40 项、仓库存取 61 项、Codex 通道 23 项和六种义体效果检查通过。既有 `component_progression_check.gd:149` 仍引用旧 mobility 接口，脚本解析失败，未记为通过；本次未修改该旧测试。部分运行退出仍有既有 ObjectDB / resources-in-use 诊断。
-
-维护：本任务维护者，团队负责人待认领。来源为本项目内置 imagegen 生成输出，未在本次引入外部第三方素材；不作独立第三方授权声明。

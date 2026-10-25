@@ -181,7 +181,9 @@ func try_pick_nearest() -> bool:
 
 func _on_persona_changed(persona_id: StringName) -> void:
 	if persona_id == TalentCoreController.DEEP_NINJA:
-		call_deferred("_grant_calamity_flame_if_active")
+		# Persona selection is a complete state transition: grant immediately so
+		# snapshots taken in the same frame already include the bound weapon.
+		_grant_calamity_flame_if_active()
 
 
 func _grant_calamity_flame_if_active() -> bool:
@@ -553,6 +555,17 @@ func export_run_state() -> Dictionary:
 		"has_picked_up_weapon": _has_picked_up_weapon,
 		"calamity_flame_granted": _calamity_flame_granted,
 	}
+
+
+func export_settlement_inventory() -> Dictionary:
+	var snapshot := export_run_state()
+	snapshot.cyberware = {}
+	var retained_items: Array = []
+	for item in backpack.get_items():
+		if item.get_property("slot", "") != "cyberware":
+			retained_items.append(item.serialize())
+	snapshot.backpack["items"] = retained_items
+	return snapshot
 
 
 func get_extraction_items() -> Array[Dictionary]:

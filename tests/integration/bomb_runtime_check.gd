@@ -105,6 +105,39 @@ func run() -> void:
 	oil.receive_hit(fire)
 	await process_frame
 	check(not oil.burning and oil.explosion_count == 0, "ordinary oil ignition still respects disabled reactions")
+	# Visual and damage radii share configuration, tested in all eight directions.
+	var boundary_patch := FuelPatch.new()
+	boundary_patch.position = Vector2(1000, 800)
+	boundary_patch.radius = 48.0
+	boundary_patch.explosion_radius = 80.0
+	boundary_patch.is_bomb_hazard = true
+	boundary_patch.burning = true
+	room.add_child(boundary_patch)
+	boundary_patch.set_physics_process(false)
+	var probes: Array[Array] = []
+	for index in 8:
+		var direction := Vector2.from_angle(index * PI / 4) * Vector2(1, boundary_patch.ground_depth_ratio)
+		probes.append([
+			target_at(boundary_patch.position + direction * 79, CombatFaction.Id.ENEMY),
+			target_at(boundary_patch.position + direction * 81, CombatFaction.Id.ENEMY),
+			target_at(boundary_patch.position + direction * 47, CombatFaction.Id.ENEMY),
+			target_at(boundary_patch.position + direction * 49, CombatFaction.Id.ENEMY),
+		])
+	await physics_frame
+	boundary_patch._explode()
+	check(boundary_patch.get_node("ExplosionAnimation").radius == boundary_patch.explosion_radius, "explosion animation boundary uses actual configured blast radius")
+	check(boundary_patch.get_node("ExplosionAnimation").ground_depth_ratio == boundary_patch.ground_depth_ratio, "blast animation and damage share ground perspective")
+	var outline: PackedVector2Array = boundary_patch.get_child(0).shape.points
+	check(is_equal_approx(outline[0].x, boundary_patch.radius) and is_equal_approx(outline[16].y, boundary_patch.radius * boundary_patch.ground_depth_ratio), "fire collider matches projected ground ellipse")
+	for index in 8:
+		check(probes[index][0].get_node("HealthComponent").current_health == 9, "blast hits just inside boundary direction %d" % index)
+		check(probes[index][1].get_node("HealthComponent").current_health == 10, "blast excludes just outside boundary direction %d" % index)
+		for actor in probes[index]:
+			actor.get_node("HealthComponent").set_current_health(10)
+	boundary_patch._affect_actors(boundary_patch.radius, true)
+	for index in 8:
+		check(probes[index][2].get_node("HealthComponent").current_health == 9, "fire hits just inside elliptical boundary direction %d" % index)
+		check(probes[index][3].get_node("HealthComponent").current_health == 10, "fire excludes just outside elliptical boundary direction %d" % index)
 	room.queue_free()
 	await process_frame
 	if settings != original:

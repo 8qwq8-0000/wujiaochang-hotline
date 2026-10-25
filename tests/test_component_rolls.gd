@@ -105,3 +105,17 @@ func test_calamity_flame_is_bound_and_outside_random_progression() -> void:
 	assert_true(ComponentRolls.affixes(item).is_empty())
 	assert_false(ComponentRolls.ordinary(item))
 	assert_false(ComponentRolls.synthesizable(item))
+
+
+func test_cyberware_fusion_rejects_any_overlapping_modules() -> void:
+	var rng := RandomNumberGenerator.new()
+	var smart := ComponentRolls.create("smart_fire", 1, rng)
+	var explosive := ComponentRolls.create("explosive_magazine", 1, rng)
+	var compound := ComponentRolls.fuse(smart, explosive, rng)
+	var other := ComponentRolls.fuse(ComponentRolls.create("smart_fire", 1, rng), ComponentRolls.create("optical_intruder", 1, rng), rng)
+	for material in [ComponentRolls.create("smart_fire", 1, rng), other]:
+		assert_false(ComponentRolls.compatible(compound, material))
+		assert_false(ComponentRolls.compatible(material, compound))
+		assert_true(ComponentRolls.fuse(compound, material, rng) == null)
+		assert_true(ComponentRolls.cyberware_overlap_error(compound, material).contains("智能火控"))
+	assert_true(ComponentRolls.compatible(compound, ComponentRolls.create("kill_heat_sink", 1, rng)))

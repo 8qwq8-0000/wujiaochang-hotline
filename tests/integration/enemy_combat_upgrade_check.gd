@@ -109,6 +109,25 @@ func run() -> void:
 	precharging_sniper._physics_process(precharging_sniper.profile.attack_windup)
 	check(bool(precharging_sniper.get("_attack_precharged")), "ranged pursuit precharge can complete")
 	precharging_sniper.free()
+	# No minimum firing distance, with or without tactical movement enabled.
+	settings.set_continuous_precharge(false, false)
+	for distance in [8.0, 25.0, 80.0, 150.0]:
+		for tactical in [false, true]:
+			var close_sniper := enemy_at(room, "res://resources/enemies/ranged_sightline.tres", player.position + Vector2(distance, 0))
+			close_sniper.profile.tactical_enabled = tactical
+			close_sniper.set("_target", player)
+			close_sniper._alert_to(player.global_position, false)
+			close_sniper.set("_initial_precharge_consumed", true)
+			close_sniper._physics_process(0.01)
+			check(close_sniper.state == EnemyController.State.WINDUP, "close ranged enemy starts firing windup at distance=%s tactical=%s" % [distance, tactical])
+			close_sniper._physics_process(close_sniper.profile.attack_windup + 0.01)
+			var fired := false
+			for child in room.get_children():
+				if child is CombatProjectile and child.source == close_sniper:
+					fired = true
+					child.free()
+			check(fired, "close ranged enemy actually emits a projectile at distance=%s tactical=%s" % [distance, tactical])
+			close_sniper.free()
 
 	var sniper := enemy_at(room, "res://resources/enemies/ranged_sightline.tres", Vector2(170, 100), Vector2.RIGHT)
 	var footstep_ignored := enemy_at(room, "res://resources/enemies/melee_pressure.tres", Vector2(170, 130), Vector2.RIGHT)

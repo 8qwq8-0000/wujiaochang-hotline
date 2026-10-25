@@ -18,6 +18,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 Dialogic="*uid://ds2q0uclmolvu"
+_mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
 SceneLoader="*res://addons/maaacks_scene_loader/base/nodes/autoloads/scene_loader/scene_loader.tscn"
 SoundManager="*uid://6q1wagejt60k"
 SaveSystem="*uid://bxcgiyru0vapu"
@@ -25,7 +26,6 @@ CombatEvents="*res://scripts/core/combat_event_bus.gd"
 RunManager="*res://scripts/core/run_manager.gd"
 WarehouseStore="*res://scripts/core/warehouse_store.gd"
 GameSettings="*res://scripts/core/game_settings.gd"
-_mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
 
 [dialogic]
 
@@ -50,6 +50,10 @@ project/assembly_name="五角场热线"
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/TileMapDual/plugin.cfg", "res://addons/dialogic/plugin.cfg", "res://addons/gloot/plugin.cfg", "res://addons/godot_ai/plugin.cfg", "res://addons/maaacks_menus_template/plugin.cfg", "res://addons/maaacks_scene_loader/plugin.cfg", "res://addons/save_system/plugin.cfg", "res://addons/sound_manager/plugin.cfg")
+
+[gui]
+
+theme/custom_font="res://resources/ui/chinese_font_12.tres"
 
 [input]
 

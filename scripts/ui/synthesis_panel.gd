@@ -61,7 +61,7 @@ func _ready() -> void:
 	close_button.add_theme_font_size_override("font_size", 12)
 	close_button.pressed.connect(close)
 	header.add_child(close_button)
-	column.add_child(_label("同品质武器和防具可以升级。不同义体可以复合，完成后不能拆开。", 11, Color("a6b9c4")))
+	column.add_child(_label("武装/防御同品质升级；义体最多四种模块，重复模块不可合成。", 11, Color("a6b9c4")))
 	var body := HBoxContainer.new()
 	body.add_theme_constant_override("separation", 12)
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -226,6 +226,7 @@ func select_material(index: int, item: InventoryItem) -> void:
 	if item != null and _materials[1 - index] == item:
 		_materials[1 - index] = null
 	_target = 1 if index == 0 and item != null else index
+	show_message("")
 	refresh()
 
 func _refresh_preview() -> void:
@@ -248,6 +249,11 @@ func _refresh_preview() -> void:
 			return
 		if b.get_property("slot") != "cyberware":
 			_preview.text = "[color=#efad8c]类型不匹配[/color]\n\n义体只能与义体复合"
+			return
+		var overlap_error := ComponentRolls.cyberware_overlap_error(a, b)
+		if not overlap_error.is_empty():
+			_preview.text = "[color=#efad8c][b]义体模块重复[/b][/color]\n\n" + overlap_error
+			show_message(overlap_error)
 			return
 		for module_id in ComponentRolls.cyberware_modules(b):
 			if module_id not in modules:
@@ -289,8 +295,11 @@ func _refresh_preview() -> void:
 func _synthesize() -> void:
 	if room.synthesize(_materials[0], _materials[1]):
 		var result: InventoryItem = room.last_synthesis_result
+		_materials = [null, null]
+		_target = 0
 		refresh()
-		_preview.text = "[color=#8de3da][b]升级完成[/b][/color]\n" + "[color=#" + ComponentRolls.quality_color(result).to_html(false) + "]" + ComponentRolls.describe(result) + "[/color]\n\n装备已放回原处"
+		_material_buttons[0].grab_focus()
+		_preview.text = "[color=#8de3da][b]升级完成[/b][/color]\n" + "[color=#" + ComponentRolls.quality_color(result).to_html(false) + "]" + ComponentRolls.describe(result) + "[/color]\n\n已回到主体原位置"
 
 func _exit_tree() -> void:
 	if _owns_pause:
