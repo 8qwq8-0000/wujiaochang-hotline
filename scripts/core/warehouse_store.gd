@@ -6,6 +6,8 @@ var save_path := "user://warehouse.json"
 var error_message := ""
 var _loaded := false
 var _writable := true
+var test_session_active := false
+var _formal_snapshot: Dictionary = {}
 var _profile: Dictionary = {
 	"version": SAVE_VERSION,
 	"chest": [],
@@ -39,6 +41,25 @@ func get_profile() -> Dictionary:
 	return _profile.duplicate(true)
 
 
+func begin_test_session() -> bool:
+	if test_session_active:
+		return true
+	if not load_profile():
+		return false
+	_formal_snapshot = {"profile": _profile.duplicate(true), "error": error_message}
+	test_session_active = true
+	return true
+
+
+func end_test_session() -> void:
+	if not test_session_active:
+		return
+	_profile = _formal_snapshot.profile.duplicate(true)
+	error_message = _formal_snapshot.error
+	_formal_snapshot.clear()
+	test_session_active = false
+
+
 func commit(
 	chest: Array,
 	loadout: Dictionary,
@@ -68,6 +89,10 @@ func commit(
 	if not _valid_profile(next):
 		error_message = "装备没有保存，请重试"
 		return false
+	if test_session_active:
+		_profile = next
+		error_message = ""
+		return true
 	var temp_path := save_path + ".tmp"
 	var file := FileAccess.open(temp_path, FileAccess.WRITE)
 	if file == null:
@@ -158,6 +183,8 @@ func _valid_profile(value: Variant) -> bool:
 
 
 func has_saved_profile() -> bool:
+	if test_session_active:
+		return true
 	return FileAccess.file_exists(save_path)
 
 
@@ -167,7 +194,7 @@ func create_new_profile(difficulty: String = "standard") -> bool:
 		return false
 	# Back up the raw file, including an unreadable/legacy profile, before replacing
 	# anything. Merely entering character selection never writes to the save.
-	if has_saved_profile():
+	if has_saved_profile() and not test_session_active:
 		var backup := "%s.backup-%d-%d" % [save_path, int(Time.get_unix_time_from_system()), Time.get_ticks_usec()]
 		if DirAccess.copy_absolute(save_path, backup) != OK:
 			error_message = "无法安全保留旧记录，因此没有新建存档"

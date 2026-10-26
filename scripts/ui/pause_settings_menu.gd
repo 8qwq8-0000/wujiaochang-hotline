@@ -39,6 +39,8 @@ var _movement_feedback_preview: MovementFeedbackPreview
 var _fullscreen: CheckButton
 var _mute: CheckButton
 var _continuous_precharge: CheckButton
+var _test_mode: CheckButton
+var _test_tools_button: Button
 var _confirm_row: HBoxContainer
 var _confirm_label: Label
 var _confirm_remaining := 0.0
@@ -266,6 +268,19 @@ func _build_settings_page() -> VBoxContainer:
 	_mute.toggled.connect(_on_mute_toggled)
 	content.add_child(_mute)
 	_add_section_title(content, "测试选项")
+	_test_mode = CheckButton.new()
+	_test_mode.text = "测试模式（临时装备与进度）"
+	_test_mode.toggled.connect(_on_test_mode_toggled)
+	content.add_child(_test_mode)
+	var test_note := Label.new()
+	test_note.text = "仅本次运行生效；关闭后返回主菜单，恢复正式存档。"
+	test_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	test_note.add_theme_color_override("font_color", CyberUITheme.MUTED)
+	content.add_child(test_note)
+	_test_tools_button = Button.new()
+	_test_tools_button.text = "打开测试面板 · 装备 / 天赋 / 关卡"
+	_test_tools_button.pressed.connect(_open_test_tools)
+	content.add_child(_test_tools_button)
 	_continuous_precharge = CheckButton.new()
 	_continuous_precharge.text = "连续蓄力"
 	_continuous_precharge.toggled.connect(_on_continuous_precharge_toggled)
@@ -392,6 +407,20 @@ func _sync_settings_controls() -> void:
 	var settings := get_node_or_null("/root/GameSettings")
 	if settings != null:
 		_continuous_precharge.set_pressed_no_signal(bool(settings.continuous_precharge))
+		_test_mode.set_pressed_no_signal(bool(settings.test_tools.enabled))
+		_test_tools_button.visible = bool(settings.test_tools.enabled)
+
+
+func _on_test_mode_toggled(enabled: bool) -> void:
+	var tools: CanvasLayer = get_node("/root/GameSettings").test_tools
+	if not tools.set_enabled(enabled):
+		_test_mode.set_pressed_no_signal(bool(tools.enabled))
+	_test_tools_button.visible = bool(tools.enabled)
+
+
+func _open_test_tools() -> void:
+	close_menu()
+	get_node("/root/GameSettings").test_tools.open_panel()
 
 
 func _show_history_page() -> void:

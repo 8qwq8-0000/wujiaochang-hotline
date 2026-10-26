@@ -188,3 +188,5 @@ Codex 通道整备：`godot --headless --path . --script res://tests/integration
 装备图标验收：`tools/preview_equipment_icons.gd` 展示八类物品；`tools/preview_equipment_runtime.gd` 使用实际背包和地面掉落显示。素材来源和完整生成提示词见 `assets/art/items/equipment_v1/README.md`、`art_sources/ai_drafts/equipment_icons_v1/manifest.json`。
 
 Codex 通道安全寄存与小血瓶：`godot --headless --path . --script res://tests/integration/codex_supplies_check.gd`，33 项覆盖真实 E 打开寄存箱、只列出武器、已装备/背包武器永久寄存、既有安全配装去重、保存失败回滚与热量保留、防重复寄存、死亡后重新读档及回仓取出；桌上血瓶满血不消耗、恢复 1 格、使用后消失、同次行动重载不刷新与新行动补充。非 headless 追加 `-- --capture` 保存 `/tmp/codex-supplies-*.png`。
+
+设置内测试模式：`godot --headless --path . --script tests/integration/test_mode_check.gd`，覆盖默认关闭、设置开关和 F8、领取品质／容量／保险唯一限制、三人格全部天赋分支、非法天赋无部分修改、测试仓库与三层跳转、未激活区域清场、Boss 开场与护盾阶段快速通关、结算／新建档案隔离、主菜单直达 Boss、死亡后跳关恢复、退出后正式档案及存档字节完全一致，以及正常保存恢复。测试文件使用 `.godot/test-mode-check.json`，结束后删除。
