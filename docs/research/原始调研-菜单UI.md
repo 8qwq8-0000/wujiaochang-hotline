@@ -1,5 +1,7 @@
 # Godot 4 菜单 / UI 开源方案调研（搜打撤 roguelite · 中文 UI · Windows 桌面）
 
+> 历史调研材料：保留当时的候选、版本判断与模板能力，不代表项目已接入。模板自动读取 ATTRIBUTION 的能力未自动转移到自定义游戏菜单；当前来源与交付方式见[素材许可说明](../legal/素材来源与许可.md)。
+
 > 调研方式：web_search + web_fetch，直接抓取 GitHub REST API、Godot Asset Library API、仓库 README / 文件树 / release notes / ATTRIBUTION / 翻译 CSV 原文。
 > 时间基线：Godot 4.7 为当前 stable（2026-06 发布，官方仍 full support；4.8 预计 2026 Q4，尚在 master）。
 > 凡未能验证者一律标注「未验证」，不臆造 star / 许可 / URL。

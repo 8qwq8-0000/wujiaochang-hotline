@@ -1,5 +1,7 @@
 # Tests
 
+> 本页列出专项入口与历次覆盖说明，不代表所有脚本在当前版本均已通过。旧 `component_progression_check.gd` 仍访问机动 API，属于过期夹具；当前义体与合成请使用 `cyberware_check.gd`、`synthesis_npc_check.gd` 和 `codex_service_passage_check.gd`。历史断言数量保留原记录；Windows 与退出资源诊断等限制不因此取消。
+
 警戒炮台：`sentry_turret_check.gd` 验证八方向跟踪和双排射击、遮挡及清场摧毁；`sentry_placement_check.gd` 检查四张地图每区至少一台及占地、避障、寻路。运行方式为 `godot --headless --path . --script res://tests/integration/文件名`。
 
 人格战斗状态栏：`godot --headless --path . --script res://tests/integration/persona_status_hud_check.gd`，覆盖人格等级、猎痕锁定、限时效果到期、反馈数值、威胁解析、死亡清理和通讯展开/收起避让。添加 `-- --capture-persona-status` 并去掉 `--headless` 可生成三种人格及通讯展开截图。
