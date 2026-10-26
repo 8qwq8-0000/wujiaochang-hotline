@@ -122,14 +122,11 @@ godot --headless --path . --script res://tests/integration/electric_sandbox_chec
 godot --headless --path . --script res://tests/integration/oil_status_check.gd
 godot --headless --path . --script res://tests/integration/fuel_environment_check.gd
 godot --headless --path . --script res://tests/integration/bomb_runtime_check.gd
-godot --headless --path . --script res://tests/integration/fuel_sandbox_check.gd
 ```
 
-覆盖实际计时伤害、刷新不叠加、暂停与保险清状态、桶破坏互斥、油区/爆炸/火区、墙体/范围/容器隔离、伤害接口引燃、试验场鼠标点击点燃、普通近战打桶、R 重置和区域过期。
+覆盖实际计时伤害、刷新不叠加、暂停与保险清状态、桶破坏互斥、油区/爆炸/火区、墙体/范围/容器隔离、伤害接口引燃和区域过期。
 
-仓库与试验场往返：`godot --headless --path . --script res://tests/integration/trial_entry_check.gd`，使用独立存档验证保存失败留在仓库、真实 E 进入、普通初始装备、配电箱与桶、R 重置、死亡后鼠标点击返回及存档隔离。
 
-试验场储物箱：`godot --headless --path . --script res://tests/integration/trial_chest_check.gd`，覆盖正式原型清单、真实 E 和鼠标取用、自动补货与实例编号、容量/绑定/保险唯一、配装和存回、暂停恢复、R 重置与存档隔离；往返检查另验证取物后返回正式仓库。
 
 环境结算完善与自动门：
 
@@ -138,7 +135,7 @@ godot --headless --path . --script res://tests/integration/environment_electric_
 godot --headless --path . --script res://tests/integration/automatic_door_check.gd
 ```
 
-覆盖同次放电共享预算/去重、新导电不自触发、实际区域玩家归属、每区域配电箱数量、增益回调互斥；实际接触开门、射击破门与后续放行、双侧冲刺、门后击倒范围与遮挡、暂停及恢复。自动门检查还覆盖破门子弹消耗、双向和横向门射击、碎片去重，以及无伤害/暂停射击不破门。fuel_environment_check/fuel_sandbox_check 已改为验证警棍和枪击直接引爆，原浸油反应另由 oil_status_check 保留验证。
+覆盖同次放电共享预算/去重、新导电不自触发、实际区域玩家归属、每区域配电箱数量、增益回调互斥；实际接触开门、射击破门与后续放行、双侧冲刺、门后击倒范围与遮挡、暂停及恢复。自动门检查还覆盖破门子弹消耗、双向和横向门射击、碎片去重，以及无伤害/暂停射击不破门。fuel_environment_check 已改为验证警棍和枪击直接引爆，原浸油反应另由 oil_status_check 保留验证。
 
 启动与角色确认：`godot --headless --path . --script res://tests/integration/start_menu_check.gd`，26 项检查覆盖透明立绘、无存档、真实鼠标选择角色、取消无副作用、继续保留装备实例、重开前原文件备份、损坏存档恢复、写入失败回滚及实际进入仓库。使用独立测试存档；去掉 `--headless` 还会在 `/tmp/hotline-start-*.png` 保存界面截图。
 
@@ -156,7 +153,6 @@ godot --headless --path . --script res://tests/integration/automatic_door_check.
 ```sh
 godot --headless --path . --script res://tests/integration/rooftop_boss_check.gd
 godot --headless --path . --script res://tests/integration/boss_patterns_check.gd
-godot --headless --path . --script res://tests/integration/boss_shortcut_check.gd
 ```
 
 分别覆盖一阶段三名守卫合计三血、独立计数且不扣 Boss 血、保留推镜头和神像苏醒；二阶段三名三血守卫与 Boss 同时攻击、Boss 无敌、逐点联动损血、清完恰好留下 3/6 血、真实子弹命中与击杀；原本落点和十字激光、交点一次伤害、暂停／死亡取消；实际重开输入、仓库独立测试存档及往返。战斗界面不显示 Boss 连续血条或阶段标签，神像光环分段与 AI 通讯承担状态反馈。
@@ -169,7 +165,7 @@ godot --headless --path . --script res://tests/integration/boss_shortcut_check.g
 
 人格永久档案：`godot --headless --path . --script res://tests/integration/persona_archive_check.gd`，覆盖普通结算收录人格与三级语义泄漏、下一局人格清零、临时档案载荷剥离、完整胜利记录与重复结算拒绝。
 
-完整通关与遗产酒谱：`godot --headless --path . --script res://tests/integration/victory_flow_check.gd`，覆盖第三层转入生产楼顶、胜利入口唯一铸造、回仓、酒谱显示和最后人格瓶型。仓库 BOSS 测试捷径仍由 `boss_shortcut_check.gd` 验证，不会生成遗产记录。
+完整通关与遗产酒谱：`godot --headless --path . --script res://tests/integration/victory_flow_check.gd`，覆盖第三层转入生产楼顶、胜利入口唯一铸造、回仓、酒谱显示和最后人格瓶型。
 盾兵飞行屏障与远程配合：`godot --headless --path . --script res://tests/integration/shield_support_check.gd`，61 项覆盖四方向、独立移动、墙体、干净身体、初始冷却、提前一秒跑位及友伤。带窗口追加 `-- --capture` 输出四方向截图。
 
 盾反训练营：`godot --headless --path . --script tests/integration/parry_training_check.gd`，覆盖仓库入口、三只前方扇形机器人、顺序单发、血量与间隔滑块、固定弹速、死亡跳过、真实弹道反射、每次完美弹反立即显示 PERFECT!、近战反伤与眩晕、普通格挡无反伤及反伤击杀、真实 R 重置及参数保留、暂停和正式存档隔离。非 headless 追加 `-- --capture` 可生成训练营截图。
@@ -180,7 +176,7 @@ godot --headless --path . --script res://tests/integration/boss_shortcut_check.g
 
 墙边窄道追击：`godot --headless --fixed-fps 60 --path . --script res://tests/integration/enemy_corner_passage_check.gd`。复现错位公寓随机箱子和左墙间的 36 px 窄道，检查短路可达、近战/盾兵实际攻击玩家及前排死亡后后排通过。导航烘焙采用 12 px 留边，匹配敌人 11 px 碰撞半径并保留 1 px 裕量。
 
-仓库道具碰撞与遮挡：`godot --headless --path . --script res://tests/integration/warehouse_collision_check.gd`，覆盖储物箱、货架、工作台、合成师、档案终端、杂物箱和四处入口的实体底座、落地排序点、双向通道及交互可达性。非 headless 追加 `-- --capture` 可检查各道具前后站位截图。
+仓库道具碰撞与遮挡：`godot --headless --path . --script res://tests/integration/warehouse_collision_check.gd`，覆盖储物箱、货架、工作台、合成师、档案终端、杂物箱和两处入口的实体底座、落地排序点、双向通道及交互可达性。非 headless 追加 `-- --capture` 可检查各道具前后站位截图。
 Codex 通道整备：`godot --headless --path . --script res://tests/integration/codex_service_passage_check.gd`。23 项检查覆盖第二层继续后的独立通道、E 对话与中止恢复、解锁和重复整备、满包装备升级、义体复合、永久仓库存档隔离，以及第三层状态继承和正常人格整备。窗口模式追加 `-- --capture` 生成通道、对话、工坊、出口截图。
 
 人格战斗台词：`godot --headless --path . --script res://tests/integration/persona_dialogue_check.gd`，覆盖 48 条 CSV 数据加载、12 类事件、关系阶段向下回退、冷却与优先级，以及切换人格时先退场后接入的发言顺序。

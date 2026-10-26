@@ -18,15 +18,13 @@
 
 [ext_resource type="Script" path="res://scripts/presentation/warehouse_wall_art.gd" id="wall_art"]
 [ext_resource type="Texture2D" path="res://assets/art/effects/warehouse_sigils/parry_complete.png" id="sigil_parry"]
-[ext_resource type="Texture2D" path="res://assets/art/effects/warehouse_sigils/trial_complete.png" id="sigil_trial"]
-[ext_resource type="Texture2D" path="res://assets/art/effects/warehouse_sigils/boss_complete.png" id="sigil_boss"]
 [ext_resource type="Texture2D" path="res://assets/art/effects/warehouse_sigils/deploy_complete.png" id="sigil_deploy"]
 
 [sub_resource type="RectangleShape2D" id="WallHorizontal"]
-size = Vector2(640, 24)
+size = Vector2(480, 24)
 
 [sub_resource type="RectangleShape2D" id="WallVertical"]
-size = Vector2(24, 360)
+size = Vector2(24, 296)
 
 [sub_resource type="RectangleShape2D" id="ChestShape"]
 size = Vector2(64, 40)
@@ -109,29 +107,29 @@ text = "地下整备站"
 
 [node name="Instructions" type="Label" parent="." unique_id=1709399595]
 offset_left = 26.0
-offset_top = 341.0
+offset_top = 277.0
 theme_override_font_sizes/font_size = 10
 text = "WASD 移动   E 交互   Tab 配装   Esc 设置"
 
 [node name="Player" parent="." unique_id=1256717005 instance=ExtResource("2")]
-position = Vector2(270, 238)
+position = Vector2(270, 206)
 
 [node name="Walls" type="StaticBody2D" parent="." unique_id=920946017]
 
 [node name="Top" type="CollisionShape2D" parent="Walls" unique_id=1581172559]
-position = Vector2(320, 62)
+position = Vector2(240, 62)
 shape = SubResource("WallHorizontal")
 
 [node name="Bottom" type="CollisionShape2D" parent="Walls" unique_id=1835568077]
-position = Vector2(320, 328)
+position = Vector2(240, 264)
 shape = SubResource("WallHorizontal")
 
 [node name="Left" type="CollisionShape2D" parent="Walls" unique_id=1619302740]
-position = Vector2(24, 180)
+position = Vector2(24, 148)
 shape = SubResource("WallVertical")
 
 [node name="Right" type="CollisionShape2D" parent="Walls" unique_id=810911335]
-position = Vector2(616, 180)
+position = Vector2(456, 148)
 shape = SubResource("WallVertical")
 
 [node name="Chest" type="Area2D" parent="." unique_id=493334881]
@@ -185,7 +183,7 @@ texture = SubResource("Art_chest")
 
 [node name="Deploy" type="Area2D" parent="." unique_id=1565954999]
 self_modulate = Color(1, 1, 1, 0)
-position = Vector2(568, 232)
+position = Vector2(408, 200)
 collision_layer = 32
 collision_mask = 0
 script = ExtResource("3")
@@ -233,121 +231,9 @@ texture = SubResource("Art_elevator")
 z_index = -2
 z_as_relative = false
 texture_filter = 2
-position = Vector2(22, -30)
+position = Vector2(22, -15)
 scale = Vector2(0.225, 0.225)
 texture = ExtResource("sigil_deploy")
-script = ExtResource("door_sigil")
-
-[node name="Trial" type="Area2D" parent="." unique_id=1663611196]
-self_modulate = Color(1, 1, 1, 0)
-position = Vector2(386, 92)
-collision_layer = 32
-collision_mask = 0
-script = ExtResource("3")
-kind = "trial"
-metadata/_edit_group_ = true
-
-[node name="Shape" type="CollisionShape2D" parent="Trial" unique_id=825953245]
-position = Vector2(0, -30)
-shape = SubResource("DoorShape")
-
-[node name="Name" type="Label" parent="Trial" unique_id=1366157119]
-z_index = 20
-offset_left = -60.0
-offset_top = -75
-offset_right = 60.0
-theme_override_colors/font_color = Color(0.72, 0.8, 0.82, 1)
-theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.08, 1)
-theme_override_constants/shadow_offset_x = 1
-theme_override_constants/shadow_offset_y = 1
-theme_override_font_sizes/font_size = 10
-text = "试验场入口"
-horizontal_alignment = 1
-
-[node name="Prompt" type="Label" parent="Trial" unique_id=902800596]
-visible = false
-z_index = 25
-offset_left = -80.0
-offset_top = 4
-offset_right = 80.0
-theme_override_colors/font_color = Color(0.72, 0.8, 0.82, 1)
-theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.08, 1)
-theme_override_constants/shadow_offset_x = 1
-theme_override_constants/shadow_offset_y = 1
-theme_override_font_sizes/font_size = 10
-text = "[E] 测试环境交互"
-horizontal_alignment = 1
-
-[node name="Art" type="Sprite2D" parent="Trial" unique_id=1881579983]
-position = Vector2(0, -30)
-modulate = Color(0.84, 1, 0.93, 1)
-texture_filter = 1
-scale = Vector2(0.053465348, 0.053465348)
-texture = SubResource("Art_training_door")
-
-[node name="DoorSigil" type="Sprite2D" parent="Trial" unique_id=344300250]
-z_index = -2
-z_as_relative = false
-texture_filter = 2
-position = Vector2(0, -12)
-scale = Vector2(0.225, 0.225)
-texture = ExtResource("sigil_trial")
-script = ExtResource("door_sigil")
-
-[node name="BossTest" type="Area2D" parent="." unique_id=697322043]
-self_modulate = Color(1, 1, 1, 0)
-position = Vector2(485, 92)
-collision_layer = 32
-collision_mask = 0
-script = ExtResource("3")
-kind = "boss_test"
-metadata/_edit_group_ = true
-
-[node name="Shape" type="CollisionShape2D" parent="BossTest" unique_id=1732263213]
-position = Vector2(0, -30)
-shape = SubResource("DoorShape")
-
-[node name="Name" type="Label" parent="BossTest" unique_id=278089877]
-z_index = 20
-offset_left = -72.0
-offset_top = -75
-offset_right = 72.0
-theme_override_colors/font_color = Color(0.72, 0.8, 0.82, 1)
-theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.08, 1)
-theme_override_constants/shadow_offset_x = 1
-theme_override_constants/shadow_offset_y = 1
-theme_override_font_sizes/font_size = 10
-text = "楼顶测试入口"
-horizontal_alignment = 1
-
-[node name="Prompt" type="Label" parent="BossTest" unique_id=1191546031]
-visible = false
-z_index = 25
-offset_left = -80.0
-offset_top = 4
-offset_right = 80.0
-theme_override_colors/font_color = Color(0.72, 0.8, 0.82, 1)
-theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.08, 1)
-theme_override_constants/shadow_offset_x = 1
-theme_override_constants/shadow_offset_y = 1
-theme_override_font_sizes/font_size = 10
-text = "[E] 直达楼顶"
-horizontal_alignment = 1
-
-[node name="Art" type="Sprite2D" parent="BossTest" unique_id=420945419]
-position = Vector2(0, -30)
-modulate = Color(0.85, 0.72, 1, 1)
-texture_filter = 1
-scale = Vector2(0.053465348, 0.053465348)
-texture = SubResource("Art_training_door")
-
-[node name="DoorSigil" type="Sprite2D" parent="BossTest" unique_id=2017666086]
-z_index = -2
-z_as_relative = false
-texture_filter = 2
-position = Vector2(0, -12)
-scale = Vector2(0.225, 0.225)
-texture = ExtResource("sigil_boss")
 script = ExtResource("door_sigil")
 
 [node name="SynthesisNPC" type="Area2D" parent="." unique_id=256862902]
@@ -415,7 +301,7 @@ shape = SubResource("WorkbenchFootprint")
 
 [node name="ArchiveTerminal" type="Area2D" parent="." unique_id=933868662]
 self_modulate = Color(1, 1, 1, 0)
-position = Vector2(61, 301)
+position = Vector2(61, 237)
 collision_layer = 32
 collision_mask = 0
 script = ExtResource("3")
@@ -525,13 +411,13 @@ texture = SubResource("Art_lamp")
 
 [node name="WallLamp2" type="Sprite2D" parent="WarehouseArt" unique_id=1407494819]
 texture_filter = 1
-position = Vector2(350, 56)
+position = Vector2(250, 56)
 scale = Vector2(0.020501139, 0.020501139)
 texture = SubResource("Art_lamp")
 
 [node name="WallLamp3" type="Sprite2D" parent="WarehouseArt" unique_id=39616610]
 texture_filter = 1
-position = Vector2(548, 56)
+position = Vector2(380, 56)
 scale = Vector2(0.020501139, 0.020501139)
 texture = SubResource("Art_lamp")
 
@@ -558,7 +444,7 @@ position = Vector2(0, 10)
 shape = SubResource("RackFootprint")
 
 [node name="CratesLeft" type="Node2D" parent="." unique_id=1043832307]
-position = Vector2(190, 316)
+position = Vector2(190, 252)
 metadata/_edit_group_ = true
 
 [node name="Art" type="Sprite2D" parent="CratesLeft" unique_id=810129280]
@@ -575,7 +461,7 @@ position = Vector2(0, -6)
 shape = SubResource("CrateFootprint")
 
 [node name="CratesRight" type="Node2D" parent="." unique_id=1104781867]
-position = Vector2(567, 316)
+position = Vector2(407, 252)
 metadata/_edit_group_ = true
 
 [node name="Art" type="Sprite2D" parent="CratesRight" unique_id=128066802]
@@ -605,18 +491,6 @@ shape = SubResource("TerminalFootprint")
 [node name="Body" type="StaticBody2D" parent="ParryTraining"]
 
 [node name="Shape" type="CollisionShape2D" parent="ParryTraining/Body"]
-position = Vector2(0, -6)
-shape = SubResource("EntryFootprint")
-
-[node name="Body" type="StaticBody2D" parent="Trial"]
-
-[node name="Shape" type="CollisionShape2D" parent="Trial/Body"]
-position = Vector2(0, -6)
-shape = SubResource("EntryFootprint")
-
-[node name="Body" type="StaticBody2D" parent="BossTest"]
-
-[node name="Shape" type="CollisionShape2D" parent="BossTest/Body"]
 position = Vector2(0, -6)
 shape = SubResource("EntryFootprint")
 

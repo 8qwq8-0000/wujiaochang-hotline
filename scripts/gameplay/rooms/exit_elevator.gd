@@ -27,8 +27,8 @@ func _ready() -> void:
 	_sigil.texture = preload("res://assets/art/effects/warehouse_sigils/deploy_complete.png")
 	_sigil.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	_sigil.scale = Vector2.ONE * 0.225
-	# Place the projection slightly lower, at the entry step.
-	_sigil.position = Vector2(22, 14)
+	# Match the warehouse: ring center sits 29 pixels below the door art.
+	_sigil.position = Vector2(22, 23)
 	_sigil.visible = show_exit_art
 	call_deferred("_clip_sigil_to_room")
 	add_child(_sigil)

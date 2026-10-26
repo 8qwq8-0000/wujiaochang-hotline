@@ -68,11 +68,3 @@ func test_arena_authors_phase_one_and_phase_two_contract() -> void:
 	assert_true(arena.has_signal("room_cleared"))
 	assert_true(arena.has_method("_damage_player_in_circle"))
 	assert_true(arena.has_method("_damage_player_in_rect"))
-
-
-func test_warehouse_exposes_boss_test_shortcut() -> void:
-	var warehouse := track(WAREHOUSE_SCENE.instantiate())
-	var shortcut: Node = warehouse.get_node_or_null("BossTest")
-	assert_true(shortcut != null)
-	assert_eq(shortcut.kind, "boss_test")
-	assert_true(warehouse.has_method("enter_boss_test"))

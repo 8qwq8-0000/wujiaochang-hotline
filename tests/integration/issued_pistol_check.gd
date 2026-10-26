@@ -57,15 +57,6 @@ func run() -> void:
 	room.queue_free()
 	await process_frame
 	await process_frame
-	var trial=load("res://scenes/debug/fuel_reaction_sandbox.tscn").instantiate()
-	root.add_child(trial)
-	current_scene=trial
-	var has_baton:=false
-	for item in trial.chest.get_items():
-		has_baton=has_baton or item.get_prototype().get_prototype_id() in ["baton","initial_baton"]
-	check(not has_baton and trial.player.inventory.weapon_slot.get_item().get_prototype().get_prototype_id()=="pistol","trial supplies and loadout have no new baton")
-	trial.queue_free()
-	await process_frame
 	DirAccess.remove_absolute(store.save_path)
 	print("Issued pistol checks: ",checks,"; failures: ",failures)
 	quit(0 if failures==0 else 1)

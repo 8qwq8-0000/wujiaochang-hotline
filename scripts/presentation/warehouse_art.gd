@@ -74,43 +74,43 @@ func add_lamp_light(at: Vector2) -> void:
 	add_child(light)
 
 func _draw() -> void:
-	draw_rect(Rect2(0, 0, 640, 360), Color("0b111a"))
-	for y in range(72, 316, 32):
-		for x in range(36, 604, 32):
-			var size := Vector2(mini(32, 604 - x), mini(32, 316 - y))
+	draw_rect(Rect2(-80, -32, 640, 360), Color("0b111a"))
+	for y in range(72, 252, 32):
+		for x in range(36, 444, 32):
+			var size := Vector2(mini(32, 444 - x), mini(32, 252 - y))
 			draw_texture_rect_region(asset("floor"), Rect2(Vector2(x, y), size), Rect2(Vector2.ZERO, asset("floor").get_size() * size / 32.0), Color(0.74, 0.78, 0.82))
 	# Surface-mounted conduits; entry guidance lives on each door.
-	draw_line(Vector2(44, 305), Vector2(170, 305), Color("31444c"), 3)
-	draw_line(Vector2(170, 305), Vector2(170, 285), Color("31444c"), 3)
+	draw_line(Vector2(44, 241), Vector2(170, 241), Color("31444c"), 3)
+	draw_line(Vector2(170, 241), Vector2(170, 221), Color("31444c"), 3)
 
 func _draw_foreground(canvas: Node2D) -> void:
-	for x in range(40, 600, 128):
-		var width := mini(128, 600 - x)
+	for x in range(40, 440, 128):
+		var width := mini(128, 440 - x)
 		var texture := asset("wall_south_v2")
-		canvas.draw_texture_rect_region(texture, Rect2(x, 314, width, 24), Rect2(Vector2.ZERO, texture.get_size() * Vector2(width / 128.0, 1)))
-	canvas.draw_texture_rect(asset("corner_sw_v2"), Rect2(12, 310, 32, 28), false)
-	canvas.draw_texture_rect(asset("corner_se_v2"), Rect2(596, 310, 32, 28), false)
+		canvas.draw_texture_rect_region(texture, Rect2(x, 250, width, 24), Rect2(Vector2.ZERO, texture.get_size() * Vector2(width / 128.0, 1)))
+	canvas.draw_texture_rect(asset("corner_sw_v2"), Rect2(12, 246, 32, 28), false)
+	canvas.draw_texture_rect(asset("corner_se_v2"), Rect2(436, 246, 32, 28), false)
 
 func _draw_walls(canvas: Node2D) -> void:
 	# Outside the room is solid void behind the architecture, not extra floor
 	# where a large whole sigil can peek past the outer edge of the wall.
 	canvas.draw_rect(Rect2(0, 0, 12, 360), Color("0b111a"))
-	canvas.draw_rect(Rect2(628, 0, 12, 360), Color("0b111a"))
+	canvas.draw_rect(Rect2(468, 0, 12, 360), Color("0b111a"))
 	# Back wall has real facade height. Sidewalls are separately authored in
 	# their final orientation; no facade, pipe or light gets turned sideways.
-	for x in range(40, 600, 128):
-		var width := mini(128, 600 - x)
+	for x in range(40, 440, 128):
+		var width := mini(128, 440 - x)
 		canvas.draw_texture_rect_region(asset("wall_north_v2"), Rect2(x, 34, width, 40), Rect2(Vector2.ZERO, asset("wall_north_v2").get_size() * Vector2(width / 128.0, 1)))
-	for y in range(74, 312, 96):
-		var height := mini(96, 312 - y)
-		for wall_info in [["wall_west_v2", 12], ["wall_east_v2", 604]]:
+	for y in range(74, 248, 96):
+		var height := mini(96, 248 - y)
+		for wall_info in [["wall_west_v2", 12], ["wall_east_v2", 444]]:
 			var texture := asset(wall_info[0])
 			canvas.draw_texture_rect_region(texture, Rect2(wall_info[1], y, 24, height), Rect2(Vector2.ZERO, texture.get_size() * Vector2(1, height / 96.0)))
 	canvas.draw_texture_rect(asset("corner_nw_v2"), Rect2(12, 34, 32, 40), false)
-	canvas.draw_texture_rect(asset("corner_ne_v2"), Rect2(596, 34, 32, 40), false)
+	canvas.draw_texture_rect(asset("corner_ne_v2"), Rect2(436, 34, 32, 40), false)
 	# Subtle contact strips tie wall bases to the floor, with consistent depth.
 	for step in range(6):
 		var tint := Color(0.015, 0.025, 0.04, 0.20 * (1.0 - step / 6.0))
-		canvas.draw_rect(Rect2(36, 74 + step * 2, 568, 2), tint)
-		canvas.draw_rect(Rect2(36 + step, 76, 1, 238), tint)
-		canvas.draw_rect(Rect2(603 - step, 76, 1, 238), tint)
+		canvas.draw_rect(Rect2(36, 74 + step * 2, 408, 2), tint)
+		canvas.draw_rect(Rect2(36 + step, 76, 1, 174), tint)
+		canvas.draw_rect(Rect2(443 - step, 76, 1, 174), tint)

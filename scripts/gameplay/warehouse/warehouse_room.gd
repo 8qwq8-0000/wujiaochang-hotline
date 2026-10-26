@@ -1,7 +1,6 @@
 extends Node2D
 
 const COMBAT_PATH := "res://scenes/levels/floors/combat_prototype.tscn"
-const BOSS_TEST_PATH := "res://scenes/levels/bosses/rooftop_boss_arena.tscn"
 const LOBBY_MUSIC := preload("res://assets/audio/music/lobby/lobby_theme.ogg")
 const PANEL := preload("res://scripts/ui/warehouse_panel.gd")
 var chest: Inventory
@@ -49,9 +48,10 @@ func _ready() -> void:
 	_play_base_music()
 	var camera := player.get_node("Camera2D") as Camera2D
 	camera.enabled = false
-	# World origin matches the project's 640×360 internal canvas.
+	# Center the compact warehouse inside the 640×360 internal canvas.
 	var fixed_camera := Camera2D.new()
-	fixed_camera.position = Vector2(320, 180)
+	fixed_camera.position = Vector2(240, 148)
+	fixed_camera.zoom = Vector2(1.23, 1.23)
 	add_child(fixed_camera)
 	fixed_camera.make_current()
 	if not store.error_message.is_empty():
@@ -162,66 +162,16 @@ func depart() -> bool:
 
 
 func _draw() -> void:
-	draw_rect(Rect2(0, 0, 640, 360), Color("0d151e"))
-	draw_rect(Rect2(24, 62, 592, 266), Color("172634"))
-	for x in range(24, 617, 24):
-		draw_line(Vector2(x, 62), Vector2(x, 328), Color("203342"))
-	for y in range(64, 329, 24):
-		draw_line(Vector2(24, y), Vector2(616, y), Color("203342"))
-	draw_rect(Rect2(24, 62, 592, 266), Color("476271"), false, 3)
+	draw_rect(Rect2(-80, -32, 640, 360), Color("0d151e"))
+	draw_rect(Rect2(24, 62, 432, 202), Color("172634"))
+	for x in range(24, 457, 24):
+		draw_line(Vector2(x, 62), Vector2(x, 264), Color("203342"))
+	for y in range(64, 265, 24):
+		draw_line(Vector2(24, y), Vector2(456, y), Color("203342"))
+	draw_rect(Rect2(24, 62, 432, 202), Color("476271"), false, 3)
 	# Loading bay markings.
-	draw_rect(Rect2(490, 134, 100, 120), Color("253c42"))
-	draw_rect(Rect2(490, 134, 100, 120), Color("c2b275"), false, 2)
-
-func enter_trial() -> bool:
-	if _departing or get_tree().paused:
-		return false
-	if not save_loadout():
-		$Instructions.text = store.error_message
-		return false
-	_departing = true
-	player.set_input_enabled(false)
-	call_deferred("_open_trial")
-	return true
-
-func _open_trial() -> void:
-	var error := get_tree().change_scene_to_file("res://scenes/debug/fuel_reaction_sandbox.tscn")
-	if error != OK:
-		_departing = false
-		player.set_input_enabled(true)
-		$Instructions.text = "暂时无法进入试验场，请重试"
-		return
-
-
-func enter_boss_test() -> bool:
-	if _departing or get_tree().paused:
-		return false
-	var flow := get_parent().get_parent().get_node_or_null("SceneFlow") as SceneContainerManager
-	if flow == null:
-		$Instructions.text = "请从主入口进入楼顶测试"
-		return false
-	if not save_loadout():
-		$Instructions.text = store.error_message
-		return false
-	var snapshot := player.export_run_state()
-	var run := get_node_or_null("/root/RunManager")
-	if run != null:
-		run.begin_run()
-	if not flow.request_scene(BOSS_TEST_PATH, {
-		"player_state": snapshot,
-		"boss_test": true,
-	}):
-		$Instructions.text = "暂时无法进入楼顶测试，请重试"
-		return false
-	_departing = true
-	player.set_input_enabled(false)
-	flow.load_failed.connect(func(_path: String, _error: String) -> void:
-		_departing = false
-		player.set_input_enabled(true)
-		$Instructions.text = "暂时无法进入楼顶测试，请重试"
-	, CONNECT_ONE_SHOT)
-	return true
-
+	draw_rect(Rect2(330, 102, 100, 120), Color("253c42"))
+	draw_rect(Rect2(330, 102, 100, 120), Color("c2b275"), false, 2)
 
 func enter_parry_training() -> bool:
 	if _departing or get_tree().paused:
