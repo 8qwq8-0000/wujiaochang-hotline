@@ -106,7 +106,7 @@ Week 1 房间已接入当前玩法接口；`week1_room_check.gd` 的 SKIP 不计
 
 战斗音乐检查：`godot --headless --path . --script res://tests/integration/combat_music_check.gd`，覆盖强制敌人触发普通战斗轮播、BOSS 两阶段切换、BOSS 音乐不被普通清场信号打断，以及战斗结束停播。
 
-战斗音效检查：`godot --headless --path . --script res://tests/integration/combat_audio_check.gd`，覆盖飞行套件移动循环，以及基础步行不会误用“增援接近”音效。
+战斗音效检查：`godot --headless --path . --script res://tests/integration/combat_audio_check.gd`，保留旧飞行套件音频资源映射回归，并确认现行基础步行不会误用“增援接近”音效；该资源映射不表示飞行套件仍在正式运行时启用。
 
 导电、配电箱与试玩场景：
 
@@ -139,7 +139,7 @@ godot --headless --path . --script res://tests/integration/automatic_door_check.
 
 覆盖同次放电共享预算/去重、新导电不自触发、实际区域玩家归属、每区域配电箱数量、增益回调互斥；实际接触开门、射击破门与后续放行、双侧冲刺、门后击倒范围与遮挡、暂停及恢复。自动门检查还覆盖破门子弹消耗、双向和横向门射击、碎片去重，以及无伤害/暂停射击不破门。fuel_environment_check 已改为验证警棍和枪击直接引爆，原浸油反应另由 oil_status_check 保留验证。
 
-启动与角色确认：`godot --headless --path . --script res://tests/integration/start_menu_check.gd`，26 项检查覆盖透明立绘、无存档、真实鼠标选择角色、取消无副作用、继续保留装备实例、重开前原文件备份、损坏存档恢复、写入失败回滚及实际进入仓库。使用独立测试存档；去掉 `--headless` 还会在 `/tmp/hotline-start-*.png` 保存界面截图。
+启动与角色确认：`godot --headless --path . --script res://tests/integration/start_menu_check.gd`，当前 42 项检查覆盖透明立绘、无存档、默认制式手枪、真实鼠标选择角色、取消无副作用、继续保留装备实例、重开前原文件备份、损坏存档恢复、写入失败回滚及实际进入仓库。使用独立测试存档；去掉 `--headless` 还会在临时目录保存界面截图。
 
 固有突进：`godot --headless --path . --script res://tests/integration/dash_check.gd` 覆盖方向优先级、锁向、约 84 px 位移、命中去重、攻击打断、冷却、低物理频率路径扫描、撞墙与隔墙；`dash_invulnerability_check.gd` 覆盖 0.15 秒无敌及独立无敌来源。旧机动品质检查仅保留历史记录，不再作为现行验收。
 

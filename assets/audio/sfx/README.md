@@ -8,9 +8,9 @@
 | `combat/pistol_fire.wav` | `手枪音效.wav` | 制式手枪开火 |
 | `combat/enemy_death.wav` | `敌人死亡.wav` | 敌人死亡位置 |
 | `combat/guard_block.wav` | `格挡声.wav` | 普通格挡与完美格挡 |
-| `combat/melee_swing.wav` | `近战挥击.wav` | 初始警棍与掉落警棍挥击 |
+| `combat/melee_swing.wav` | `近战挥击.wav` | 兼容警棍及其它近战挥击 |
 | `items/loot_pickup.wav` | `拾取掉落物.wav` | 成功拾取反馈 |
-| `mobility/flight_loop.wav` | `飞行.wav` | 飞行套件移动循环 |
+| `mobility/flight_loop.wav` | `飞行.wav` | 旧飞行套件兼容资源；现行玩家不使用 |
 | `enemies/reinforcement_approach.wav` | `走动声.wav` | 敌人首次被惊扰后的增援接近提示 |
 | `bosses/rooftop_whale_echo_probe.wav` | `音波探测.wav` | 楼顶鲸鱼神像执行回声定位时的空间音效 |
 | `../ui/hotline_dial_01.wav` | `拨号声.wav` | 接线员拨号变体 1 |

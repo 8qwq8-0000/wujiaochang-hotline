@@ -11,8 +11,7 @@
 ## 保留原位的阶段资料
 
 - [第一周集成说明](../technical/第一周集成说明.md)
-- [第一周任务分工](../team/WEEK1_TASKS.md)
-- [初期环境快照](../team/SETUP_REPORT.md)
+- 第一周任务分工与初期环境快照未作为独立文件保留；相关过程记录见[第一周集成说明](../technical/第一周集成说明.md)与 [AI 使用记录](../AI_USAGE.md)。
 - 人格设计：[v1](../design/portable-ai-personality-spec-v1.md)、[v2](../design/portable-ai-personality-spec-v2.md)。
 - 饮料设计：[v1](../design/personality-drinks-design-v1.md)、[v2](../design/personality-drinks-design-v2.md)。
 - [早期轮式冲撞方案](../technical/轮式冲撞实施说明.md)：后续方案见[固有突进与义体迁移](../technical/固有突进与义体迁移实施说明.md)。

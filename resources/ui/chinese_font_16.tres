@@ -1,6 +1,6 @@
 [gd_resource type="FontVariation" load_steps=3 format=3]
 
-[ext_resource type="FontFile" path="res://assets/ui_fonts/ark_pixel_16px/ark_pixel_16px_zh_cn.ttf" id="1"]
+[ext_resource type="FontFile" path="res://assets/fonts/[可商用]ark pixel font/ark-pixel-font-16px-monospaced-ttf-v2026.07.20/ark-pixel-16px-monospaced-zh_cn.ttf" id="1"]
 [ext_resource type="FontFile" path="res://assets/fonts/[可商用]Unifont/unifont-16px.otf" id="2"]
 
 [resource]
