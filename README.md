@@ -14,7 +14,7 @@
 - [首版汇报与逐页讲稿](docs/presentation/README.md)
 - [开发文档导航](docs/README.md)
 
-Windows 键鼠是项目的首要目标平台。仓库中记录了 macOS v0.1.0 通用预览版的导出与 Apple 芯片 Mac 启动检查；Intel Mac、其他电脑与完整战斗流程的验证范围见[macOS 导出记录](docs/technical/macOS首版导出与验证.md)。
+Windows 键鼠是项目的首要目标平台。Windows v0.1.0 x86_64 独立包已导出，构建信息和实机待验收范围见[Windows 导出记录](docs/technical/Windows首版导出与验证.md)。macOS v0.1.0 通用预览版已记录 Apple 芯片 Mac 启动检查；Intel Mac、其他电脑与完整战斗流程的验证范围见[macOS 导出记录](docs/technical/macOS首版导出与验证.md)。
 
 ## 打开工程
 
