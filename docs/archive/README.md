@@ -17,4 +17,6 @@
 - [早期轮式冲撞方案](../technical/轮式冲撞实施说明.md)：后续方案见[固有突进与义体迁移](../technical/固有突进与义体迁移实施说明.md)。
 - [早期仓库设计](../superpowers/specs/2026-10-15-warehouse-design.md)、[导电反应设计](../superpowers/specs/2026-10-15-electric-reaction-design.md)。
 
+历史任务卡、开工手册和立项参考里的计划分工不作为当前贡献依据。当前实际贡献见[团队实际贡献](../team/CONTRIBUTIONS.md)与[仓库 README](../../README.md#团队)。
+
 查阅当前项目入口与功能说明请返回[文档导航](../README.md)。
