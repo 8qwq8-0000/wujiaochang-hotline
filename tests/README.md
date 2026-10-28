@@ -1,5 +1,7 @@
 # Tests
 
+剧情序章：`godot --headless --fixed-fps 60 --path . --script res://tests/integration/prologue_check.gd`，使用独立存档检查开场无枪与纯对话、突进击杀、正式敌人 AI 与弹速对照及盾反实际击杀、手枪掉落、Tab 背包装备、取消强制热量练习、实战热量提醒不暂停且不重复、自然散热恢复、通信暂停玩家/敌人/子弹/热量、真实鼠标点击正文/场景/面板继续、正式 HUD 的生命/热量同步与右下角武器显示及最大缩放避让、入口增益先领后开战与自动开门、约 1.5 秒阶段缓冲与仓库传送缓冲、手枪波次和环境箱、三件战利品、Codex 对话解锁合成、小 Boss 区独立炸药箱/散热增益箱与真实使用、自动传送进入仓库、底部通信引向保险箱与死亡丢失/箱内保留说明、关闭通信后恢复操作，以及跳过与存档隔离。窗口模式追加 `-- --capture` 可输出序章截图。详见[实施说明](../docs/technical/剧情序章与基础教学实施说明.md)。
+
 > 本页列出专项入口与历次覆盖说明，不代表所有脚本在当前版本均已通过。旧 `component_progression_check.gd` 仍访问机动 API，属于过期夹具；当前义体与合成请使用 `cyberware_check.gd`、`synthesis_npc_check.gd` 和 `codex_service_passage_check.gd`。历史断言数量保留原记录；Windows 与退出资源诊断等限制不因此取消。
 
 警戒炮台：`sentry_turret_check.gd` 验证八方向跟踪和双排射击、遮挡及清场摧毁；`sentry_placement_check.gd` 检查四张地图每区至少一台及占地、避障、寻路。运行方式为 `godot --headless --path . --script res://tests/integration/文件名`。

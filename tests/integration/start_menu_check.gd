@@ -50,8 +50,15 @@ func click(instance: Node, text: String) -> void:
 func warehouse() -> Node:
 	for frame in 500:
 		await process_frame
+		OS.delay_msec(2)
+		var prologue := get_first_node_in_group("prologue")
+		if prologue != null:
+			prologue.finish_prologue()
 		var rooms := get_nodes_in_group("warehouse")
 		if not rooms.is_empty():
+			var arrival := get_first_node_in_group("prologue_arrival")
+			if arrival != null:
+				arrival.close()
 			return rooms[0]
 	return null
 

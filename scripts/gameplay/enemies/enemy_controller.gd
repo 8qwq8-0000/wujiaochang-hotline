@@ -753,7 +753,7 @@ func perform_attack() -> void:
 		var projectile: CombatProjectile = PROJECTILE_SCENE.instantiate()
 		CombatProjectile.room_for_actor(self).add_child(projectile)
 		projectile.global_position = global_position + direction * 16.0
-		projectile.setup(self, CombatFaction.Id.ENEMY, direction, profile.damage, 310.0)
+		projectile.setup(self, CombatFaction.Id.ENEMY, direction, profile.damage, profile.projectile_speed)
 		return
 	# Melee can be avoided during the telegraph and never hits through cover.
 	if global_position.distance_to(_target.global_position) > profile.attack_range or not _has_line_of_sight():

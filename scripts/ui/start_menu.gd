@@ -1,6 +1,7 @@
 extends Control
 
 const WAREHOUSE := "res://scenes/bootstrap/warehouse_main.tscn"
+const PROLOGUE := "res://scenes/bootstrap/prologue_main.tscn"
 const LOBBY_MUSIC := preload("res://assets/audio/music/lobby/lobby_theme.ogg")
 const PORTRAIT := preload("res://assets/art/ui/standard_chassis_cutout.png")
 const HOME_BACKGROUND := preload("res://assets/art/ui/start_menu/start_menu_background_v1.png")
@@ -504,7 +505,7 @@ func start_new_game() -> void:
 			place(_status, Rect2(0, 280, 460, 48), _content)
 		_status.text = store.error_message
 		return
-	_enter_warehouse()
+	_enter_warehouse(true)
 
 
 func continue_game() -> void:
@@ -513,19 +514,19 @@ func continue_game() -> void:
 	_enter_warehouse()
 
 
-func _enter_warehouse() -> void:
+func _enter_warehouse(with_prologue := false) -> void:
 	_busy = true
 	var difficulty: String = store.get_profile().get("difficulty", ["low_pressure", "standard", "high_pressure"][int(get_node("/root/GameSettings").difficulty)])
 	get_node("/root/GameSettings").set_difficulty(["low_pressure", "standard", "high_pressure"].find(difficulty) as GameSettingsController.Difficulty, false)
 	get_node("/root/RunManager").begin_run()
 	get_node("/root/RunManager").set_scene_payload({})
 	_stop_lobby_music()
-	var error := get_tree().change_scene_to_file(WAREHOUSE)
+	var error := get_tree().change_scene_to_file(PROLOGUE if with_prologue else WAREHOUSE)
 	if error != OK:
 		_busy = false
 		show_home()
 		_play_lobby_music()
-		_status.text = "无法进入仓库，请重试。"
+		_status.text = "无法进入序章，请重试。" if with_prologue else "无法进入仓库，请重试。"
 
 
 func _unhandled_input(event: InputEvent) -> void:
