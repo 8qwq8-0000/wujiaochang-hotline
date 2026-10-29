@@ -11,6 +11,8 @@ var last_synthesis_result: InventoryItem
 var _mutating := false
 var _departing := false
 var _save_queued := false
+var _storage_guide: CanvasLayer
+var _storage_guide_active := false
 @onready var player: PlayerController = $Player
 @onready var store: Node = get_node("/root/WarehouseStore")
 
@@ -67,6 +69,15 @@ func _play_base_music() -> void:
 		# Reissuing the same track is intentional: SoundManager reuses its player
 		# and cancels the fade-out started by the menu/combat scene transition.
 		sound_manager.play_music(LOBBY_MUSIC, 0.75)
+
+
+func receive_scene_payload(payload: Dictionary) -> void:
+	if not payload.get("guide_storage", false) or _storage_guide != null:
+		return
+	_storage_guide_active = true
+	_storage_guide = preload("res://scripts/ui/warehouse_storage_guide.gd").new()
+	_storage_guide.room = self
+	add_child(_storage_guide)
 
 
 func _queue_save() -> void:

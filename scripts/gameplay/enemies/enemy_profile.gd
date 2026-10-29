@@ -26,6 +26,7 @@ enum ImpactMaterial {
 @export_range(10.0, 1000.0, 1.0) var attack_range: float = 34.0
 @export_range(0.1, 5.0, 0.1) var attack_cooldown: float = 1.13
 @export_range(1, 10, 1) var damage: int = 1
+@export_range(1.0, 1000.0, 1.0) var projectile_speed: float = 310.0
 @export_range(0.0, 500.0, 1.0) var attack_knockback: float = 90.0
 @export var body_color: Color = Color(0.9, 0.2, 0.2)
 

@@ -142,7 +142,10 @@ func owns_item(item: InventoryItem) -> bool:
 	return room.owns_synthesis_item(item)
 
 func open() -> void:
-	if is_open or room.panel.is_open or room.player.inventory.is_open or room.player.health.is_dead():
+	if is_open or room.player.inventory.is_open or room.player.health.is_dead():
+		return
+	var dialogue_panel := room.get("panel") as CanvasLayer
+	if dialogue_panel != null and dialogue_panel.get("is_open") == true:
 		return
 	is_open = true
 	_materials = [null, null]

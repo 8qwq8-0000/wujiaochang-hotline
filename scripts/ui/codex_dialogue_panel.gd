@@ -8,6 +8,8 @@ const LINES := [
 	"义体只陪你走完这次行动。左边箱子里的武器可以寄回仓库，死亡也保留；绿色货箱上的小血瓶能补一格耐久。准备好了走右边，我替你接通第三层。",
 ]
 var player: PlayerController
+var lines: Array[String] = []
+var location_text := "Codex · 临时维修站"
 var is_open := false
 var _owns_pause := false
 var _page := 0
@@ -17,6 +19,8 @@ var _progress: Label
 var _next: Button
 
 func _ready() -> void:
+	if lines.is_empty():
+		lines.assign(LINES)
 	layer = 97
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_overlay = Control.new()
@@ -27,7 +31,9 @@ func _ready() -> void:
 	shade.color = Color(0.01, 0.03, 0.02, 0.18)
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_overlay.add_child(shade)
-	var box := TerminalPanel.new()
+	var box := CyberDialoguePanel.new()
+	box.compact = true
+	box.set_channel(false)
 	box.name = "CodexDialogue"
 	box.title = "CODEX / 本地连接"
 	box.panel_color = Color("071a16f5")
@@ -41,12 +47,12 @@ func _ready() -> void:
 	column.add_theme_constant_override("separation", 6)
 	box.add_child(column)
 	var title := Label.new()
-	title.text = "Codex · 临时维修站"
+	title.text = location_text
 	title.add_theme_font_size_override("font_size", 14)
 	title.add_theme_color_override("font_color", CyberUITheme.HIGHLIGHT)
 	column.add_child(title)
 	_text = Label.new()
-	_text.add_theme_color_override("font_color", CyberUITheme.HIGHLIGHT)
+	_text.add_theme_color_override("font_color", Color("ebf1f3"))
 	_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_text.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(_text)
@@ -57,6 +63,7 @@ func _ready() -> void:
 	_progress.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(_progress)
 	_next = Button.new()
+	CyberDialoguePanel.style_button(_next, true)
 	_next.custom_minimum_size = Vector2(140, 26)
 	_next.pressed.connect(advance)
 	row.add_child(_next)
@@ -73,14 +80,14 @@ func open() -> void:
 	_refresh()
 
 func _refresh() -> void:
-	_text.text = LINES[_page]
-	_progress.text = "%02d/%02d    [E] 继续    [Esc] 退出" % [_page + 1, LINES.size()]
-	_next.text = "打开合成台 [E]" if _page == LINES.size() - 1 else "继续对话 [E]"
+	_text.text = lines[_page]
+	_progress.text = "%02d/%02d    [E] 继续    [Esc] 退出" % [_page + 1, lines.size()]
+	_next.text = "打开合成台 [E]" if _page == lines.size() - 1 else "继续对话 [E]"
 
 func advance() -> void:
 	if not is_open:
 		return
-	if _page + 1 < LINES.size():
+	if _page + 1 < lines.size():
 		_page += 1
 		_refresh()
 	else:

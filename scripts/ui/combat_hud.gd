@@ -95,11 +95,15 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_health_pulse_time += delta
+	var prologue := get_tree().get_first_node_in_group("prologue")
+	var tutorial_hud := prologue != null and bool(prologue.get("show_combat_hud"))
+	_persona_root.visible = prologue == null
 	overlay.visible = (
 		not _scene_transition_active
 		and is_instance_valid(_player)
 		and get_tree().get_nodes_in_group("warehouse").is_empty()
-		and get_tree().get_nodes_in_group("intermission").is_empty()
+		and (get_tree().get_nodes_in_group("intermission").is_empty() or tutorial_hud)
+		and (prologue == null or tutorial_hud)
 	)
 	if not is_instance_valid(_player):
 		_player = get_tree().get_first_node_in_group("player") as PlayerController
