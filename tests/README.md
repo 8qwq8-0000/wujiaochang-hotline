@@ -1,3 +1,11 @@
+手机操作文案：`mobile_control_prompts_check.gd` 检查电脑操作词转换、桌面原文保留、重复适配稳定性和手机点按/拖动射击说明。
+
+手机背包布局：`mobile_inventory_panel_check.gd` 在窄横屏实际窗口中检查关闭按钮、安全区、完整底部丢弃区、装备区滑动、避免滑动误换装、原生长按拖弃及 Tab 兼容。
+
+手机对话继续：`godot --headless --path . --script res://tests/integration/mobile_dialogue_check.gd` 使用原生触屏事件检查序章开场、教学通讯、Codex、到仓库提示和储物引导；覆盖松手、第二手指与触屏生成的模拟鼠标去重，避免一次轻触跳过多句。
+
+iOS 适配：`godot --headless --path . --script res://tests/integration/ios_mobile_check.gd` 检查原生导出预设、左右横屏、Retina 安全区与 iPad 边距；`mobile_controls_check.gd` 继续覆盖共享触控行为。`python3 tools/build_ios.py --check` 检查本机环境，`--build device` / `--build simulator` 可编译未签名产物。安装和验证范围见 `docs/technical/iOS手机端适配实施说明.md`。
+
 遗产酒谱与敌人图鉴：`godot --headless --path . --script res://tests/integration/warehouse_archive_check.gd`，覆盖旧档兼容、画面外及墙体遮挡不解锁、实际敌人/炮台/Boss 遭遇、跨实例保存、失败回滚、测试模式隔离、三页签和未解锁信息隐藏、Esc 关闭恢复。窗口模式添加 `-- --capture` 可输出酒谱、人格与敌人页截图到 `/tmp/hotline-archive-*.png`。旧存档未记录历史遭遇，首次更新后需重新遇敌解锁。
 
 # Tests

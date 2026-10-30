@@ -534,6 +534,7 @@ func take_from_storage(item: InventoryItem, storage: Inventory) -> bool:
 	return true
 
 func _notify(text: String, cue: StringName) -> void:
+	text = ControlPrompts.adapt(text)
 	feedback.emit(text, cue)
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null:
