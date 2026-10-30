@@ -1,6 +1,7 @@
 extends CanvasLayer
 
 const DRAG_SLOT := preload("res://scripts/ui/inventory_drag_slot.gd")
+const TRASH_ZONE := preload("res://scripts/ui/inventory_trash_drop_zone.gd")
 var inventory: ComponentInventory
 var _overlay: Control
 var _status: Label
@@ -13,6 +14,7 @@ var _defense: Button
 var _discard_menu: PopupMenu
 var _discard_target: InventoryItem
 var _blackbox: Button
+var _trash_zone: InventoryTrashDropZone
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -84,6 +86,9 @@ func _ready() -> void:
 	_message.custom_minimum_size = Vector2(470, 32)
 	_message.add_theme_font_size_override("font_size", 12)
 	column.add_child(_message)
+	_trash_zone = TRASH_ZONE.new()
+	_trash_zone.inventory = inventory
+	column.add_child(_trash_zone)
 	_discard_menu = PopupMenu.new()
 	_discard_menu.add_item("丢到地上", 0)
 	_overlay.add_child(_discard_menu)
@@ -124,7 +129,7 @@ func set_open(value: bool) -> void:
 	_discard_menu.hide()
 	_discard_target = null
 	if value:
-		_message.text = "拖动装备到高亮槽位；右键背包装备可丢弃。"
+		_message.text = "点按装备执行快捷操作；长按后拖动到槽位，或拖到下方丢弃区。"
 		refresh()
 	else:
 		for button in _buttons + [_weapon, _secondary, _cyberware, _defense, _blackbox]:
@@ -144,7 +149,7 @@ func refresh() -> void:
 		_buttons[index].text = ComponentRolls.title(item).replace("（绑定）", "") if item != null else "空位（可拖入）"
 		ComponentRolls.apply_quality_color(_buttons[index], item)
 		_buttons[index].icon = item.get_texture() if item != null else null
-		_buttons[index].tooltip_text = (ComponentRolls.describe(item) + "\n拖到槽位即可装备或交换；右键可丢弃" if item != null else "把槽内装备拖到这里")
+		_buttons[index].tooltip_text = (ComponentRolls.describe(item) + "\n长按拖到槽位即可装备或交换，也可拖到丢弃区" if item != null else "把槽内装备拖到这里")
 		# Empty cells stay enabled so Godot can deliver drops to them.
 	for entry in [{"button": _weapon, "location": "weapon", "title": "主武器"}, {"button": _secondary, "location": "weapon_secondary", "title": "副武器"}, {"button": _cyberware, "location": "cyberware", "title": "义体槽"}, {"button": _defense, "location": "defense", "title": "防御槽"}, {"button": _blackbox, "location": "blackbox", "title": "黑匣"}]:
 		var item := inventory.item_at(entry.location)
