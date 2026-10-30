@@ -23,13 +23,8 @@ static func contains(enemy_id: String) -> bool:
 static func portrait(entry: Dictionary) -> Texture2D:
 	if entry.has("image"):
 		return load(entry.image) as Texture2D
-	var profile_path := "res://resources/enemies/%s.tres" % entry.profile
-	# Entries for optional enemy packs stay locked until that pack is installed.
-	# The baseline build still needs a valid portrait for previews and validation.
-	if not ResourceLoader.exists(profile_path):
-		profile_path = "res://resources/enemies/ranged_sightline.tres"
-	var profile := load(profile_path) as EnemyProfile
-	var frames := profile.get("animation_frames") as SpriteFrames
+	var profile := load("res://resources/enemies/%s.tres" % entry.profile) as EnemyProfile
+	var frames := profile.animation_frames
 	if frames == null:
 		frames = load(EnemySpriteAnimator.FRAMES_PATH % ["melee", "ranged", "shield"][int(profile.role)]) as SpriteFrames
 	var texture := frames.get_frame_texture(&"idle_down", 0)

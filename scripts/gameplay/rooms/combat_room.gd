@@ -19,6 +19,7 @@ var area_total := 1
 var active := true
 var reward_count := 0
 var extra_enemy_count := 0
+var signal_emitter_enabled := false
 
 @onready var spawner: EnemySpawner = $EnemySpawner
 @onready var exit_elevator: Area2D = $ExitElevator
@@ -42,6 +43,7 @@ func _ready() -> void:
 		layout.power_position = EncounterPropPlacement.choose_power_position(layout, seed_value)
 		_add_small_obstacles()
 		_apply_layout()
+	_place_signal_emitter()
 	_add_floor_enemies()
 	_place_barrel()
 	if layout != null:
@@ -431,3 +433,16 @@ func _apply_workshop_art() -> void:
 	var clutter := preload("res://scripts/presentation/floor_clutter.gd").new()
 	clutter.name = "FloorClutter"
 	add_child(clutter)
+
+
+func _place_signal_emitter() -> void:
+	if not signal_emitter_enabled:
+		return
+	# Replace a rear ranged marker: keep authored reachable positions and counts.
+	var chosen: EnemySpawnMarker
+	for marker in $EnemySpawnPoints.get_children():
+		if marker is EnemySpawnMarker and marker.profile != null and marker.profile.role == EnemyProfile.Role.RANGED_SIGHTLINE:
+			if chosen == null or marker.position.x > chosen.position.x:
+				chosen = marker
+	if chosen != null:
+		chosen.profile = preload("res://resources/enemies/signal_amplifier.tres")

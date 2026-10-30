@@ -1,7 +1,7 @@
 extends SceneTree
 
 const ENEMY := preload("res://scenes/actors/enemies/enemy.tscn")
-const PROFILES := ["melee_pressure", "ranged_sightline", "heavy_anchor"]
+const PROFILES := ["melee_pressure", "ranged_sightline", "heavy_anchor", "signal_amplifier"]
 const DIRECTIONS := [Vector2.DOWN, Vector2.LEFT, Vector2.UP, Vector2.RIGHT]
 const DIRECTION_NAMES := ["down", "left", "up", "right"]
 var checks := 0
@@ -55,9 +55,9 @@ func run() -> void:
 	player.camera.enabled = false
 	player.health.configure_max_health(100)
 	await physics_frame
-	for role in 3:
+	for role in PROFILES.size():
 		var enemy := spawn(role, Vector2(320, 180))
-		check(enemy.visuals.role_key == ["melee", "ranged", "shield"][role], "each role selects its own animation atlas")
+		check(enemy.visuals.role_key == ["melee", "ranged", "shield", "ranged"][role], "each role selects its own animation atlas")
 		var offset := enemy.sprite.offset
 		var scale := enemy.sprite.scale
 		for index in 4:
@@ -89,7 +89,7 @@ func run() -> void:
 			enemy.state = EnemyController.State.ATTACK
 			enemy.perform_attack()
 			check(enemy.visuals.current_animation == "attack_" + name and enemy.visuals.current_frame == 3, "real hit/shot callback displays the contact frame immediately")
-			if role == 1:
+			if role in [1, 3]:
 				var shots: Array[Node] = []
 				for child in room.get_children():
 					if child is CombatProjectile and not child.is_queued_for_deletion():
