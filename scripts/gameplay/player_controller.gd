@@ -243,7 +243,9 @@ func should_ignore_damage(packet: DamagePacket) -> bool:
 
 
 func get_persona_attack_context(data: WeaponComponentData) -> Dictionary:
-	return persona_combat.get_attack_context(data)
+	var context := persona_combat.get_attack_context(data)
+	cyberware.augment_attack_context(data, context)
+	return context
 
 
 func prepare_persona_attack_group(group_id: int, context: Dictionary) -> void:
@@ -252,6 +254,7 @@ func prepare_persona_attack_group(group_id: int, context: Dictionary) -> void:
 
 func on_persona_attack_committed(data: WeaponComponentData, context: Dictionary, group_id: int) -> void:
 	persona_combat.on_attack_committed(data, context, group_id)
+	cyberware.on_attack_committed(data, context)
 
 
 func modify_outgoing_damage(packet: DamagePacket, target: Node, base_damage: int) -> int:
@@ -400,6 +403,7 @@ func reset_transient_state() -> void:
 	statuses.clear_all()
 	guard.reset_to_idle()
 	dash.reset_transient_state()
+	cyberware.reset_transient_state()
 	weapons.reset_transient_state()
 	persona_combat.reset_transient_state()
 	hurt_box.clear_invulnerability()

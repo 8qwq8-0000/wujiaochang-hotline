@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CyberwareData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/player/cyberware_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+module_id = &"arc_ballistic_cortex"
+display_name = "电弧弹道皮层"
+description = "弹丸、散射、激光与近战命中时麻痹主目标并向 64 像素内最多 2 名未命中过的敌人放电；每次攻击不会重复目标，麻痹 0.2 秒且电弧不造成伤害，无冷却。"
+trigger_cooldown = 0.0
+arc_chain_radius = 64.0
+arc_paralysis_seconds = 0.2
+arc_chain_targets = 2

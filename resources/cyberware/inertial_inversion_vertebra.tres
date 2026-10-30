@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CyberwareData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/player/cyberware_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+module_id = &"inertial_inversion_vertebra"
+display_name = "惯性逆变椎体"
+description = "冲刺无敌期间避开敌方命中时，释放 56 像素零伤害动能脉冲，推开附近敌人并使其失衡 0.35 秒；每次冲刺最多一次，冷却 3 秒，地形与持续伤害不触发。"
+trigger_cooldown = 3.0
+inertia_pulse_radius = 56.0
+inertia_pulse_stagger_seconds = 0.35
+inertia_pulse_knockback = 180.0

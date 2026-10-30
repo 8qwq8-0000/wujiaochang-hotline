@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="CyberwareData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/player/cyberware_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+module_id = &"axon_recycler"
+display_name = "轴突回收器"
+description = "以弹丸、激光或近战直接击杀敌人时，使其他已装备义体的剩余冷却缩短 0.75 秒；同一次攻击多杀只触发一次，环境、持续与二次伤害不触发。"
+trigger_cooldown = 0.0
+axon_cooldown_reduction = 0.75

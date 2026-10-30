@@ -3,7 +3,7 @@ extends SceneTree
 ## Package generated source art into transparent icons; keep the source intact.
 const SOURCE_DIR := "res://art_sources/ai_drafts/equipment_icons_v1/"
 const TARGET_DIR := "res://assets/art/items/equipment_v1/"
-const IDS := ["armor", "smart_fire", "explosive_magazine", "tactical_coprocessor", "optical_intruder", "kill_heat_sink", "heat_threshold_pulser", "compound_cyberware"]
+const IDS := ["armor", "smart_fire", "explosive_magazine", "tactical_coprocessor", "optical_intruder", "kill_heat_sink", "heat_threshold_pulser", "momentum_recovery_tendon", "trajectory_echo_processor", "ballistic_takeover_protocol", "arc_ballistic_cortex", "inertial_inversion_vertebra", "axon_recycler", "micro_rotor_reflex_bundle", "predatory_vestibular_ring", "compound_cyberware"]
 
 func _initialize() -> void:
 	var failures := 0

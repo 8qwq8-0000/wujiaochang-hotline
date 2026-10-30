@@ -90,6 +90,75 @@ func run_checks() -> void:
 			await create_timer(1.0).timeout
 			await RenderingServer.frame_post_draw
 			root.get_texture().get_image().save_png("/tmp/hotline-equipment-hud.png")
+	var momentum := ComponentRolls.create("momentum_recovery_tendon", 1, rng)
+	player.inventory.cyberware_slot.clear()
+	player.inventory.cyberware_slot.equip(momentum)
+	player.inventory._apply_equipment()
+	player.dash.dash_damaged_enemy.emit(player)
+	await process_frame
+	var momentum_label: Label = hud.get("_momentum_ready_label")
+	check(momentum_label.visible and momentum_label.text.begins_with("零热待发"), "momentum charge exposes its remaining ready window in the HUD")
+	var trajectory := ComponentRolls.create("trajectory_echo_processor", 1, rng)
+	player.inventory.cyberware_slot.clear()
+	player.inventory.cyberware_slot.equip(trajectory)
+	player.inventory._apply_equipment()
+	player.cyberware.set("_trajectory_echo_cooldown_remaining", 4.0)
+	await process_frame
+	var trajectory_icon := row.get_child(0) as TextureRect
+	check(trajectory_icon.modulate != weapon.modulate, "trajectory echo icon darkens while its internal cooldown is active")
+	player.cyberware._physics_process(4.0)
+	await process_frame
+	check(trajectory_icon.modulate == weapon.modulate, "trajectory echo icon returns to its normal tint when ready")
+	var takeover := ComponentRolls.create("ballistic_takeover_protocol", 1, rng)
+	player.inventory.cyberware_slot.clear()
+	player.inventory.cyberware_slot.equip(takeover)
+	player.inventory._apply_equipment()
+	player.cyberware.set("_ballistic_takeover_cooldown_remaining", 6.0)
+	await process_frame
+	var takeover_icon := row.get_child(0) as TextureRect
+	check(takeover_icon.modulate != weapon.modulate, "ballistic takeover icon darkens during its internal cooldown")
+	player.cyberware._physics_process(6.0)
+	await process_frame
+	check(takeover_icon.modulate == weapon.modulate, "ballistic takeover icon returns to its normal tint when ready")
+	var arc_cortex := ComponentRolls.create("arc_ballistic_cortex", 1, rng)
+	player.inventory.cyberware_slot.clear()
+	player.inventory.cyberware_slot.equip(arc_cortex)
+	player.inventory._apply_equipment()
+	await process_frame
+	var arc_icon := row.get_child(0) as TextureRect
+	check(arc_icon.modulate == weapon.modulate, "always-on arc ballistic cortex icon stays at its normal tint")
+	var inverter := ComponentRolls.create("inertial_inversion_vertebra", 1, rng)
+	player.inventory.cyberware_slot.clear()
+	player.inventory.cyberware_slot.equip(inverter)
+	player.inventory._apply_equipment()
+	player.cyberware.set("_inertial_inversion_cooldown_remaining", 3.0)
+	await process_frame
+	var inverter_icon := row.get_child(0) as TextureRect
+	check(inverter_icon.modulate != weapon.modulate, "inertial inversion icon darkens during its internal cooldown")
+	player.cyberware._physics_process(3.0)
+	await process_frame
+	check(inverter_icon.modulate == weapon.modulate, "inertial inversion icon returns to its normal tint when ready")
+	var recycler := ComponentRolls.create("axon_recycler", 1, rng)
+	player.inventory.cyberware_slot.clear()
+	player.inventory.cyberware_slot.equip(recycler)
+	player.inventory._apply_equipment()
+	await process_frame
+	var recycler_icon := row.get_child(0) as TextureRect
+	check(recycler_icon.modulate == weapon.modulate, "always-on axon recycler icon stays at its normal tint")
+	var micro_rotor := ComponentRolls.create("micro_rotor_reflex_bundle", 1, rng)
+	player.inventory.cyberware_slot.clear()
+	player.inventory.cyberware_slot.equip(micro_rotor)
+	player.inventory._apply_equipment()
+	await process_frame
+	var micro_rotor_icon := row.get_child(0) as TextureRect
+	check(micro_rotor_icon.modulate == weapon.modulate, "always-on micro rotor reflex bundle icon stays at its normal tint")
+	var predatory_ring := ComponentRolls.create("predatory_vestibular_ring", 1, rng)
+	player.inventory.cyberware_slot.clear()
+	player.inventory.cyberware_slot.equip(predatory_ring)
+	player.inventory._apply_equipment()
+	await process_frame
+	var predatory_ring_icon := row.get_child(0) as TextureRect
+	check(predatory_ring_icon.modulate == weapon.modulate, "always-on predatory vestibular ring icon stays at its normal tint")
 	player.inventory.cyberware_slot.clear()
 	player.inventory._apply_equipment()
 	check(row.get_child_count() == 0 and not row.visible, "unequip immediately clears all module icons")

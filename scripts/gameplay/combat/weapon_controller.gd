@@ -174,6 +174,20 @@ func reduce_cooldown(amount: float) -> void:
 	set_cooldown_remaining(_cooldown_remaining - maxf(amount, 0.0))
 
 
+func get_cooldown_duration_for_weapon_id(weapon_id: StringName) -> float:
+	var data: WeaponComponentData = null
+	if _current_weapon != null and _current_weapon.id == weapon_id:
+		data = _current_weapon
+	else:
+		for candidate in weapons:
+			if candidate != null and candidate.id == weapon_id:
+				data = candidate
+				break
+	if data == null:
+		return 0.0
+	return data.cooldown / maxf(attack_speed_multiplier + persona_attack_speed_bonus, 0.01)
+
+
 func _perform_attack(
 	data: WeaponComponentData,
 	origin: Vector2,
@@ -323,6 +337,7 @@ func _perform_projectiles(
 		projectile.damage_type = data.damage_type
 		projectile.status_tags = data.status_tags.duplicate()
 		projectile.feedback_group_id = _active_feedback_group_id
+		projectile.allows_trajectory_echo = data.attack_kind == WeaponComponentData.AttackKind.PROJECTILE and count == 1
 		var cyberware := source_node.get_node_or_null("CyberwareController") as CyberwareController
 		if cyberware != null:
 			cyberware.configure_projectile(projectile, direction)
@@ -440,6 +455,7 @@ func _make_packet(
 	packet.travel_direction = direction
 	packet.feedback_group_id = _active_feedback_group_id
 	packet.terminal_attack = _active_terminal_attack and data.attack_kind in [WeaponComponentData.AttackKind.MELEE, WeaponComponentData.AttackKind.BEAM]
+	packet.allows_trajectory_echo = data.attack_kind == WeaponComponentData.AttackKind.BEAM
 	return packet
 
 

@@ -1,6 +1,6 @@
 # 防御装备与义体图标 v1
 
-2026-10-23，使用内置 imagegen 分别生成八件透明工业科幻像素物品。统一左上受光、深灰金属外壳、功能色和可读轮廓，不使用文字、外框或背景。生成源图与每件完整提示词保存在 `art_sources/ai_drafts/equipment_icons_v1/manifest.json` 及同目录 PNG；未使用 CLI/API fallback。
+2026-10-23 至 2026-10-30，使用内置 imagegen 分别生成十六件透明工业科幻物品。统一深灰金属外壳、功能色和可读轮廓，不使用文字、外框或背景。生成源图与每件完整提示词保存在 `art_sources/ai_drafts/equipment_icons_v1/manifest.json` 及同目录 PNG；未使用 CLI/API fallback。
 
 | 文件 | 对应物品 | 轮廓与识别点 |
 |---|---|---|
@@ -11,6 +11,14 @@
 | optical_intruder.png | 光学入侵器 | 紫色棱镜、弧形光学器件 |
 | kill_heat_sink.png | 击破散热器 | 铜底座、青色竖直散热鳍片 |
 | heat_threshold_pulser.png | 热阈震荡器 | 橙色核心、环形震荡结构 |
+| momentum_recovery_tendon.png | 动能回收腱 | 编织人工腱束、青色回收飞轮与两端接头 |
+| trajectory_echo_processor.png | 轨迹回响处理器 | 紫色折射棱镜、青色输入束与分叉导轨 |
+| ballistic_takeover_protocol.png | 弹道接管协议 | 绿色扫描缝、弹丸通道与接管夹臂 |
+| arc_ballistic_cortex.png | 电弧弹道皮层 | 弹道核心、神经处理器与蓝白电弧 |
+| inertial_inversion_vertebra.png | 惯性逆变椎体 | 机械椎体、陀螺核心与反向动能环 |
+| axon_recycler.png | 轴突回收器 | 三向神经插槽、青色轴突与琥珀回收核心 |
+| micro_rotor_reflex_bundle.png | 微转子反射束 | 三枚银色微转子、青色反射神经束与琥珀计时凸轮 |
+| predatory_vestibular_ring.png | 掠食性前庭环 | 三重平衡环、红色猎杀感应器与青色冲刺电容 |
 | compound_cyberware.png | 复合义体 | 一体式底座、四个异色集成模块 |
 
 无后缀文件是正式运行用的 32×32 透明 PNG，另保留 `_64.png` 展示版本。通过 `godot --headless --path . --script res://tools/import_equipment_icons.gd` 从完整源图裁去透明边距，以最近邻缩放并居中打包，不覆盖源图。PNG 无损导入、关闭 Mipmap；背包、拖动预览、仓库、合成台和掉落统一使用同一物品纹理。
@@ -19,4 +27,4 @@
 
 验收截图：`docs/art/validation/equipment_icons_v1/catalog.png`、`ground.png`、`inventory.png`。复现工具为 `tools/preview_equipment_icons.gd` 与 `tools/preview_equipment_runtime.gd`，均使用 Godot 实际渲染。
 
-装甲蓝血 38 项、防御组件 40 项、仓库存取 61 项、Codex 通道 23 项和六种义体效果检查通过。既有 `component_progression_check.gd:149` 仍引用旧 mobility 接口，脚本解析失败，未记为通过；本次未修改该旧测试。部分运行退出仍有既有 ObjectDB / resources-in-use 诊断。
+装甲蓝血 38 项、防御组件 40 项、仓库存取 61 项、Codex 通道 23 项和义体专项检查在对应版本通过；每次新增义体均以当前测试结果为准。部分运行退出仍可能出现既有 ObjectDB / resources-in-use 诊断。

@@ -5,6 +5,7 @@ var checks := 0
 var player: PlayerController
 var room: Node2D
 var movement_effects: Array[Dictionary] = []
+var damaging_dash_signals := 0
 
 
 func _initialize() -> void:
@@ -58,6 +59,7 @@ func run() -> void:
 	current_scene = room
 	player = load("res://scenes/actors/player/player.tscn").instantiate()
 	room.add_child(player)
+	player.dash.dash_damaged_enemy.connect(func(_target: Node2D) -> void: damaging_dash_signals += 1)
 	player.set_physics_process(false)
 	var config := player.dash.config
 	var enemy := enemy_at(Vector2(40, 0))
@@ -71,6 +73,7 @@ func run() -> void:
 	await ticks(6, Vector2.LEFT)
 	check(player.position.x > 35 and absf(player.position.y) < 0.1, "dash holds direction against opposite input")
 	check(enemy.health.current_health == 20 - config.collision_damage, "dash inflicts configured damage once")
+	check(damaging_dash_signals == 1, "one damaging dash emits one cyberware trigger signal")
 	check(enemy.state == EnemyController.State.STAGGERED and enemy.get("_stagger_remaining") >= 0.6, "dash interrupts enemy windup")
 	await ticks(8)
 	check(enemy.health.current_health == 20 - config.collision_damage, "same dash never hits one enemy twice")
@@ -93,8 +96,15 @@ func run() -> void:
 	player.dash.tick(player, Vector2.ZERO, Vector2.UP, 0.20)
 	Engine.physics_ticks_per_second = 60
 	check(enemy.health.current_health == 20 - config.collision_damage * 2, "swept dash detects targets across a long physics step")
+	check(damaging_dash_signals == 2, "a later damaging dash can emit one new trigger signal")
 	check(is_equal_approx(player.position.x, 84.0), "dash distance is stable across long steps")
 	check(not player.dash.is_dashing(), "long step ends dash at the correct time")
+
+	reset_player()
+	await settle()
+	check(player.dash.start_scripted_dash(player, Vector2(84, 0), &"test_scripted"), "scripted mobility can traverse the same damaging path")
+	player.dash.tick(player, Vector2.ZERO, Vector2.RIGHT, 0.20)
+	check(damaging_dash_signals == 2, "scripted mobility damage never emits the fixed-dash cyberware trigger")
 
 	enemy.queue_free()
 	distant.queue_free()

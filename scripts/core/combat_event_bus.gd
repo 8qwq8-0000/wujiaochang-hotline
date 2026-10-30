@@ -8,6 +8,7 @@ signal effect_requested(world_position: Vector2, color: Color, radius: float, du
 signal rock_wave_requested(world_position: Vector2, color: Color, radius: float, duration: float)
 
 signal electric_arc_requested(from: Vector2, to: Vector2, room: Node)
+signal glitch_scan_requested(position: Vector2, color: Color, radius: float, room: Node)
 signal environment_discharge_requested(position: Vector2, radius: float)
 
 signal fuel_explosion_requested(position: Vector2, radius: float)
@@ -105,6 +106,11 @@ func request_effect(world_position: Vector2, color: Color, radius: float, durati
 func request_rock_wave(world_position: Vector2, color: Color, radius: float, duration: float) -> void:
 	if radius > 0.0 and duration > 0.0:
 		rock_wave_requested.emit(world_position, color, radius, duration)
+
+
+func request_glitch_scan(world_position: Vector2, color: Color, radius: float, room: Node) -> void:
+	if radius > 0.0 and is_instance_valid(room):
+		glitch_scan_requested.emit(world_position, color, radius, room)
 
 
 func publish_weapon_cue(weapon_id: StringName, cue: StringName, world_position: Vector2) -> void:
