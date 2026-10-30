@@ -110,7 +110,7 @@ func _process(_delta: float) -> void:
 	var player := get_tree().get_first_node_in_group("player") as PlayerController
 	prompt.visible = not is_instance_valid(_buff_feedback) and player != null and not player.health.is_dead() and player.global_position.distance_to(global_position) <= 96
 	if state == State.READY:
-		prompt.text = "本区域已清场" if scope_room().get("cleared") == true else "E 领取随机增益"
+		prompt.text = "本区域已清场" if scope_room().get("cleared") == true else ControlPrompts.adapt("E 领取随机增益")
 	elif state == State.CLAIMED:
 		prompt.text = "增益已领取（本区域清理后失效）"
 	else:

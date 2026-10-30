@@ -57,6 +57,7 @@ var _background_master_was_muted := false
 func _ready() -> void:
 	layer = 85
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	get_tree().node_added.connect(_adapt_added_control)
 	_load_settings()
 	_build_controls()
 	_build_editor_toolbar()
@@ -67,6 +68,16 @@ func _ready() -> void:
 		events.perfect_guarded.connect(func(_result: DamageResult) -> void: vibrate(&"perfect"))
 		events.damage_resolved.connect(_on_damage_resolved)
 	_layout_controls()
+	if OS.is_debug_build() and (FileAccess.file_exists("user://mobile_ui_probe.request") or "--mobile-ui-probe" in OS.get_cmdline_user_args()):
+		DirAccess.remove_absolute("user://mobile_ui_probe.request")
+		var probe := load("res://scripts/debug/mobile_ui_probe.gd").new() as Node
+		probe.set_meta("requested", true)
+		get_tree().root.add_child.call_deferred(probe)
+
+
+func _adapt_added_control(node: Node) -> void:
+	if OS.has_feature("mobile") and node is Control:
+		ControlPrompts.apply_to_control.call_deferred(node)
 
 
 func _process(delta: float) -> void:
@@ -354,12 +365,15 @@ func _safe_rect() -> Rect2:
 	var viewport_rect := get_viewport().get_visible_rect()
 	if not OS.has_feature("mobile"):
 		return viewport_rect.grow(-6.0)
-	var window_size := Vector2(DisplayServer.window_get_size())
-	var display_safe := DisplayServer.get_display_safe_area()
-	if window_size.x <= 0.0 or window_size.y <= 0.0 or display_safe.size == Vector2i.ZERO:
+	return safe_rect_for_display(viewport_rect, Vector2(DisplayServer.window_get_size()), DisplayServer.get_display_safe_area())
+
+
+static func safe_rect_for_display(viewport_rect: Rect2, window_size: Vector2, display_safe: Rect2i) -> Rect2:
+	if window_size.x <= 0.0 or window_size.y <= 0.0 or display_safe.size.x <= 0 or display_safe.size.y <= 0:
 		return viewport_rect.grow(-6.0)
 	var factor := viewport_rect.size / window_size
-	return Rect2(Vector2(display_safe.position) * factor, Vector2(display_safe.size) * factor).grow(-6.0)
+	var safe := Rect2(viewport_rect.position + Vector2(display_safe.position) * factor, Vector2(display_safe.size) * factor)
+	return safe.intersection(viewport_rect).grow(-6.0)
 
 
 func _should_show_gameplay_controls() -> bool:

@@ -22,7 +22,7 @@ func _ready() -> void:
 	add_child(_layout)
 	_panel = CyberDialoguePanel.new()
 	_panel.compact = true
-	_panel.title = "AI 接线员 / 通信中  [Enter 或点击继续]"
+	_panel.title = "AI 接线员 / 通信中  [轻触屏幕继续]" if OS.has_feature("mobile") else "AI 接线员 / 通信中  [Enter 或点击继续]"
 	_panel.position = Vector2(14, 272)
 	_panel.size = Vector2(612, 78)
 	_layout.add_child(_panel)
@@ -57,7 +57,7 @@ func _ready() -> void:
 
 
 func _say(line: String) -> void:
-	_text.text = line
+	_text.text = ControlPrompts.adapt(line)
 	_panel.show()
 	_talking = true
 	_owns_pause = not get_tree().paused
@@ -80,7 +80,7 @@ func _process(_delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if not _talking or event.is_echo():
 		return
-	var clicked: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
+	var clicked := DialogueAdvanceInput.is_tap(event)
 	if clicked or (event is InputEventKey and event.pressed and event.keycode in [KEY_ENTER, KEY_ESCAPE]):
 		get_viewport().set_input_as_handled()
 		_introduced = true

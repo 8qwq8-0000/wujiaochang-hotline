@@ -161,7 +161,7 @@ func _update_entry_label(entry: Dictionary) -> void:
 	var label := entry["label"] as Label
 	if not is_instance_valid(label):
 		return
-	label.text = _entry_text(entry)
+	label.text = ControlPrompts.adapt(_entry_text(entry))
 	label.add_theme_color_override("font_color", notice.color)
 	label.add_theme_stylebox_override("normal", CyberUITheme.create_box(Color(CyberUITheme.PANEL, 0.68), notice.color))
 	label.modulate.a = 1.0

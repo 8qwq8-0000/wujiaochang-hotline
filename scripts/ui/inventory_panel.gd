@@ -15,6 +15,13 @@ var _discard_menu: PopupMenu
 var _discard_target: InventoryItem
 var _blackbox: Button
 var _trash_zone: InventoryTrashDropZone
+var _panel: Panel
+var _close_button: Button
+var _scroll: ScrollContainer
+var _scroll_touch := -1
+var _scroll_origin := Vector2.ZERO
+var _scroll_start := 0
+var _swiping := false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -26,36 +33,59 @@ func _ready() -> void:
 	shade.color = Color(0.02, 0.03, 0.06, 0.8)
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_overlay.add_child(shade)
-	var center := CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_overlay.add_child(center)
-	var panel := PanelContainer.new()
-	panel.custom_minimum_size.x = 500
+	var panel := Panel.new()
+	_panel = panel
+	panel.clip_contents = true
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color("152233")
 	panel_style.border_color = Color("49718f")
 	panel_style.set_border_width_all(2)
 	panel_style.set_corner_radius_all(8)
 	panel.add_theme_stylebox_override("panel", panel_style)
-	center.add_child(panel)
+	_overlay.add_child(panel)
 	var margin := MarginContainer.new()
+	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	for side in ["left", "right", "top", "bottom"]:
 		margin.add_theme_constant_override("margin_" + side, 10)
 	panel.add_child(margin)
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 5)
 	margin.add_child(column)
+	var header := HBoxContainer.new()
+	column.add_child(header)
 	var title := Label.new()
-	title.text = "装备背包                         [Tab] 关闭"
+	title.text = "装备背包"
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.add_theme_font_size_override("font_size", 17)
-	column.add_child(title)
+	header.add_child(title)
+	_close_button = Button.new()
+	_close_button.text = "关闭 ×" if OS.has_feature("mobile") else "关闭 [Tab]"
+	_close_button.custom_minimum_size = Vector2(100, 36)
+	_close_button.pressed.connect(func() -> void: inventory.set_open(false))
+	_close_button.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventScreenTouch and event.pressed and not event.canceled:
+			inventory.set_open(false)
+			_close_button.accept_event())
+	header.add_child(_close_button)
 	_status = Label.new()
+	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_status.max_lines_visible = 2
 	column.add_child(_status)
+	_scroll = ScrollContainer.new()
+	_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_scroll.follow_focus = true
+	_scroll.scroll_deadzone = 18
+	column.add_child(_scroll)
+	var body := VBoxContainer.new()
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.add_theme_constant_override("separation", 5)
+	_scroll.add_child(body)
 	var equipment := GridContainer.new()
 	equipment.columns = 2
 	equipment.add_theme_constant_override("h_separation", 6)
 	equipment.add_theme_constant_override("v_separation", 5)
-	column.add_child(equipment)
+	body.add_child(equipment)
 	_weapon = _make_slot(equipment, "weapon")
 	_secondary = _make_slot(equipment, "weapon_secondary")
 	_cyberware = _make_slot(equipment, "cyberware")
@@ -68,22 +98,23 @@ func _ready() -> void:
 	_cyberware.pressed.connect(func() -> void: inventory.unequip("cyberware"))
 	_blackbox.pressed.connect(func() -> void: inventory.take_from_blackbox())
 	var separator := HSeparator.new()
-	column.add_child(separator)
+	body.add_child(separator)
 	var grid := GridContainer.new()
 	grid.columns = 3
 	grid.add_theme_constant_override("h_separation", 5)
 	grid.add_theme_constant_override("v_separation", 5)
-	column.add_child(grid)
+	body.add_child(grid)
 	for index in ComponentInventory.CAPACITY:
 		var button := _make_slot(grid, "backpack", index)
-		button.custom_minimum_size = Vector2(153, 40)
+		button.custom_minimum_size = Vector2(0, 40)
 		button.pressed.connect(func() -> void:
 			var position := 1 if inventory.weapon_slot.get_item() != null and inventory.secondary_weapon_slot.get_item() == null else 0
 			inventory.equip(index, position))
 		_buttons.append(button)
 	_message = Label.new()
 	_message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_message.custom_minimum_size = Vector2(470, 32)
+	_message.max_lines_visible = 2
+	_message.custom_minimum_size = Vector2(0, 32)
 	_message.add_theme_font_size_override("font_size", 12)
 	column.add_child(_message)
 	_trash_zone = TRASH_ZONE.new()
@@ -98,14 +129,73 @@ func _ready() -> void:
 		inventory.discard_backpack_item(item))
 	inventory.changed.connect(refresh)
 	inventory.feedback.connect(func(text: String, _cue: StringName) -> void: _message.text = text)
+	get_viewport().size_changed.connect(_fit_panel)
+	_fit_panel()
 	set_open(false)
+
+func _fit_panel() -> void:
+	var safe := get_viewport().get_visible_rect().grow(-6.0)
+	var mobile := get_node_or_null("/root/MobileInput")
+	if mobile != null:
+		safe = mobile._safe_rect()
+	_panel.size = Vector2(minf(520, safe.size.x), minf(424, safe.size.y))
+	_panel.position = safe.get_center() - _panel.size * 0.5
+
+
+func _input(event: InputEvent) -> void:
+	if not _overlay.visible:
+		return
+	if event is InputEventScreenTouch:
+		if event.pressed and _scroll_touch < 0 and _scroll.get_global_rect().has_point(event.position) and not _scroll.get_v_scroll_bar().get_global_rect().has_point(event.position):
+			_scroll_touch = event.index
+			_scroll_origin = event.position
+			_scroll_start = _scroll.scroll_vertical
+			_swiping = false
+		elif not event.pressed and event.index == _scroll_touch:
+			if get_viewport().gui_is_dragging():
+				_finish_touch_drop(event.position, event.canceled)
+			_scroll_touch = -1
+			if _swiping:
+				get_viewport().set_input_as_handled()
+			_swiping = false
+	elif event is InputEventScreenDrag and event.index == _scroll_touch and not get_viewport().gui_is_dragging():
+		var distance: float = event.position.y - _scroll_origin.y
+		if not _swiping and absf(distance) > 18.0:
+			_swiping = true
+			# A swipe cancels the slot tap/long-press before GUI dispatch.
+			for slot in _buttons + [_weapon, _secondary, _cyberware, _defense, _blackbox]:
+				slot._reset_touch_hold()
+		if _swiping:
+			_scroll.scroll_vertical = _scroll_start - int(distance)
+			get_viewport().set_input_as_handled()
+
+
+func _finish_touch_drop(point: Vector2, canceled: bool) -> void:
+	var payload: Variant = get_viewport().gui_get_drag_data()
+	var target: Control
+	if not canceled:
+		if _trash_zone.get_global_rect().has_point(point):
+			target = _trash_zone
+		elif _scroll.get_global_rect().has_point(point):
+			for slot in _buttons + [_weapon, _secondary, _cyberware, _defense, _blackbox]:
+				if slot.get_global_rect().has_point(point):
+					target = slot
+					break
+	var accepted: bool = target != null and target._can_drop_data(Vector2.ZERO, payload)
+	# Native touches do not reliably deliver the emulated mouse-up used by
+	# Godot drag/drop. Finish once, through the same validated item transaction.
+	get_viewport().gui_cancel_drag()
+	if accepted:
+		target._drop_data(Vector2.ZERO, payload)
+	get_viewport().set_input_as_handled()
+
 
 func _make_slot(parent: Control, location: String, index: int = -1) -> Button:
 	var button: Button = DRAG_SLOT.new()
 	button.inventory = inventory
 	button.location = location
 	button.cell_index = index
-	button.custom_minimum_size = Vector2(234, 42)
+	button.custom_minimum_size = Vector2(0, 42)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.expand_icon = true
 	button.add_theme_constant_override("icon_max_width", 22)
@@ -126,12 +216,18 @@ func _make_slot(parent: Control, location: String, index: int = -1) -> Button:
 
 func set_open(value: bool) -> void:
 	_overlay.visible = value
+	_scroll_touch = -1
+	_swiping = false
 	_discard_menu.hide()
 	_discard_target = null
 	if value:
-		_message.text = "点按装备执行快捷操作；长按后拖动到槽位，或拖到下方丢弃区。"
+		_fit_panel()
+		call_deferred("_fit_panel")
+		_scroll.scroll_vertical = 0
+		_message.text = "上下滑动查看装备；点按换装，长按拖到槽位或下方丢弃区。"
 		refresh()
 	else:
+		_close_button.release_focus()
 		for button in _buttons + [_weapon, _secondary, _cyberware, _defense, _blackbox]:
 			button.release_focus()
 
@@ -141,6 +237,7 @@ func _process(_delta: float) -> void:
 	if inventory.player.health.is_dead():
 		inventory.set_open(false)
 		return
+	_fit_panel()
 	_status.text = "背包 %d/6    黑匣保护 1 格    %s" % [inventory.backpack.get_item_count(), "可以换装" if inventory.can_change_equipment() else "战斗中不能换装"]
 
 func refresh() -> void:

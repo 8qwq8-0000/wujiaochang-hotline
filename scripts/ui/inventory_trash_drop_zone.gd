@@ -8,7 +8,7 @@ var _active_style: StyleBoxFlat
 
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(470, 44)
+	custom_minimum_size = Vector2(0, 44)
 	_normal_style = StyleBoxFlat.new()
 	_normal_style.bg_color = Color(0.16, 0.06, 0.08, 0.9)
 	_normal_style.border_color = Color(0.7, 0.22, 0.25, 0.9)
@@ -20,6 +20,9 @@ func _ready() -> void:
 	add_theme_stylebox_override("panel", _normal_style)
 	_label = Label.new()
 	_label.text = "丢到地上 · 长按装备并拖到这里"
+	_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_label.max_lines_visible = 2
+	_label.add_theme_font_size_override("font_size", 12)
 	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_label.add_theme_color_override("font_color", Color(1.0, 0.72, 0.66))

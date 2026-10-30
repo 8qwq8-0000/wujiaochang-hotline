@@ -174,7 +174,7 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 func show_message(text: String) -> void:
-	_message.text = text
+	_message.text = ControlPrompts.adapt(text)
 
 func refresh() -> void:
 	if _list == null:
