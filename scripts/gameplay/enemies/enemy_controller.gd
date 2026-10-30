@@ -125,6 +125,7 @@ func _ready() -> void:
 	# It is only a preference: path validation can still choose the other side.
 	_tactical_side = -1.0 if get_tree().get_nodes_in_group("enemies").size() % 2 == 0 else 1.0
 	apply_profile(profile)
+	EnemyEncounterRecorder.watch(self, String(profile.id))
 	barrier_skill = EnemyBarrierSkill.new()
 	add_child(barrier_skill)
 	barrier_skill.configure(self)
