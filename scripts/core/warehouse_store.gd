@@ -128,6 +128,11 @@ func _valid_profile(value: Variant) -> bool:
 	var codex: Dictionary = value.get("codex", {"personas": [], "semantic_leaks": []})
 	if not codex.get("personas", []) is Array or not codex.get("semantic_leaks", []) is Array:
 		return false
+	if not codex.get("enemies", []) is Array:
+		return false
+	for enemy_id: Variant in codex.get("enemies", []):
+		if not enemy_id is String:
+			return false
 	if not value.get("legacy_drinks", []) is Array:
 		return false
 	for record: Variant in value.get("legacy_drinks", []):
@@ -225,6 +230,24 @@ func get_codex() -> Dictionary:
 	return _profile.get("codex", {"personas": [], "semantic_leaks": []}).duplicate(true)
 
 
+func record_enemy_encounter(enemy_id: String) -> bool:
+	if not EnemyCatalog.contains(enemy_id) or not load_profile():
+		return false
+	var previous := _profile.duplicate(true)
+	var codex: Dictionary = _profile.get("codex", {}).duplicate(true)
+	var enemies: Array = codex.get("enemies", []).duplicate()
+	if enemy_id in enemies:
+		return true
+	enemies.append(enemy_id)
+	enemies.sort()
+	codex["enemies"] = enemies
+	_profile["codex"] = codex
+	if not commit(_profile.chest, _profile.loadout):
+		_profile = previous
+		return false
+	return true
+
+
 func get_legacy_drinks() -> Array:
 	load_profile()
 	return _profile.get("legacy_drinks", []).duplicate(true)
@@ -234,6 +257,8 @@ func _normalize_profile(value: Dictionary) -> Dictionary:
 	var normalized := value.duplicate(true)
 	if not normalized.has("codex"):
 		normalized["codex"] = {"personas": [], "semantic_leaks": []}
+	if not normalized.codex.has("enemies"):
+		normalized.codex["enemies"] = []
 	if not normalized.has("legacy_drinks"):
 		normalized["legacy_drinks"] = []
 	return normalized

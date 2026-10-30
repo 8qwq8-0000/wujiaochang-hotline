@@ -24,6 +24,7 @@ var _flash := 0.0
 
 func _ready() -> void:
 	add_to_group("sentry_turrets")
+	EnemyEncounterRecorder.watch(self, "sentry_turret")
 	health.died.connect(_on_destroyed)
 	var room := get_parent()
 	if room.has_signal("room_cleared"):

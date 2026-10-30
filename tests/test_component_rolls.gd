@@ -12,6 +12,21 @@ func test_floor_weights_raise_quality_and_clamp() -> void:
 		var weights := ComponentRolls.floor_weights(floor_number)
 		assert_eq(weights[0] + weights[1] + weights[2], 100)
 
+func test_heavy_weapons_have_slightly_lower_random_drop_odds() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 981731
+	var counts := {}
+	for index in 3800:
+		var item := ComponentRolls.floor_drop(index % 3 + 1, rng)
+		var id: String = item.get_prototype().get_prototype_id()
+		counts[id] = int(counts.get(id, 0)) + 1
+	# Broad deterministic sampling checks the actual production entry point.
+	for id in ["scattergun", "rail_cannon"]:
+		assert_true(int(counts.get(id, 0)) >= 210 and int(counts.get(id, 0)) <= 330)
+		assert_true(int(counts.get("armor", 0)) > int(counts.get(id, 0)))
+	assert_false(counts.has("calamity_flame"))
+	assert_false(counts.has("baton"))
+
 func test_rolls_have_unique_ids_and_no_legacy_attack_affix() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 127

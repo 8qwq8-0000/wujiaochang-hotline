@@ -57,6 +57,8 @@ func assemble() -> void:
 		room.position = room_spacing * index
 		if room is CombatRoom:
 			room.get_node("EnemySpawner").health_bonus = difficulty_step
+			room.get_node("EnemySpawner").melee_speed_multiplier = 1.0 + 0.1 * difficulty_step
+			room.signal_emitter_enabled = difficulty_step >= 1
 			room.extra_enemy_count = difficulty_step
 			room.camera_north_extension = room_camera_north_extension
 		if sequential_progression and room is CombatRoom:

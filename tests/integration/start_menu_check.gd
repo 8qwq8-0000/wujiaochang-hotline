@@ -79,6 +79,7 @@ func run() -> void:
 	check(root.gui_get_focus_owner().text == "开始新存档", "first game keyboard focus selects new save")
 	check(home.get("_settings_button") != null and home.get("_settings_button").text == "设置", "home exposes settings alongside game actions")
 	await screenshot("/tmp/hotline-start-home.png")
+	home._finish_home_reveal()
 	await click(home, "设置")
 	check((home.get("_settings_menu") as PauseSettingsMenu).visible, "home settings opens the shared settings UI")
 	(home.get("_settings_menu") as PauseSettingsMenu)._leave_settings_page()

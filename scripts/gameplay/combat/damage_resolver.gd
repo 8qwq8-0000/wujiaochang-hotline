@@ -36,6 +36,15 @@ static func resolve(
 			result.outcome = DamageResult.Outcome.BLOCKED
 			_publish(result)
 			return result
+	if target.has_method("modify_incoming_damage"):
+		var reduced := clampi(int(target.modify_incoming_damage(packet, requested_damage)), 0, requested_damage)
+		result.absorbed_damage += requested_damage - reduced
+		requested_damage = reduced
+		if requested_damage == 0:
+			result.blocked = true
+			result.outcome = DamageResult.Outcome.BLOCKED
+			_publish(result)
+			return result
 	result.outcome = DamageResult.Outcome.DAMAGED
 	result.final_damage = health.apply_damage(requested_damage, packet)
 	result.fatal_damage_prevented = health.last_fatal_damage_prevented

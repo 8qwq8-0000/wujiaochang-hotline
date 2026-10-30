@@ -8,6 +8,13 @@ const ARMOR_RECOVERY_SECONDS := [12.0, 10.0, 10.0]
 const ARMOR_CAPACITY := [1, 1, 2]
 const QUALITY_COLORS := [Color("a8b1bd"), Color("e7edf3"), Color("70b7ff"), Color("cf99ff")]
 const COMPOUND_CYBERWARE_ICON := "res://assets/art/items/equipment_v1/compound_cyberware.png"
+# Conditional on a random equipment drop: each heavy weapon has 3/42 odds.
+# Other entries retain their former relative proportions (pistol counts twice).
+const FLOOR_DROP_WEIGHTS := {
+	"pistol": 8, "scattergun": 3, "rail_cannon": 3,
+	"smart_fire": 4, "explosive_magazine": 4, "tactical_coprocessor": 4,
+	"optical_intruder": 4, "kill_heat_sink": 4, "heat_threshold_pulser": 4, "armor": 4,
+}
 
 static func quality_color(item: InventoryItem) -> Color:
 	return QUALITY_COLORS[quality(item)] if ordinary(item) else Color.WHITE
@@ -253,8 +260,15 @@ static func floor_drop(floor_number: int, rng: RandomNumberGenerator) -> Invento
 	var tier := 1 if roll <= weights[0] else (2 if roll <= weights[0] + weights[1] else 3)
 	# Keep the former baton's pistol weight without routing a formal drop through
 	# create_issued_pistol(), which intentionally creates a bound, affixless item.
-	var pool := ["pistol", "pistol", "scattergun", "rail_cannon", "smart_fire", "explosive_magazine", "tactical_coprocessor", "optical_intruder", "kill_heat_sink", "heat_threshold_pulser", "armor"]
-	return create(pool[rng.randi_range(0, pool.size() - 1)], tier, rng)
+	var total_weight := 0
+	for weight in FLOOR_DROP_WEIGHTS.values():
+		total_weight += int(weight)
+	var item_roll := rng.randi_range(1, total_weight)
+	for id in FLOOR_DROP_WEIGHTS:
+		item_roll -= int(FLOOR_DROP_WEIGHTS[id])
+		if item_roll <= 0:
+			return create(id, tier, rng)
+	return create("pistol", tier, rng)
 
 
 static func cyberware_modules(item: InventoryItem) -> PackedStringArray:

@@ -72,7 +72,7 @@ func run_checks() -> void:
 	check(warehouse.get_node_or_null("ArchiveTerminal") != null, "warehouse exposes the archive terminal")
 	warehouse.archive_panel.open()
 	var archive_text: String = warehouse.archive_panel.get("_content").text
-	check(paused and archive_text.contains("遗产饮料（1 瓶）"), "archive panel renders the saved legacy drink")
+	check(paused and warehouse.archive_panel.get("_entry_title").text == "遗产饮料（1 瓶）", "archive panel renders the saved legacy drink")
 	check(archive_text.contains("最后使用的人格：深渊忍者"), "archive renders the final persona")
 	warehouse.archive_panel.close()
 	main.queue_free()
