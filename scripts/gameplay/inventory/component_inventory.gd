@@ -163,6 +163,14 @@ func pickup(component_id: String, rolled_item: InventoryItem = null) -> bool:
 	return true
 
 func try_pick_nearest() -> bool:
+	var nearest := get_nearest_reachable_pickup()
+	if nearest == null:
+		_notify("靠近装备后按 E 拾取", &"full")
+		return false
+	return nearest.try_pickup(self)
+
+
+func get_nearest_reachable_pickup() -> ComponentPickup:
 	var nearest: ComponentPickup
 	var distance := 45.0
 	for node in get_tree().get_nodes_in_group("component_pickups"):
@@ -173,10 +181,7 @@ func try_pick_nearest() -> bool:
 		if candidate < distance:
 			distance = candidate
 			nearest = pickup_node
-	if nearest == null:
-		_notify("靠近装备后按 E 拾取", &"full")
-		return false
-	return nearest.try_pickup(self)
+	return nearest
 
 
 func _on_persona_changed(persona_id: StringName) -> void:
