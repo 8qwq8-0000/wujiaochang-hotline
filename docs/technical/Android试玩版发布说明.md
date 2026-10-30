@@ -1,6 +1,6 @@
 # Android 试玩版发布
 
-`Android Preview APK` 预设使用 Godot 预编译 Android 模板直接打包，没有额外原生插件，因此不需要生成 Gradle 工程。此模式不覆盖模板的 min/target SDK，实际要求以 APK 清单检查结果为准。原 Android Debug APK 预设保留。试玩版为非 Debug 构建，沿用 Godot 4.7.2 预编译模板的 Android 7 / API 24 起，目标 API 36，包含 ARMv7 和 ARM64，应用标识为 `com.wujiaochang.hotline`。
+`Android Preview APK` 预设使用 Godot 预编译 Android 模板直接打包，没有额外原生插件，因此不需要生成 Gradle 工程。此模式不覆盖模板的 min/target SDK，实际要求以 APK 清单检查结果为准。原 Android Debug APK 预设保留。发布包排除未引用的备用字体、`_ref_media` 和广告原图，保留中文界面实际使用的三份字体，不删除仓库素材。试玩版为非 Debug 构建，沿用 Godot 4.7.2 预编译模板的 Android 7 / API 24 起，目标 API 36，包含 ARMv7 和 ARM64，应用标识为 `com.wujiaochang.hotline`。
 
 ## 构建
 
