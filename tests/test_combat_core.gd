@@ -67,13 +67,48 @@ func test_projectile_discards_freed_source_reference() -> void:
 	var source := Node.new()
 	projectile.setup(source, CombatFaction.Id.ENEMY, Vector2.LEFT, 2, 310.0)
 	projectile.weapon_id = &"service_pistol"
+	projectile.allows_trajectory_echo = true
 	source.free()
 	var packet := projectile._make_damage_packet()
 	assert_true(packet.source == null)
 	assert_eq(packet.source_faction, CombatFaction.Id.ENEMY)
 	assert_eq(packet.weapon_id, &"service_pistol")
 	assert_eq(packet.base_damage, 2)
+	assert_true(packet.allows_trajectory_echo)
 	projectile.free()
+
+
+func test_enemy_projectile_takeover_is_single_use_and_clears_status() -> void:
+	var projectile := CombatProjectile.new()
+	var enemy_source := Node.new()
+	var player_source := Node.new()
+	var target := Node2D.new()
+	target.position = Vector2(80.0, 0.0)
+	projectile.setup(enemy_source, CombatFaction.Id.ENEMY, Vector2.LEFT, 2, 310.0)
+	projectile.status_tags = PackedStringArray(["burn", "shock"])
+	assert_true(projectile.can_be_taken_over())
+	assert_true(projectile.take_over(player_source, target, 720.0))
+	assert_eq(projectile.faction, CombatFaction.Id.PLAYER)
+	assert_eq(projectile.source, player_source)
+	assert_eq(projectile.homing_target, target)
+	assert_true(projectile.status_tags.is_empty())
+	assert_true(projectile.takeover_consumed)
+	assert_false(projectile.can_be_taken_over())
+	assert_false(projectile.take_over(player_source, target, 720.0))
+	projectile.free()
+	target.free()
+	player_source.free()
+	enemy_source.free()
+
+
+func test_area_projectile_cannot_be_taken_over() -> void:
+	var projectile := CombatProjectile.new()
+	var enemy_source := Node.new()
+	projectile.setup(enemy_source, CombatFaction.Id.ENEMY, Vector2.LEFT, 2, 310.0)
+	projectile.configure_explosion(32.0, 1)
+	assert_false(projectile.can_be_taken_over())
+	projectile.free()
+	enemy_source.free()
 
 
 func test_damage_packet_duplicate_preserves_weapon_identity() -> void:
@@ -81,10 +116,12 @@ func test_damage_packet_duplicate_preserves_weapon_identity() -> void:
 	packet.weapon_id = &"rail_cannon"
 	packet.feedback_group_id = 42
 	packet.is_continuous_damage = true
+	packet.allows_trajectory_echo = true
 	var copy := packet.duplicate_packet()
 	assert_eq(copy.weapon_id, &"rail_cannon")
 	assert_eq(copy.feedback_group_id, 42)
 	assert_true(copy.is_continuous_damage)
+	assert_true(copy.allows_trajectory_echo)
 
 
 func test_damage_result_marks_prevented_fatal_damage_for_presentation() -> void:
@@ -109,6 +146,9 @@ func test_weapon_controller_stamps_weapon_identity_on_direct_packets() -> void:
 	var rail := load("res://resources/weapons/rail_cannon.tres") as WeaponComponentData
 	var packet := controller._make_packet(rail, Vector2.ZERO, Vector2.RIGHT, controller)
 	assert_eq(packet.weapon_id, &"rail_cannon")
+	assert_true(packet.allows_trajectory_echo)
+	var pistol := load("res://resources/weapons/service_pistol.tres") as WeaponComponentData
+	assert_false(controller._make_packet(pistol, Vector2.ZERO, Vector2.RIGHT, controller).allows_trajectory_echo)
 
 
 func test_perfect_window_reflects_multiple_projectiles_without_extending() -> void:

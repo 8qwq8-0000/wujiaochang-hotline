@@ -12,6 +12,7 @@ const BLOOD_SPRAY := preload("res://scripts/presentation/death_blood_spray.gd")
 const DEATH_EFFECT := preload("res://scripts/presentation/death_burst_effect.gd")
 const MOVEMENT_EFFECT := preload("res://scripts/presentation/movement_particle_effect.gd")
 const ROCK_WAVE_EFFECT := preload("res://scripts/presentation/rock_wave_effect.gd")
+const GLITCH_SCAN_EFFECT := preload("res://scripts/presentation/glitch_scan_effect.gd")
 const AFTERIMAGE_COLOR := Color(0.25, 0.85, 1.0, 0.55)
 const AFTERIMAGE_DURATION := 0.25
 const FEEDBACK_GROUP_WINDOW_USEC := 90_000
@@ -70,6 +71,7 @@ func _ready() -> void:
 		events.effect_requested.connect(spawn_flash)
 		events.rock_wave_requested.connect(spawn_rock_wave)
 		events.electric_arc_requested.connect(_spawn_arc)
+		events.glitch_scan_requested.connect(_spawn_glitch_scan)
 		events.environment_discharge_requested.connect(func(point: Vector2, radius: float) -> void: spawn_flash(point, Color("69d6ec"), radius, 0.3))
 		events.entity_defeated.connect(_on_entity_defeated)
 	var feedback := get_node_or_null("../CombatFeedbackManager") as CombatFeedbackManager
@@ -185,6 +187,15 @@ func _spawn_arc(from: Vector2, to: Vector2, room: Node) -> void:
 	room.add_child(effect)
 	_active_arcs.append(effect)
 	effect.tree_exiting.connect(func() -> void: _active_arcs.erase(effect))
+
+
+func _spawn_glitch_scan(world_position: Vector2, color: Color, radius: float, room: Node) -> void:
+	if not is_instance_valid(room) or room.is_queued_for_deletion():
+		return
+	var effect: Node2D = GLITCH_SCAN_EFFECT.new()
+	room.add_child(effect)
+	effect.global_position = world_position
+	effect.call("start", color, radius)
 
 
 func _on_weapon_cue_requested(weapon_id: StringName, cue: StringName, world_position: Vector2) -> void:

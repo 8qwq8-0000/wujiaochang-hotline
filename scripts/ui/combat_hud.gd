@@ -22,8 +22,17 @@ const CYBERWARE_ICONS := {
 	&"optical_intruder": preload("res://assets/art/items/equipment_v1/optical_intruder_64.png"),
 	&"kill_heat_sink": preload("res://assets/art/items/equipment_v1/kill_heat_sink_64.png"),
 	&"heat_threshold_pulser": preload("res://assets/art/items/equipment_v1/heat_threshold_pulser_64.png"),
+	&"momentum_recovery_tendon": preload("res://assets/art/items/equipment_v1/momentum_recovery_tendon_64.png"),
+	&"trajectory_echo_processor": preload("res://assets/art/items/equipment_v1/trajectory_echo_processor_64.png"),
+	&"ballistic_takeover_protocol": preload("res://assets/art/items/equipment_v1/ballistic_takeover_protocol_64.png"),
+	&"arc_ballistic_cortex": preload("res://assets/art/items/equipment_v1/arc_ballistic_cortex_64.png"),
+	&"inertial_inversion_vertebra": preload("res://assets/art/items/equipment_v1/inertial_inversion_vertebra_64.png"),
+	&"axon_recycler": preload("res://assets/art/items/equipment_v1/axon_recycler_64.png"),
+	&"micro_rotor_reflex_bundle": preload("res://assets/art/items/equipment_v1/micro_rotor_reflex_bundle_64.png"),
+	&"predatory_vestibular_ring": preload("res://assets/art/items/equipment_v1/predatory_vestibular_ring_64.png"),
 }
 const EQUIPMENT_TINT := Color(0.8, 0.95, 1.0, 0.65)
+const EQUIPMENT_COOLDOWN_TINT := Color(0.18, 0.22, 0.32, 0.55)
 const CYBERWARE_ICON_SIZE := 36.0
 const CYBERWARE_ICON_GAP := 4.0
 
@@ -48,6 +57,7 @@ var _armor_meter: SegmentMeter
 var _heat_meter: SegmentMeter
 var _overflow_heat_meter: SegmentMeter
 var _heat_warning: Label
+var _momentum_ready_label: Label
 var _weapon_name: Label
 var _weapon_preview: TextureRect
 var _equipment_preview: Control
@@ -135,6 +145,16 @@ func _process(delta: float) -> void:
 	if _overflow_heat_meter.visible:
 		_overflow_heat_meter.set_meter(float(heat_state.get("overflow", 0.0)), float(heat_state.maximum))
 	_heat_warning.visible = heat_state.overheated
+	var momentum_seconds := _player.cyberware.get_momentum_charge_remaining()
+	_momentum_ready_label.visible = momentum_seconds > 0.0
+	if _momentum_ready_label.visible:
+		_momentum_ready_label.text = "零热待发  %.1fs" % momentum_seconds
+	for icon in _cyberware_preview.get_children():
+		var module_id := StringName(icon.name)
+		if module_id not in [CyberwareController.TRAJECTORY_ECHO_PROCESSOR, CyberwareController.BALLISTIC_TAKEOVER_PROTOCOL, CyberwareController.INERTIAL_INVERSION_VERTEBRA]:
+			continue
+		var readiness := _player.cyberware.get_module_readiness(module_id)
+		icon.modulate = EQUIPMENT_TINT if readiness >= 1.0 else EQUIPMENT_COOLDOWN_TINT.lerp(EQUIPMENT_TINT, readiness)
 	if is_instance_valid(_player.talent_core):
 		_operator_panel.set_takeover_state(_player.talent_core.takeover_charges, _player.talent_core.takeover_armed)
 		_persona_status.update_status(_player.talent_core, _player.persona_combat.get_runtime_snapshot(), not _player.health.is_dead())
@@ -251,6 +271,16 @@ func _build_minimal_hud() -> void:
 	_heat_warning.add_theme_color_override("font_color", CyberUITheme.DANGER)
 	_heat_warning.hide()
 	_top_left.add_child(_heat_warning)
+
+	_momentum_ready_label = Label.new()
+	_momentum_ready_label.name = "MomentumReady"
+	_momentum_ready_label.position = Vector2(0.0, 53.0)
+	_momentum_ready_label.size = Vector2(140.0, 18.0)
+	_momentum_ready_label.text = "零热待发"
+	_momentum_ready_label.add_theme_font_size_override("font_size", 11)
+	_momentum_ready_label.add_theme_color_override("font_color", Color(0.25, 1.0, 0.95))
+	_momentum_ready_label.hide()
+	_top_left.add_child(_momentum_ready_label)
 
 	_weapon_name = Label.new()
 	_weapon_name.position = Vector2(118.0, 21.0)

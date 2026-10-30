@@ -8,12 +8,17 @@ const ARMOR_RECOVERY_SECONDS := [12.0, 10.0, 10.0]
 const ARMOR_CAPACITY := [1, 1, 2]
 const QUALITY_COLORS := [Color("a8b1bd"), Color("e7edf3"), Color("70b7ff"), Color("cf99ff")]
 const COMPOUND_CYBERWARE_ICON := "res://assets/art/items/equipment_v1/compound_cyberware.png"
-# Conditional on a random equipment drop: each heavy weapon has 3/42 odds.
-# Other entries retain their former relative proportions (pistol counts twice).
+# Conditional on a random equipment drop, the expanded cyberware catalog keeps
+# each heavy weapon at its tuned 1/14 rate (6/84); armor stays more common.
 const FLOOR_DROP_WEIGHTS := {
-	"pistol": 8, "scattergun": 3, "rail_cannon": 3,
+	"pistol": 8, "scattergun": 6, "rail_cannon": 6,
 	"smart_fire": 4, "explosive_magazine": 4, "tactical_coprocessor": 4,
-	"optical_intruder": 4, "kill_heat_sink": 4, "heat_threshold_pulser": 4, "armor": 4,
+	"optical_intruder": 4, "kill_heat_sink": 4, "heat_threshold_pulser": 4,
+	"momentum_recovery_tendon": 4, "trajectory_echo_processor": 4,
+	"ballistic_takeover_protocol": 4, "arc_ballistic_cortex": 4,
+	"inertial_inversion_vertebra": 4, "axon_recycler": 4,
+	"micro_rotor_reflex_bundle": 4, "predatory_vestibular_ring": 4,
+	"armor": 8,
 }
 
 static func quality_color(item: InventoryItem) -> Color:
@@ -297,6 +302,14 @@ static func cyberware_resource_path(module_id: StringName) -> String:
 		&"optical_intruder": "res://resources/cyberware/optical_intruder.tres",
 		&"kill_heat_sink": "res://resources/cyberware/kill_heat_sink.tres",
 		&"heat_threshold_pulser": "res://resources/cyberware/heat_threshold_pulser.tres",
+		&"momentum_recovery_tendon": "res://resources/cyberware/momentum_recovery_tendon.tres",
+		&"trajectory_echo_processor": "res://resources/cyberware/trajectory_echo_processor.tres",
+		&"ballistic_takeover_protocol": "res://resources/cyberware/ballistic_takeover_protocol.tres",
+		&"arc_ballistic_cortex": "res://resources/cyberware/arc_ballistic_cortex.tres",
+		&"inertial_inversion_vertebra": "res://resources/cyberware/inertial_inversion_vertebra.tres",
+		&"axon_recycler": "res://resources/cyberware/axon_recycler.tres",
+		&"micro_rotor_reflex_bundle": "res://resources/cyberware/micro_rotor_reflex_bundle.tres",
+		&"predatory_vestibular_ring": "res://resources/cyberware/predatory_vestibular_ring.tres",
 	}.get(module_id, "")
 
 
@@ -318,6 +331,14 @@ static func cyberware_indicator(modules: PackedStringArray) -> String:
 		["侵", "optical_intruder"],
 		["散", "kill_heat_sink"],
 		["震", "heat_threshold_pulser"],
+		["腱", "momentum_recovery_tendon"],
+		["折", "trajectory_echo_processor"],
+		["劫", "ballistic_takeover_protocol"],
+		["弧", "arc_ballistic_cortex"],
+		["逆", "inertial_inversion_vertebra"],
+		["轴", "axon_recycler"],
+		["转", "micro_rotor_reflex_bundle"],
+		["猎", "predatory_vestibular_ring"],
 	]:
 		entries.append("[%s%s]" % [entry[0], "●" if entry[1] in modules else "○"])
 	return " ".join(entries)

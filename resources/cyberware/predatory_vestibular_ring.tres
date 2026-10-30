@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="CyberwareData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/player/cyberware_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+module_id = &"predatory_vestibular_ring"
+display_name = "掠食性前庭环"
+description = "任意武器直接击杀敌人时立即刷新突进；若击杀发生在突进期间，则在突进结束后刷新。同一攻击组多杀只结算一次，爆炸、电弧与轨迹回响等二次伤害不触发。"
+trigger_cooldown = 0.0

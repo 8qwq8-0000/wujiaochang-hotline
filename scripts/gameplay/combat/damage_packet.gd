@@ -31,6 +31,9 @@ var is_continuous_damage: bool = false
 var is_terrain_damage: bool = false
 ## Marks the non-projectile hit that should create Overload Scream's first-hit burst.
 var terminal_attack: bool = false
+## Authored by eligible single-projectile and beam attacks. Cyberware echoes
+## deliberately leave this false so reflected damage can never recurse.
+var allows_trajectory_echo: bool = false
 
 
 func duplicate_packet() -> DamagePacket:
@@ -58,4 +61,5 @@ func duplicate_packet() -> DamagePacket:
 	copy.is_continuous_damage = is_continuous_damage
 	copy.is_terrain_damage = is_terrain_damage
 	copy.terminal_attack = terminal_attack
+	copy.allows_trajectory_echo = allows_trajectory_echo
 	return copy

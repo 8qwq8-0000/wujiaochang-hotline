@@ -4,6 +4,7 @@ extends Node
 signal dash_started(direction: Vector2)
 signal dash_ended(cancelled: bool)
 signal cooldown_changed(remaining: float, total: float)
+signal dash_damaged_enemy(target: Node2D)
 
 const DEFAULT_CONFIG := preload("res://resources/player/default_dash_config.tres")
 
@@ -20,6 +21,7 @@ var _hits: Dictionary = {}
 var _cancelled := false
 var _scripted_destination := Vector2.ZERO
 var _scripted := false
+var _damage_signal_emitted := false
 
 
 func tick(
@@ -55,6 +57,7 @@ func start_dash(
 	cooldown_remaining = config.dash_cooldown
 	_hits.clear()
 	_cancelled = false
+	_damage_signal_emitted = false
 	active_effect_kind = effect_kind
 	body.velocity = _direction * config.dash_speed * (1.0 + equipment_speed_bonus)
 	dash_started.emit(_direction)
@@ -73,6 +76,7 @@ func start_scripted_dash(body: CharacterBody2D, destination: Vector2, effect_kin
 	_active_remaining = motion.length() / maxf(config.dash_speed * (1.0 + equipment_speed_bonus), 1.0)
 	_hits.clear()
 	_cancelled = false
+	_damage_signal_emitted = false
 	active_effect_kind = effect_kind
 	body.velocity = _direction * config.dash_speed * (1.0 + equipment_speed_bonus)
 	dash_started.emit(_direction)
@@ -98,10 +102,16 @@ func reset_transient_state() -> void:
 	active_effect_kind = &"dash"
 	_cancelled = false
 	_scripted = false
+	_damage_signal_emitted = false
 
 
 func is_dashing() -> bool:
 	return _active_remaining > 0.0
+
+
+func refresh_cooldown() -> void:
+	cooldown_remaining = 0.0
+	cooldown_changed.emit(cooldown_remaining, config.dash_cooldown)
 
 
 func provides_invulnerability() -> bool:
@@ -154,6 +164,7 @@ func _finish_dash() -> void:
 	_hits.clear()
 	_cancelled = false
 	_scripted = false
+	_damage_signal_emitted = false
 	dash_ended.emit(cancelled)
 	_direction = Vector2.ZERO
 	active_effect_kind = &"dash"
@@ -193,6 +204,14 @@ func _perform_collision_sweep(body: CharacterBody2D, start: Vector2) -> void:
 		packet.stagger_seconds = config.collision_stagger_seconds
 		packet.is_melee = true
 		var result := hurt.receive_hit(packet)
+		if (
+			result.final_damage > 0
+			and not _scripted
+			and not _damage_signal_emitted
+			and (target.is_in_group("enemies") or target.is_in_group("bosses"))
+		):
+			_damage_signal_emitted = true
+			dash_damaged_enemy.emit(target)
 		if result.final_damage > 0 and not result.target_defeated and target.has_method("apply_stagger"):
 			target.apply_stagger(config.collision_stagger_seconds)
 
