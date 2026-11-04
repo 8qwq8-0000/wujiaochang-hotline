@@ -92,4 +92,3 @@ func _on_died(_packet: DamagePacket) -> void:
 	get_node("/root/CombatEvents").publish_message("Codex 已倒下。继续登楼，按原计划摧毁中枢。")
 	set_physics_process(false)
 	queue_redraw()
-

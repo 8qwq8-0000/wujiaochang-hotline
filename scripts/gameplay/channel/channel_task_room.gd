@@ -51,5 +51,3 @@ func living_enemies() -> Array[EnemyController]:
 		if is_instance_valid(enemy) and enemy.state != EnemyController.State.DEAD:
 			result.append(enemy)
 	return result
-
-

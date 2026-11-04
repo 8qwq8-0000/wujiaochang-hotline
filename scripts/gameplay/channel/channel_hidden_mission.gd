@@ -204,4 +204,3 @@ func checkpoint_details() -> Dictionary:
 
 func checkpoint_discoveries() -> Array:
 	return ["shrine_core"] if _claimed else []
-
