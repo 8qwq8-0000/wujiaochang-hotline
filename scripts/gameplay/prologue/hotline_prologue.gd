@@ -478,18 +478,21 @@ func _make_service(action: String, point: Vector2) -> Area2D:
 	circle.radius = 28
 	shape.shape = circle
 	area.add_child(shape)
-	var sprite := Sprite2D.new()
 	if action == "codex":
-		sprite.texture = RefinedEnvironmentArt.art_texture("gpt_synthesist.png")
-		sprite.scale = Vector2(48, 68) / sprite.texture.get_size()
+		var dragon: DragonSpriteAnimator = preload("res://scenes/actors/companions/dragon_visual.tscn").instantiate()
+		dragon.name = "DragonVisual"
+		dragon.position.y = 14
+		dragon.scale = Vector2.ONE * 0.3
+		area.add_child(dragon)
 	else:
+		var sprite := Sprite2D.new()
 		var atlas := AtlasTexture.new()
 		atlas.atlas = preload("res://assets/art/environment/warehouse/workbench.png")
 		atlas.region = Rect2(183, 76, 1163, 873)
 		sprite.texture = atlas
 		sprite.scale = Vector2(76, 54) / sprite.texture.get_size()
-	sprite.position.y = -20
-	area.add_child(sprite)
+		sprite.position.y = -20
+		area.add_child(sprite)
 	var label := _label("Codex [E]" if action == "codex" else "合成台 [E]", 11, CYAN)
 	label.position = Vector2(-50, 24)
 	area.add_child(label)

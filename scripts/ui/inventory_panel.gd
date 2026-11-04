@@ -145,6 +145,8 @@ func refresh() -> void:
 		ComponentRolls.apply_quality_color(_buttons[index], item)
 		_buttons[index].icon = item.get_texture() if item != null else null
 		_buttons[index].tooltip_text = (ComponentRolls.describe(item) + "\n拖到槽位即可装备或交换；右键可丢弃" if item != null else "把槽内装备拖到这里")
+		if inventory.is_channel_core(item):
+			_buttons[index].tooltip_text = "残损频道核心\n第二结局前置道具，固定占用第一格，不可丢弃、移动或存入黑匣。\n携带期间：生命上限 1、移速 -15%、突进冷却 +40%、散热 -30%。"
 		# Empty cells stay enabled so Godot can deliver drops to them.
 	for entry in [{"button": _weapon, "location": "weapon", "title": "主武器"}, {"button": _secondary, "location": "weapon_secondary", "title": "副武器"}, {"button": _cyberware, "location": "cyberware", "title": "义体槽"}, {"button": _defense, "location": "defense", "title": "防御槽"}, {"button": _blackbox, "location": "blackbox", "title": "黑匣"}]:
 		var item := inventory.item_at(entry.location)

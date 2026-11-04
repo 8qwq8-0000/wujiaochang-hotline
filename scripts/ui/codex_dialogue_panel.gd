@@ -10,6 +10,7 @@ const LINES := [
 var player: PlayerController
 var lines: Array[String] = []
 var location_text := "Codex · 临时维修站"
+var completion_text := "打开合成台 [E]"
 var is_open := false
 var _owns_pause := false
 var _page := 0
@@ -82,7 +83,7 @@ func open() -> void:
 func _refresh() -> void:
 	_text.text = lines[_page]
 	_progress.text = "%02d/%02d    [E] 继续    [Esc] 退出" % [_page + 1, lines.size()]
-	_next.text = "打开合成台 [E]" if _page == lines.size() - 1 else "继续对话 [E]"
+	_next.text = completion_text if _page == lines.size() - 1 else "继续对话 [E]"
 
 func advance() -> void:
 	if not is_open:

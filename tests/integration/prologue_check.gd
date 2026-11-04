@@ -429,7 +429,10 @@ func run() -> void:
 	if is_instance_valid(boss):
 		boss.set_physics_process(true)
 	await frames(100)
-	check(FileAccess.get_file_as_string(save_path) == original, "complete revised tutorial never writes practice gear to formal save")
+	var original_profile: Dictionary = JSON.parse_string(original)
+	var current_profile: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(save_path))
+	check(current_profile.chest == original_profile.chest and current_profile.loadout == original_profile.loadout, "complete revised tutorial never writes practice gear to formal save")
+	check("melee_pressure" in current_profile.get("codex", {}).get("enemies", []), "tutorial permanently records actual enemy encounters")
 	await drain_dialogue(room)
 	check(room.step == HotlinePrologue.Step.TRANSFER and not room.get("_leaving"), "closing final radio does not immediately transfer to warehouse")
 	await frames(35)

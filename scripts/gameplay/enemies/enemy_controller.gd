@@ -16,6 +16,7 @@ enum State {
 	SELF_DESTRUCT,
 }
 
+const SIGNAL_VISUAL := preload("res://scripts/presentation/enemy_signal_visual.gd")
 const PROJECTILE_SCENE := preload("res://scenes/combat/projectile.tscn")
 const NAVIGATION_REFRESH_SECONDS := 0.1
 const NAVIGATION_REFRESH_DISTANCE := 8.0
@@ -34,6 +35,8 @@ const DEFAULT_VIEWPORT_SIZE := Vector2(640.0, 360.0)
 
 @export var profile: EnemyProfile
 @export var initial_facing := Vector2.LEFT
+var _signal_damage_remainder := 0.0
+var signal_visual: Node2D
 var facing := Vector2.LEFT
 var death_motion_direction := Vector2.ZERO
 var death_impact_direction := Vector2.ZERO
@@ -58,6 +61,7 @@ var _cover_stuck := 0.0
 var _cover_retry := 0.0
 var barrier_skill: EnemyBarrierSkill
 var stationary_test_target := false
+var pursue_player := false
 var _stagger_remaining: float = 0.0
 var _target: Node2D
 var _windup_remaining := 0.0
@@ -125,6 +129,14 @@ func _ready() -> void:
 	# It is only a preference: path validation can still choose the other side.
 	_tactical_side = -1.0 if get_tree().get_nodes_in_group("enemies").size() % 2 == 0 else 1.0
 	apply_profile(profile)
+	EnemyEncounterRecorder.watch(self, String(profile.id))
+	if profile.signal_emitter:
+		add_to_group("signal_emitters")
+		if events != null:
+			events.publish_notice(&"signal_amplifier", "传令兵在场：敌方加速并获得减伤，优先击破信号源", Color("d68bff"), CombatNotice.Priority.NORMAL, 0.0, 3.5)
+	signal_visual = SIGNAL_VISUAL.new()
+	signal_visual.name = "SignalVisual"
+	add_child(signal_visual)
 	barrier_skill = EnemyBarrierSkill.new()
 	add_child(barrier_skill)
 	barrier_skill.configure(self)
@@ -188,25 +200,26 @@ func _physics_process(delta: float) -> void:
 		_alerted = true
 		_cancel_precharge()
 		state = State.CHASE
-		var search_velocity := _direction_to_position(_last_known_position) * profile.move_speed if global_position.distance_to(_last_known_position) > 12.0 else Vector2.ZERO
+		var search_velocity := _direction_to_position(_last_known_position) * effective_move_speed() if global_position.distance_to(_last_known_position) > 12.0 else Vector2.ZERO
 		if not search_velocity.is_zero_approx():
 			facing = search_velocity.normalized()
 		_submit_navigation_velocity(search_velocity)
 		queue_redraw()
 		return
-	if (not is_instance_valid(_target) or not _same_room(_target)) and _optical_disruption_remaining <= 0.0:
+	if (not is_instance_valid(_target) or not _same_room(_target) or _target_is_dead()) and _optical_disruption_remaining <= 0.0:
 		_target = null
 		for candidate in get_tree().get_nodes_in_group("player"):
 			if candidate is Node2D and _same_room(candidate):
-				_target = candidate
-				break
+				var candidate_health := candidate.get_node_or_null("HealthComponent") as HealthComponent
+				if candidate_health != null and not candidate_health.is_dead() and (_target == null or global_position.distance_squared_to(candidate.global_position) < global_position.distance_squared_to(_target.global_position)):
+					_target = candidate
 	if not is_instance_valid(_target):
 		_forget_target()
 		_windup_remaining = 0.0
 		_tick_patrol(delta)
 		queue_redraw()
 		return
-	if _target is PlayerController and _target.health.is_dead():
+	if _target_is_dead():
 		_forget_target()
 		_windup_remaining = 0.0
 		_stop_navigation_motion()
@@ -217,6 +230,9 @@ func _physics_process(delta: float) -> void:
 		_cancel_investigation()
 		_alert_to(_target.global_position, true)
 		_ensure_precharge()
+	elif pursue_player:
+		_cancel_precharge()
+		_alert_to(_target.global_position, false)
 	elif _alerted:
 		_cancel_precharge()
 		_memory_remaining = maxf(_memory_remaining - delta, 0.0)
@@ -254,28 +270,28 @@ func _physics_process(delta: float) -> void:
 			if _has_line_of_sight():
 				perform_attack()
 			else:
-				_attack_cooldown_remaining = profile.attack_cooldown
+				_attack_cooldown_remaining = effective_attack_cooldown()
 		queue_redraw()
 		return
 	var desired_velocity := Vector2.ZERO
 	if not sees_target:
 		state = State.CHASE
-		desired_velocity = _direction_to_position(_last_known_position) * profile.move_speed if global_position.distance_to(_last_known_position) > 12.0 else Vector2.ZERO
+		desired_velocity = _direction_to_position(_last_known_position) * effective_move_speed() if global_position.distance_to(_last_known_position) > 12.0 else Vector2.ZERO
 	else:
 		current_tactical_intent = EnemyTacticalBrain.Intent.HOLD_AND_ATTACK if is_instance_valid(_cover_shield) else _choose_tactical_intent(distance, delta)
 		match current_tactical_intent:
 			EnemyTacticalBrain.Intent.RETREAT:
 				state = State.CHASE
-				desired_velocity = _direction_to_retreat_position() * profile.move_speed
+				desired_velocity = _direction_to_retreat_position() * effective_move_speed()
 			EnemyTacticalBrain.Intent.FLANK_LEFT, EnemyTacticalBrain.Intent.FLANK_RIGHT:
 				state = State.CHASE
-				desired_velocity = _direction_to_tactical_destination(current_tactical_intent) * profile.move_speed
+				desired_velocity = _direction_to_tactical_destination(current_tactical_intent) * effective_move_speed()
 			EnemyTacticalBrain.Intent.STRAFE_LEFT, EnemyTacticalBrain.Intent.STRAFE_RIGHT:
 				state = State.CHASE
-				desired_velocity = _direction_to_tactical_destination(current_tactical_intent) * profile.move_speed * 0.8
+				desired_velocity = _direction_to_tactical_destination(current_tactical_intent) * effective_move_speed() * 0.8
 			EnemyTacticalBrain.Intent.INTERCEPT:
 				state = State.CHASE
-				desired_velocity = _direction_to_position(_predicted_target_position()) * profile.move_speed
+				desired_velocity = _direction_to_position(_predicted_target_position()) * effective_move_speed()
 			EnemyTacticalBrain.Intent.HOLD_AND_ATTACK:
 				state = State.ATTACK
 				desired_velocity = velocity.move_toward(Vector2.ZERO, 1000.0 * delta)
@@ -290,7 +306,7 @@ func _physics_process(delta: float) -> void:
 						_warning_audio.play()
 			_:
 				state = State.CHASE
-				desired_velocity = _direction_to_target() * profile.move_speed
+				desired_velocity = _direction_to_target() * effective_move_speed()
 	if sees_target:
 		facing = global_position.direction_to(_target.global_position)
 	elif not desired_velocity.is_zero_approx():
@@ -363,7 +379,7 @@ func _tick_shield_cover(delta: float, sees_target: bool) -> bool:
 	state = State.CHASE
 	var heading := _direction_to_position(_cover_goal)
 	facing = global_position.direction_to(_target.global_position)
-	_submit_navigation_velocity(heading * profile.move_speed)
+	_submit_navigation_velocity(heading * effective_move_speed())
 	queue_redraw()
 	return true
 
@@ -741,7 +757,7 @@ func _stop_navigation_motion() -> void:
 func perform_attack() -> void:
 	_initial_precharge_consumed = true
 	_cancel_precharge()
-	_attack_cooldown_remaining = profile.attack_cooldown
+	_attack_cooldown_remaining = effective_attack_cooldown()
 	var direction := _attack_direction
 	if not is_instance_valid(_target):
 		return
@@ -784,7 +800,7 @@ func apply_stagger(seconds: float) -> void:
 	state = State.STAGGERED
 	visuals.cancel_attack()
 	_windup_remaining = 0.0
-	_attack_cooldown_remaining = profile.attack_cooldown
+	_attack_cooldown_remaining = effective_attack_cooldown()
 	_stagger_remaining = maxf(_stagger_remaining, seconds)
 	_cancel_avoidance_move()
 	velocity = Vector2.ZERO
@@ -811,6 +827,8 @@ func _on_died(packet: DamagePacket) -> void:
 			death_impact_direction = packet.source_position.direction_to(global_position)
 	_cancel_precharge()
 	_cancel_investigation()
+	if profile.signal_emitter and is_instance_valid(signal_visual):
+		signal_visual.break_signal()
 	if profile.self_destruct_enabled:
 		state = State.SELF_DESTRUCT
 		_self_destruct_remaining = profile.self_destruct_delay
@@ -830,7 +848,7 @@ func _tick_self_destruct(delta: float) -> void:
 
 func _explode_and_finalize() -> void:
 	var radius := profile.attack_range
-	for actor in get_tree().get_nodes_in_group("player") + get_tree().get_nodes_in_group("enemies"):
+	for actor in get_tree().get_nodes_in_group("player") + get_tree().get_nodes_in_group("companions") + get_tree().get_nodes_in_group("enemies"):
 		if actor == self or not actor is Node2D or not is_instance_valid(actor) or not _same_room(actor):
 			continue
 		var target := actor as Node2D
@@ -1062,7 +1080,7 @@ func _tick_investigation(delta: float) -> void:
 		var direction := _direction_to_position(_investigation_target)
 		if not direction.is_zero_approx():
 			facing = direction
-		_submit_navigation_velocity(direction * profile.move_speed)
+		_submit_navigation_velocity(direction * effective_move_speed())
 		return
 	_stop_navigation_motion()
 	_investigation_search_remaining = maxf(_investigation_search_remaining - delta, 0.0)
@@ -1184,3 +1202,39 @@ func _choose_patrol_axis() -> Vector2:
 			var normal: Vector2 = hit.normal
 			axis = Vector2.RIGHT if absf(normal.y) > absf(normal.x) else Vector2.DOWN
 	return axis
+
+
+func has_signal_boost() -> bool:
+	if profile == null or profile.signal_emitter or not is_inside_tree() or health.is_dead():
+		return false
+	for emitter in get_tree().get_nodes_in_group("signal_emitters"):
+		if emitter is EnemyController and not emitter.is_queued_for_deletion() and emitter.profile.signal_emitter and not emitter.health.is_dead() and EnvironmentArea.for_actor(emitter) == EnvironmentArea.for_actor(self):
+			return true
+	return false
+
+
+func effective_move_speed() -> float:
+	return profile.move_speed * (1.3 if has_signal_boost() else 1.0)
+
+
+func effective_attack_cooldown() -> float:
+	return profile.attack_cooldown * (0.7 if has_signal_boost() else 1.0)
+
+
+func modify_incoming_damage(_packet: DamagePacket, amount: int) -> int:
+	if not has_signal_boost():
+		_signal_damage_remainder = 0.0
+		return amount
+	# Health uses whole points. Carry fractional damage across hits so even
+	# one-point weapons receive 40% mitigation over time, never permanent immunity.
+	var exact := amount * 0.6 + _signal_damage_remainder
+	var applied := maxi(ceili(exact - 0.00001), 0)
+	_signal_damage_remainder = exact - applied
+	return applied
+
+
+func _target_is_dead() -> bool:
+	if not is_instance_valid(_target):
+		return true
+	var target_health := _target.get_node_or_null("HealthComponent") as HealthComponent
+	return target_health != null and target_health.is_dead()

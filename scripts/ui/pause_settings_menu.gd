@@ -20,6 +20,8 @@ const FEEDBACK_QUALITY_SETTING := &"FeedbackQuality"
 const HUD_SCALES := [1.0, 1.25, 1.5]
 const CAMERA_SHAKE_STRENGTHS := [0.0, 0.5, 1.0]
 
+var _channel_note: Label
+var _channel_abandon: Button
 var _owns_pause := false
 var _settings_visible := false
 var _settings_only := false
@@ -39,8 +41,6 @@ var _movement_feedback_preview: MovementFeedbackPreview
 var _fullscreen: CheckButton
 var _mute: CheckButton
 var _continuous_precharge: CheckButton
-var _test_mode: CheckButton
-var _test_tools_button: Button
 var _confirm_row: HBoxContainer
 var _confirm_label: Label
 var _confirm_remaining := 0.0
@@ -172,6 +172,19 @@ func _build_main_page() -> VBoxContainer:
 	return_to_menu.text = "返回主菜单"
 	return_to_menu.pressed.connect(_return_to_main_menu)
 	page.add_child(return_to_menu)
+	_channel_note = Label.new()
+	_channel_note.text = "频道行动：返回菜单后从最近安全节点继续。\n节点后的战斗进度不保存；放弃按死亡损失结算。"
+	_channel_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_channel_note.add_theme_font_size_override("font_size", 11)
+	page.add_child(_channel_note)
+	_channel_abandon = Button.new()
+	_channel_abandon.text = "放弃行动（未保护装备丢失）"
+	_channel_abandon.pressed.connect(func() -> void:
+		close_menu()
+		if get_parent().has_method("_restart_combat"):
+			get_parent()._restart_combat()
+	)
+	page.add_child(_channel_abandon)
 	page.set_meta("focus", resume)
 	return page
 
@@ -267,20 +280,7 @@ func _build_settings_page() -> VBoxContainer:
 	_mute.text = "全部静音"
 	_mute.toggled.connect(_on_mute_toggled)
 	content.add_child(_mute)
-	_add_section_title(content, "测试选项")
-	_test_mode = CheckButton.new()
-	_test_mode.text = "测试模式（临时装备与进度）"
-	_test_mode.toggled.connect(_on_test_mode_toggled)
-	content.add_child(_test_mode)
-	var test_note := Label.new()
-	test_note.text = "仅本次运行生效；关闭后返回主菜单，恢复正式存档。"
-	test_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	test_note.add_theme_color_override("font_color", CyberUITheme.MUTED)
-	content.add_child(test_note)
-	_test_tools_button = Button.new()
-	_test_tools_button.text = "打开测试面板 · 装备 / 天赋 / 关卡"
-	_test_tools_button.pressed.connect(_open_test_tools)
-	content.add_child(_test_tools_button)
+	_add_section_title(content, "战斗选项")
 	_continuous_precharge = CheckButton.new()
 	_continuous_precharge.text = "连续蓄力"
 	_continuous_precharge.toggled.connect(_on_continuous_precharge_toggled)
@@ -349,6 +349,11 @@ func _add_volume_slider(parent: VBoxContainer, text: String, bus_index: int) -> 
 
 
 func _show_main_page() -> void:
+	var run := get_node("/root/RunManager")
+	_channel_note.visible = run.channel_route_active and not run.run_finished
+	_channel_abandon.visible = _channel_note.visible
+	_menu_page.add_theme_constant_override("separation", 5 if _channel_note.visible else 16)
+	_menu_page.get_child(1).custom_minimum_size.y = 0 if _channel_note.visible else 42
 	_settings_visible = false
 	_settings_page.hide()
 	_history_page.hide()
@@ -407,20 +412,6 @@ func _sync_settings_controls() -> void:
 	var settings := get_node_or_null("/root/GameSettings")
 	if settings != null:
 		_continuous_precharge.set_pressed_no_signal(bool(settings.continuous_precharge))
-		_test_mode.set_pressed_no_signal(bool(settings.test_tools.enabled))
-		_test_tools_button.visible = bool(settings.test_tools.enabled)
-
-
-func _on_test_mode_toggled(enabled: bool) -> void:
-	var tools: CanvasLayer = get_node("/root/GameSettings").test_tools
-	if not tools.set_enabled(enabled):
-		_test_mode.set_pressed_no_signal(bool(tools.enabled))
-	_test_tools_button.visible = bool(tools.enabled)
-
-
-func _open_test_tools() -> void:
-	close_menu()
-	get_node("/root/GameSettings").test_tools.open_panel()
 
 
 func _show_history_page() -> void:

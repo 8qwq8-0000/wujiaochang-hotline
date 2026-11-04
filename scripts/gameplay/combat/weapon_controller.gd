@@ -380,6 +380,11 @@ func _perform_beam(
 	door_query.collision_mask = 1
 	door_query.margin = 0.0
 	for hit in space.intersect_shape(door_query, 256):
+		if hit.collider.has_method("receive_projectile_hit"):
+			var special_packet := _make_packet(data, origin, direction, source_node, damage_multiplier)
+			special_packet.is_beam = true
+			hit.collider.receive_projectile_hit(special_packet)
+			continue
 		var door := hit.collider.get_parent() as AutomaticDoor
 		if door == null or CombatProjectile.room_for_actor(door) != room:
 			continue

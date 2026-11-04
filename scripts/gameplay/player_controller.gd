@@ -57,6 +57,10 @@ var _dash_buffer_remaining := 0.0
 var _camera_trauma := 0.0
 var _camera_shake_direction := Vector2.RIGHT
 var _camera_shake_phase := 0.0
+var channel_curse_active := false
+var _channel_base_config: CombatPlayerConfig
+var _channel_base_dash: DashConfigData
+var _channel_base_cooling := 0.0
 var _camera_shake_last_usec := 0
 
 
@@ -327,6 +331,7 @@ func export_run_state() -> Dictionary:
 	return {
 		"inventory": inventory.export_run_state(),
 		"current_health": health.current_health,
+		"channel_curse": channel_curse_active,
 		"weapon_id": String(weapon.id) if weapon != null else "",
 		"talent_core": talent_core.export_state(),
 		"circuit_breaker": circuit_breaker.export_state(),
@@ -334,6 +339,7 @@ func export_run_state() -> Dictionary:
 
 
 func import_run_state(state: Dictionary) -> void:
+	apply_channel_curse(bool(state.get("channel_curse", false)))
 	if state.is_empty():
 		return
 	if state.has("inventory") and state["inventory"] is Dictionary:
@@ -377,7 +383,8 @@ func export_settlement_state(preserve_inventory: bool) -> Dictionary:
 		state.inventory = inventory.export_settlement_inventory()
 	else:
 		state.inventory = inventory.export_recovery_inventory()
-	state.current_health = config.max_health
+	state["channel_curse"] = false
+	state.current_health = _channel_base_config.max_health if channel_curse_active else config.max_health
 	state.circuit_breaker.equipped = inventory.blackbox_slot.get_item() != null and inventory.blackbox_slot.get_item().get_property("slot", "") == "insurance"
 	return state
 
@@ -723,3 +730,27 @@ func _emit_public_state() -> void:
 
 func _exit_tree() -> void:
 	_clear_afterimages()
+
+
+func apply_channel_curse(active: bool) -> void:
+	if active == channel_curse_active:
+		return
+	if active:
+		_channel_base_config = config
+		_channel_base_dash = dash.config
+		_channel_base_cooling = heat.dissipation_per_second
+		config = config.duplicate()
+		config.max_health = 1
+		dash.config = dash.config.duplicate()
+		dash.config.walk_speed *= 0.85
+		dash.config.dash_cooldown *= 1.4
+		heat.dissipation_per_second *= 0.7
+
+	else:
+		config = _channel_base_config
+		dash.config = _channel_base_dash
+		heat.dissipation_per_second = _channel_base_cooling
+
+	channel_curse_active = active
+	health.configure_max_health(config.max_health, false)
+	talent_core.sync_health(health.current_health)

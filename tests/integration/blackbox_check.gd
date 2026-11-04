@@ -19,6 +19,11 @@ func wait_scene(main: Node) -> Node:
 		await process_frame
 		var container := main.get_node("SceneContainer")
 		if container.get_child_count() > 0 and not main.get_node("SceneFlow").get("_is_loading"):
+			for _settle in 4:
+				await process_frame
+			var run := root.get_node("RunManager")
+			run.consume_persona_authorization(run.floor_index)
+			main.get_node("PersonaRestFlow").close(true)
 			return container.get_child(0)
 	return null
 
@@ -60,9 +65,9 @@ func run_checks() -> void:
 	box_button.pressed.emit()
 	check(inv.blackbox_slot.get_item() == null and inv.backpack.has_item(insurance), "blackbox button takes insurance into bag")
 	check(not player.circuit_breaker.equipped, "taking insurance immediately disables it")
-	check(inv.pickup("wheel"), "ordinary item fixture")
+	check(inv.pickup("armor"), "ordinary item fixture")
 	check(inv.drop_item(inv.backpack.get_items()[1], "blackbox"), "backpack item drops onto blackbox")
-	check(inv.blackbox_slot.get_item().get_property("slot") == "mobility", "target selection places ordinary item in blackbox")
+	check(inv.blackbox_slot.get_item().get_property("slot") == "defense", "target selection places ordinary item in blackbox")
 	check(not player.circuit_breaker.equipped, "ordinary protection provides no fatal-hit insurance")
 	check(inv.put_in_blackbox(0), "insurance can swap with protected item")
 	check(inv.blackbox_slot.get_item() == insurance and inv.backpack.get_item_count() == 1, "exchange keeps original insurance instance")
@@ -94,7 +99,7 @@ func run_checks() -> void:
 	player.health.damaged.disconnect(callback)
 	check(changed_during_damage == [false], "blackbox cannot change during an in-progress damage event")
 	for index in 5:
-		inv.pickup("wheel")
+		inv.pickup("armor")
 	check(inv.backpack.get_item_count() == 6, "full backpack fixture")
 	check(not inv.take_from_blackbox() and inv.blackbox_slot.get_item() != null, "full bag refuses direct removal")
 	check(inv.put_in_blackbox(0) and inv.backpack.get_item_count() == 6, "full bag still permits atomic exchange")
@@ -113,7 +118,8 @@ func run_checks() -> void:
 	for enemy in get_nodes_in_group("enemies"):
 		enemy.set_physics_process(false)
 	check(player.circuit_breaker.equipped and not player.circuit_breaker.circuit_breaker_used, "new action equips held insurance and resets its per-run usage")
-	check(not inv.put_in_blackbox(0), "combat blackbox edits require paused backpack")
+	check(inv.put_in_blackbox(0), "combat permits explicit blackbox exchange")
+	check(inv.put_in_blackbox(0), "exchange restores insurance before paused-path check")
 	await key(KEY_TAB)
 	check(inv.put_in_blackbox(0), "paused combat permits blackbox exchange")
 	var protected_id: String = inv.blackbox_slot.get_item().get_property("instance_id")
@@ -151,7 +157,7 @@ func run_checks() -> void:
 	var fresh: Node = load("res://scripts/core/warehouse_store.gd").new()
 	fresh.save_path = SAVE_PATH
 	root.add_child(fresh)
-	check(fresh.load_profile() and fresh.get_profile().loadout.inventory.blackbox.item.prototype_id == "wheel", "death protection persists across fresh disk read")
+	check(fresh.load_profile() and fresh.get_profile().loadout.inventory.blackbox.item.prototype_id == "armor", "death protection persists across fresh disk read")
 	fresh.queue_free()
 	# Grant a replacement as a test fixture; a spent core in blackbox also survives death.
 	check(inv.pickup("circuit_breaker") and inv.put_in_blackbox(0), "replacement insurance fixture")

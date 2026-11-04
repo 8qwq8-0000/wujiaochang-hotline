@@ -7,7 +7,7 @@ const FOOT_ANCHOR := Vector2(96, 168)
 const WALK_FPS := 9.0
 const FRAME_COUNTS := {"down": 8, "left": 8, "up": 8, "right": 6}
 const FRAMES_PATH := "res://assets/art/characters/enemies/animated/%s_frames.tres"
-const FLASH_SHADER_CODE := "shader_type canvas_item; uniform float flash_amount = 0.0; uniform vec4 flash_color : source_color = vec4(1.0); void fragment(){ vec4 tex = texture(TEXTURE, UV); vec4 tint = COLOR; vec3 base = tex.rgb * tint.rgb; COLOR = vec4(mix(base, flash_color.rgb, flash_amount), tex.a * tint.a); }"
+const FLASH_SHADER_CODE := "shader_type canvas_item; uniform float signal_amount = 0.0; uniform float broadcast_glow = 0.0; uniform float flash_amount = 0.0; uniform vec4 flash_color : source_color = vec4(1.0); void fragment(){ vec4 tex = texture(TEXTURE, UV); vec4 tint = COLOR; vec3 base = tex.rgb * tint.rgb; float lightness = max(max(base.r, base.g), base.b); base = mix(base, vec3(0.72, 0.3, 1.0) * lightness, signal_amount); float led = step(tex.g * 1.35, tex.r) * step(tex.r * 1.05, tex.b) * step(0.25, tex.b); base += vec3(0.3, 0.12, 0.4) * led * broadcast_glow; COLOR = vec4(mix(base, flash_color.rgb, flash_amount), tex.a * tint.a); }"
 
 var actor: EnemyController
 var body: AnimatedSprite2D
@@ -42,6 +42,10 @@ func configure(enemy: EnemyController, sprite: AnimatedSprite2D) -> void:
 	body.scale = Vector2.ONE * (0.5 if role_key == "shield" else 0.45)
 	body.centered = false
 	body.offset = -FOOT_ANCHOR
+	if actor.profile.animation_frames != null:
+		body.sprite_frames = actor.profile.animation_frames
+		body.offset = -actor.profile.animation_foot_anchor
+		body.scale = Vector2.ONE * actor.profile.animation_scale
 	body.position = Vector2(0, 10)
 	body.flip_h = false
 	_previous_position = actor.global_position
@@ -141,6 +145,9 @@ func update_visual(delta: float) -> void:
 		_flash_material.set_shader_parameter(&"flash_amount", clampf(float(remaining_usec) / 50_000.0, 0.0, 1.0))
 	_apply_reaction_transform(delta)
 	var warning := actor.state == EnemyController.State.SELF_DESTRUCT and int(actor._self_destruct_remaining * 16.0) % 2 == 0
+	if _flash_material != null:
+		_flash_material.set_shader_parameter(&"signal_amount", 0.1 if actor.has_signal_boost() else 0.0)
+		_flash_material.set_shader_parameter(&"broadcast_glow", (0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.005)) if actor.profile.signal_emitter else 0.0)
 	body.modulate = Color(1.7, 1.5, 1.2) if warning else Color.WHITE
 
 

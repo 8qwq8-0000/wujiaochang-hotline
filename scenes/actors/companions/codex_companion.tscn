@@ -1,0 +1,45 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/companions/codex_companion.gd" id="companion"]
+[ext_resource type="PackedScene" path="res://scenes/actors/companions/dragon_visual.tscn" id="visual"]
+[ext_resource type="Script" path="res://scripts/gameplay/combat/health_component.gd" id="health"]
+[ext_resource type="Script" path="res://scripts/gameplay/combat/hurt_box.gd" id="hurt"]
+
+[sub_resource type="CircleShape2D" id="body"]
+radius = 9.0
+
+[sub_resource type="CapsuleShape2D" id="hurt_shape"]
+radius = 9.0
+height = 32.0
+
+[node name="CodexCompanion" type="CharacterBody2D"]
+collision_layer = 0
+collision_mask = 129
+script = ExtResource("companion")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("body")
+
+[node name="DragonVisual" parent="." instance=ExtResource("visual")]
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("health")
+max_health = 3
+
+[node name="HurtBox" type="Area2D" parent="."]
+position = Vector2(0, -17)
+collision_layer = 8
+collision_mask = 0
+monitoring = false
+script = ExtResource("hurt")
+faction = 1
+health_path = NodePath("../HealthComponent")
+damage_invulnerability_seconds = 1.2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HurtBox"]
+shape = SubResource("hurt_shape")
+
+[node name="NavigationAgent2D" type="NavigationAgent2D" parent="."]
+path_desired_distance = 2.0
+target_desired_distance = 8.0
+radius = 9.0

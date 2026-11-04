@@ -21,6 +21,10 @@ enum ImpactMaterial {
 @export var impact_material: ImpactMaterial = ImpactMaterial.LIGHT_METAL
 @export_range(1, 20, 1) var max_health: int = 2
 @export_range(1.0, 500.0, 1.0) var move_speed: float = 76.0
+@export var signal_emitter := false
+@export var animation_frames: SpriteFrames
+@export var animation_foot_anchor := Vector2(96, 168)
+@export var animation_scale := 0.45
 @export var full_room_awareness := false
 @export_range(10.0, 1000.0, 1.0) var awareness_range: float = 240.0
 @export_range(10.0, 1000.0, 1.0) var attack_range: float = 34.0

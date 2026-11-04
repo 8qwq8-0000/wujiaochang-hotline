@@ -12,6 +12,7 @@ var small_obstacles: Array[Rect2] = []
 @export_range(0.0, 256.0, 1.0) var camera_north_extension := 0.0
 
 signal room_cleared
+var ambush_managed := false
 var cleared := false
 var sequence_managed := false
 var area_index := 0
@@ -19,6 +20,7 @@ var area_total := 1
 var active := true
 var reward_count := 0
 var extra_enemy_count := 0
+var signal_emitter_enabled := false
 
 @onready var spawner: EnemySpawner = $EnemySpawner
 @onready var exit_elevator: Area2D = $ExitElevator
@@ -36,12 +38,18 @@ func _ready() -> void:
 	_expand_room_shell()
 	if layout != null:
 		layout = layout.scaled_for_room(ROOM_SCALE, BASE_ROOM_SIZE)
-		_place_sentries()
+		if ambush_managed:
+			# Reserve the existing workbench footprint and the short approach.
+			layout.navigation_obstacles.append(Rect2(76, 427, 72, 22))
+			layout.clear_lanes.append(Rect2(56, 286, 124, 220))
+		else:
+			_place_sentries()
 		var run := get_node_or_null("/root/RunManager")
 		var seed_value: int = (run.run_seed if run != null else 1) + 104729 * (run.floor_index + 1 if run != null else 1) + area_index * 97 + hash(layout.id)
 		layout.power_position = EncounterPropPlacement.choose_power_position(layout, seed_value)
 		_add_small_obstacles()
 		_apply_layout()
+	_place_signal_emitter()
 	_add_floor_enemies()
 	_place_barrel()
 	if layout != null:
@@ -127,7 +135,8 @@ func activate() -> void:
 	if active or cleared:
 		return
 	active = true
-	spawner.spawn_all()
+	if not ambush_managed:
+		spawner.spawn_all()
 	_configure_player_camera_if_inside()
 
 
@@ -431,3 +440,16 @@ func _apply_workshop_art() -> void:
 	var clutter := preload("res://scripts/presentation/floor_clutter.gd").new()
 	clutter.name = "FloorClutter"
 	add_child(clutter)
+
+
+func _place_signal_emitter() -> void:
+	if not signal_emitter_enabled:
+		return
+	# Replace a rear ranged marker: keep authored reachable positions and counts.
+	var chosen: EnemySpawnMarker
+	for marker in $EnemySpawnPoints.get_children():
+		if marker is EnemySpawnMarker and marker.profile != null and marker.profile.role == EnemyProfile.Role.RANGED_SIGHTLINE:
+			if chosen == null or marker.position.x > chosen.position.x:
+				chosen = marker
+	if chosen != null:
+		chosen.profile = preload("res://resources/enemies/signal_amplifier.tres")

@@ -7,7 +7,7 @@ var cell_index := -1
 
 func _get_drag_data(_position: Vector2) -> Variant:
 	var item := inventory.item_at(location, cell_index)
-	if item == null or not inventory.is_open:
+	if item == null or not inventory.is_open or inventory.is_channel_core(item):
 		return null
 	var preview := HBoxContainer.new()
 	preview.mouse_filter = Control.MOUSE_FILTER_IGNORE

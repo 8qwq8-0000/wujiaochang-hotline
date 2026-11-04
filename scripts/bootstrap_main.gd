@@ -3,6 +3,12 @@ extends Node
 var _restart_requested := false
 
 
+func _enter_tree() -> void:
+	var run := get_node("/root/RunManager")
+	if not run.channel_resume.is_empty():
+		$SceneFlow.initial_scene = run.channel_resume.get("scene", "res://scenes/levels/bosses/rooftop_boss_arena.tscn" if run.floor_index == 3 else "res://scenes/levels/floors/combat_prototype.tscn")
+
+
 func _ready() -> void:
 	_ensure_input_map()
 	var run_manager := get_node_or_null("/root/RunManager")
@@ -28,7 +34,7 @@ func _restart_combat() -> void:
 		var player := get_tree().get_first_node_in_group("player") as PlayerController
 		var store := get_node("/root/WarehouseStore")
 		var profile: Dictionary = store.get_profile()
-		if player == null or not store.commit(profile.chest, player.export_recovery_state()):
+		if player == null or not store.commit(profile.chest, player.export_recovery_state(), "", {}, {"checkpoint": {}}):
 			_restart_requested = false
 			get_node("/root/CombatEvents").publish_message("没能放弃行动。" + store.error_message)
 			return
@@ -38,6 +44,7 @@ func _restart_combat() -> void:
 			return
 		flow.scene_swapped.connect(func(_scene: Node, _payload: Dictionary) -> void: _restart_requested = false, CONNECT_ONE_SHOT)
 		run_manager.run_finished = true
+		run_manager.reset_channel_route()
 		player.set_input_enabled(false)
 		return
 	# Restart the combat harness even when the project originally entered via the warehouse.

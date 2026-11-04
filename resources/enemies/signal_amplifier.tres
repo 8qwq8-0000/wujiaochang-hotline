@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="EnemyProfile" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/enemies/enemy_profile.gd" id="1"]
+[ext_resource type="SpriteFrames" path="res://assets/art/characters/enemies/animated/signal_herald_v3_frames.tres" id="frames"]
+
+[resource]
+script = ExtResource("1")
+id = &"signal_amplifier"
+display_name = "传令兵"
+role = 1
+signal_emitter = true
+animation_frames = ExtResource("frames")
+animation_foot_anchor = Vector2(128, 224)
+animation_scale = 0.433333
+max_health = 3
+move_speed = 45.0
+awareness_range = 1000.0
+attack_range = 220.0
+attack_cooldown = 2.8
+attack_windup = 0.55
+projectile_speed = 280.0
+body_color = Color(0.95, 0.45, 0.12, 1)
+patrol_enabled = true
+

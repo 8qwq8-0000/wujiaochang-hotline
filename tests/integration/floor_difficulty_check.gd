@@ -47,12 +47,18 @@ func run() -> void:
 						await physics_frame
 					var enemies := room.get_node("Enemies").get_children()
 					check(enemies.size() == 6 + step, "actual spawn count matches plan")
+					var emitters := enemies.filter(func(unit: EnemyController) -> bool: return unit.profile.signal_emitter)
+					var expected_emitters := 1 if step >= 1 else 0
+					check(emitters.size() == expected_emitters, "signal herald appears in every ordinary combat area from floor two")
 					var markers := room.get_node("EnemySpawnPoints").get_children()
 					for index in enemies.size():
 						var enemy: EnemyController = enemies[index]
 						enemy.set_physics_process(false)
 						var base_profile: EnemyProfile = markers[index].profile
 						check(enemy.health.max_health == base_profile.max_health + step and enemy.health.current_health == enemy.health.max_health, "spawned enemy has floor-scaled full health")
+						var expected_speed := base_profile.move_speed * (1.0 + 0.1 * step) if base_profile.role == EnemyProfile.Role.MELEE_PRESSURE else base_profile.move_speed
+						check(is_equal_approx(enemy.profile.move_speed, expected_speed), "only melee speed scales by floor, including reinforcements")
+						check(is_equal_approx(enemy.profile.attack_windup, base_profile.attack_windup), "floor scaling preserves attack windup")
 						if index >= 6:
 							var map_rid := room.get_world_2d().navigation_map
 							var path := NavigationServer2D.map_get_path(map_rid, room.to_global(Vector2(111, 270)), enemy.global_position, true)
@@ -76,5 +82,6 @@ func run() -> void:
 	# Shared source assets must remain at their original values after higher floors.
 	check(load("res://resources/enemies/melee_pressure.tres").max_health == 1, "melee source profile unchanged")
 	check(load("res://resources/enemies/heavy_anchor.tres").max_health == 3, "shield source profile unchanged")
+	check(is_equal_approx(load("res://resources/enemies/melee_pressure.tres").move_speed, 100.0), "shared melee speed unchanged after higher floors")
 	print("Floor difficulty checks: ", checks, "; failures: ", failures)
 	quit(1 if failures else 0)
