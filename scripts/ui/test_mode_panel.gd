@@ -595,7 +595,7 @@ func _refresh_talents() -> void:
 
 
 func _on_grant() -> void:
-	_message.text = "已领取，关闭面板后按 Tab 配装" if grant_item(_item_ids[_items.selected], _quality.selected + 1) else "领取失败：请进入游戏，检查背包空间或保险核心是否重复"
+	_message.text = ControlPrompts.adapt("已领取，关闭面板后按 Tab 配装") if grant_item(_item_ids[_items.selected], _quality.selected + 1) else "领取失败：请进入游戏，检查背包空间或保险核心是否重复"
 
 
 func _sync_quality() -> void:

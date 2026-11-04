@@ -3,6 +3,7 @@
 /android/
 .codex-backups/
 builds/
+/build/
 exports/
 /addons/.godot_ai_update/
 

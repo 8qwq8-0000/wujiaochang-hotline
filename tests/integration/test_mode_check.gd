@@ -73,6 +73,17 @@ func run_checks() -> void:
 	check(tools._overlay.visible and paused, "badge reopens the paused test panel")
 	check(tools.grant_item("rail_cannon", 3), "prototype weapon can be granted")
 	check(ComponentRolls.quality(warehouse.player.inventory.secondary_weapon_slot.get_item()) == 3, "granted weapon retains requested quality")
+	# The merged control panel must expose the main branch's advanced modules,
+	# and granting them must still use the real inventory with isolated saves.
+	for advanced_id in ["momentum_recovery_tendon", "trajectory_echo_processor", "ballistic_takeover_protocol", "arc_ballistic_cortex", "inertial_inversion_vertebra", "axon_recycler", "micro_rotor_reflex_bundle", "predatory_vestibular_ring"]:
+		check(advanced_id in tools._item_ids and tools.grant_item(advanced_id), "F8 grants advanced cyberware %s" % advanced_id)
+		var granted: InventoryItem
+		for item in warehouse.player.inventory.backpack.get_items():
+			if item.get_prototype().get_prototype_id() == advanced_id:
+				granted = item
+		check(granted != null and granted.get_texture() != null and advanced_id in ComponentRolls.cyberware_modules(granted), "advanced module retains image and effect %s" % advanced_id)
+		if granted != null:
+			warehouse.player.inventory.backpack.remove_item(granted)
 	check(not tools.grant_item("unknown", 1), "unknown item rejected")
 	check(not tools.grant_item("circuit_breaker", 1), "duplicate insurance core rejected")
 	for index in 6:

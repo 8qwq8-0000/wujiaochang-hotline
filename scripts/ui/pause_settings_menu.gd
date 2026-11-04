@@ -41,6 +41,11 @@ var _movement_feedback_preview: MovementFeedbackPreview
 var _fullscreen: CheckButton
 var _mute: CheckButton
 var _continuous_precharge: CheckButton
+var _touch_preview: CheckButton
+var _left_handed: CheckButton
+var _haptics: CheckButton
+var _target_indicator: CheckButton
+var _edit_touch_layout: Button
 var _confirm_row: HBoxContainer
 var _confirm_label: Label
 var _confirm_remaining := 0.0
@@ -55,6 +60,7 @@ var _crt_overlay: CRTOverlay
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	add_to_group(&"pause_menu")
 	_build_ui()
 	hide()
 
@@ -280,6 +286,31 @@ func _build_settings_page() -> VBoxContainer:
 	_mute.text = "全部静音"
 	_mute.toggled.connect(_on_mute_toggled)
 	content.add_child(_mute)
+	_add_section_title(content, "移动端")
+	_touch_preview = CheckButton.new()
+	_touch_preview.text = "触控布局预览（Windows）"
+	_touch_preview.toggled.connect(_on_touch_preview_toggled)
+	content.add_child(_touch_preview)
+	_left_handed = CheckButton.new()
+	_left_handed.text = "左手模式"
+	_left_handed.toggled.connect(_on_left_handed_toggled)
+	content.add_child(_left_handed)
+	_haptics = CheckButton.new()
+	_haptics.text = "触觉反馈"
+	_haptics.toggled.connect(_on_haptics_toggled)
+	content.add_child(_haptics)
+	_target_indicator = CheckButton.new()
+	_target_indicator.text = "显示自动瞄准目标"
+	_target_indicator.toggled.connect(_on_target_indicator_toggled)
+	content.add_child(_target_indicator)
+	_edit_touch_layout = Button.new()
+	_edit_touch_layout.text = "编辑触控按键布局"
+	_edit_touch_layout.pressed.connect(_on_edit_touch_layout_pressed)
+	content.add_child(_edit_touch_layout)
+	var replay_touch_tutorial := Button.new()
+	replay_touch_tutorial.text = "重新查看触控引导"
+	replay_touch_tutorial.pressed.connect(_on_replay_touch_tutorial_pressed)
+	content.add_child(replay_touch_tutorial)
 	_add_section_title(content, "战斗选项")
 	_continuous_precharge = CheckButton.new()
 	_continuous_precharge.text = "连续蓄力"
@@ -409,6 +440,13 @@ func _sync_settings_controls() -> void:
 			shake_index = index
 	_camera_shake.select(shake_index)
 	_feedback_quality.select(clampi(int(PlayerConfig.get_config(UI_SECTION, FEEDBACK_QUALITY_SETTING, 1)), 0, 1))
+	var mobile_input := get_node_or_null("/root/MobileInput")
+	if mobile_input != null:
+		_touch_preview.set_pressed_no_signal(mobile_input.is_touch_preview_enabled())
+		_left_handed.set_pressed_no_signal(mobile_input.is_left_handed())
+		_haptics.set_pressed_no_signal(mobile_input.is_haptics_enabled())
+		_target_indicator.set_pressed_no_signal(mobile_input.is_target_indicator_enabled())
+		_edit_touch_layout.disabled = not OS.has_feature("mobile") and not mobile_input.is_touch_preview_enabled()
 	var settings := get_node_or_null("/root/GameSettings")
 	if settings != null:
 		_continuous_precharge.set_pressed_no_signal(bool(settings.continuous_precharge))
@@ -542,6 +580,54 @@ func _on_continuous_precharge_toggled(enabled: bool) -> void:
 	var settings := get_node_or_null("/root/GameSettings")
 	if settings != null:
 		settings.set_continuous_precharge(enabled)
+
+
+func _on_touch_preview_toggled(enabled: bool) -> void:
+	var mobile_input := get_node_or_null("/root/MobileInput")
+	if mobile_input != null:
+		mobile_input.set_touch_preview(enabled)
+		_edit_touch_layout.disabled = not OS.has_feature("mobile") and not enabled
+
+
+func _on_left_handed_toggled(enabled: bool) -> void:
+	var mobile_input := get_node_or_null("/root/MobileInput")
+	if mobile_input != null:
+		mobile_input.set_left_handed(enabled)
+
+
+func _on_haptics_toggled(enabled: bool) -> void:
+	var mobile_input := get_node_or_null("/root/MobileInput")
+	if mobile_input != null:
+		mobile_input.set_haptics_enabled(enabled)
+
+
+func _on_target_indicator_toggled(enabled: bool) -> void:
+	var mobile_input := get_node_or_null("/root/MobileInput")
+	if mobile_input != null:
+		mobile_input.set_target_indicator_enabled(enabled)
+
+
+func _on_edit_touch_layout_pressed() -> void:
+	var mobile_input := get_node_or_null("/root/MobileInput")
+	if mobile_input == null:
+		return
+	if not mobile_input.layout_editor_closed.is_connected(_on_touch_layout_editor_closed):
+		mobile_input.layout_editor_closed.connect(_on_touch_layout_editor_closed)
+	hide()
+	mobile_input.begin_layout_edit()
+
+
+func _on_touch_layout_editor_closed() -> void:
+	show()
+	_show_settings_page()
+
+
+func _on_replay_touch_tutorial_pressed() -> void:
+	PlayerConfig.set_config(&"MobileControls", &"TutorialShown", false)
+	var mobile_input := get_node_or_null("/root/MobileInput")
+	close_menu()
+	if mobile_input != null:
+		mobile_input.show_touch_tutorial(true)
 
 
 func _exit_tree() -> void:

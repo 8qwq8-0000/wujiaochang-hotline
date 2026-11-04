@@ -191,7 +191,7 @@ func _wall(rect: Rect2) -> StaticBody2D:
 
 func _label(value: String, font_size := 12, color := Color("ebf1f3")) -> Label:
 	var label := Label.new()
-	label.text = value
+	label.text = ControlPrompts.adapt(value)
 	label.add_theme_font_override("font", CyberUITheme.FONT)
 	label.add_theme_font_size_override("font_size", font_size)
 	label.add_theme_color_override("font_color", color)
@@ -210,7 +210,7 @@ func _build_ui() -> void:
 	ui.add_child(_layout)
 	_skip_button = Button.new()
 	_skip_button.text = "按住跳过序章"
-	_skip_button.tooltip_text = "Esc 跳过当前教学；按住此按钮跳过整个序章"
+	_skip_button.tooltip_text = "按住此按钮跳过整个序章" if OS.has_feature("mobile") else "Esc 跳过当前教学；按住此按钮跳过整个序章"
 	_skip_button.position = Vector2(460, 10)
 	_skip_button.size = Vector2(166, 24)
 	CyberDialoguePanel.style_button(_skip_button)
@@ -290,7 +290,7 @@ func _set_step(value: Step) -> void:
 	_dialogue_panel.compact = not intro
 	_dialogue_panel.position = Vector2(32, 108) if intro else Vector2(14, 272)
 	_dialogue_panel.size = Vector2(576, 198) if intro else Vector2(612, 78)
-	_dialogue_panel.title = "五角场热线 / 信号接入" if intro else "AI 接线员 / 通信中  [Enter 或点击继续]"
+	_dialogue_panel.title = "五角场热线 / 信号接入" if intro else ("AI 接线员 / 通信中  [轻触屏幕继续]" if OS.has_feature("mobile") else "AI 接线员 / 通信中  [Enter 或点击继续]")
 	_dialogue.add_theme_font_size_override("font_size", 17 if intro else 13)
 	_skip_button.position = Vector2(52, 268) if intro else Vector2(460, 10)
 	_intro_continue.position = Vector2(414, 268)
@@ -313,7 +313,7 @@ func _set_step(value: Step) -> void:
 	]
 	var definition: Array = objectives[int(step)]
 	_target_marker.position = definition[2] + Vector2(-85, 34)
-	_target_marker.text = definition[3]
+	_target_marker.text = ControlPrompts.adapt(definition[3])
 	var thresholds := [Step.PARRY, Step.WAVE, Step.CODEX, Step.MINI_BOSS]
 	for index in _gates.size():
 		_gates[index].collision_layer = 0 if step >= thresholds[index] else 1
@@ -561,7 +561,7 @@ func _say(speaker: String, text: String) -> void:
 	get_tree().paused = true
 	player.set_input_enabled(false)
 	_dialogue_panel.show()
-	_dialogue_queue.append({"speaker": speaker, "text": text})
+	_dialogue_queue.append({"speaker": speaker, "text": ControlPrompts.adapt(text)})
 	if _dialogue_remaining <= 0.0:
 		_next_dialogue()
 
@@ -577,7 +577,7 @@ func _next_dialogue() -> void:
 	_dialogue.visible_characters = 0
 	_dialogue_remaining = 1.0 # Held until the player finishes reading and confirms.
 	_line_age = 0.0
-	_intro_continue.text = "一起出发 [Enter]" if _dialogue_queue.is_empty() else "继续 [Enter]"
+	_intro_continue.text = ("一起出发" if _dialogue_queue.is_empty() else "继续") + (" [轻触屏幕]" if OS.has_feature("mobile") else " [Enter]")
 	var interrupted := String(line.speaker).contains("大肥鱼")
 	_speaker.modulate = Color.WHITE
 	_speaker.add_theme_color_override("font_color", AMBER if interrupted else CYAN)
@@ -594,7 +594,7 @@ func _end_radio() -> void:
 
 
 func _on_radio_click(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+	if DialogueAdvanceInput.is_tap(event):
 		_continue_radio()
 		get_viewport().set_input_as_handled()
 
@@ -673,7 +673,7 @@ func _process(delta: float) -> void:
 	_line_age += delta
 	_dialogue.visible_characters = mini(_dialogue.get_total_character_count(), int(_line_age * 42.0))
 	_intro_continue.disabled = step == Step.BRIEFING and _line_age < 1.0
-	_intro_continue.text = "一起出发 [Enter]" if _dialogue_queue.is_empty() else "继续 [Enter]"
+	_intro_continue.text = ("一起出发" if _dialogue_queue.is_empty() else "继续") + (" [轻触屏幕]" if OS.has_feature("mobile") else " [Enter]")
 	if _pending_step >= 0 and not get_tree().paused and _dialogue_remaining <= 0.0 and _dialogue_queue.is_empty():
 		_transition_remaining = maxf(0.0, _transition_remaining - delta)
 		if _transition_remaining <= 0.0:
@@ -747,8 +747,8 @@ func _input(event: InputEvent) -> void:
 		return
 	if event.is_echo():
 		return
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT and step != Step.BRIEFING and _dialogue_remaining > 0.0:
-		if not _skip_button.get_global_rect().has_point(event.position):
+	if DialogueAdvanceInput.is_tap(event) and _dialogue_remaining > 0.0 and _dialogue_panel.visible:
+		if not _skip_button.get_global_rect().has_point(DialogueAdvanceInput.position(event)):
 			_continue_radio()
 			get_viewport().set_input_as_handled()
 			return

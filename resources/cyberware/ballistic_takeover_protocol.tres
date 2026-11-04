@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CyberwareData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/player/cyberware_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+module_id = &"ballistic_takeover_protocol"
+display_name = "弹道接管协议"
+description = "可反射的无范围敌方弹丸进入 28 像素内时，接管并制导至 220 像素内最近敌人；清除状态效果，成功后冷却 6 秒。"
+trigger_cooldown = 6.0
+takeover_radius = 28.0
+takeover_target_radius = 220.0
+takeover_homing_turn_degrees_per_second = 720.0

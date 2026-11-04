@@ -87,6 +87,36 @@ func run_checks() -> void:
 	root.push_input(escape, true)
 	await frames()
 	check(result[0] == 2 and not paused, "ending escape retains skip callback")
+	# Native touch advances one page, ignoring release, extra fingers and its
+	# synthesized mouse event. Desktop click and Enter remain covered above.
+	dialogue.open("移动通信", "第一段。\n\n第二段。\n\n第三段。", [["继续", accept]])
+	var touch := InputEventScreenTouch.new()
+	touch.position = Vector2(320, 100)
+	touch.index = 0
+	touch.pressed = true
+	root.push_input(touch, true)
+	await frames()
+	check(dialogue._page_index == 1 and paused, "native touch advances channel radio exactly one page")
+	touch.pressed = false
+	root.push_input(touch, true)
+	touch.index = 1
+	touch.pressed = true
+	root.push_input(touch, true)
+	var emulated := InputEventMouseButton.new()
+	emulated.position = touch.position
+	emulated.button_index = MOUSE_BUTTON_LEFT
+	emulated.pressed = true
+	emulated.device = InputEvent.DEVICE_ID_EMULATION
+	root.push_input(emulated, true)
+	await frames()
+	check(dialogue._page_index == 1 and paused, "touch release, second finger and emulated mouse cannot skip radio pages")
+	touch.index = 0
+	root.push_input(touch, true)
+	await frames()
+	check(dialogue._page_index == 2 and paused, "next primary touch reaches final radio page without committing early")
+	root.push_input(touch, true)
+	await frames()
+	check(not dialogue.visible and not paused and result[0] == 1 and player.is_input_enabled(), "last touch completes callback and restores gameplay")
 	main.queue_free()
 	await frames()
 	DirAccess.remove_absolute(TEST_PATH)

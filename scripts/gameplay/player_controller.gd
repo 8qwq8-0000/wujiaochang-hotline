@@ -129,7 +129,6 @@ func _unhandled_input(event: InputEvent) -> void:
 func _physics_process(delta: float) -> void:
 	_update_aim_direction()
 	_consume_buffered_defense_actions()
-	var weapon_aim_direction := _get_weapon_aim_direction()
 	guard.update_direction(aim_direction)
 	if _dead:
 		velocity = Vector2.ZERO
@@ -142,7 +141,7 @@ func _physics_process(delta: float) -> void:
 	_external_velocity = _external_velocity.move_toward(Vector2.ZERO, config.knockback_recovery * delta)
 	weapons.update_attack_pose(global_position, aim_direction, self)
 	# The muzzle must use this frame's aim before an attack is spawned.
-	visuals.update_visual(aim_direction, velocity, guard.state, guard.guard_arc_degrees, weapons.get_melee_swing_angle_offset(), _logical_mouse_world_position())
+	visuals.update_visual(aim_direction, velocity, guard.state, guard.guard_arc_degrees, weapons.get_melee_swing_angle_offset(), _logical_aim_world_position())
 	if _input_enabled and guard.can_attack() and dash.can_attack() and _should_attack_this_frame():
 		var attack := _get_attack_transform()
 		if weapons.try_attack(attack.origin, attack.x.normalized(), self):
@@ -155,7 +154,7 @@ func _physics_process(delta: float) -> void:
 		guard.state,
 		guard.guard_arc_degrees,
 		weapons.get_melee_swing_angle_offset(),
-		_logical_mouse_world_position()
+		_logical_aim_world_position()
 	)
 	_tick_movement_effect()
 	_tick_afterimages(delta)
@@ -248,7 +247,9 @@ func should_ignore_damage(packet: DamagePacket) -> bool:
 
 
 func get_persona_attack_context(data: WeaponComponentData) -> Dictionary:
-	return persona_combat.get_attack_context(data)
+	var context := persona_combat.get_attack_context(data)
+	cyberware.augment_attack_context(data, context)
+	return context
 
 
 func prepare_persona_attack_group(group_id: int, context: Dictionary) -> void:
@@ -257,6 +258,7 @@ func prepare_persona_attack_group(group_id: int, context: Dictionary) -> void:
 
 func on_persona_attack_committed(data: WeaponComponentData, context: Dictionary, group_id: int) -> void:
 	persona_combat.on_attack_committed(data, context, group_id)
+	cyberware.on_attack_committed(data, context)
 
 
 func modify_outgoing_damage(packet: DamagePacket, target: Node, base_damage: int) -> int:
@@ -408,6 +410,7 @@ func reset_transient_state() -> void:
 	statuses.clear_all()
 	guard.reset_to_idle()
 	dash.reset_transient_state()
+	cyberware.reset_transient_state()
 	weapons.reset_transient_state()
 	persona_combat.reset_transient_state()
 	hurt_box.clear_invulnerability()
@@ -423,6 +426,10 @@ func reset_transient_state() -> void:
 
 
 func _update_aim_direction() -> void:
+	var mobile_input := get_node_or_null("/root/MobileInput")
+	if mobile_input != null and mobile_input.is_touch_aim_active(self):
+		aim_direction = mobile_input.get_aim_direction(self, aim_direction)
+		return
 	var mouse_delta := _logical_mouse_world_position() - global_position
 	if mouse_delta.length() > config.aim_deadzone:
 		aim_direction = mouse_delta.normalized()
@@ -432,7 +439,7 @@ func _get_weapon_aim_direction() -> Vector2:
 	var data := weapons.get_current_weapon()
 	if data == null or data.attack_kind == WeaponComponentData.AttackKind.MELEE:
 		return aim_direction
-	var direction := _logical_mouse_world_position() - visuals.get_weapon_mount_global_position()
+	var direction := _logical_aim_world_position() - visuals.get_weapon_mount_global_position()
 	return direction.normalized() if direction.length_squared() > 1.0 else aim_direction
 
 
@@ -475,6 +482,14 @@ func _logical_mouse_world_position() -> Vector2:
 	# Camera2D.offset is presentation-only; removing it keeps aim coordinates
 	# stable while the rendered world shakes.
 	return get_global_mouse_position() - camera.offset
+
+
+func _logical_aim_world_position() -> Vector2:
+	var mouse_position := _logical_mouse_world_position()
+	var mobile_input := get_node_or_null("/root/MobileInput")
+	if mobile_input != null and mobile_input.is_touch_aim_active(self):
+		return mobile_input.get_aim_world_position(self, mouse_position)
+	return mouse_position
 
 
 func _consume_buffered_defense_actions() -> void:
@@ -535,6 +550,9 @@ func _should_attack_this_frame() -> bool:
 	var data := weapons.get_current_weapon()
 	if data == null:
 		return false
+	var mobile_input := get_node_or_null("/root/MobileInput")
+	if mobile_input != null and mobile_input.is_manual_attack_active(self):
+		return data.trigger_mode != WeaponComponentData.TriggerMode.CHARGE
 	match data.trigger_mode:
 		WeaponComponentData.TriggerMode.AUTOMATIC:
 			return _attack_held

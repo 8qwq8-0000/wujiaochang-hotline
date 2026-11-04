@@ -19,10 +19,15 @@ var explosion_radius := 0.0
 var explosion_damage := 0
 var has_area_behavior := false
 var feedback_group_id: int = 0
+var allows_trajectory_echo := false
+var takeover_consumed := false
+var electric_arc_enabled := false
+var _electric_arc_phase := 0.0
 var _resolved := false
 
 
 func _ready() -> void:
+	add_to_group("combat_projectiles")
 	area_entered.connect(_on_area_entered)
 	_sync_visual()
 
@@ -55,7 +60,46 @@ func configure_explosion(radius: float, area_damage: int) -> void:
 		_sync_visual()
 
 
+func configure_electric_arc() -> void:
+	electric_arc_enabled = true
+	if feedback_group_id <= 0:
+		feedback_group_id = -int(get_instance_id())
+	_sync_visual()
+
+
+func can_be_taken_over() -> bool:
+	return (
+		not _resolved
+		and not takeover_consumed
+		and faction == CombatFaction.Id.ENEMY
+		and reflectable
+		and not has_area_behavior
+	)
+
+
+func take_over(owner_node: Node, target: Node2D, turn_degrees_per_second: float) -> bool:
+	if not can_be_taken_over() or not is_instance_valid(owner_node) or not is_instance_valid(target):
+		return false
+	var heading := global_position.direction_to(target.global_position)
+	if heading.is_zero_approx():
+		return false
+	takeover_consumed = true
+	faction = CombatFaction.Id.PLAYER
+	source = owner_node
+	status_tags.clear()
+	direction = heading
+	homing_target = target
+	homing_turn_radians_per_second = deg_to_rad(maxf(turn_degrees_per_second, 0.0))
+	allows_trajectory_echo = false
+	tint = Color(0.35, 1.0, 0.4)
+	_sync_visual()
+	return true
+
+
 func _physics_process(delta: float) -> void:
+	if electric_arc_enabled:
+		_electric_arc_phase = fmod(_electric_arc_phase + delta * 34.0, TAU)
+		queue_redraw()
 	if is_instance_valid(homing_target) and homing_turn_radians_per_second > 0.0:
 		var desired := global_position.direction_to(homing_target.global_position)
 		if not desired.is_zero_approx():
@@ -98,6 +142,16 @@ func _physics_process(delta: float) -> void:
 
 func _draw() -> void:
 	draw_line(Vector2.LEFT * 7.0, Vector2.ZERO, tint.darkened(0.25), 2.0)
+	if not electric_arc_enabled:
+		return
+	var points := PackedVector2Array()
+	for index in 6:
+		var t := float(index) / 5.0
+		var x := lerpf(-9.0, 1.0, t)
+		var y := 0.0 if index in [0, 5] else sin(_electric_arc_phase + index * 2.35) * 2.2
+		points.append(Vector2(x, y))
+	draw_polyline(points, Color(0.18, 0.65, 1.0, 0.78), 3.2, true)
+	draw_polyline(points, Color(0.88, 0.98, 1.0, 0.96), 1.0, true)
 
 
 func _sync_visual() -> void:
@@ -156,6 +210,7 @@ func _make_damage_packet() -> DamagePacket:
 	packet.is_projectile = true
 	packet.reflectable = reflectable
 	packet.feedback_group_id = feedback_group_id
+	packet.allows_trajectory_echo = allows_trajectory_echo
 	return packet
 
 

@@ -64,7 +64,7 @@ func _process(_delta: float) -> void:
 func open(title: String, text: String, choices: Array, on_cancel: Callable = Callable()) -> void:
 	_speaker.text = title if not title.is_empty() else "接线员"
 	_choices = choices.duplicate()
-	_pages = _paginate(text)
+	_pages = _paginate(ControlPrompts.adapt(text))
 	_page_index = 0
 	_on_cancel = on_cancel
 	for child in _buttons.get_children():
@@ -74,7 +74,7 @@ func open(title: String, text: String, choices: Array, on_cancel: Callable = Cal
 		for index in choices.size():
 			var choice: Array = choices[index]
 			var button := Button.new()
-			button.text = choice[0]
+			button.text = ControlPrompts.adapt(choice[0])
 			button.custom_minimum_size.y = 28
 			button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			CyberDialoguePanel.style_button(button, index == choices.size() - 1)
@@ -113,7 +113,7 @@ func _paginate(text: String) -> Array[String]:
 func _refresh_page() -> void:
 	_text.text = _pages[_page_index]
 	_buttons.visible = _page_index == _pages.size() - 1 and _choices.size() > 1
-	_panel.title = "AI 接线员 / 通信中  [选择后继续]" if _buttons.visible else "AI 接线员 / 通信中  [Enter 或点击继续]"
+	_panel.title = "AI 接线员 / 通信中  [选择后继续]" if _buttons.visible else ("AI 接线员 / 通信中  [轻触屏幕继续]" if OS.has_feature("mobile") else "AI 接线员 / 通信中  [Enter 或点击继续]")
 	if _pages.size() > 1:
 		_panel.title += "  %d/%d" % [_page_index + 1, _pages.size()]
 	if _buttons.visible:
@@ -160,7 +160,7 @@ func _input(event: InputEvent) -> void:
 	if _buttons.visible:
 		# Let GUI focus and mouse hit-testing handle deliberate choices.
 		return
-	var clicked: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
+	var clicked := DialogueAdvanceInput.is_tap(event)
 	var continued: bool = event is InputEventKey and event.pressed and event.keycode == KEY_ENTER
 	if clicked or continued:
 		get_viewport().set_input_as_handled()

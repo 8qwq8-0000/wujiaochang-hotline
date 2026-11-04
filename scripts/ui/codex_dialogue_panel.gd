@@ -81,9 +81,9 @@ func open() -> void:
 	_refresh()
 
 func _refresh() -> void:
-	_text.text = lines[_page]
-	_progress.text = "%02d/%02d    [E] 继续    [Esc] 退出" % [_page + 1, lines.size()]
-	_next.text = completion_text if _page == lines.size() - 1 else "继续对话 [E]"
+	_text.text = ControlPrompts.adapt(lines[_page])
+	_progress.text = ("%02d/%02d    轻触屏幕继续" if OS.has_feature("mobile") else "%02d/%02d    [E] 继续    [Esc] 退出") % [_page + 1, lines.size()]
+	_next.text = ControlPrompts.adapt(completion_text if _page == lines.size() - 1 else "继续对话 [E]")
 
 func advance() -> void:
 	if not is_open:
@@ -108,7 +108,7 @@ func close() -> void:
 func _input(event: InputEvent) -> void:
 	if not is_open or event.is_echo():
 		return
-	if event.is_action_pressed("interact") or event.is_action_pressed("ui_accept"):
+	if (event is InputEventScreenTouch and DialogueAdvanceInput.is_tap(event)) or event.is_action_pressed("interact") or event.is_action_pressed("ui_accept"):
 		advance()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("pause"):

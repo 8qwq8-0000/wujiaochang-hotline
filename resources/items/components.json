@@ -85,6 +85,62 @@
 		"image": "res://assets/art/items/equipment_v1/heat_threshold_pulser.png",
 		"maximum_stack_size": 1.0
 	},
+	"momentum_recovery_tendon": {
+		"name": "动能回收腱",
+		"slot": "cyberware",
+		"effect": "res://resources/cyberware/momentum_recovery_tendon.tres",
+		"image": "res://assets/art/items/equipment_v1/momentum_recovery_tendon.png",
+		"maximum_stack_size": 1.0
+	},
+	"trajectory_echo_processor": {
+		"name": "轨迹回响处理器",
+		"slot": "cyberware",
+		"effect": "res://resources/cyberware/trajectory_echo_processor.tres",
+		"image": "res://assets/art/items/equipment_v1/trajectory_echo_processor.png",
+		"maximum_stack_size": 1.0
+	},
+	"ballistic_takeover_protocol": {
+		"name": "弹道接管协议",
+		"slot": "cyberware",
+		"effect": "res://resources/cyberware/ballistic_takeover_protocol.tres",
+		"image": "res://assets/art/items/equipment_v1/ballistic_takeover_protocol.png",
+		"maximum_stack_size": 1.0
+	},
+	"arc_ballistic_cortex": {
+		"name": "电弧弹道皮层",
+		"slot": "cyberware",
+		"effect": "res://resources/cyberware/arc_ballistic_cortex.tres",
+		"image": "res://assets/art/items/equipment_v1/arc_ballistic_cortex.png",
+		"maximum_stack_size": 1.0
+	},
+	"inertial_inversion_vertebra": {
+		"name": "惯性逆变椎体",
+		"slot": "cyberware",
+		"effect": "res://resources/cyberware/inertial_inversion_vertebra.tres",
+		"image": "res://assets/art/items/equipment_v1/inertial_inversion_vertebra.png",
+		"maximum_stack_size": 1.0
+	},
+	"axon_recycler": {
+		"name": "轴突回收器",
+		"slot": "cyberware",
+		"effect": "res://resources/cyberware/axon_recycler.tres",
+		"image": "res://assets/art/items/equipment_v1/axon_recycler.png",
+		"maximum_stack_size": 1.0
+	},
+	"micro_rotor_reflex_bundle": {
+		"name": "微转子反射束",
+		"slot": "cyberware",
+		"effect": "res://resources/cyberware/micro_rotor_reflex_bundle.tres",
+		"image": "res://assets/art/items/equipment_v1/micro_rotor_reflex_bundle.png",
+		"maximum_stack_size": 1.0
+	},
+	"predatory_vestibular_ring": {
+		"name": "掠食性前庭环",
+		"slot": "cyberware",
+		"effect": "res://resources/cyberware/predatory_vestibular_ring.tres",
+		"image": "res://assets/art/items/equipment_v1/predatory_vestibular_ring.png",
+		"maximum_stack_size": 1.0
+	},
 	"circuit_breaker": {
 		"name": "断路保险核心",
 		"slot": "insurance",

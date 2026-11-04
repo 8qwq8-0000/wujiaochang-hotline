@@ -28,13 +28,13 @@ func _ready() -> void:
 	column.add_theme_constant_override("separation", 16)
 	panel.add_child(column)
 	var text := Label.new()
-	text.text = MESSAGE
+	text.text = ControlPrompts.adapt(MESSAGE)
 	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	text.add_theme_font_size_override("font_size", 15)
 	text.add_theme_color_override("font_color", Color("ebf1f3"))
 	column.add_child(text)
 	var button := Button.new()
-	button.text = "开始休整 [Enter]"
+	button.text = "轻触屏幕开始休整" if OS.has_feature("mobile") else "开始休整 [Enter]"
 	CyberDialoguePanel.style_button(button, true)
 	button.pressed.connect(close)
 	column.add_child(button)
@@ -52,7 +52,7 @@ func _process(_delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if event.is_echo():
 		return
-	if (event is InputEventKey and event.pressed and event.keycode == KEY_ENTER) or event.is_action_pressed("ui_cancel"):
+	if (event is InputEventScreenTouch and DialogueAdvanceInput.is_tap(event)) or (event is InputEventKey and event.pressed and event.keycode == KEY_ENTER) or event.is_action_pressed("ui_cancel"):
 		get_viewport().set_input_as_handled()
 		close()
 

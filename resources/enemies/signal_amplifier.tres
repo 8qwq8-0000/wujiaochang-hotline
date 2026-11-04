@@ -21,4 +21,3 @@ attack_windup = 0.55
 projectile_speed = 280.0
 body_color = Color(0.95, 0.45, 0.12, 1)
 patrol_enabled = true
-

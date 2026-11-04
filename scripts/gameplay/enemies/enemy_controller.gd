@@ -807,6 +807,10 @@ func apply_stagger(seconds: float) -> void:
 	queue_redraw()
 
 
+func apply_paralysis(seconds: float) -> void:
+	apply_stagger(seconds)
+
+
 func apply_knockback(force: Vector2) -> void:
 	velocity += force
 
