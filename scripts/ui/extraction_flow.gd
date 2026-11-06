@@ -31,24 +31,23 @@ func _set_layout(settlement: bool) -> void:
 	_settlement_layout = settlement
 	_divider.visible = settlement
 	_settlement_note.visible = settlement
-	_overlay.accent_color = CyberUITheme.PHOSPHOR
-	_overlay.panel_color = Color("071a16f5")
+	_overlay.accent_color = Color("e7ac62")
+	_overlay.panel_color = Color("20262af5")
 	if settlement:
 		_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		_overlay.offset_left = 48
 		_overlay.offset_right = -48
 		_overlay.offset_top = 40
 		_overlay.offset_bottom = -40
-		_overlay.title = "HOTLINE / 行动记录"
-		_settlement_note.text = "行动记录已保存 / 可返回仓库"
-		_overlay.panel_color = CyberUITheme.BACKGROUND
+		_overlay.title = "行动记录"
+		_settlement_note.text = "记录已保存，可返回仓库"
 	else:
 		_overlay.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 		_overlay.offset_left = 20
 		_overlay.offset_right = -20
 		_overlay.offset_top = -150
 		_overlay.offset_bottom = -16
-		_overlay.title = "HOTLINE / 上行线路"
+		_overlay.title = "楼层结算"
 	_title.add_theme_font_size_override("font_size", 18 if settlement else 14)
 	_details.add_theme_font_size_override("font_size", 12)
 	_sync_settlement_shade()
@@ -62,9 +61,10 @@ func _build_panel() -> void:
 	add_child(_shade)
 	_overlay = TerminalPanel.new()
 	_overlay.name = "ExitDialogue"
+	_overlay.clip_contents = true
 	_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_overlay.theme = CyberUITheme.create_theme()
-	_overlay.panel_color = Color("071a16f5")
+	_overlay.theme = CyberUITheme.create_os_theme()
+	_overlay.panel_color = Color("20262af5")
 	add_child(_overlay)
 	_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	_overlay.visibility_changed.connect(_sync_settlement_shade)
@@ -133,7 +133,7 @@ func settle_death() -> void:
 	var profile: Dictionary = store.get_profile()
 	var recovery := _player.export_recovery_state()
 	_set_layout(true)
-	_overlay.title = "HOTLINE / 线路中断"
+	_overlay.title = "线路中断"
 	_overlay.accent_color = CyberUITheme.DANGER
 	_owns_pause = _owns_pause or not get_tree().paused
 	get_tree().paused = true
@@ -141,7 +141,7 @@ func settle_death() -> void:
 	_clear_buttons()
 	if not store.commit(profile.chest, recovery):
 		_title.text = "死亡结算保存失败"
-		_settlement_note.text = "记录尚未保存 / 请重试"
+		_settlement_note.text = "保存失败，请重试"
 		_details.text = store.error_message + "。请重试，尚未返回仓库。"
 		_add_button("重试保存", settle_death)
 		return
@@ -151,7 +151,7 @@ func settle_death() -> void:
 	_settled = true
 	_title.text = "行动失败"
 	var protected := _player.inventory.blackbox_slot.get_item()
-	_settlement_note.text = "仓库箱内物品不受影响 / 回仓时保证有武器可用"
+	_settlement_note.text = "仓库物品保留，回仓后仍有武器"
 	_details.text = "黑匣保留\n%s\n\n未保护的普通装备和背包物品已丢失。" % (protected.get_title() if protected != null else "无")
 	_add_button("返回仓库", return_to_warehouse)
 
@@ -179,7 +179,7 @@ func open_exit(exit: ExitElevator = null) -> void:
 		_overlay.show()
 		return
 	_title.text = "本层已清理"
-	_details.text = "现在撤离会带出随身装备；也可以继续前往下一层。走出出口范围即可关闭。"
+	_details.text = "撤离带走装备，或继续前往下一层。"
 	_clear_buttons()
 	_add_button("撤离结算", extract)
 	_add_button("继续下一层", continue_floor)
@@ -239,7 +239,7 @@ func continue_floor() -> void:
 	var service_stop: bool = run.floor_index == 1
 	if service_stop:
 		destination = CODEX_PASSAGE_PATH
-	var payload := {"player_state": snapshot, "transit_heat": {"current": _player.heat.current_heat, "overheated": _player.heat.is_overheated}}
+	var payload := {"player_state": snapshot}
 	if not flow.request_scene(destination, payload):
 		_details.text = "暂时无法进入下一层，请重试或继续搜刮。"
 		return

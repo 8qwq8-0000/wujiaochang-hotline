@@ -21,6 +21,14 @@ func kill(enemy: EnemyController) -> void:
 	if enemy.state == EnemyController.State.SELF_DESTRUCT:
 		enemy._physics_process(enemy.profile.self_destruct_delay + 0.01)
 
+
+func enemy_pickups() -> Array[Node]:
+	var result: Array[Node] = []
+	for pickup in get_nodes_in_group("component_pickups"):
+		if pickup.has_meta("enemy_drop"):
+			result.append(pickup)
+	return result
+
 func run() -> void:
 	root.get_node("WarehouseStore").save_path = "user://bc_death_drop_check.json"
 	DirAccess.remove_absolute("user://bc_death_drop_check.json")
@@ -49,6 +57,7 @@ func run() -> void:
 		enemy.set_physics_process(false)
 	var enemies := get_nodes_in_group("enemies")
 	assembler.enemy_drop_chance = 0.0
+	assembler.cyberware_drop_chance = 0.0
 	kill(enemies[0])
 	await settle()
 	check(get_nodes_in_group("component_pickups").is_empty() and not first.cleared, "missed ordinary death roll creates no loot before clear")
@@ -66,7 +75,7 @@ func run() -> void:
 		return
 	var pickup: ComponentPickup = drops[0]
 	check(pickup.global_position.distance_to(death_position) < 0.01 and pickup.get_parent() == first, "pickup spawns at snapshotted enemy death position in its own area")
-	check(pickup.get_meta("enemy_drop") == enemy_id and pickup.has_meta("area_guarantee"), "first natural drop fulfils its area guarantee")
+	check(pickup.get_meta("enemy_drop") == enemy_id and not pickup.has_meta("area_guarantee"), "natural drop has no area guarantee")
 	var dropped_slot := str(pickup.rolled_item.get_property("slot", ""))
 	check(
 		(
@@ -93,63 +102,52 @@ func run() -> void:
 	player.global_position = second.global_position + Vector2(74, 180)
 	await settle()
 	assembler.enemy_drop_chance = 1.0
-	var locations := {}
+	assembler.cyberware_drop_chance = 1.0
 	var enemies2 := get_nodes_in_group("enemies")
+	var enemy_ids2: Array[int] = []
 	for enemy in enemies2:
 		enemy.set_physics_process(false)
-		locations[enemy.get_instance_id()] = enemy.global_position
+		enemy_ids2.append(enemy.get_instance_id())
 	for enemy in enemies2:
 		kill(enemy)
 	await settle()
-	check(get_nodes_in_group("component_pickups").size() == enemies2.size(), "later enemies may each drop loot without extra clear reward")
-	for drop in get_nodes_in_group("component_pickups"):
-		check(drop.get_parent() == second and locations.has(drop.get_meta("enemy_drop")) and drop.global_position.distance_to(locations[drop.get_meta("enemy_drop")]) < 0.01, "each later drop uses its own death position")
-	# A fresh floor with every probability roll forced to miss must still issue one
-	# pickup from the first area's last actual death, never from a fixed marker.
+	check(enemy_pickups().size() == enemies2.size() * 2, "equipment and cyberware roll separately for each enemy")
+	check(get_nodes_in_group("component_pickups").size() == enemies2.size() * 2, "final enemy follows the same two drop rolls as other enemies")
+	check(get_nodes_in_group("component_pickups").all(func(drop: Node) -> bool: return not drop.has_meta("floor_cyberware_reward") and not drop.has_meta("area_guarantee")), "random drops carry no guarantee markers")
+	for source_id in enemy_ids2:
+		var pair := enemy_pickups().filter(func(drop: Node) -> bool: return drop.get_meta("enemy_drop") == source_id)
+		check(pair.size() == 2, "each enemy produces separate equipment and cyberware pickups")
+		if pair.size() == 2:
+			check(pair[0].global_position.distance_to(pair[1].global_position) >= 54.0, "paired pickup textures do not overlap")
+			check(str(pair[0].rolled_item.get_property("slot", "")) != str(pair[1].rolled_item.get_property("slot", "")), "paired pickups have different item categories")
+	# A fresh floor with every probability roll forced to miss produces no loot.
 	assembler.assemble()
 	await settle()
 	assembler.enemy_drop_chance = 0.0
+	assembler.cyberware_drop_chance = 0.0
 	first = assembler.generated_rooms[0]
-	var last_position := Vector2.ZERO
 	for enemy in get_nodes_in_group("enemies"):
 		enemy.set_physics_process(false)
-		last_position = enemy.global_position
 		kill(enemy)
 	await settle()
-	check(get_nodes_in_group("component_pickups").size() == 1 and first.reward_count == 1, "all missed rolls produce exactly one guaranteed death drop")
-	var guaranteed: ComponentPickup = get_first_node_in_group("component_pickups")
-	check(guaranteed.global_position.distance_to(last_position) < 0.01 and guaranteed.has_meta("area_guarantee"), "guaranteed drop uses last enemy death location")
+	check(get_nodes_in_group("component_pickups").is_empty() and first.reward_count == 0, "all missed rolls produce no guaranteed death drop")
 	first._on_all_required_defeated()
 	await settle()
-	check(get_nodes_in_group("component_pickups").size() == 1, "repeat first clear cannot duplicate guaranteed death loot")
-	# The regression: a first-area guarantee (even after pickup) must never suppress
-	# a second-area guarantee when every normal probability roll misses.
-	var first_guarantee_id := guaranteed.get_instance_id()
-	player.global_position = guaranteed.global_position
-	await settle()
-	check(guaranteed.try_pickup(player.inventory), "first area guarantee can be collected before entering second area")
-	await settle()
+	check(get_nodes_in_group("component_pickups").is_empty(), "repeat first clear does not create loot")
 	second = assembler.generated_rooms[1]
 	player.global_position = second.global_position + Vector2(74, 180)
 	await settle()
-	var final_deaths: Array[Vector2] = []
-	root.get_node("CombatEvents").entity_defeated.connect(func(entity: Node) -> void:
-		if entity is EnemyController:
-			final_deaths.append(entity.global_position))
 	for enemy in get_nodes_in_group("enemies"):
 		enemy.set_physics_process(false)
 		kill(enemy)
 	await settle()
-	check(second.cleared and second.reward_count == 1 and get_nodes_in_group("component_pickups").size() == 1, "second area with all rolls missed grants its own guarantee after first was collected")
-	var second_guarantee: ComponentPickup = get_first_node_in_group("component_pickups")
-	check(second_guarantee.get_parent() == second and second_guarantee.get_instance_id() != first_guarantee_id and second_guarantee.global_position.distance_to(final_deaths.back()) < 0.01, "second guarantee is new and spawns at second area's last actual death position")
-	check(second_guarantee.has_meta("area_guarantee"), "second area's loot is marked as its own guarantee")
+	check(second.cleared and second.reward_count == 0 and enemy_pickups().is_empty(), "second area also has no forced drop")
 	first._on_all_required_defeated()
 	second._on_all_required_defeated()
 	assembler._on_room_cleared(first)
 	assembler._on_room_cleared(second)
 	await settle()
-	check(get_nodes_in_group("component_pickups").size() == 1 and first.reward_count == 1 and second.reward_count == 1, "repeated clears cannot duplicate either area's guarantee")
+	check(get_nodes_in_group("component_pickups").is_empty() and first.reward_count == 0 and second.reward_count == 0, "repeated clears cannot create loot")
 	main.queue_free()
 	await settle()
 	print("Death drop checks: ", checks, "; failures: ", failures)

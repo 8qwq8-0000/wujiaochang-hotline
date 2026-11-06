@@ -66,7 +66,7 @@ func run_checks() -> void:
 	marked_defeat.target_defeated = true
 	player.persona_combat._on_deep_ninja_hit(enemy, marked_defeat)
 	player.persona_combat._physics_process(0.2)
-	check(player.persona_combat.marked_target == next_enemy and ai_attacks[0] == 1, "defeating a marked enemy still lets Gaze fire once at the next mark")
+	check(player.persona_combat.marked_target == next_enemy and not (player.cyberware.get_circuit_runtime_state().queues as Dictionary).is_empty(), "defeating a marked enemy queues Gaze's paid fire circuit")
 	player.persona_combat._set_mark(enemy)
 	var player_hit := DamagePacket.new()
 	player_hit.base_damage = 0
@@ -167,17 +167,13 @@ func run_checks() -> void:
 	player.talent_core.consume_persona_drink(TalentCoreController.ROCK_VIGILANTE)
 	player.talent_core.set_talent_choice(TalentCoreController.ROCK_VIGILANTE, 1, &"steady_beat")
 	player.talent_core.set_persona(TalentCoreController.ROCK_VIGILANTE)
-	var test_baton := (load("res://resources/weapons/baton.tres") as WeaponComponentData).duplicate(true) as WeaponComponentData
-	test_baton.heat_per_attack = 10.0
-	player.equip_weapon(test_baton)
+	player.cyberware.reset_transient_state()
 	player.weapons.reset_transient_state()
-	player.heat.set_heat(0.0)
-	check(player.perform_persona_attack(Vector2.RIGHT), "rock persona can use ordinary weapon path")
-	check(is_equal_approx(player.persona_combat.rock_feedback, 10.0 / player.heat.effective_max() * 100.0), "rock firing feedback follows base heat divided by effective heat capacity")
-	check(is_equal_approx(player.heat.current_heat, 7.5), "steady beat reduces attack heat by 25 percent before accumulation")
+	player.cyberware.circuit.set_energy(80.0)
+	check(not player.persona_combat.get_attack_context(player.weapons.get_current_weapon()).has("heat_multiplier"), "rock talents no longer alter weapon heat")
 	player.persona_combat._set_rock_feedback(50.0)
 	check(is_equal_approx(player.dash.persona_walk_speed_bonus, 0.10), "half feedback grants half of the movement bonus")
-	check(is_equal_approx(player.heat.persona_cooling_bonus, 0.25), "half feedback grants half of the cooling bonus")
+	check(is_equal_approx(player.cyberware.circuit.persona_energy_recovery_bonus, 0.125), "half feedback grants half of the energy recovery bonus")
 	check(is_equal_approx(player.weapons.persona_attack_speed_bonus, 0.15), "half feedback grants half of the attack-speed bonus")
 	check(is_zero_approx(player.dash.equipment_speed_bonus), "rock feedback does not increase dash speed")
 
@@ -198,6 +194,10 @@ func run_checks() -> void:
 	await physics_frame
 	var distortion_context := player.persona_combat.get_attack_context(pistol)
 	check(bool(distortion_context.get("distortion_burst", false)), "distortion is stamped when a projectile is fired at sixty percent feedback")
+	player.weapons.perform_circuit_attack(pistol, player.global_position, Vector2.LEFT, player, 1.0, PackedStringArray(["circuit_round:91"]))
+	var circuit_group := player.weapons.get_last_feedback_group_id()
+	var circuit_context: Dictionary = player.persona_combat.get("_attack_group_contexts").get(circuit_group, {})
+	check(bool(circuit_context.get("distortion_burst", false)), "circuit weapon attack carries distortion into its hit group")
 	player.persona_combat.prepare_attack_group(9001, distortion_context)
 	var distortion_hit := DamageResult.new()
 	distortion_hit.packet = DamagePacket.new()
@@ -211,7 +211,9 @@ func run_checks() -> void:
 	var primary_health := burst_primary.health.current_health
 	player.persona_combat._on_damage_resolved(distortion_hit)
 	player.persona_combat._on_damage_resolved(distortion_hit)
-	check(burst_neighbor.health.current_health == neighbor_health - 1, "one firing group produces only one distortion burst")
+	player.persona_combat._on_damage_resolved(distortion_hit)
+	player.persona_combat._on_damage_resolved(distortion_hit)
+	check(burst_neighbor.health.current_health == neighbor_health - 3, "one firing group produces at most three distortion bursts")
 	check(burst_primary.health.current_health == primary_health, "distortion burst does not damage the direct-hit target again")
 	burst_neighbor.global_position = Vector2(240.0, 100.0)
 	var blocked_neighbor := load("res://scenes/actors/enemies/enemy.tscn").instantiate() as EnemyController
@@ -242,14 +244,17 @@ func run_checks() -> void:
 	var wave_wall := make_wall(arena, Vector2(135.0, 100.0), Vector2(6.0, 34.0))
 	await physics_frame
 	var wave_health := wave_target.health.current_health
-	player.heat.set_heat(player.heat.effective_max())
-	player.heat.is_overheated = true
-	player.persona_combat._on_overheated()
-	check(wave_target.health.current_health == wave_health - 1, "overload scream pulses immediately and passes through walls")
+	player.persona_combat._set_rock_feedback(60.0)
+	player.persona_combat.on_circuit_attack_emitted()
+	check(wave_target.health.current_health == wave_health - 1, "overload scream pulses on a high-feedback circuit attack")
 	player.persona_combat._tick_rock_vigilante(1.0)
-	check(wave_target.health.current_health == wave_health - 2, "overload scream repeats once per overheated second")
-	player.heat.is_overheated = false
-	player.persona_combat._on_heat_recovered()
+	player.persona_combat._set_rock_feedback(60.0)
+	player.persona_combat.on_circuit_attack_emitted()
+	check(wave_target.health.current_health == wave_health - 2, "overload scream can pulse after a second and another attack")
+	player.persona_combat._tick_rock_vigilante(1.0)
+	player.persona_combat._set_rock_feedback(60.0)
+	player.persona_combat.on_circuit_attack_emitted(true)
+	check(wave_target.health.current_health == wave_health - 2, "a wave-triggered circuit cannot emit another overload wave")
 	wave_wall.queue_free()
 	wave_target.queue_free()
 	await physics_frame
@@ -257,28 +262,18 @@ func run_checks() -> void:
 	player.talent_core.set_persona_level(TalentCoreController.ROCK_VIGILANTE, 3)
 	player.talent_core.set_talent_choice(TalentCoreController.ROCK_VIGILANTE, 3, &"encore_autopilot")
 	player.persona_combat.rock_feedback = 99.0
-	player.weapons.reset_transient_state()
-	player.heat.set_heat(0.0)
-	check(player.perform_persona_attack(Vector2.RIGHT) and player.persona_combat.is_nuclear_frenzy_active(), "full feedback enters the four-second nuclear frenzy")
+	player.persona_combat._set_rock_feedback(100.0)
+	check(player.persona_combat.is_nuclear_frenzy_active(), "full feedback enters the four-second nuclear frenzy")
 	check(is_equal_approx(float(player.persona_combat.get("_encore_remaining")), 4.0), "nuclear frenzy starts with four full seconds")
-	player.heat.set_heat(player.heat.effective_max())
-	player.heat.is_overheated = true
-	var encore_before_overheat := float(player.persona_combat.get("_encore_remaining"))
-	var feedback_before_overheat := player.persona_combat.rock_feedback
-	player.persona_combat._on_overheated()
-	check(is_equal_approx(float(player.persona_combat.get("_encore_remaining")), encore_before_overheat) and is_equal_approx(player.persona_combat.rock_feedback, feedback_before_overheat), "overheating does not shorten frenzy or cut its feedback")
-	player.weapons.set_cooldown_remaining(99.0)
 	var movement_input := InputEventAction.new()
 	movement_input.action = "move_right"
 	movement_input.pressed = true
 	player.persona_combat.notify_player_input(movement_input)
 	check(player.persona_combat.is_nuclear_frenzy_active(), "nuclear frenzy is not an AI soft takeover and player input does not cancel it")
-	check(player.perform_persona_attack(Vector2.RIGHT), "nuclear frenzy attacks through both cooldown and overheat")
-	check(player.heat.current_heat > player.heat.effective_max(), "nuclear frenzy stores doubled heat in the darker overflow channel")
 	player.persona_combat._tick_rock_vigilante(2.1)
 	check(player.persona_combat.is_nuclear_frenzy_active() and is_equal_approx(player.persona_combat.rock_feedback, 47.5), "frenzy remains active after two seconds and feedback falls linearly")
 	player.persona_combat._tick_rock_vigilante(2.0)
-	check(not player.persona_combat.is_nuclear_frenzy_active() and player.heat.current_heat > player.heat.effective_max(), "overflow remains after the four-second frenzy until normal cooling removes it")
+	check(not player.persona_combat.is_nuclear_frenzy_active() and is_zero_approx(player.persona_combat.rock_feedback), "frenzy ends after four seconds with feedback depleted")
 
 	player.talent_core.consume_persona_drink(TalentCoreController.LEGENDARY_MASTER)
 	player.talent_core.consume_persona_drink(TalentCoreController.LEGENDARY_MASTER)

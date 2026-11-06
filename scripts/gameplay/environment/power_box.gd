@@ -4,11 +4,10 @@ extends Area2D
 enum State { READY, CLAIMED, BROKEN }
 const BUFF_ART := {
 	&"attack_speed": preload("res://assets/art/ui/feedback/charging_station_v1/attack_speed_25.png"),
-	&"cooling": preload("res://assets/art/ui/feedback/charging_station_v1/cooling_50.png"),
 	&"guard_recovery": preload("res://assets/art/ui/feedback/charging_station_v1/guard_recovery_30.png"),
 }
 @export_range(16.0, 300.0, 1.0) var discharge_radius := 120.0
-@export_enum("随机", "攻速", "散热", "格挡后摇") var buff_choice := 0
+@export_enum("义体终端", "攻速", "能量恢复", "格挡后摇") var buff_choice := 0
 var state := State.READY
 var discharge_count := 0
 var prompt: Label
@@ -33,18 +32,29 @@ func _ready() -> void:
 func scope_room() -> Node:
 	return EnvironmentArea.for_actor(self)
 
+
+func is_circuit_terminal() -> bool:
+	return buff_choice == 0
+
 func can_interact(actor: Node2D) -> bool:
-	if state != State.READY or get_tree().paused or not actor is PlayerController:
+	var terminal_available := is_circuit_terminal() and state in [State.READY, State.CLAIMED]
+	if (state != State.READY and not terminal_available) or get_tree().paused or not actor is PlayerController:
 		return false
 	if not actor.is_input_enabled() or actor.health.is_dead() or actor.global_position.distance_to(global_position) > 76:
 		return false
-	if EnvironmentArea.for_actor(actor) != scope_room() or scope_room().get("cleared") == true:
+	if EnvironmentArea.for_actor(actor) != scope_room():
+		return false
+	var room_cleared: bool = scope_room().get("cleared") == true
+	if (is_circuit_terminal() and not room_cleared) or (not is_circuit_terminal() and room_cleared):
 		return false
 	var ray := PhysicsRayQueryParameters2D.create(global_position, actor.global_position, 1)
 	return get_world_2d().direct_space_state.intersect_ray(ray).is_empty()
 
 func interact(actor: Node2D) -> void:
 	if not can_interact(actor):
+		return
+	if is_circuit_terminal():
+		_claim_circuit_terminal(actor as PlayerController)
 		return
 	var id: StringName = RoomBuffComponent.BUFFS[buff_choice - 1] if buff_choice > 0 else RoomBuffComponent.BUFFS.pick_random()
 	var buffs := actor.get_node_or_null("RoomBuffComponent") as RoomBuffComponent
@@ -62,6 +72,27 @@ func interact(actor: Node2D) -> void:
 	$ActiveSigil.refresh()
 	queue_redraw()
 
+
+func _claim_circuit_terminal(actor: PlayerController) -> void:
+	var first_sync := state == State.READY
+	var module_id := actor.cyberware.claim_terminal_module() if first_sync else StringName()
+	state = State.CLAIMED
+	$ActiveSigil.refresh()
+	queue_redraw()
+	var events := get_node_or_null("/root/CombatEvents")
+	if first_sync and events != null:
+		if module_id.is_empty():
+			events.publish_message("义体终端已接入", Color("8fffe4"))
+		else:
+			var data := load(ComponentRolls.cyberware_resource_path(module_id)) as CyberwareData
+			var title := data.display_name if data != null else String(module_id)
+			events.publish_message("获得义体：%s" % title, Color("8fffe4"))
+	var hud := get_tree().get_first_node_in_group(&"combat_hud")
+	if hud != null:
+		var editor: CyberwareCircuitPanel = hud.get_circuit_editor()
+		if editor != null:
+			editor.set_open(true)
+
 func _show_buff_feedback(id: StringName, actor: Node2D) -> void:
 	var feedback := Node2D.new()
 	_buff_feedback = feedback
@@ -73,12 +104,25 @@ func _show_buff_feedback(id: StringName, actor: Node2D) -> void:
 	add_child(feedback)
 	feedback.top_level = true
 	feedback.global_position = actor.global_position + Vector2(0, -80)
-	var sprite := Sprite2D.new()
-	sprite.texture = BUFF_ART[id]
-	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	var width := 220.0 if id == &"guard_recovery" else 184.0
-	sprite.scale = Vector2.ONE * width / sprite.texture.get_width()
-	feedback.add_child(sprite)
+	if id == &"energy_recovery":
+		var title := Label.new()
+		title.text = "能量恢复 +50%"
+		title.theme = CyberUITheme.create_theme()
+		title.position = Vector2(-110, -15)
+		title.size.x = 220
+		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		title.add_theme_font_size_override("font_size", 18)
+		title.add_theme_color_override("font_color", Color("9fe8ba"))
+		title.add_theme_color_override("font_outline_color", Color.BLACK)
+		title.add_theme_constant_override("outline_size", 3)
+		feedback.add_child(title)
+	else:
+		var sprite := Sprite2D.new()
+		sprite.texture = BUFF_ART[id]
+		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		var width := 220.0 if id == &"guard_recovery" else 184.0
+		sprite.scale = Vector2.ONE * width / sprite.texture.get_width()
+		feedback.add_child(sprite)
 	var detail := Label.new()
 	detail.text = "本区域清场后失效"
 	detail.theme = CyberUITheme.create_theme()
@@ -110,9 +154,12 @@ func _process(_delta: float) -> void:
 	var player := get_tree().get_first_node_in_group("player") as PlayerController
 	prompt.visible = not is_instance_valid(_buff_feedback) and player != null and not player.health.is_dead() and player.global_position.distance_to(global_position) <= 96
 	if state == State.READY:
-		prompt.text = "本区域已清场" if scope_room().get("cleared") == true else ControlPrompts.adapt("E 领取随机增益")
+		if is_circuit_terminal():
+			prompt.text = ControlPrompts.adapt("E 接入义体终端") if scope_room().get("cleared") == true else "清场后接入义体终端"
+		else:
+			prompt.text = "本区域已清场" if scope_room().get("cleared") == true else ControlPrompts.adapt("E 领取区域增益")
 	elif state == State.CLAIMED:
-		prompt.text = "增益已领取（本区域清理后失效）"
+		prompt.text = ControlPrompts.adapt("E 打开义体终端") if is_circuit_terminal() else "增益已领取（本区域清理后失效）"
 	else:
 		prompt.text = "充电台不可用"
 	if prompt.visible:

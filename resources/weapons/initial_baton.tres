@@ -12,6 +12,7 @@ attack_kind = 0
 damage = 1
 cooldown = 0.48
 heat_per_attack = 0.0
+feedback_gain = 0.0
 attack_range = 30.0
 melee_active_seconds = 0.12
 melee_arc_degrees = 72.0

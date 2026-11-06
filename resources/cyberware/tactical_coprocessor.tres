@@ -6,4 +6,9 @@
 script = ExtResource("1")
 module_id = &"tactical_coprocessor"
 display_name = "战术协处理器"
-description = "兼容枪械可以按住连续射击；过热恢复后自动续射。"
+description = "将当前每条攻击按原方向复制一条；副本继续接受右侧义体修改，整轮最多 32 条攻击。"
+target_scope = Array[StringName]([&"weapon_call"])
+circuit_kind = 2
+grade = 1
+circuit_energy_cost = 18.0
+circuit_tags = PackedStringArray()

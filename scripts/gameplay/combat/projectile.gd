@@ -22,8 +22,23 @@ var feedback_group_id: int = 0
 var allows_trajectory_echo := false
 var takeover_consumed := false
 var electric_arc_enabled := false
+var circuit_arc_chains := 0
+var circuit_echo_layers := 0
+var circuit_payload_group_id := 0
+var circuit_base_explosion_radius := 0.0
+var circuit_base_explosion_damage := 0
+var circuit_base_area_behavior := false
+var calamity_blade := false
+var calamity_max_distance := 0.0
+var _calamity_travelled := 0.0
 var _electric_arc_phase := 0.0
 var _resolved := false
+var circuit_pierce_remaining := 0
+var circuit_penetration_boost := false
+var circuit_visual_scale := 1.0
+var _pierced_enemy_count := 0
+var _pierced_actor_ids: Dictionary = {}
+var _pierced_wall_rids: Array[RID] = []
 
 
 func _ready() -> void:
@@ -50,10 +65,8 @@ func configure_homing(target: Node2D, turn_degrees_per_second: float) -> void:
 
 
 func configure_explosion(radius: float, area_damage: int) -> void:
-	if has_area_behavior:
-		return
-	explosion_radius = maxf(radius, 0.0)
-	explosion_damage = maxi(area_damage, 0)
+	explosion_radius = maxf(explosion_radius, maxf(radius, 0.0))
+	explosion_damage += maxi(area_damage, 0)
 	has_area_behavior = explosion_radius > 0.0 and explosion_damage > 0
 	if has_area_behavior and homing_target == null:
 		tint = Color(1.0, 0.62, 0.2)
@@ -64,6 +77,13 @@ func configure_electric_arc() -> void:
 	electric_arc_enabled = true
 	if feedback_group_id <= 0:
 		feedback_group_id = -int(get_instance_id())
+	_sync_visual()
+
+
+func configure_calamity_blade(max_distance: float = 0.0) -> void:
+	calamity_blade = true
+	calamity_max_distance = maxf(max_distance, 0.0)
+	tint = Color(0.9, 0.13, 0.19)
 	_sync_visual()
 
 
@@ -106,7 +126,10 @@ func _physics_process(delta: float) -> void:
 			var next_angle := rotate_toward(direction.angle(), desired.angle(), homing_turn_radians_per_second * delta)
 			direction = Vector2.from_angle(next_angle)
 			_sync_visual()
-	var next_position := global_position + direction * speed * delta
+	var travel := speed * delta
+	if calamity_blade and calamity_max_distance > 0.0:
+		travel = minf(travel, maxf(calamity_max_distance - _calamity_travelled, 0.0))
+	var next_position := global_position + direction * travel
 	# Sweep the whole step so fast player shots cannot skip a thin barrier.
 	if faction == CombatFaction.Id.PLAYER:
 		var shield_query := PhysicsRayQueryParameters2D.create(global_position, next_position, EnemyBarrierSkill.COLLISION_LAYER)
@@ -118,8 +141,18 @@ func _physics_process(delta: float) -> void:
 			queue_free()
 			return
 	var query := PhysicsRayQueryParameters2D.create(global_position, next_position, 1)
+	query.exclude = _pierced_wall_rids
 	var wall_hit := get_world_2d().direct_space_state.intersect_ray(query)
 	if not wall_hit.is_empty():
+		if circuit_pierce_remaining != 0:
+			if circuit_pierce_remaining > 0:
+				circuit_pierce_remaining -= 1
+			_pierced_wall_rids.append(wall_hit.rid)
+			global_position = next_position
+			lifetime -= delta
+			if lifetime <= 0.0:
+				queue_free()
+			return
 		global_position = wall_hit.position
 		_resolved = true
 		# Door leaves are world-blocking StaticBody2Ds. Notify their owning door
@@ -131,12 +164,20 @@ func _physics_process(delta: float) -> void:
 		queue_free()
 		return
 	global_position = next_position
+	if calamity_blade and calamity_max_distance > 0.0:
+		_calamity_travelled += travel
+		if _calamity_travelled >= calamity_max_distance:
+			queue_free()
 	lifetime -= delta
 	if lifetime <= 0.0:
 		queue_free()
 
 
 func _draw() -> void:
+	if calamity_blade:
+		draw_colored_polygon(PackedVector2Array([Vector2(-14, -5), Vector2(10, -2), Vector2(18, 0), Vector2(10, 2), Vector2(-14, 5)]), Color(0.12, 0.02, 0.04))
+		draw_line(Vector2(-12, -1), Vector2(16, 0), tint, 2.0)
+		return
 	draw_line(Vector2.LEFT * 7.0, Vector2.ZERO, tint.darkened(0.25), 2.0)
 	if not electric_arc_enabled:
 		return
@@ -155,11 +196,14 @@ func _sync_visual() -> void:
 	var visual := get_node_or_null("Visual") as Sprite2D
 	if visual != null:
 		visual.modulate = tint
+		visual.scale = Vector2.ONE * circuit_visual_scale
 	queue_redraw()
 
 
 func _on_area_entered(area: Area2D) -> void:
 	if _resolved:
+		return
+	if area is HurtBox2DComponent and is_instance_valid(area.actor) and _pierced_actor_ids.has(area.actor.get_instance_id()):
 		return
 	# The player's upward-offset hurt box overlaps the upward muzzle position.
 	# Enemy fire passes through allies so ranged units can fire from cover.
@@ -172,7 +216,15 @@ func _on_area_entered(area: Area2D) -> void:
 		return
 	if not area.has_method("receive_hit"):
 		return
+	if circuit_payload_group_id > 0:
+		var cyberware := source.get_node_or_null("CyberwareController") as CyberwareController if is_instance_valid(source) else null
+		if cyberware == null or not cyberware.claim_weapon_payload_hit(circuit_payload_group_id):
+			explosion_radius = circuit_base_explosion_radius
+			explosion_damage = circuit_base_explosion_damage
+			has_area_behavior = circuit_base_area_behavior
 	var packet := _make_damage_packet()
+	if circuit_penetration_boost and _pierced_enemy_count > 0:
+		packet.base_damage = damage * (1 + _pierced_enemy_count)
 	var direct_actor_id := 0
 	if has_area_behavior and area is HurtBox2DComponent and is_instance_valid(area.actor):
 		packet.base_damage += explosion_damage
@@ -184,6 +236,18 @@ func _on_area_entered(area: Area2D) -> void:
 		direction = result.packet.travel_direction.normalized()
 		tint = Color(0.95, 0.75, 0.15)
 		_sync_visual()
+		return
+	if faction == CombatFaction.Id.PLAYER and is_instance_valid(source) and (circuit_arc_chains > 0 or circuit_echo_layers > 0):
+		var cyberware := source.get_node_or_null("CyberwareController") as CyberwareController
+		if cyberware != null:
+			cyberware.on_circuit_projectile_hit(self, result)
+	if result != null and result.final_damage > 0 and area is HurtBox2DComponent and is_instance_valid(area.actor) and (area.actor.is_in_group("enemies") or area.actor.is_in_group("bosses")) and circuit_pierce_remaining != 0:
+		_pierced_actor_ids[area.actor.get_instance_id()] = true
+		_pierced_enemy_count += 1
+		if circuit_pierce_remaining > 0:
+			circuit_pierce_remaining -= 1
+		circuit_echo_layers = 0
+		_detonate(direct_actor_id)
 		return
 	_resolved = true
 	_detonate(direct_actor_id)
@@ -238,6 +302,7 @@ func _detonate(excluded_actor_id: int = 0) -> void:
 		packet.source = source if is_instance_valid(source) else null
 		packet.source_faction = faction
 		packet.weapon_id = weapon_id
+		packet.status_tags = status_tags.duplicate()
 		packet.source_position = global_position
 		packet.travel_direction = offset.normalized() if not offset.is_zero_approx() else direction
 		packet.knockback = packet.travel_direction * 70.0

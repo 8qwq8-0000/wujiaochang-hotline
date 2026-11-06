@@ -63,10 +63,6 @@ func _ready() -> void:
 	backpack.item_removed.connect(_on_backpack_item_removed)
 	changed.emit()
 	player.get_node("HealthComponent").died.connect(_on_player_died)
-	var talent_core := player.get_node_or_null("TalentCoreController") as TalentCoreController
-	if talent_core != null:
-		talent_core.persona_changed.connect(_on_persona_changed)
-		call_deferred("_grant_calamity_flame_if_active")
 
 func _create_slot(slot_name: String) -> ItemSlot:
 	var slot := ItemSlot.new()
@@ -142,6 +138,14 @@ func pickup(component_id: String, rolled_item: InventoryItem = null) -> bool:
 		_notify("这件装备无法使用，请重新进入房间", &"full")
 		return false
 	ComponentRolls.ensure(item)
+	if str(item.get_property("slot", "")) == "cyberware":
+		var stored_modules := player.cyberware.store_circuit_modules(ComponentRolls.cyberware_modules(item))
+		if stored_modules.is_empty():
+			_notify("这件义体无法写入回路库", &"full")
+			return false
+		changed.emit()
+		_notify("已写入义体库：%s（按 C 编辑回路）" % ComponentRolls.cyberware_title(stored_modules), &"pickup")
+		return true
 	# The first weapon can go straight into a free reserve even if the bag is full.
 	var stored := secondary_weapon_slot.equip(item) if auto_secondary else backpack.add_item(item)
 	if not stored:
@@ -151,8 +155,6 @@ func pickup(component_id: String, rolled_item: InventoryItem = null) -> bool:
 		_assign_instance_id(item)
 	if is_weapon:
 		_has_picked_up_weapon = true
-	if component_id == CALAMITY_FLAME_ID:
-		_calamity_flame_granted = true
 	if auto_secondary:
 		_apply_equipment()
 	changed.emit()
@@ -184,46 +186,6 @@ func get_nearest_reachable_pickup() -> ComponentPickup:
 	return nearest
 
 
-func _on_persona_changed(persona_id: StringName) -> void:
-	if persona_id == TalentCoreController.DEEP_NINJA:
-		# Persona selection is a complete state transition: grant immediately so
-		# snapshots taken in the same frame already include the bound weapon.
-		_grant_calamity_flame_if_active()
-
-
-func _grant_calamity_flame_if_active() -> bool:
-	if _calamity_flame_granted or not is_instance_valid(player):
-		return false
-	var talent_core := player.get_node_or_null("TalentCoreController") as TalentCoreController
-	if talent_core == null or talent_core.current_persona_id != TalentCoreController.DEEP_NINJA or talent_core.get_persona_level(TalentCoreController.DEEP_NINJA) <= 0:
-		return false
-	if _has_component(CALAMITY_FLAME_ID):
-		_calamity_flame_granted = true
-		return false
-	var item := ComponentRolls.make_item(CALAMITY_FLAME_ID)
-	if item == null or item.get_prototype() == null:
-		return false
-	ComponentRolls.ensure(item)
-	_assign_instance_id(item)
-	if backpack.add_item(item):
-		_calamity_flame_granted = true
-		changed.emit()
-		_notify("忍者人格武器已放入背包：灾厄之炎", &"pickup")
-		return true
-	var destination := CombatProjectile.room_for_actor(player)
-	if destination == null:
-		return false
-	var pickup_node: ComponentPickup = load("res://scenes/items/component_pickup.tscn").instantiate()
-	pickup_node.component_id = CALAMITY_FLAME_ID
-	pickup_node.rolled_item = item
-	pickup_node.set_meta("persona_weapon_grant", true)
-	destination.add_child(pickup_node)
-	pickup_node.global_position = player.global_position
-	_calamity_flame_granted = true
-	_notify("背包已满，灾厄之炎已掉落在脚边", &"full")
-	return true
-
-
 func _has_component(component_id: String) -> bool:
 	for item in backpack.get_items() + [weapon_slot.get_item(), secondary_weapon_slot.get_item()]:
 		if item != null and item.get_prototype() != null and item.get_prototype().get_prototype_id() == component_id:
@@ -239,6 +201,13 @@ func equip(index: int, weapon_position: int = 0) -> bool:
 		return false
 	var item := items[index]
 	var slot_name := str(item.get_property("slot", ""))
+	if slot_name == "cyberware":
+		var stored_modules := player.cyberware.store_circuit_modules(ComponentRolls.cyberware_modules(item))
+		if stored_modules.is_empty() or not backpack.remove_item(item):
+			return false
+		changed.emit()
+		_notify("已迁移至义体库：%s" % ComponentRolls.cyberware_title(stored_modules), &"equip")
+		return true
 	if slot_name == "weapon" and weapon_position not in [0, 1]:
 		return false
 	var slot := _slot_for("weapon_secondary" if slot_name == "weapon" and weapon_position == 1 else slot_name)
@@ -407,12 +376,10 @@ func _apply_equipment() -> void:
 	var equipped := [weapon, secondary, defense_slot.get_item()]
 	player.get_node("CyberwareController").set_equipped_item(cyberware_item)
 	player.get_node("DashController").equipment_speed_bonus = ComponentRolls.bonus(equipped, "mobility") / 100.0
-	player.get_node("HeatComponent").equipment_capacity_bonus = ComponentRolls.bonus(equipped, "capacity") / 100.0
-	player.get_node("HeatComponent").equipment_cooling_bonus = ComponentRolls.bonus(equipped, "cooling") / 100.0
+	player.get_node("WeaponController").equipment_attack_speed_bonus = ComponentRolls.bonus(equipped, "attack_speed") / 100.0
+	player.get_node("CyberwareController").circuit.energy_recovery_bonus = ComponentRolls.bonus(equipped, "energy_recovery") / 100.0
 	player.get_node("GuardComponent").equipment_window_bonus = ComponentRolls.bonus(equipped, "guard") / 1000.0
 	player.get_node("StatusComponent").equipment_negative_duration_reduction = ComponentRolls.bonus(equipped, "status") / 100.0
-	var heat: HeatComponent = player.get_node("HeatComponent")
-	heat.set_heat(heat.current_heat)
 	sync_insurance()
 
 
@@ -605,6 +572,14 @@ func import_run_state(state: Dictionary) -> void:
 		or serialized.contains("\"prototype_id\":\"wheel\"")
 	)
 	state = ComponentRolls.migrate_snapshot(state)
+	# Old saves may have the former weapon in a weapon slot. Remove its serialized
+	# entry before GLoot validates the slot against the new cyberware prototype.
+	var migrated_calamity_slots := 0
+	for slot_key in ["primary", "secondary"]:
+		var slot_state: Variant = state.get(slot_key, {})
+		if slot_state is Dictionary and slot_state.get("item", {}) is Dictionary and str((slot_state.get("item", {}) as Dictionary).get("prototype_id", "")) == CALAMITY_FLAME_ID:
+			state[slot_key] = {}
+			migrated_calamity_slots += 1
 	# RunManager may still hold snapshots from an older build.
 	backpack.deserialize(state["backpack"])
 	weapon_slot.deserialize(state["primary"])
@@ -618,12 +593,42 @@ func import_run_state(state: Dictionary) -> void:
 	for item in backpack.get_items() + [weapon_slot.get_item(), secondary_weapon_slot.get_item(), cyberware_slot.get_item(), defense_slot.get_item(), blackbox_slot.get_item()]:
 		if item != null:
 			ComponentRolls.ensure(item)
+	_migrate_legacy_cyberware_to_circuit()
+	_migrate_legacy_calamity_weapon()
+	if migrated_calamity_slots > 0:
+		player.cyberware.store_circuit_modules(PackedStringArray([CALAMITY_FLAME_ID]), migrated_calamity_slots)
 	_calamity_flame_granted = bool(state.get("calamity_flame_granted", _has_component(CALAMITY_FLAME_ID)))
 	_apply_equipment()
 	changed.emit()
-	call_deferred("_grant_calamity_flame_if_active")
 	if removed_legacy_mobility:
 		_notify("旧版机动装备已移除；固有突进现已默认启用", &"equip")
+
+
+func _migrate_legacy_cyberware_to_circuit() -> void:
+	var legacy_items: Array[InventoryItem] = []
+	for item in backpack.get_items():
+		if str(item.get_property("slot", "")) == "cyberware":
+			legacy_items.append(item)
+	var equipped := cyberware_slot.get_item()
+	if equipped != null:
+		legacy_items.append(equipped)
+	for item in legacy_items:
+		player.cyberware.store_circuit_modules(ComponentRolls.cyberware_modules(item))
+		var owner := item.get_inventory()
+		if owner != null:
+			owner.remove_item(item)
+
+
+func _migrate_legacy_calamity_weapon() -> void:
+	var legacy_items: Array[InventoryItem] = []
+	for item in backpack.get_items() + [weapon_slot.get_item(), secondary_weapon_slot.get_item()]:
+		if item != null and item.get_prototype() != null and item.get_prototype().get_prototype_id() == CALAMITY_FLAME_ID:
+			legacy_items.append(item)
+	for item in legacy_items:
+		player.cyberware.store_circuit_modules(PackedStringArray([CALAMITY_FLAME_ID]))
+		var owner := item.get_inventory()
+		if owner != null:
+			owner.remove_item(item)
 
 
 func export_recovery_inventory() -> Dictionary:

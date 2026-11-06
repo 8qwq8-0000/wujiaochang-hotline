@@ -13,6 +13,7 @@ trigger_mode = 0
 damage = 1
 cooldown = 0.32
 heat_per_attack = 15.0
+feedback_gain = 15.0
 attack_range = 420.0
 projectile_speed = 440.0
 noise_radius = 220.0

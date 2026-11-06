@@ -2,8 +2,8 @@ class_name RoomBuffComponent
 extends Node
 
 signal changed(id: StringName)
-const BUFFS: Array[StringName] = [&"attack_speed", &"cooling", &"guard_recovery"]
-const TITLES := {&"attack_speed": "攻速提升 25%", &"cooling": "散热提升 50%", &"guard_recovery": "格挡后摇缩短 30%"}
+const BUFFS: Array[StringName] = [&"attack_speed", &"energy_recovery", &"guard_recovery"]
+const TITLES := {&"attack_speed": "攻速提升 25%", &"energy_recovery": "能量恢复提升 50%", &"guard_recovery": "格挡后摇缩短 30%"}
 var active_buff: StringName = &""
 var source_room: Node
 
@@ -22,7 +22,7 @@ func apply_buff(id: StringName, room: Node) -> bool:
 		room.connect("room_cleared", clear)
 	room.tree_exiting.connect(clear)
 	get_parent().get_node("WeaponController").attack_speed_multiplier = 1.25 if id == &"attack_speed" else 1.0
-	get_parent().get_node("HeatComponent").cooling_multiplier = 1.5 if id == &"cooling" else 1.0
+	get_parent().get_node("CyberwareController").circuit.room_energy_recovery_bonus = 0.5 if id == &"energy_recovery" else 0.0
 	get_parent().get_node("GuardComponent").recovery_multiplier = 0.7 if id == &"guard_recovery" else 1.0
 	changed.emit(id)
 
@@ -39,6 +39,6 @@ func clear() -> void:
 		return
 	active_buff = &""
 	get_parent().get_node("WeaponController").attack_speed_multiplier = 1.0
-	get_parent().get_node("HeatComponent").cooling_multiplier = 1.0
+	get_parent().get_node("CyberwareController").circuit.room_energy_recovery_bonus = 0.0
 	get_parent().get_node("GuardComponent").recovery_multiplier = 1.0
 	changed.emit(active_buff)

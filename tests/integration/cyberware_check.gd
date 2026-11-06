@@ -23,14 +23,19 @@ func run() -> void:
 	world.add_child(player)
 	await process_frame
 	player.inventory.allow_trial_equipment_changes = true
-	check(player.inventory.pickup("smart_fire"), "cyberware enters the ordinary six-cell backpack")
-	check(player.inventory.equip(0), "cyberware equips into its dedicated slot")
-	check(player.inventory.cyberware_slot.get_item() != null and player.cyberware.has_module(CyberwareController.SMART_FIRE), "inventory equipment refreshes cyberware controller")
-	check(player.inventory.unequip("cyberware"), "cyberware can be removed as one complete item")
-	player.inventory.set_open(true)
-	check(not player.inventory.put_in_blackbox(0), "cyberware cannot enter the blackbox")
-	player.inventory.set_open(false)
-	player.inventory.backpack.remove_item(player.inventory.backpack.get_items()[0])
+	check(int(player.cyberware.circuit.get_library_counts().get(CyberwareController.COMBAT_SYNAPSE_SENSOR, 0)) == 1, "new player owns the combat sensor starter")
+	check(player.cyberware.circuit.get_slots()[0] == String(CyberwareController.COMBAT_SYNAPSE_SENSOR), "combat sensor starter begins installed")
+	var bag_count := player.inventory.backpack.get_item_count()
+	check(player.inventory.pickup("smart_fire"), "cyberware pickup writes directly into the circuit library")
+	check(player.inventory.backpack.get_item_count() == bag_count and player.inventory.cyberware_slot.get_item() == null, "cyberware consumes neither backpack nor legacy equipment slot")
+	check(int(player.cyberware.circuit.get_library_counts().get(CyberwareController.SMART_FIRE, 0)) == 1, "picked cyberware is available to circuit construction")
+	for _index in ComponentInventory.CAPACITY:
+		check(player.inventory.pickup("armor"), "ordinary equipment fills a backpack cell")
+	check(player.inventory.backpack.get_item_count() == ComponentInventory.CAPACITY, "backpack fixture reaches full capacity")
+	check(player.inventory.pickup("explosive_magazine"), "full backpack never blocks a circuit-library pickup")
+	check(player.inventory.backpack.get_item_count() == ComponentInventory.CAPACITY and int(player.cyberware.circuit.get_library_counts().get(CyberwareController.EXPLOSIVE_MAGAZINE, 0)) == 1, "full-bag cyberware bypasses all six cells")
+	for item in player.inventory.backpack.get_items():
+		player.inventory.backpack.remove_item(item)
 
 	check(player.dash.start_dash(player, Vector2.RIGHT), "empty cyberware slot still permits fixed dash")
 	check(player.dash.is_dashing(), "dash enters its active window")
@@ -681,7 +686,8 @@ func run() -> void:
 	world.add_child(restored)
 	await process_frame
 	restored.inventory.import_run_state(run_state)
-	check(restored.cyberware.has_module(CyberwareController.SMART_FIRE) and restored.cyberware.has_module(CyberwareController.EXPLOSIVE_MAGAZINE), "serialized compound restores its complete module set")
+	var restored_library := restored.cyberware.circuit.get_library_counts()
+	check(int(restored_library.get(CyberwareController.SMART_FIRE, 0)) >= 1 and int(restored_library.get(CyberwareController.EXPLOSIVE_MAGAZINE, 0)) >= 1, "legacy serialized compound migrates its complete module set into the circuit library")
 	var bag_cyberware := ComponentRolls.create("optical_intruder", 1, rng)
 	check(player.inventory.backpack.add_item(bag_cyberware), "settlement fixture includes backpack cyberware")
 	var before_settlement := player.inventory.export_run_state()

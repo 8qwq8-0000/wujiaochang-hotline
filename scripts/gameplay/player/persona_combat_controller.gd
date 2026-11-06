@@ -9,7 +9,7 @@ const ROCK_FEEDBACK_MAX := 100.0
 const ROCK_FEEDBACK_DECAY := 18.0
 const ROCK_DECAY_DELAY := 0.65
 const ROCK_MOVE_SPEED_BONUS_MAX := 0.20
-const ROCK_COOLING_BONUS_MAX := 0.50
+const ROCK_ENERGY_RECOVERY_BONUS_MAX := 0.25
 const ROCK_ATTACK_SPEED_BONUS_MAX := 0.30
 const ROCK_DISTORTION_THRESHOLD := 60.0
 const ROCK_DISTORTION_RADIUS := 48.0
@@ -47,10 +47,18 @@ var _marked_kill_streak := 0
 var _recorded_marked_chain := 0
 var _gaze_remaining := 0.0
 var _gaze_attack_pending := false
+var _gaze_used_targets: Dictionary = {}
 var _chase_remaining := 0.0
 var _chase_path: PackedVector2Array = []
 var _chase_path_index := 0
+var _chase_dash_event_fired := false
 var _borrowed_step_target_id := 0
+var _borrowed_step_near := false
+var _next_circuit_speed := 1.0
+var _next_circuit_damage_bonus := 0
+var _next_circuit_copy := false
+var _counter_window_remaining := 0.0
+var _read_opening_rounds: Dictionary = {}
 var _borrowed_strike_target: WeakRef
 var _resonance_remaining := 0.0
 var _blood_step_remaining := 0.0
@@ -69,6 +77,7 @@ var _last_attack_weapon_id: StringName = &""
 var _rock_alternations := 0
 var _rock_overheat_had_feedback := false
 var _feedback_hit_groups: Dictionary = {}
+var _last_feedback_round_token := 0
 var _attack_group_contexts: Dictionary = {}
 var _attack_group_targets: Dictionary = {}
 var _distortion_burst_groups: Dictionary = {}
@@ -83,6 +92,7 @@ var _proxy_counter_armed: Dictionary = {}
 var _manual_validations := 0
 var _pending_master_takeover := false
 var _pending_ai_guard := false
+var _ai_guard_active := false
 var _guard_bonus_applied := 0.0
 var _observed_threat: WeakRef
 var _observed_attack_key := ""
@@ -183,12 +193,10 @@ func try_proxy_guard(packet: DamagePacket) -> bool:
 	var analyzed := _is_attack_analyzed(source, key)
 	if analyzed and _has_talent(&"calibrated_window") and guard.state in [GuardComponent.State.STARTUP, GuardComponent.State.PERFECT]:
 		guard.extend_current_perfect_window(0.2)
-	if guard.state != GuardComponent.State.IDLE:
+	if guard.state in [GuardComponent.State.STARTUP, GuardComponent.State.PERFECT, GuardComponent.State.NORMAL]:
 		return false
 	var source_id := source.get_instance_id()
 	var emergency := core.takeover_armed and core.takeover_charges > 0
-	if not emergency and (dash.is_dashing() or weapons.is_attack_active()):
-		return false
 	var aura_perfect := _master_loop_remaining > 0.0 and _master_loop_interval <= 0.0 and analyzed
 	var proxy_perfect := _has_talent(&"proxy_counter") and analyzed and bool(_proxy_counter_armed.get(source_id, false)) and not bool(_proxy_counter_used.get(source_id, false))
 	var proxy_normal := _has_talent(&"proxy_stance") and analyzed
@@ -197,6 +205,8 @@ func try_proxy_guard(packet: DamagePacket) -> bool:
 	var toward_source := packet.source_position - player.global_position
 	if toward_source.is_zero_approx() and not packet.travel_direction.is_zero_approx():
 		toward_source = -packet.travel_direction
+	if guard.state == GuardComponent.State.RECOVERY:
+		guard.reset_to_idle()
 	if not guard.begin_guard(toward_source):
 		return false
 	guard.advance_timing(guard.startup_seconds)
@@ -207,8 +217,10 @@ func try_proxy_guard(packet: DamagePacket) -> bool:
 		_proxy_counter_armed.erase(source_id)
 	if aura_perfect:
 		_master_loop_interval = 0.8
+	if proxy_perfect or aura_perfect:
 		_pending_master_counter = weakref(source)
 	_pending_ai_guard = true
+	_ai_guard_active = true
 	if emergency:
 		_pending_master_takeover = true
 	return true
@@ -216,6 +228,13 @@ func try_proxy_guard(packet: DamagePacket) -> bool:
 
 func reset_transient_state() -> void:
 	_set_mark(null)
+	_gaze_used_targets.clear()
+	_read_opening_rounds.clear()
+	_next_circuit_speed = 1.0
+	_next_circuit_damage_bonus = 0
+	_next_circuit_copy = false
+	_counter_window_remaining = 0.0
+	_chase_dash_event_fired = false
 	rock_feedback = 0.0
 	_marked_hit_streak = 0
 	_marked_kill_streak = 0
@@ -231,6 +250,7 @@ func reset_transient_state() -> void:
 	_manual_validations = 0
 	_pending_master_takeover = false
 	_pending_ai_guard = false
+	_ai_guard_active = false
 	_weapon_cooldowns.clear()
 	_seamless_free_attack = false
 	_overload_pulse_remaining = 0.0
@@ -240,6 +260,7 @@ func reset_transient_state() -> void:
 	_encore_remaining = 0.0
 	heat.set_overflow_enabled(false)
 	_feedback_hit_groups.clear()
+	_last_feedback_round_token = 0
 	_attack_group_contexts.clear()
 	_attack_group_targets.clear()
 	_distortion_burst_groups.clear()
@@ -274,13 +295,13 @@ func get_runtime_snapshot() -> Dictionary:
 		"ai_guard_active": _pending_ai_guard and guard.is_guard_active(),
 		"master_loop_remaining": _master_loop_remaining,
 		"master_takeover_pending": _pending_master_takeover,
-		"seamless_free_attack": _seamless_free_attack,
+		"seamless_free_attack": can_queue_seamless(),
 		"encore_remaining": _encore_remaining,
 		"rock_move_bonus_percent": rock_ratio * ROCK_MOVE_SPEED_BONUS_MAX * 100.0,
-		"rock_cooling_bonus_percent": rock_ratio * ROCK_COOLING_BONUS_MAX * 100.0,
+		"rock_energy_recovery_bonus_percent": rock_ratio * ROCK_ENERGY_RECOVERY_BONUS_MAX * 100.0,
 		"rock_attack_speed_bonus_percent": rock_ratio * ROCK_ATTACK_SPEED_BONUS_MAX * 100.0,
 		"distortion_active": _is_active(TalentCoreController.ROCK_VIGILANTE) and _has_talent(&"distortion_gain") and rock_feedback >= ROCK_DISTORTION_THRESHOLD,
-		"overload_scream_active": _is_active(TalentCoreController.ROCK_VIGILANTE) and _has_talent(&"overload_scream") and heat.is_overheated,
+		"overload_scream_active": _is_active(TalentCoreController.ROCK_VIGILANTE) and _has_talent(&"overload_scream") and rock_feedback >= ROCK_DISTORTION_THRESHOLD,
 	}
 
 
@@ -292,9 +313,9 @@ func _tick_deep_ninja(delta: float) -> void:
 		# combat event and must not make Gaze fire as soon as the scene loads.
 		_set_mark(_select_execution_target(), false)
 	_gaze_remaining = maxf(_gaze_remaining - delta, 0.0)
-	if _gaze_attack_pending and _gaze_remaining <= 0.0 and _is_live_enemy(marked_target):
+	if _gaze_attack_pending and _gaze_remaining <= 0.0 and _is_live_enemy(marked_target) and weapons.get_cooldown_remaining() <= 0.0:
 		_gaze_attack_pending = false
-		_perform_ai_attack(player.global_position.direction_to(marked_target.global_position), true, 1.0)
+		player.cyberware.submit_weapon_fire(player.global_position.direction_to(marked_target.global_position), weapons.get_current_weapon())
 	_chase_remaining = maxf(_chase_remaining - delta, 0.0)
 	if _chase_remaining > 0.0:
 		queue_redraw()
@@ -305,14 +326,12 @@ func _tick_deep_ninja(delta: float) -> void:
 		_borrowed_strike_target = null
 		if _is_live_enemy(strike_target) and player.global_position.distance_to(strike_target.global_position) <= 48.0:
 			_perform_karate_chop(strike_target)
-	if (
-		_has_talent(&"borrowed_step")
-		and _is_live_enemy(marked_target)
-		and _borrowed_step_target_id != marked_target.get_instance_id()
-		and player.global_position.distance_to(marked_target.global_position) <= HUNT_TRIGGER_DISTANCE
-		and not dash.is_dashing()
-	):
-		_try_borrowed_step()
+	var near_mark := _has_talent(&"borrowed_step") and _is_live_enemy(marked_target) and player.global_position.distance_to(marked_target.global_position) <= HUNT_TRIGGER_DISTANCE
+	if near_mark and not _borrowed_step_near:
+		weapons.set_cooldown_remaining(0.0)
+		_next_circuit_speed = 0.85
+		_next_circuit_damage_bonus = 1
+	_borrowed_step_near = near_mark
 
 
 func _tick_rock_vigilante(delta: float) -> void:
@@ -324,11 +343,11 @@ func _tick_rock_vigilante(delta: float) -> void:
 		_encore_remaining = maxf(_encore_remaining - delta, 0.0)
 		_set_rock_feedback(_encore_remaining / ROCK_ENCORE_SECONDS * ROCK_FEEDBACK_MAX)
 		if _encore_remaining <= 0.0:
-			heat.set_overflow_enabled(false)
+			weapons.set_cooldown_remaining(0.0)
 	elif _rock_decay_delay_remaining <= 0.0 and rock_feedback > 0.0:
-		var decay := ROCK_FEEDBACK_DECAY * (0.55 if _has_talent(&"steady_beat") else 1.0)
+		var decay := ROCK_FEEDBACK_DECAY
 		_set_rock_feedback(rock_feedback - decay * delta)
-	_tick_overload_scream(delta)
+	_overload_pulse_remaining = maxf(_overload_pulse_remaining - delta, 0.0)
 
 
 func _tick_master_analysis(delta: float) -> void:
@@ -399,7 +418,49 @@ func _is_player_control_held() -> bool:
 	return false
 
 
+func circuit_energy_multiplier() -> float:
+	return 0.75 if _is_active(TalentCoreController.DEEP_NINJA) and _resonance_remaining > 0.0 else 1.0
+
+
+func can_attack_during_guard() -> bool:
+	return _is_active(TalentCoreController.LEGENDARY_MASTER) and _has_talent(&"calibrated_window") and _counter_window_remaining > 0.0
+
+
+func has_stable_beat() -> bool:
+	return _is_active(TalentCoreController.ROCK_VIGILANTE) and _has_talent(&"steady_beat")
+
+
+func can_queue_seamless() -> bool:
+	return _is_active(TalentCoreController.ROCK_VIGILANTE) and _has_talent(&"seamless_switch") and _seamless_switch_window > 0.0
+
+
+func should_submit_dash_event() -> bool:
+	if _chase_path.is_empty():
+		return true
+	if _chase_dash_event_fired:
+		return false
+	_chase_dash_event_fired = true
+	return true
+
+
+func take_circuit_talent_effects() -> Dictionary:
+	var effects := {"speed": _next_circuit_speed, "damage_bonus": _next_circuit_damage_bonus, "copy_first": _next_circuit_copy, "dual_channel": _is_active(TalentCoreController.ROCK_VIGILANTE) and _has_talent(&"dual_channel_performance")}
+	_next_circuit_speed = 1.0
+	_next_circuit_damage_bonus = 0
+	_next_circuit_copy = false
+	return effects
+
+
+func on_circuit_attack_emitted(from_overload_wave: bool = false) -> void:
+	if not from_overload_wave and _is_active(TalentCoreController.ROCK_VIGILANTE) and _has_talent(&"overload_scream") and rock_feedback >= ROCK_DISTORTION_THRESHOLD and _overload_pulse_remaining <= 0.0:
+		_perform_overload_pulse()
+		_overload_pulse_remaining = ROCK_OVERLOAD_INTERVAL
+
+
 func _tick_temporary_bonuses(delta: float) -> void:
+	if guard.state == GuardComponent.State.IDLE:
+		_ai_guard_active = false
+	_counter_window_remaining = maxf(_counter_window_remaining - delta, 0.0)
 	_master_loop_remaining = maxf(_master_loop_remaining - delta, 0.0)
 	_master_loop_interval = maxf(_master_loop_interval - delta, 0.0)
 	_blood_step_remaining = maxf(_blood_step_remaining - delta, 0.0)
@@ -409,7 +470,7 @@ func _tick_temporary_bonuses(delta: float) -> void:
 		dash.equipment_speed_bonus += wanted_dash_bonus - _dash_speed_bonus_applied
 		_dash_speed_bonus_applied = wanted_dash_bonus
 	_apply_guard_modifier()
-	_apply_attack_speed_modifier()
+	_apply_rock_feedback_modifiers()
 
 
 func _on_damage_resolved(result: DamageResult) -> void:
@@ -425,8 +486,15 @@ func _on_damage_resolved(result: DamageResult) -> void:
 			_on_deep_ninja_hit(result.target as EnemyController, result)
 	elif _is_active(TalentCoreController.ROCK_VIGILANTE) and result.final_damage > 0:
 		var group_id := result.packet.feedback_group_id
-		if group_id > 0 and not _feedback_hit_groups.has(group_id) and _encore_remaining <= 0.0:
-			_feedback_hit_groups[group_id] = true
+		var feedback_key := "group:%d" % group_id
+		var has_round_tag := false
+		for tag in result.packet.status_tags:
+			if String(tag).begins_with("circuit_round:"):
+				feedback_key = String(tag)
+				has_round_tag = true
+				break
+		if (group_id > 0 or has_round_tag) and not _feedback_hit_groups.has(feedback_key) and _encore_remaining <= 0.0:
+			_feedback_hit_groups[feedback_key] = true
 			_set_rock_feedback(rock_feedback + _feedback_gain_for_weapon_id(result.packet.weapon_id))
 			_rock_decay_delay_remaining = 1.5 if _has_talent(&"steady_beat") else ROCK_DECAY_DELAY
 			while _feedback_hit_groups.size() > 64:
@@ -438,7 +506,7 @@ func _on_damage_resolved(result: DamageResult) -> void:
 
 
 func _on_incoming_result(result: DamageResult) -> void:
-	var was_ai_guard := _pending_ai_guard
+	var was_ai_guard := _pending_ai_guard or _ai_guard_active
 	_pending_ai_guard = false
 	if result.perfect and not was_ai_guard:
 		manual_perfect_guarded.emit()
@@ -450,7 +518,10 @@ func _on_incoming_result(result: DamageResult) -> void:
 	var key := _attack_key(result.packet)
 	var analyzed := _is_attack_analyzed(source, key)
 	if result.blocked and analyzed and _has_talent(&"calibrated_window") and not was_ai_guard:
-		guard.reset_to_idle()
+		_counter_window_remaining = 0.8
+		guard.skip_next_recovery = true
+	if result.blocked and analyzed and _has_talent(&"open_model") and not was_ai_guard:
+		player.cyberware.flush_active_round_after_guard(source as Node2D)
 	if not result.perfect:
 		return
 	if _pending_master_counter != null:
@@ -464,8 +535,7 @@ func _on_incoming_result(result: DamageResult) -> void:
 	if not analyzed:
 		return
 	if _has_talent(&"refutation_reward") and not was_ai_guard:
-		weapons.set_cooldown_remaining(0.0)
-		_refutation_reward_remaining = 2.0
+		_next_circuit_copy = true
 	if not was_ai_guard:
 		core.add_run_metric(&"manual_perfect_guards")
 		_record_relationship_event(TalentCoreController.LEGENDARY_MASTER)
@@ -485,9 +555,17 @@ func _on_deep_ninja_hit(enemy: EnemyController, result: DamageResult) -> void:
 		return
 	_marked_hit_streak += 1
 	var enemy_id := enemy.get_instance_id()
-	if _has_talent(&"read_opening") and Time.get_ticks_msec() >= int(_read_opening_cooldowns.get(enemy_id, 0)) and not result.target_defeated:
+	if _has_talent(&"read_opening") and Time.get_ticks_msec() >= int(_read_opening_cooldowns.get(enemy_id, 0)):
 		_read_opening_cooldowns[enemy_id] = Time.get_ticks_msec() + 2000
-		enemy.apply_stagger(0.65)
+		if not result.target_defeated:
+			enemy.apply_stagger(0.65)
+		for tag in result.packet.status_tags:
+			if String(tag).begins_with("circuit_round:") and not _read_opening_rounds.has(tag):
+				_read_opening_rounds[tag] = true
+				player.cyberware.circuit.add_energy(15.0)
+				break
+		while _read_opening_rounds.size() > 64:
+			_read_opening_rounds.erase(_read_opening_rounds.keys()[0])
 	if not result.target_defeated:
 		return
 	if not was_marked:
@@ -500,6 +578,7 @@ func _on_deep_ninja_hit(enemy: EnemyController, result: DamageResult) -> void:
 	if _has_talent(&"blood_step"):
 		dash.cooldown_remaining = 0.0
 		_blood_step_remaining = 2.0
+		_next_circuit_speed = 0.7
 	if _has_talent(&"shared_hunt_resonance") and _marked_kill_streak >= 3:
 		_marked_kill_streak = 0
 		_resonance_remaining = 6.0
@@ -514,48 +593,26 @@ func _on_attack_performed(data: WeaponComponentData) -> void:
 		return
 	if _performing_ai_attack:
 		return
+	var round_token := player.cyberware.get_active_round_token()
+	if round_token > 0 and round_token == _last_feedback_round_token:
+		return
+	_last_feedback_round_token = round_token
 	var normalized_gain := _feedback_gain_for_weapon(data)
 	core.add_run_metric(&"rock_attacks")
 	if _encore_remaining <= 0.0:
-		_set_rock_feedback(rock_feedback + normalized_gain * (2.0 if _seamless_free_attack else 1.0))
+		_set_rock_feedback(rock_feedback + normalized_gain * (2.0 if _has_talent(&"seamless_switch") and _seamless_switch_window > 0.0 else 1.0))
 	_rock_decay_delay_remaining = ROCK_DECAY_DELAY
-	if (
-		_has_talent(&"dual_channel_performance")
-		and not _last_attack_weapon_id.is_empty()
-		and data.id != _last_attack_weapon_id
-		and _alternate_attack_window > 0.0
-	):
-		weapons.set_cooldown_remaining(weapons.get_cooldown_remaining() * 0.7)
-		for key_name in _weapon_cooldowns.keys():
-			_weapon_cooldowns[key_name] = float(_weapon_cooldowns[key_name]) * 0.7
-		_rock_decay_delay_remaining = 1.5
-		_record_relationship_event(TalentCoreController.ROCK_VIGILANTE)
 	_alternate_attack_window = 1.2
 	_last_attack_weapon_id = data.id
 	_seamless_switch_window = 1.2
 
 
 func _on_weapon_changed(_index: int, data: WeaponComponentData) -> void:
-	if _is_active(TalentCoreController.ROCK_VIGILANTE):
-		if _has_talent(&"dual_channel_performance"):
-			if not _last_weapon_id.is_empty():
-				_weapon_cooldowns[String(_last_weapon_id)] = weapons.get_cooldown_remaining()
-			if data != null:
-				weapons.set_cooldown_remaining(float(_weapon_cooldowns.get(String(data.id), 0.0)))
-				_rock_decay_delay_remaining = ROCK_DECAY_DELAY + 0.35
-		if _has_talent(&"seamless_switch"):
-			_seamless_free_attack = _seamless_switch_window > 0.0 and not _last_attack_weapon_id.is_empty() and data != null and data.id != _last_attack_weapon_id
 	_last_weapon_id = data.id if data != null else &""
 
 
 func _on_overheated() -> void:
-	if _is_active(TalentCoreController.ROCK_VIGILANTE):
-		_rock_overheat_had_feedback = rock_feedback >= 35.0
-		if _encore_remaining <= 0.0:
-			_set_rock_feedback(rock_feedback * 0.35)
-		if _has_talent(&"overload_scream"):
-			_perform_overload_pulse()
-			_overload_pulse_remaining = ROCK_OVERLOAD_INTERVAL
+	pass
 
 
 func _on_heat_recovered() -> void:
@@ -589,7 +646,9 @@ func _set_mark(target: EnemyController, trigger_gaze: bool = false) -> void:
 	marked_target = target
 	_marked_hit_streak = 0
 	_borrowed_step_target_id = 0
-	if trigger_gaze and _is_live_enemy(marked_target) and _has_talent(&"gaze"):
+	_borrowed_step_near = false
+	if trigger_gaze and _is_live_enemy(marked_target) and _has_talent(&"gaze") and not _gaze_used_targets.has(marked_target.get_instance_id()):
+		_gaze_used_targets[marked_target.get_instance_id()] = true
 		player.aim_direction = player.global_position.direction_to(marked_target.global_position)
 		_gaze_remaining = 0.18
 		_gaze_attack_pending = true
@@ -644,24 +703,17 @@ func _set_rock_feedback(value: float) -> void:
 		_record_relationship_event(TalentCoreController.ROCK_VIGILANTE)
 		if _has_talent(&"encore_autopilot"):
 			_encore_remaining = ROCK_ENCORE_SECONDS
-			heat.set_overflow_enabled(true)
 	_apply_rock_feedback_modifiers()
 	if not is_equal_approx(previous, rock_feedback):
 		_emit_runtime_state()
 
 
 func _tick_overload_scream(delta: float) -> void:
-	if not heat.is_overheated or not _has_talent(&"overload_scream"):
-		_overload_pulse_remaining = 0.0
-		return
-	_overload_pulse_remaining -= delta
-	while _overload_pulse_remaining <= 0.0:
-		_perform_overload_pulse()
-		_overload_pulse_remaining += ROCK_OVERLOAD_INTERVAL
+	_overload_pulse_remaining = maxf(_overload_pulse_remaining - delta, 0.0)
 
 
 func _perform_overload_pulse() -> void:
-	if not _is_active(TalentCoreController.ROCK_VIGILANTE) or not _has_talent(&"overload_scream") or not heat.is_overheated:
+	if not _is_active(TalentCoreController.ROCK_VIGILANTE) or not _has_talent(&"overload_scream") or rock_feedback < ROCK_DISTORTION_THRESHOLD:
 		return
 	var shape := CircleShape2D.new()
 	shape.radius = ROCK_OVERLOAD_RADIUS
@@ -688,18 +740,30 @@ func _perform_overload_pulse() -> void:
 		packet.weapon_id = &"overload_scream"
 		packet.damage_type = &"sonic"
 		packet.source_position = player.global_position
+		packet.travel_direction = player.global_position.direction_to(target.global_position)
+		packet.status_tags = PackedStringArray(["rock_overload_wave", "event_path:过载嘶鸣"])
 		packet.is_area_damage = true
-		hurt.receive_hit(packet)
+		var result := hurt.receive_hit(packet)
+		if result.final_damage > 0 and target.has_method("apply_stagger"):
+			target.apply_stagger(0.35)
 	_request_rock_wave(player.global_position, ROCK_OVERLOAD_RADIUS, 0.25, Color("ffe34a"))
 
 
 func _try_distortion_burst(primary_target: Node2D, source_packet: DamagePacket) -> void:
-	if source_packet.feedback_group_id <= 0 or _distortion_burst_groups.has(source_packet.feedback_group_id):
+	var round_key := "group:%d" % source_packet.feedback_group_id
+	for tag in source_packet.status_tags:
+		if String(tag).begins_with("circuit_round:"):
+			round_key = String(tag)
+			break
+	if source_packet.feedback_group_id <= 0 and not source_packet.status_tags.has("calamity_swing"):
+		return
+	if int(_distortion_burst_groups.get(round_key, 0)) >= 3:
 		return
 	var context: Dictionary = _attack_group_contexts.get(source_packet.feedback_group_id, {})
-	if not bool(context.get("distortion_burst", false)) or source_packet.is_area_damage:
+	var calamity_distortion := source_packet.status_tags.has("calamity_swing") and _has_talent(&"distortion_gain") and rock_feedback >= ROCK_DISTORTION_THRESHOLD
+	if not (bool(context.get("distortion_burst", false)) or calamity_distortion) or source_packet.is_area_damage:
 		return
-	_distortion_burst_groups[source_packet.feedback_group_id] = true
+	_distortion_burst_groups[round_key] = int(_distortion_burst_groups.get(round_key, 0)) + 1
 	while _distortion_burst_groups.size() > 64:
 		_distortion_burst_groups.erase(_distortion_burst_groups.keys()[0])
 	var center := primary_target.global_position
@@ -888,7 +952,7 @@ func _execute_rock_takeover() -> void:
 		return
 	var direction := player.global_position.direction_to(target.global_position)
 	if _perform_ai_attack(direction, true, 1.6):
-		_complete_takeover("已无视过热，自动反击")
+		_complete_takeover("自动反击")
 
 
 func _has_line_of_sight(target: Node2D) -> bool:
@@ -948,31 +1012,9 @@ func _on_enemy_attack_performed(source: Node, damage_type: StringName, is_melee:
 
 func get_attack_context(data: WeaponComponentData) -> Dictionary:
 	var context := {}
-	var heat_multiplier := 1.0
 	if _is_active(TalentCoreController.ROCK_VIGILANTE):
-		if _has_talent(&"steady_beat"):
-			heat_multiplier *= 0.75
-		if (
-			_has_talent(&"distortion_gain")
-			and rock_feedback >= ROCK_DISTORTION_THRESHOLD
-			and data != null
-			and data.attack_kind in [WeaponComponentData.AttackKind.PROJECTILE, WeaponComponentData.AttackKind.SPREAD]
-		):
+		if _has_talent(&"distortion_gain") and rock_feedback >= ROCK_DISTORTION_THRESHOLD:
 			context["distortion_burst"] = true
-		if _seamless_free_attack:
-			heat_multiplier = 0.0
-			context["seamless_free"] = true
-		if _encore_remaining > 0.0:
-			context["ignore_cooldown"] = true
-			context["allow_overheat"] = true
-			heat_multiplier = 2.0
-	if _is_active(TalentCoreController.LEGENDARY_MASTER) and _refutation_reward_remaining > 0.0:
-		heat_multiplier = 0.0
-		context["refutation_bonus"] = true
-	if _is_active(TalentCoreController.DEEP_NINJA) and _resonance_remaining > 0.0:
-		heat_multiplier *= 0.75
-		context["resonance_bonus"] = true
-	context["heat_multiplier"] = heat_multiplier
 	return context
 
 
@@ -986,13 +1028,14 @@ func prepare_attack_group(group_id: int, context: Dictionary) -> void:
 
 
 func on_attack_committed(_data: WeaponComponentData, context: Dictionary, _group_id: int) -> void:
-	if bool(context.get("seamless_free", false)):
-		_seamless_free_attack = false
-	if bool(context.get("refutation_bonus", false)):
-		_refutation_reward_remaining = 0.0
+	pass
 
 
 func modify_outgoing_damage(packet: DamagePacket, target: Node, base_damage: int) -> int:
+	if packet != null and not packet.is_area_damage:
+		for tag in packet.status_tags:
+			if String(tag).begins_with("talent_direct_bonus:"):
+				base_damage += int(String(tag).get_slice(":", 1))
 	if packet.weapon_id == &"karate_chop":
 		return base_damage
 	if packet.feedback_group_id <= 0:
@@ -1039,7 +1082,7 @@ func _feedback_gain_for_weapon_id(weapon_id: StringName) -> float:
 func _feedback_gain_for_weapon(data: WeaponComponentData) -> float:
 	if data == null:
 		return 0.0
-	return data.heat_per_attack / maxf(heat.effective_max(), 1.0) * ROCK_FEEDBACK_MAX
+	return data.feedback_gain
 
 
 func _attack_key_from_parts(source: Node, damage_type: StringName, is_melee: bool) -> String:
@@ -1051,9 +1094,10 @@ func _same_room_node(actor: Node) -> bool:
 
 
 func _perform_master_counter(target: Node2D) -> void:
-	if _master_loop_remaining <= 0.0 or not is_instance_valid(target) or not _has_line_of_sight(target):
+	if not is_instance_valid(target) or not _has_line_of_sight(target):
 		return
-	player.perform_persona_cooldown_free_attack(player.global_position.direction_to(target.global_position), 1.0)
+	if not player.cyberware.has_event_starter(4):
+		player.cyberware.submit_weapon_fire(player.global_position.direction_to(target.global_position), weapons.get_current_weapon(), true)
 
 
 func _apply_terminal_burst(center: Node2D, source_packet: DamagePacket) -> void:
@@ -1122,6 +1166,7 @@ func _prepare_hunt_path() -> void:
 		_chase_path.clear()
 		return
 	_chase_path_index = 1
+	_chase_dash_event_fired = false
 	_chase_remaining = HUNT_PREVIEW_SECONDS
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null:
@@ -1157,6 +1202,8 @@ func _build_hunt_path(destination: Vector2, max_segments: int) -> PackedVector2A
 func _execute_next_hunt_segment() -> void:
 	if _chase_path_index >= _chase_path.size() or not _is_live_enemy(marked_target):
 		_chase_path.clear()
+		if _is_live_enemy(marked_target):
+			player.cyberware.submit_weapon_fire(player.global_position.direction_to(marked_target.global_position), weapons.get_current_weapon(), true)
 		return
 	var destination := _chase_path[_chase_path_index]
 	_chase_path_index += 1
@@ -1166,6 +1213,10 @@ func _execute_next_hunt_segment() -> void:
 
 func _on_persona_changed(_persona_id: StringName) -> void:
 	_cancel_soft_takeover()
+	_next_circuit_speed = 1.0
+	_next_circuit_damage_bonus = 0
+	_next_circuit_copy = false
+	_counter_window_remaining = 0.0
 	_analysis_progress.clear()
 	_observed_threat = null
 	_observed_attack_key = ""
@@ -1212,8 +1263,8 @@ func _apply_attack_speed_modifier() -> void:
 
 func _apply_rock_feedback_modifiers() -> void:
 	var ratio := _rock_feedback_ratio() if _is_active(TalentCoreController.ROCK_VIGILANTE) else 0.0
-	dash.persona_walk_speed_bonus = ratio * ROCK_MOVE_SPEED_BONUS_MAX
-	heat.persona_cooling_bonus = ratio * ROCK_COOLING_BONUS_MAX
+	dash.persona_walk_speed_bonus = ratio * ROCK_MOVE_SPEED_BONUS_MAX + (0.2 if _is_active(TalentCoreController.DEEP_NINJA) and _resonance_remaining > 0.0 else 0.0)
+	(player.get_node("CyberwareController") as CyberwareController).circuit.persona_energy_recovery_bonus = ratio * ROCK_ENERGY_RECOVERY_BONUS_MAX
 	_apply_attack_speed_modifier()
 
 
@@ -1225,7 +1276,7 @@ func _clear_temporary_modifiers() -> void:
 	guard.equipment_window_bonus -= _guard_bonus_applied
 	weapons.persona_attack_speed_bonus = 0.0
 	dash.persona_walk_speed_bonus = 0.0
-	heat.persona_cooling_bonus = 0.0
+	(player.get_node("CyberwareController") as CyberwareController).circuit.persona_energy_recovery_bonus = 0.0
 	dash.equipment_speed_bonus -= _dash_speed_bonus_applied
 	_guard_bonus_applied = 0.0
 	_attack_speed_bonus_applied = 0.0

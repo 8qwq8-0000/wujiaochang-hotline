@@ -111,6 +111,7 @@ func run_checks() -> void:
 	player.hurt_box.clear_invulnerability()
 	player.health.set_current_health(3)
 	var claim: PowerBox = load("res://scenes/environment/power_box.tscn").instantiate()
+	claim.buff_choice = 2
 	claim.position = Vector2(100,130)
 	area.add_child(claim)
 	player.get_node("RoomBuffComponent").changed.connect(func(_id: StringName) -> void: claim.receive_hit(DamagePacket.new()),CONNECT_ONE_SHOT)

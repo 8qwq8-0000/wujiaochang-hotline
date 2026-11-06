@@ -12,7 +12,7 @@ iOS 适配：`godot --headless --path . --script res://tests/integration/ios_mob
 
 剧情序章：`godot --headless --fixed-fps 60 --path . --script res://tests/integration/prologue_check.gd`，使用独立存档检查开场无枪与纯对话、突进击杀、正式敌人 AI 与弹速对照及盾反实际击杀、手枪掉落、Tab 背包装备、取消强制热量练习、实战热量提醒不暂停且不重复、自然散热恢复、通信暂停玩家/敌人/子弹/热量、真实鼠标点击正文/场景/面板继续、正式 HUD 的生命/热量同步与右下角武器显示及最大缩放避让、入口增益先领后开战与自动开门、约 1.5 秒阶段缓冲与仓库传送缓冲、手枪波次和环境箱、三件战利品、Codex 对话解锁合成、小 Boss 区独立炸药箱/散热增益箱与真实使用、自动传送进入仓库、底部通信引向保险箱与死亡丢失/箱内保留说明、关闭通信后恢复操作，以及跳过与存档隔离。窗口模式追加 `-- --capture` 可输出序章截图。详见[实施说明](../docs/technical/剧情序章与基础教学实施说明.md)。
 
-> 本页列出专项入口与历次覆盖说明，不代表所有脚本在当前版本均已通过。旧 `component_progression_check.gd` 仍访问机动 API，属于过期夹具；当前义体与合成请使用 `cyberware_check.gd`、`synthesis_npc_check.gd` 和 `codex_service_passage_check.gd`。历史断言数量保留原记录；Windows 与退出资源诊断等限制不因此取消。
+> 本页列出专项入口与历次覆盖说明，不代表所有脚本在当前版本均已通过。旧 `component_progression_check.gd` 仍访问机动 API；`cyberware_check.gd` 混有已废弃的独立义体槽、普通义体合成和即时射击断言，暂作历史夹具。`synthesis_npc_check.gd` 当前有六条仓库回退及背包夹具失败。当前回路与锻造师义体合成请使用 `circuit_attack_phase1_check.gd`、`cyberware_circuit_runtime_check.gd` 和 `codex_service_passage_check.gd`。历史断言数量保留原记录；Windows 与退出资源诊断等限制不因此取消。
 
 警戒炮台：`sentry_turret_check.gd` 验证八方向跟踪和双排射击、遮挡及清场摧毁；`sentry_placement_check.gd` 检查四张地图每区至少一台及占地、避障、寻路。运行方式为 `godot --headless --path . --script res://tests/integration/文件名`。
 
@@ -32,7 +32,7 @@ iOS 适配：`godot --headless --path . --script res://tests/integration/ios_mob
 
 黑匣与死亡保护：`godot --headless --path . --script res://tests/integration/blackbox_check.gd`，覆盖独立格、保险核心实例与唯一性、背包入口、暂停换装、满包交换、伤害结算期间禁止切换、旧状态迁移、保存失败回滚、死亡重试、回仓、核心丢失、已触发核心保护及 R 放弃行动。使用独立测试存档。
 
-背包拖放：旧 `inventory_drag_check.gd` 保留 v1.4 主副武器/机动回归记录，不再作为 v1.5 义体槽验收证据。现行义体装备、卸下、黑匣拒绝与生命周期由 `cyberware_check.gd` 覆盖。
+背包拖放：旧 `inventory_drag_check.gd` 保留 v1.4 主副武器/机动回归记录，不再作为当前义体回路验收证据。现行义体入库与回路配置由 `cyberware_circuit_runtime_check.gd` 和 `cyberware_circuit_ui_check.gd` 覆盖。
 
 放置 `test_*.gd` 测试脚本。优先覆盖：
 
@@ -86,13 +86,19 @@ Week 1 队友房间已作为正式“仓库出击”和“继续下一层”场�
 
 首次武器自动装副槽：`godot --headless --path . --script res://tests/integration/first_weapon_pickup_check.gd`，覆盖战斗中拾取、满包、副槽占用、仅首次触发、当前武器保留、立即使用和重复拾取保护。
 
-装备不占格与开局配置：旧 `backpack_weapon_capacity_check.gd` 保留 v1.4 机动槽记录；v1.5 义体槽的独立装备与局内生命周期改由 `cyberware_check.gd` 覆盖。
+装备不占格与开局配置：旧 `backpack_weapon_capacity_check.gd` 保留 v1.4 机动槽记录；当前义体直入回路库及开局安装由 `cyberware_circuit_runtime_check.gd` 覆盖。
 
 Week 1 房间已接入当前玩法接口；`week1_room_check.gd` 的 SKIP 不计为通过。
 
 房间切换：`godot --headless --path . --script res://tests/integration/room_transition_check.gd`，覆盖背包与装备快照、实例编号、首次拾取资格，以及旧房间掉落／子弹清理。
 
-单元检查：`godot --headless --path . --script res://tests/run_unit_checks.gd`。
+单元检查：`godot --headless --path . --script res://tests/run_unit_checks.gd`。可追加 `-- --suite=test_cyberware_circuit` 只加载义体回路专项，便于在其他未提交测试暂时不可解析时隔离验证；该参数不替代最终全量回归。
+
+义体回路运行：`godot --headless --path . --script res://tests/integration/cyberware_circuit_runtime_check.gd`，覆盖真实 `F` 启动输入、主动/事件/定时请求与优先级、能量预付和连续回复、智能/爆炸修正消费、武器主动调用、防递归、镜像赛博格挡、击杀热沉、节律计时，以及待执行请求的运行状态往返。
+
+义体回路编辑器与 HUD：`godot --headless --path . --script res://tests/integration/cyberware_circuit_ui_check.gd`，在 640×360 检查 `C` 暂停编辑、`E/F` 按键保留、独立库存、4 槽重排、实际顺序/净门槛预览、右下能量与三类队列、显式执行箭头，以及执行中编辑不改变当前轮快照。
+
+义体构筑试验场：`godot --headless --path . --script res://tests/integration/cyberware_circuit_lab_check.gd`，覆盖测试模式入口、9 件义体各 4 份、默认主动武器链、无限靶、固定敌人、近战敌人和三类复位。`test_mode_check.gd` 另覆盖真实仓库往返、构筑保留及正式存档隔离。
 
 敌人警戒：`godot --headless --path . --script res://tests/integration/enemy_alert_check.gd`，覆盖视野角度/距离/墙体、声音半径/遮挡/暂停、受击、目标记忆、附近同伴传播与防止递归、场景隔离和真实枪击事件。实施与参数见 `docs/technical/敌人警戒实施说明.md`。
 
@@ -155,7 +161,7 @@ godot --headless --path . --script res://tests/integration/automatic_door_check.
 
 固有突进：`godot --headless --path . --script res://tests/integration/dash_check.gd` 覆盖方向优先级、锁向、约 84 px 位移、命中去重、攻击打断、冷却、低物理频率路径扫描、撞墙与隔墙；`dash_invulnerability_check.gd` 覆盖 0.15 秒无敌及独立无敌来源。旧机动品质检查仅保留历史记录，不再作为现行验收。
 
-义体系统：`godot --headless --path . --script res://tests/integration/cyberware_check.gd` 覆盖专用槽、黑匣拒绝、四模块复合上限、追踪/爆炸弹丸快照、直击叠加范围伤害、持续射击兼容边界、突进脱锁、击破散热的归属/限频/过热恢复、热阈震荡的范围/无伤/防换装刷新和行动生命周期。
+义体系统：`godot --headless --path . --script res://tests/integration/circuit_attack_phase1_check.gd` 覆盖开火进入回路、回路结束后攻击、同轮加成、事件启动器合成与存档、命中事件、回放及 32 次攻击上限。`circuit_energy_phase2_check.gd` 覆盖 40 能量每秒回复、启动器单独付费、逐槽扣能、中止、动量跳转、轴突折扣和旧 ID 读档迁移。`cyberware_circuit_runtime_check.gd` 覆盖回路构造与运行，`cyberware_circuit_ui_check.gd` 覆盖编辑界面。旧 `cyberware_check.gd` 仍保留其他义体行为的历史检查，混有与新版规则冲突的失败断言，不能作为当前验收入口。`power_box_check.gd` 另覆盖每台终端随机发放一件义体、重复进入不复制奖励和战斗回路编辑入口。
 
 房间构型：`godot --headless --path . --script res://tests/integration/room_layouts_check.gd`，128 项检查覆盖正式 B/C 构型池、同层去重、种子复现、楼层重抽、跨区导航，以及全部 8 种房型的出生点/道具/出口可达和实际敌人绕墙追踪。去掉 `--headless` 会在 `/tmp/hotline-room-*.png` 输出实际构型截图。
 

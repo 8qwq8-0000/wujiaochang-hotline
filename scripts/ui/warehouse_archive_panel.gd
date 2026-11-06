@@ -53,16 +53,16 @@ func _ready() -> void:
 	layer = 97
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_overlay = ColorRect.new()
-	_overlay.color = Color("050a11f7")
+	_overlay.color = Color("20262af7")
 	_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_overlay.theme = CyberUITheme.create_theme()
+	_overlay.theme = CyberUITheme.create_os_theme()
 	add_child(_overlay)
 	_canvas = Control.new()
+	_canvas.size = Vector2(640, 360)
 	_overlay.add_child(_canvas)
-	_box(Rect2(18, 16, 604, 328), Color("101b28"), Color("344454"))
+	CyberUITheme.add_os_frame(_canvas)
 	_line(Rect2(18, 16, 4, 38), GOLD)
-	_text("THE LEGACY COLLECTION  /  私人珍藏", Rect2(32, 25, 400, 16), 9, GOLD)
-	_text("遗产酒谱", Rect2(31, 42, 360, 32), 25, Color("eef2ed"))
+	_text("遗产酒谱", Rect2(31, 32, 360, 32), 25, Color("eef2ed"))
 	_close_button = _button("关闭 [Esc]", Rect2(514, 33, 92, 28), close)
 	_summary = _text("", Rect2(32, 78, 570, 18), 11, MUTED)
 	for index in 3:
@@ -99,8 +99,7 @@ func _ready() -> void:
 	_content.add_theme_font_size_override("normal_font_size", 11)
 	_place(_content, Rect2(330, 210, 264, 80))
 	_line(Rect2(32, 313, 574, 1), Color("344454"))
-	_text("发现留档 · 通关封存", Rect2(32, 321, 230, 14), 9, GOLD)
-	var footer := _text("仅作记录，无属性加成  /  滚轮查看详情", Rect2(271, 321, 335, 14), 9, MUTED)
+	var footer := _text("仅作记录，无属性加成", Rect2(271, 321, 335, 14), 9, MUTED)
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	get_viewport().size_changed.connect(_resize)
 	_resize()
@@ -228,7 +227,7 @@ func refresh() -> void:
 	for entry in EnemyCatalog.ENTRIES:
 		if entry.id in codex.get("enemies", []):
 			unlocked += 1
-	_summary.text = "封存 %02d 瓶   /   人格 %d / 3   /   敌人 %d / %d" % [drinks.size(), codex.get("personas", []).size(), unlocked, EnemyCatalog.ENTRIES.size()]
+	_summary.text = "封存 %d 瓶   人格 %d（共 3）   敌人 %d（共 %d）" % [drinks.size(), codex.get("personas", []).size(), unlocked, EnemyCatalog.ENTRIES.size()]
 	for index in _tabs.size():
 		_tabs[index].set_pressed_no_signal(index == _tab)
 	for child in _list.get_children():
@@ -260,7 +259,7 @@ func refresh() -> void:
 		_rows.append(button)
 	if labels.is_empty():
 		var empty := Label.new()
-		empty.text = "酒架尚空\n期待你的首次通关"
+		empty.text = "尚无封存记录"
 		empty.add_theme_color_override("font_color", MUTED)
 		empty.add_theme_font_size_override("font_size", 11)
 		_list.add_child(empty)
@@ -280,11 +279,11 @@ func _show_entry() -> void:
 	match _tab:
 		0:
 			var drinks: Array = store.get_legacy_drinks()
-			_entry_title.text = "遗产饮料（%d 瓶）" % drinks.size()
-			_entry_tag.text = "行动的余味，留在这里。"
+			_entry_title.text = "封存记录"
+			_entry_tag.text = ""
 			if drinks.is_empty():
 				_portrait_mark.text = "—"
-				_content.text = "[color=#e7c77a]等待封存[/color]\n\n完整通关后，本次行动会保存到遗产酒谱。每一瓶都记录你走过的路线与最后的人格。"
+				_content.text = "通关后收录本次行动。"
 				return
 			var record: Dictionary = drinks[_selected]
 			var lines := PackedStringArray()
@@ -295,9 +294,9 @@ func _show_entry() -> void:
 			var id: String = PERSONA_NAMES.keys()[_selected]
 			var unlocked: bool = id in codex.get("personas", [])
 			_entry_title.text = PERSONA_NAMES[id] if unlocked else "未解锁"
-			_entry_tag.text = "人格档案 / %02d" % (_selected + 1)
+			_entry_tag.text = ""
 			if not unlocked:
-				_content.text = "尚未收录此人格。\n将人格带出行动后，资料会在这里留存。"
+				_content.text = "带该人格通关后解锁。"
 				return
 			_show_bottle(id)
 			var descriptions := {
@@ -311,9 +310,9 @@ func _show_entry() -> void:
 			var entry: Dictionary = EnemyCatalog.ENTRIES[_selected]
 			var unlocked: bool = entry.id in codex.get("enemies", [])
 			_entry_title.text = entry.name if unlocked else "未解锁"
-			_entry_tag.text = entry.tag if unlocked else "敌人档案 / %02d" % (_selected + 1)
+			_entry_tag.text = entry.tag if unlocked else ""
 			if not unlocked:
-				_content.text = "[color=#899cae]尚无遭遇记录[/color]\n\n在行动中遇到该敌人后解锁。"
+				_content.text = "首次遭遇后解锁。"
 				return
 			_portrait.texture = EnemyCatalog.portrait(entry)
 			_portrait_mark.hide()

@@ -37,10 +37,10 @@ func pair_seed() -> int:
 	var rng := RandomNumberGenerator.new()
 	for seed_value in range(1, 1000):
 		rng.seed = seed_value + 7919
-		var a := ComponentRolls.floor_drop(1, rng)
+		var a := ComponentRolls.floor_drop(1, rng, {"active_neural_switch": 1})
 		rng.seed = seed_value + 15838
-		var b := ComponentRolls.floor_drop(2, rng)
-		if ComponentRolls.compatible(a, b):
+		var b := ComponentRolls.floor_drop(2, rng, {"active_neural_switch": 1})
+		if ComponentRolls.ordinary(a) and ComponentRolls.ordinary(b) and ComponentRolls.compatible(a, b):
 			return seed_value
 	return 0
 

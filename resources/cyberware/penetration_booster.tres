@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CyberwareData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/player/cyberware_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+module_id = &"penetration_booster"
+display_name = "贯穿增压器"
+description = "消耗 18 能量。不能穿透的攻击获得一次穿敌或穿墙；每穿过一名敌人，下次命中按基础伤害累加 100%，不设上限。"
+circuit_kind = 1
+grade = 2
+circuit_energy_cost = 18.0
+circuit_tags = PackedStringArray("贯穿", "增伤")

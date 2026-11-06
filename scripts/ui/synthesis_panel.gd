@@ -1,8 +1,8 @@
 extends CanvasLayer
 
 const DRAG := preload("res://scripts/ui/synthesis_drag_button.gd")
-const CYAN := Color("8de3da")
-const GOLD := Color("e6bc73")
+const CYAN := Color("e6e1d8")
+const GOLD := Color("e7ac62")
 var heading_text := "Codex 装备工坊"
 var empty_text := "没有可合成的装备\n出击收集后再来找 Codex"
 var room: Node2D
@@ -13,6 +13,9 @@ var _list: VBoxContainer
 var _materials: Array = [null, null]
 var _material_buttons: Array[Button] = []
 var _synthesis_button: Button
+var _event_subject: OptionButton
+var _event_material: OptionButton
+var _event_merge_button: Button
 var _preview: RichTextLabel
 var _message: Label
 var _target := 0
@@ -23,7 +26,7 @@ func _style(fill: String, border: Color = Color("344550")) -> StyleBoxFlat:
 	style.bg_color = Color(fill)
 	style.border_color = border
 	style.set_border_width_all(1)
-	style.set_corner_radius_all(4)
+	style.set_corner_radius_all(0)
 	style.content_margin_left = 10
 	style.content_margin_right = 10
 	style.content_margin_top = 7
@@ -42,8 +45,10 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_overlay = PanelContainer.new()
 	_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_overlay.add_theme_stylebox_override("panel", _style("101b25"))
+	_overlay.theme = CyberUITheme.create_os_theme()
+	_overlay.add_theme_stylebox_override("panel", _style("20262a"))
 	add_child(_overlay)
+	CyberUITheme.add_os_frame(_overlay)
 	var margin := MarginContainer.new()
 	for side in ["left", "right", "top", "bottom"]:
 		margin.add_theme_constant_override("margin_" + side, 6)
@@ -61,7 +66,7 @@ func _ready() -> void:
 	close_button.add_theme_font_size_override("font_size", 12)
 	close_button.pressed.connect(close)
 	header.add_child(close_button)
-	column.add_child(_label("武装/防御同品质升级；义体最多四种模块，重复模块不可合成。", 11, Color("a6b9c4")))
+	column.add_child(_label("武器与防御装备升级；事件义体可兼并监听。", 11, Color("a6b9c4")))
 	var body := HBoxContainer.new()
 	body.add_theme_constant_override("separation", 12)
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -72,7 +77,7 @@ func _ready() -> void:
 	catalog.add_child(_label("可用装备", 15, CYAN))
 	var filters := HBoxContainer.new()
 	catalog.add_child(filters)
-	for option in [{"id": "all", "title": "全部"}, {"id": "weapon", "title": "武器"}, {"id": "cyberware", "title": "义体"}, {"id": "defense", "title": "防御"}]:
+	for option in [{"id": "all", "title": "全部"}, {"id": "weapon", "title": "武器"}, {"id": "defense", "title": "防御"}]:
 		var button := Button.new()
 		button.text = option.title
 		button.add_theme_font_size_override("font_size", 11)
@@ -132,6 +137,18 @@ func _ready() -> void:
 	_synthesis_button.add_theme_color_override("font_color", GOLD)
 	_synthesis_button.pressed.connect(_synthesize)
 	forge.add_child(_synthesis_button)
+	var event_row := HBoxContainer.new()
+	forge.add_child(event_row)
+	_event_subject = OptionButton.new()
+	_event_subject.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	event_row.add_child(_event_subject)
+	_event_material = OptionButton.new()
+	_event_material.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	event_row.add_child(_event_material)
+	_event_merge_button = Button.new()
+	_event_merge_button.text = "兼并事件"
+	_event_merge_button.pressed.connect(_merge_event_starters)
+	forge.add_child(_event_merge_button)
 	_message = _label("", 11, Color("a6b9c4"))
 	_message.custom_minimum_size.y = 30
 	_message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -176,9 +193,39 @@ func _input(event: InputEvent) -> void:
 func show_message(text: String) -> void:
 	_message.text = ControlPrompts.adapt(text)
 
+
+func _refresh_event_starters() -> void:
+	if _event_subject == null or not is_instance_valid(room):
+		return
+	_event_subject.clear()
+	_event_material.clear()
+	var cyberware: CyberwareController = room.player.cyberware
+	var counts := cyberware.circuit.get_library_counts()
+	for raw_id in counts:
+		var module_id := StringName(raw_id)
+		if int(counts[raw_id]) <= 0 or CyberwareController.event_starter_mask(module_id) == 0:
+			continue
+		var data := cyberware.get_circuit_module_data(module_id)
+		var label := data.display_name if data != null else String(module_id)
+		_event_subject.add_item(label)
+		_event_subject.set_item_metadata(_event_subject.item_count - 1, String(module_id))
+		if cyberware.circuit.get_available_count(module_id) > 0:
+			_event_material.add_item(label)
+			_event_material.set_item_metadata(_event_material.item_count - 1, String(module_id))
+	_event_merge_button.disabled = _event_subject.item_count == 0 or _event_material.item_count == 0
+
+
+func _merge_event_starters() -> void:
+	if _event_subject.selected < 0 or _event_material.selected < 0:
+		return
+	var subject_id := StringName(_event_subject.get_item_metadata(_event_subject.selected))
+	var material_id := StringName(_event_material.get_item_metadata(_event_material.selected))
+	room.synthesize_event_starters(subject_id, material_id)
+
 func refresh() -> void:
 	if _list == null:
 		return
+	_refresh_event_starters()
 	for index in 2:
 		if _materials[index] != null and not owns_item(_materials[index]):
 			_materials[index] = null
@@ -186,7 +233,7 @@ func refresh() -> void:
 		_list.remove_child(child)
 		child.queue_free()
 	var inv: ComponentInventory = room.player.inventory
-	for location in ["weapon", "weapon_secondary", "cyberware", "defense", "blackbox", "backpack", "chest"]:
+	for location in ["weapon", "weapon_secondary", "defense", "blackbox", "backpack", "chest"]:
 		var items: Array = []
 		if location == "chest":
 			items = room.chest.get_items()
@@ -195,7 +242,7 @@ func refresh() -> void:
 		else:
 			items = [inv.item_at(location)]
 		for item in items:
-			if ComponentRolls.synthesizable(item) and (_filter == "all" or item.get_property("slot") == _filter):
+			if item != null and str(item.get_property("slot", "")) != "cyberware" and ComponentRolls.synthesizable(item) and (_filter == "all" or item.get_property("slot") == _filter):
 				_add_item(item, location)
 	if _list.get_child_count() == 0:
 		_list.add_child(_label(empty_text, 12))

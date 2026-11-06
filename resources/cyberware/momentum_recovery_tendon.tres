@@ -6,5 +6,10 @@
 script = ExtResource("1")
 module_id = &"momentum_recovery_tendon"
 display_name = "动能回收腱"
-description = "固有突进实际伤害敌人后，1.5 秒内下一次会产热的攻击不产生热量；每次突进至多获得一层，零热攻击不消耗。"
+description = "执行时立即结束本轮回路并恢复 40 能量。"
+target_scope = Array[StringName]([&"whole_round"])
+circuit_kind = 2
+grade = 2
+circuit_energy_cost = 12.0
+circuit_tags = PackedStringArray("跳转", "回能")
 momentum_charge_seconds = 1.5

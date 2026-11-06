@@ -69,6 +69,16 @@ func receive_hit(packet: DamagePacket) -> DamageResult:
 			duplicate_hit.target = actor
 			return duplicate_hit
 		packet.electric_event.hit_ids[actor.get_instance_id()] = true
+	if actor.has_method("try_cyberware_guard"):
+		var cyberware_result: DamageResult = actor.try_cyberware_guard(packet)
+		if cyberware_result != null:
+			var cyberware_loop := Engine.get_main_loop()
+			if cyberware_loop is SceneTree:
+				var cyberware_events := (cyberware_loop as SceneTree).root.get_node_or_null("CombatEvents")
+				if cyberware_events != null:
+					cyberware_events.publish_damage(cyberware_result)
+			hit_resolved.emit(cyberware_result)
+			return cyberware_result
 	# Player-side AI personas can prepare a guard before the ordinary resolver
 	# evaluates this packet. The hook is deliberately actor-owned so enemy and
 	# environmental hurt boxes keep their existing behavior.

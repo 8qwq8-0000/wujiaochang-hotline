@@ -20,6 +20,7 @@ var current_index: int = 0
 var debug_loadout_enabled: bool = false
 var attack_speed_multiplier := 1.0
 var persona_attack_speed_bonus := 0.0
+var equipment_attack_speed_bonus := 0.0
 var _current_weapon: WeaponComponentData = DEFAULT_WEAPON
 var _cooldown_remaining: float = 0.0
 var _swing_remaining: float = 0.0
@@ -31,6 +32,8 @@ var _swing_damage_multiplier := 1.0
 var _feedback_group_serial := 0
 var _active_feedback_group_id := 0
 var _active_terminal_attack := false
+var _active_status_tags: PackedStringArray = []
+var _swing_status_tags: PackedStringArray = []
 
 @onready var heat_component: HeatComponent = get_node(heat_component_path)
 
@@ -102,17 +105,43 @@ func try_attack(origin: Vector2, direction: Vector2, source_node: Node) -> bool:
 	var data := _current_weapon
 	if data == null or direction.is_zero_approx():
 		return false
+	var cyberware := source_node.get_node_or_null("CyberwareController") as CyberwareController
+	if faction == CombatFaction.Id.PLAYER and cyberware != null and not cyberware.is_circuit_weapon_call_active():
+		var frenzy := (source_node as PlayerController).persona_combat.is_nuclear_frenzy_active()
+		if _cooldown_remaining > 0.0 and not frenzy and not (cyberware.has_active_round() and (source_node as PlayerController).persona_combat.can_queue_seamless()):
+			return false
+		if not cyberware.submit_weapon_fire(direction, data):
+			return false
+		_cooldown_remaining = 0.0 if frenzy else data.cooldown / maxf(attack_speed_multiplier + persona_attack_speed_bonus + equipment_attack_speed_bonus, 0.01)
+		return true
 	var context := _attack_context(source_node, data)
 	if _cooldown_remaining > 0.0 and not bool(context.get("ignore_cooldown", false)):
-		return false
-	var heat_amount := data.heat_per_attack * maxf(float(context.get("heat_multiplier", 1.0)), 0.0)
-	if bool(context.get("allow_overheat", false)):
-		heat_component.add_overflow_heat(heat_amount)
-	elif not heat_component.try_add_heat(heat_amount):
 		return false
 	_perform_attack(data, origin, direction.normalized(), source_node, 1.0, context)
 	if source_node.has_method("on_persona_attack_committed"):
 		source_node.on_persona_attack_committed(data, context, _active_feedback_group_id)
+	return true
+
+
+func perform_circuit_attack(data: WeaponComponentData, origin: Vector2, direction: Vector2, source_node: Node, damage_multiplier: float = 1.0, event_tags: PackedStringArray = []) -> bool:
+	if data == null or direction.is_zero_approx():
+		return false
+	var previous_weapon := _current_weapon
+	_current_weapon = data
+	var tags := PackedStringArray(["cyberware_chain", "circuit_attack"])
+	tags.append_array(event_tags)
+	var context := _attack_context(source_node, data)
+	context["forced"] = true
+	context["ignore_cooldown"] = true
+	context["extra_status_tags"] = tags
+	_perform_attack(data, origin, direction.normalized(), source_node, damage_multiplier, context)
+	if source_node.has_method("on_persona_attack_committed"):
+		source_node.on_persona_attack_committed(data, context, _active_feedback_group_id)
+	if data.attack_kind == WeaponComponentData.AttackKind.MELEE and (source_node.get_node_or_null("CyberwareController") as CyberwareController).get_circuit_calamity_layers() == 0:
+		_swing_remaining = _swing_duration * 0.5
+		_perform_melee_tick(data, origin, direction.normalized(), source_node)
+		_cancel_swing()
+	_current_weapon = previous_weapon
 	return true
 
 
@@ -131,12 +160,9 @@ func try_forced_attack(
 
 func try_cooldown_free_attack(origin: Vector2, direction: Vector2, source_node: Node, damage_multiplier: float = 1.0) -> bool:
 	var data := _current_weapon
-	if data == null or direction.is_zero_approx() or heat_component.is_overheated:
+	if data == null or direction.is_zero_approx():
 		return false
 	var context := _attack_context(source_node, data)
-	var heat_amount := data.heat_per_attack * maxf(float(context.get("heat_multiplier", 1.0)), 0.0)
-	if not heat_component.try_add_heat(heat_amount):
-		return false
 	context["ignore_cooldown"] = true
 	_perform_attack(data, origin, direction.normalized(), source_node, maxf(damage_multiplier, 0.0), context)
 	if source_node.has_method("on_persona_attack_committed"):
@@ -185,7 +211,7 @@ func get_cooldown_duration_for_weapon_id(weapon_id: StringName) -> float:
 				break
 	if data == null:
 		return 0.0
-	return data.cooldown / maxf(attack_speed_multiplier + persona_attack_speed_bonus, 0.01)
+	return data.cooldown / maxf(attack_speed_multiplier + persona_attack_speed_bonus + equipment_attack_speed_bonus, 0.01)
 
 
 func _perform_attack(
@@ -199,22 +225,29 @@ func _perform_attack(
 	_feedback_group_serial += 1
 	_active_feedback_group_id = _feedback_group_serial
 	_active_terminal_attack = bool(context.get("terminal", false))
+	_active_status_tags = PackedStringArray(context.get("extra_status_tags", []))
 	if source_node.has_method("prepare_persona_attack_group"):
 		source_node.prepare_persona_attack_group(_active_feedback_group_id, context)
 	if not bool(context.get("ignore_cooldown", false)):
-		_cooldown_remaining = data.cooldown / maxf(attack_speed_multiplier + persona_attack_speed_bonus, 0.01)
-	match data.attack_kind:
-		WeaponComponentData.AttackKind.MELEE:
-			_begin_melee(data, direction.normalized(), damage_multiplier)
-		WeaponComponentData.AttackKind.PROJECTILE, WeaponComponentData.AttackKind.SPREAD:
-			_perform_projectiles(data, origin, direction.normalized(), source_node, damage_multiplier)
-		WeaponComponentData.AttackKind.BEAM:
-			_perform_beam(data, origin, direction.normalized(), source_node, damage_multiplier)
+		_cooldown_remaining = data.cooldown / maxf(attack_speed_multiplier + persona_attack_speed_bonus + equipment_attack_speed_bonus, 0.01)
+	var cyberware := source_node.get_node_or_null("CyberwareController") as CyberwareController
+	var consume_weapon_payload := not bool(context.get("forced", false)) and not _active_terminal_attack and (cyberware == null or not cyberware.is_circuit_weapon_call_active())
+	if cyberware != null and cyberware.get_circuit_calamity_layers() > 0:
+		_perform_projectiles(data, origin, direction.normalized(), source_node, damage_multiplier, consume_weapon_payload)
+	else:
+		match data.attack_kind:
+			WeaponComponentData.AttackKind.MELEE:
+				_begin_melee(data, direction.normalized(), damage_multiplier)
+			WeaponComponentData.AttackKind.PROJECTILE, WeaponComponentData.AttackKind.SPREAD:
+				_perform_projectiles(data, origin, direction.normalized(), source_node, damage_multiplier, consume_weapon_payload)
+			WeaponComponentData.AttackKind.BEAM:
+				_perform_beam(data, origin, direction.normalized(), source_node, damage_multiplier)
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null and data.noise_radius > 0.0:
 		events.publish_noise(source_node, origin, data.noise_radius)
 	attack_performed.emit(data)
 	_active_terminal_attack = false
+	_active_status_tags.clear()
 
 
 func get_last_feedback_group_id() -> int:
@@ -279,6 +312,7 @@ func _begin_melee(data: WeaponComponentData, direction: Vector2, damage_multipli
 	_swing_damage_multiplier = damage_multiplier
 	_swing_sign *= -1.0
 	_swing_hits.clear()
+	_swing_status_tags = _active_status_tags.duplicate()
 
 
 func _perform_melee_tick(data: WeaponComponentData, origin: Vector2, direction: Vector2, source_node: Node) -> void:
@@ -294,7 +328,13 @@ func _perform_melee_tick(data: WeaponComponentData, origin: Vector2, direction: 
 	var world := get_viewport().world_2d
 	if world == null:
 		return
-	for hit in world.direct_space_state.intersect_shape(query, 16):
+	var melee_hits := world.direct_space_state.intersect_shape(query, 16)
+	melee_hits.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return a.collider.global_position.distance_squared_to(origin) < b.collider.global_position.distance_squared_to(origin)
+	)
+	var cyberware := source_node.get_node_or_null("CyberwareController") as CyberwareController
+	var penetrated_targets := 0
+	for hit in melee_hits:
 		var area: Object = hit.get("collider")
 		if area == null or not area.has_method("receive_hit"):
 			continue
@@ -303,6 +343,9 @@ func _perform_melee_tick(data: WeaponComponentData, origin: Vector2, direction: 
 			continue
 		_swing_hits[instance_id] = true
 		var packet := _make_packet(data, origin, sweep_direction, source_node, _swing_damage_multiplier)
+		if cyberware != null and cyberware.get_circuit_penetration_boost():
+			packet.base_damage *= 1 + penetrated_targets
+		penetrated_targets += 1
 		packet.is_melee = true
 		packet.stagger_seconds = 0.75
 		packet.knockback = sweep_direction * 120.0
@@ -314,11 +357,16 @@ func _perform_projectiles(
 	origin: Vector2,
 	direction: Vector2,
 	source_node: Node,
-	damage_multiplier: float = 1.0
+	damage_multiplier: float = 1.0,
+	consume_weapon_payload: bool = false
 ) -> void:
 	# Resolve after actor/room scripts finish loading to avoid a cyclic scene preload.
 	var projectile_scene := load(PROJECTILE_SCENE_PATH) as PackedScene
 	var count := maxi(data.projectile_count, 1)
+	var cyberware := source_node.get_node_or_null("CyberwareController") as CyberwareController
+	var weapon_payload: Dictionary = {}
+	if cyberware != null and consume_weapon_payload:
+		weapon_payload = cyberware.take_pending_weapon_payload(_active_feedback_group_id)
 	for index in count:
 		var offset := 0.0
 		if count > 1:
@@ -336,11 +384,13 @@ func _perform_projectiles(
 		projectile.weapon_id = data.id
 		projectile.damage_type = data.damage_type
 		projectile.status_tags = data.status_tags.duplicate()
+		projectile.status_tags.append_array(_active_status_tags)
 		projectile.feedback_group_id = _active_feedback_group_id
 		projectile.allows_trajectory_echo = data.attack_kind == WeaponComponentData.AttackKind.PROJECTILE and count == 1
-		var cyberware := source_node.get_node_or_null("CyberwareController") as CyberwareController
+		if cyberware != null and cyberware.get_circuit_calamity_layers() > 0:
+			projectile.lifetime = maxf(projectile.lifetime, data.attack_range / maxf(projectile.speed, 1.0))
 		if cyberware != null:
-			cyberware.configure_projectile(projectile, direction)
+			cyberware.configure_projectile(projectile, direction, weapon_payload)
 		if _active_terminal_attack:
 			projectile.configure_explosion(48.0, 1)
 
@@ -374,6 +424,20 @@ func _perform_beam(
 		var motion_result := space.cast_motion(sweep)
 		length += remaining_range * motion_result[0]
 		contact_length += remaining_range * motion_result[1]
+	var cyberware := source_node.get_node_or_null("CyberwareController") as CyberwareController
+	var pierce := cyberware.get_circuit_pierce_remaining() if cyberware != null else 0
+	if pierce != 0:
+		length = data.attack_range
+		if pierce > 0:
+			var beam_start := origin + direction * penetration_distance
+			var beam_end := origin + direction * data.attack_range
+			var first_wall := space.intersect_ray(PhysicsRayQueryParameters2D.create(beam_start, beam_end, 1))
+			if not first_wall.is_empty():
+				var next_ray := PhysicsRayQueryParameters2D.create(beam_start, beam_end, 1)
+				next_ray.exclude = [first_wall.rid]
+				var second_wall := space.intersect_ray(next_ray)
+				if not second_wall.is_empty():
+					length = origin.distance_to(second_wall.position)
 	if length <= 0.0:
 		return
 	var shape := RectangleShape2D.new()
@@ -403,7 +467,12 @@ func _perform_beam(
 		packet.is_beam = true
 		door.receive_hit(packet)
 	var hit_actors := {}
-	for hit in space.intersect_shape(query, 256):
+	var beam_hits := space.intersect_shape(query, 256)
+	beam_hits.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return (a.collider.global_position - origin).dot(direction) < (b.collider.global_position - origin).dot(direction)
+	)
+	var penetrated_targets := 0
+	for hit in beam_hits:
 		var area := hit.collider as Area2D
 		if area == null or not area.has_method("receive_hit"):
 			continue
@@ -416,13 +485,16 @@ func _perform_beam(
 		var actor_distance := clampf((actor.global_position - origin).dot(direction), 0.0, length)
 		var beam_multiplier := _beam_damage_multiplier(data, actor_distance)
 		var packet := _make_packet(data, origin, direction, source_node, damage_multiplier * beam_multiplier)
+		if cyberware != null and cyberware.get_circuit_penetration_boost():
+			packet.base_damage *= 1 + penetrated_targets
+		penetrated_targets += 1
 		packet.is_area_damage = true
 		packet.is_beam = true
 		area.receive_hit(packet)
 	var beam := Node2D.new()
 	beam.set_script(LASER_BEAM)
 	beam.set("beam_length", length)
-	beam.set("beam_width", data.beam_width)
+	beam.set("beam_width", data.beam_width * (cyberware.get_circuit_visual_scale() if cyberware != null else 1.0))
 	beam.set("falloff_start_distance", penetration_distance)
 	room.add_child(beam)
 	beam.global_position = origin
@@ -451,6 +523,7 @@ func _make_packet(
 	packet.weapon_id = data.id
 	packet.damage_type = data.damage_type
 	packet.status_tags = data.status_tags.duplicate()
+	packet.status_tags.append_array(_swing_status_tags if data.attack_kind == WeaponComponentData.AttackKind.MELEE else _active_status_tags)
 	packet.source_position = origin
 	packet.travel_direction = direction
 	packet.feedback_group_id = _active_feedback_group_id
@@ -464,6 +537,7 @@ func _cancel_swing() -> void:
 	_swing_duration = 0.0
 	_swing_damage_multiplier = 1.0
 	_swing_hits.clear()
+	_swing_status_tags.clear()
 
 
 func _index_for_id(id: StringName) -> int:

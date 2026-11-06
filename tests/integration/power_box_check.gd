@@ -71,14 +71,13 @@ func run_checks() -> void:
 	for frame in 3:
 		await physics_frame
 	await press_e()
-	check(cooling_box.state == PowerBox.State.CLAIMED and player.heat.cooling_multiplier == 1.5, "cooling buff claimed through same E path")
-	check_popup(cooling_box, &"cooling")
-	player.heat.set_physics_process(false)
-	player.heat.current_heat = 80
-	player.heat._physics_process(1)
-	check(is_equal_approx(player.heat.current_heat,62), "12/s base cooling with a 50% buff dissipates 18 heat per second")
+	check(cooling_box.state == PowerBox.State.CLAIMED and is_equal_approx(player.cyberware.circuit.room_energy_recovery_bonus, 0.5), "energy recovery buff claimed through same E path")
+	check_popup(cooling_box, &"energy_recovery")
+	player.cyberware.circuit.set_energy(0.0)
+	player.cyberware.circuit.advance(1.0)
+	check(is_equal_approx(player.cyberware.circuit.current_energy, 60.0), "40 per second energy recovery increases to 60 with the room buff")
 	room.room_cleared.emit()
-	check(player.heat.cooling_multiplier == 1, "clear restores cooling multiplier")
+	check(is_zero_approx(player.cyberware.circuit.room_energy_recovery_bonus), "clear restores base energy recovery")
 	var guard_box := box_at(room,Vector2(200,200),3)
 	for frame in 3:
 		await physics_frame
@@ -101,8 +100,9 @@ func run_checks() -> void:
 	root.add_child(other_room)
 	var arcs: Array = []
 	root.get_node("CombatEvents").electric_arc_requested.connect(func(_a: Vector2,_b: Vector2,_room: Node) -> void: arcs.append(true))
+	room.cleared = true
 	var danger := box_at(room,Vector2(400,200))
-	check(danger.get_node("ActiveSigil").visible, "ready station projects its floor sigil")
+	check(danger.get_node("ActiveSigil").visible, "ready circuit terminal projects its floor sigil")
 	check(danger.collision_layer == 32, "station keeps interaction layer and leaves damage target layer")
 	var impact := DamagePacket.new()
 	impact.base_damage = 100
@@ -111,12 +111,29 @@ func run_checks() -> void:
 		var result := danger.receive_hit(impact)
 		check(result.final_damage == 0 and not result.target_defeated, "attacks cannot damage or destroy charging station")
 	await process_frame
-	check(danger.state == PowerBox.State.READY and danger.discharge_count == 0 and arcs.is_empty(), "attacks never discharge station or consume its buff")
+	check(danger.state == PowerBox.State.READY and danger.discharge_count == 0 and arcs.is_empty(), "attacks never discharge the circuit terminal")
 	check(player.health.current_health == 3 and target.health.current_health == 8, "station attacks do not cause surrounding blast damage")
+	var terminal_library_before := player.cyberware.circuit.get_library_counts()
 	danger.interact(player)
-	check(danger.state == PowerBox.State.CLAIMED and not danger.get_node("ActiveSigil").visible, "E still claims attacked station and immediately extinguishes sigil")
+	check(danger.state == PowerBox.State.CLAIMED and danger.get_node("ActiveSigil").visible and danger.collision_layer == 32, "terminal remains powered and interactive after its first sync")
+	check(player.cyberware.circuit.get_library_counts() != terminal_library_before, "first terminal sync grants one random cyberware")
+	var terminal_library_after := player.cyberware.circuit.get_library_counts()
+	var circuit_editor = hud.get_circuit_editor()
+	check(circuit_editor.is_open, "terminal opens the circuit editor")
+	circuit_editor.set_open(false)
+	check(danger.can_interact(player), "synced terminal remains interactable after closing the editor")
+	danger.interact(player)
+	check(circuit_editor.is_open and player.cyberware.circuit.get_library_counts() == terminal_library_after, "reused terminal reopens without duplicating its free sync reward")
+	circuit_editor.set_open(false)
+	var second_terminal := box_at(room, Vector2(430, 160))
+	second_terminal.interact(player)
+	check(second_terminal.state == PowerBox.State.CLAIMED and player.cyberware.circuit.get_library_counts() != terminal_library_after, "each terminal grants one random cyberware")
+	circuit_editor.set_open(false)
+	room.cleared = false
 	player.position = Vector2(490,100)
 	player.hurt_box.clear_invulnerability()
+	player.cyberware.reset_transient_state()
+	player.cyberware.circuit.set_energy(player.cyberware.circuit.maximum_energy)
 	player.heat.current_heat = 0
 	player.weapons.set("_cooldown_remaining",0)
 	var shot_box := box_at(room,Vector2(550,100))
@@ -130,6 +147,8 @@ func run_checks() -> void:
 	check(behind.health.current_health < 8, "projectile passes through station and can hit an enemy behind it")
 	player.weapons.set_equipped_weapon(load("res://resources/weapons/initial_baton.tres"))
 	player.weapons.reset_transient_state()
+	player.cyberware.reset_transient_state()
+	player.cyberware.circuit.set_energy(player.cyberware.circuit.maximum_energy)
 	player.heat.current_heat = 0
 	player.position = Vector2(100,100)
 	var melee_box := box_at(room,Vector2(130,100))
@@ -151,23 +170,23 @@ func run_checks() -> void:
 	paused = false
 	await create_timer(1.4).timeout
 	check(get_nodes_in_group("charging_buff_feedback").is_empty(), "buff popups expire without leaving persistent effects")
-	buffs.apply_buff(&"cooling",other_room)
+	buffs.apply_buff(&"energy_recovery",other_room)
 	other_room.queue_free()
 	await process_frame
-	check(buffs.active_buff.is_empty() and player.heat.cooling_multiplier == 1, "source scene exit removes buff")
+	check(buffs.active_buff.is_empty() and is_zero_approx(player.cyberware.circuit.room_energy_recovery_bonus), "source scene exit removes buff")
 	other_room = TestRoom.new()
 	root.add_child(other_room)
 	# Source-room ownership prevents an unrelated room from clearing the buff.
-	check(buffs.apply_buff(&"cooling",room), "apply replacement buff without stacking")
+	check(buffs.apply_buff(&"energy_recovery",room), "apply replacement buff without stacking")
 	other_room.room_cleared.emit()
-	check(buffs.active_buff == &"cooling" and player.weapons.attack_speed_multiplier == 1 and player.guard.recovery_multiplier == 1, "unrelated room clear does not remove buff and replaced buffs do not stack")
+	check(buffs.active_buff == &"energy_recovery" and player.weapons.attack_speed_multiplier == 1 and player.guard.recovery_multiplier == 1, "unrelated room clear does not remove buff and replaced buffs do not stack")
 	player.set_circuit_breaker_equipped(false)
 	player.health.apply_damage(100,DamagePacket.new())
-	check(player.health.is_dead() and buffs.active_buff.is_empty() and player.heat.cooling_multiplier == 1, "death clears room buff")
+	check(player.health.is_dead() and buffs.active_buff.is_empty() and is_zero_approx(player.cyberware.circuit.room_energy_recovery_bonus), "death clears room buff")
 	room.cleared = true
-	var late_box := box_at(room,Vector2(490,100))
+	var late_box := box_at(room,Vector2(490,100),1)
 	late_box.get_node("ActiveSigil").refresh()
-	check(not late_box.can_interact(player) and not late_box.get_node("ActiveSigil").visible, "cleared room hides floor sigil and rejects fresh buffs")
+	check(not late_box.can_interact(player) and not late_box.get_node("ActiveSigil").visible, "cleared room still hides legacy buff sigils and rejects fresh buffs")
 	room.queue_free()
 	other_room.queue_free()
 	await process_frame
@@ -179,5 +198,8 @@ func check_popup(box: PowerBox, id: StringName) -> void:
 	check(feedback != null, "successful %s claim shows arcade popup" % id)
 	if feedback == null:
 		return
-	check((feedback.get_child(0) as Sprite2D).texture == PowerBox.BUFF_ART[id], "popup uses the matching buff artwork")
+	if id == &"energy_recovery":
+		check((feedback.get_child(0) as Label).text == "能量恢复 +50%", "energy popup no longer shows cooling artwork")
+	else:
+		check((feedback.get_child(0) as Sprite2D).texture == PowerBox.BUFF_ART[id], "popup uses the matching buff artwork")
 	check((feedback.get_child(1) as Label).text == "本区域清场后失效", "popup explains expiration")

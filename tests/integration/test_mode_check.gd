@@ -77,6 +77,12 @@ func run_checks() -> void:
 	check(before_bad == warehouse.player.talent_core.export_state(), "invalid build has no partial mutations")
 	check(warehouse.save_loadout(), "test warehouse autosave succeeds in memory")
 	check(FileAccess.get_file_as_bytes(SAVE) == original_bytes, "test equipment and talents do not touch disk")
+	check(await tools.jump_to(-2), "dedicated cyberware circuit lab jump works")
+	var circuit_lab := await wait_room()
+	check(circuit_lab != null and circuit_lab.scene_file_path == "res://scenes/debug/cyberware_circuit_lab.tscn", "test flow loads the circuit lab inside the persistent gameplay host")
+	check(circuit_lab.get_node("Player").cyberware.circuit.get_library_counts().size() == 9, "real test-mode jump grants the first-playable circuit library")
+	check(await tools.jump_to(-1), "circuit lab can return to the test warehouse")
+	warehouse = await wait_room()
 	for index in 3:
 		check(await tools.jump_to(index), "direct jump reaches floor %d" % (index + 1))
 		var floor := await wait_room()

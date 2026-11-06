@@ -13,6 +13,7 @@ trigger_mode = 1
 damage = 1
 cooldown = 0.168
 heat_per_attack = 0.0
+feedback_gain = 0.0
 attack_range = 36.0
 melee_active_seconds = 0.14
 melee_arc_degrees = 150.0

@@ -99,7 +99,7 @@ func run() -> void:
 	var panel: WarehouseArchivePanel = warehouse.archive_panel
 	panel.open()
 	check(paused and panel.is_open, "archive opens and pauses game")
-	check(panel._content.text.contains("完整通关"), "empty wine rack explains how to collect")
+	check(panel._content.text.contains("通关后收录"), "empty wine rack explains how to collect")
 	panel._select_tab(2)
 	check(panel._rows.size() == EnemyCatalog.ENTRIES.size(), "all catalog entries have a slot")
 	check(panel._entry_title.text == "近战施压者" and panel._portrait.texture != null, "discovered enemy shows identity and image")

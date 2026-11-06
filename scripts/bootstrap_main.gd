@@ -59,6 +59,8 @@ func _restart_combat() -> void:
 func _ensure_input_map() -> void:
 	_add_key_action(&"restart_room", KEY_R)
 	_add_key_action(&"interact", KEY_E)
+	_add_key_action(&"circuit_activate", KEY_F)
+	_add_key_action(&"circuit_editor", KEY_C)
 	_add_key_action(&"inventory_toggle", KEY_TAB)
 	_add_key_action(&"pause", KEY_ESCAPE)
 	_add_key_action(&"weapon_switch", KEY_Q)
