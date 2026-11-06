@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>石墨灰与琥珀 UI 样稿</title>
+<style>
+  :root { --bg:#171b1e; --panel:#2a3032; --text:#e3e0d6; --muted:#a9aaa3; --amber:#c99b65; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; width:1280px; height:720px; overflow:hidden; background:var(--bg); font-family:"Microsoft YaHei UI","Microsoft YaHei",sans-serif; }
+  .screen { position:absolute; inset:0; display:none; overflow:hidden; }
+  .screen.on { display:block; }
+  .room { position:absolute; inset:0; width:1280px; height:720px; }
+  .health { position:absolute; left:15px; top:14px; width:152px; height:62px; background:#171b1eb8; }
+  .health img { position:absolute; left:5px; top:0; width:137px; height:60px; }
+  .health .pip { position:absolute; top:23px; width:25px; height:24px; background:var(--text); }
+  .health .pip:nth-of-type(1) { left:24px; }
+  .health .pip:nth-of-type(2) { left:55px; }
+  .health .pip:nth-of-type(3) { left:86px; background:#545956; }
+  .circuit { position:absolute; left:811px; top:552px; width:429px; height:125px; background:#171b1ed1; }
+  .energy { position:absolute; left:22px; top:15px; width:378px; height:3px; background:#73767065; }
+  .energy::after { content:""; display:block; width:82%; height:3px; background:var(--amber); }
+  .bus { position:absolute; left:12px; top:74px; width:404px; height:38px; }
+  .flow { position:absolute; left:31px; top:100px; width:360px; height:2px; background:#c99b6540; }
+  .flow::after { content:""; display:block; width:166px; height:3px; background:var(--amber); }
+  .socket { position:absolute; top:36px; width:58px; height:58px; }
+  .socket .back { position:absolute; inset:10px; background:#11191af0; }
+  .socket .icon { position:absolute; left:12px; top:12px; width:34px; height:34px; image-rendering:pixelated; }
+  .socket .bezel { position:absolute; inset:0; width:58px; height:58px; }
+  .socket.active::after { content:""; position:absolute; left:9px; top:68px; width:40px; height:3px; background:var(--amber); }
+  .setting-shade { position:absolute; inset:0; background:#0a0e12e0; }
+  .setting-fill { position:absolute; left:153px; top:55px; width:974px; height:611px; background:#2a3032f7; }
+  .setting-frame { position:absolute; left:140px; top:42px; width:1000px; height:637px; }
+  .setting-title { position:absolute; left:198px; top:105px; color:var(--text); font-size:27px; }
+  .setting-rule { position:absolute; left:198px; top:152px; width:875px; height:2px; background:#a9aaa359; }
+  .setting-nav { position:absolute; left:202px; top:183px; width:203px; color:var(--muted); font-size:18px; }
+  .setting-nav div { height:68px; padding:9px 18px; }
+  .setting-nav .selected { color:var(--text); background:#c99b6529; border-left:4px solid var(--amber); padding-left:14px; }
+  .setting-vrule { position:absolute; left:427px; top:179px; width:1px; height:396px; background:#a9aaa34d; }
+  .setting-heading { position:absolute; left:469px; top:189px; color:var(--text); font-size:23px; }
+  .setting-rows { position:absolute; left:469px; top:276px; width:603px; color:var(--text); font-size:17px; }
+  .setting-row { height:62px; margin-bottom:18px; padding:19px 21px; background:#171b1ea6; display:flex; justify-content:space-between; }
+  .setting-row span:last-child { margin-right:60px; }
+  .setting-row:first-child span:last-child { color:var(--amber); }
+  .setting-back { position:absolute; left:993px; top:603px; color:var(--muted); font-size:15px; }
+  .variants { background:#171b1e; color:var(--text); }
+  .variants h1 { position:absolute; left:90px; top:47px; margin:0; font-size:27px; font-weight:normal; }
+  .variants p { position:absolute; left:90px; top:110px; margin:0; color:var(--muted); font-size:15px; }
+  .variant { position:absolute; left:86px; width:1090px; height:132px; background:var(--panel); }
+  .variant .count { position:absolute; left:24px; top:43px; font-size:20px; }
+  .variant .track { position:absolute; left:172px; top:16px; height:90px; }
+  .variant .track .bus { left:-10px; top:53px; }
+  .variant .track .flow { left:9px; top:79px; }
+  .variant .track .socket { top:8px; }
+  .variant .hint { position:absolute; left:820px; top:50px; color:var(--amber); font-size:15px; }
+</style>
+<div id="combat" class="screen">
+  <img class="room" src="../combat_architecture_v1/loading_workshop.png" alt="">
+  <div class="health"><img src="../../../../art_sources/ai_drafts/ui_graphite_amber_v1/durability_base_v1.png" alt=""><i class="pip"></i><i class="pip"></i><i class="pip"></i></div>
+  <div class="circuit"><div class="energy"></div><img class="bus" src="../../../../art_sources/ai_drafts/ui_graphite_amber_v1/energy_bus_backbone_v1.png" alt=""><div class="flow"></div><div class="slots"></div></div>
+</div>
+<div id="settings" class="screen">
+  <img class="room" src="../combat_architecture_v1/loading_workshop.png" alt="">
+  <div class="setting-shade"></div><div class="setting-fill"></div>
+  <img class="setting-frame" src="../../../../art_sources/ai_drafts/ui_graphite_amber_v1/shared_panel_frame_v1.png" alt="">
+  <div class="setting-title">设置</div><div class="setting-rule"></div><div class="setting-vrule"></div>
+  <div class="setting-nav"><div class="selected">显示</div><div>视觉反馈</div><div>音频</div><div>输入与触控</div><div>开发测试</div></div>
+  <div class="setting-heading">显示</div>
+  <div class="setting-rows"><div class="setting-row"><span>分辨率</span><span>1920 × 1080</span></div><div class="setting-row"><span>全屏</span><span>开启</span></div><div class="setting-row"><span>战斗 HUD 缩放</span><span>100%</span></div></div>
+  <div class="setting-back">返回</div>
+</div>
+<div id="variants" class="screen variants"><h1>义体序列扩容</h1><p>四、五、六槽共用轨道</p></div>
+<script>
+  const source = '../../../../art_sources/ai_drafts/ui_graphite_amber_v1/';
+  const icons = ['active_neural_switch','combat_synapse_sensor','rhythm_pulser','smart_fire','explosive_magazine','tactical_coprocessor'];
+  function sockets(target, count, active) {
+    for (let i=0; i<count; i++) {
+      const slot=document.createElement('div'); slot.className='socket'+(i===active?' active':''); slot.style.left=(22+i*63)+'px';
+      slot.innerHTML='<div class="back"></div><img class="icon" src="../../../../assets/art/items/equipment_v1/'+icons[i]+'_64.png"><img class="bezel" src="'+source+'cyberware_socket_bezel_v1.png">';
+      target.appendChild(slot);
+    }
+  }
+  sockets(document.querySelector('#combat .slots'),6,2);
+  for (let count=4;count<=6;count++) {
+    const row=document.createElement('div'); row.className='variant'; row.style.top=(167+(count-4)*158)+'px';
+    row.innerHTML='<div class="count">'+count+' 槽</div><div class="track"><img class="bus" src="'+source+'energy_bus_backbone_v1.png"><div class="flow"></div></div><div class="hint">传导 →</div>';
+    const track=row.querySelector('.track'); track.style.width=(26+count*63)+'px';
+    track.querySelector('.bus').style.width=(26+count*63)+'px';
+    track.querySelector('.flow').style.width=(count*63-25)+'px';
+    track.querySelector('.flow').style.setProperty('--active-width',(count-3)*63+25+'px');
+    sockets(track,count,count-3);
+    document.querySelector('#variants').appendChild(row);
+  }
+  const mode=new URLSearchParams(location.search).get('view')||'combat';
+  document.getElementById(mode)?.classList.add('on');
+</script>
+</html>

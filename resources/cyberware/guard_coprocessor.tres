@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="CyberwareData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/player/cyberware_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+module_id = &"guard_coprocessor"
+display_name = "格挡协处理器"
+description = "调用一次不占用玩家动作的定向赛博格挡。"
+target_scope = Array[StringName]([&"guard_call"])
+circuit_kind = 2
+grade = 1
+circuit_energy_cost = 12.0
+circuit_tags = PackedStringArray("防御")

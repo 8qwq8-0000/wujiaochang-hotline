@@ -98,8 +98,8 @@ func shoot_at(room: HotlinePrologue, enemy: Node2D) -> void:
 	player.heat.reduce_heat(1000)
 	await frames()
 	var attack := player._get_attack_transform()
-	check(player.weapons.try_attack(attack.origin, attack.x, player), "issued pistol really fires")
-	await frames(20)
+	check(player.weapons.try_attack(attack.origin, attack.x, player), "issued pistol submits fire: energy %.1f cooldown %.2f slots %s" % [player.cyberware.circuit.current_energy, player.weapons.get_cooldown_remaining(), str(player.cyberware.circuit.get_slots())])
+	await frames(48)
 	player.set_physics_process(true)
 
 
@@ -167,7 +167,7 @@ func run() -> void:
 			await capture("/tmp/hotline-prologue-operator.png")
 	check(room.step == HotlinePrologue.Step.DODGE and room.player.visible and paused and not room.player.is_input_enabled(), "dash instruction pauses play after accepting briefing")
 	check(combat_hud.get("overlay").is_visible_in_tree() and combat_hud.get("_player") == room.player, "paused tutorial uses production HUD bound to the practice player")
-	check(combat_hud.get("_health_meter").value == room.player.health.current_health and combat_hud.get("_weapon_preview").texture == null, "production HUD shows real health and no gun before pickup")
+	check(combat_hud.get("_health_meter").value == room.player.health.current_health and combat_hud.find_child("CurrentWeaponPreview", true, false) == null, "production HUD shows real health without a gun thumbnail")
 	var frozen_player := room.player.position
 	var frozen_enemy := room.targets[0].position
 	Input.action_press("move_right")
@@ -288,9 +288,9 @@ func run() -> void:
 	key(KEY_TAB, false)
 	await frames()
 	await drain_dialogue(room)
-	check(combat_hud.get("_weapon_preview").texture != null and combat_hud.get("_weapon_preview").is_visible_in_tree(), "equipped tutorial pistol appears in the production bottom-right preview")
+	check(combat_hud.find_child("CurrentWeaponPreview", true, false) == null, "equipped tutorial pistol does not add a bottom-right thumbnail")
 	check(room.step == HotlinePrologue.Step.SUPPLIES and room.targets.is_empty(), "equipping pistol goes directly to crates without forced firing or cooling")
-	check(not room.get("_warned_high_heat") and not room.player.heat.is_overheated, "no overheat is required before battle")
+	check(room.player.cyberware.circuit.current_energy > 0.0, "the first battle begins with circuit energy")
 	check(is_instance_valid(room.bomb) and is_instance_valid(room.buff_box), "both real crates exist during their introduction")
 	check(room.buff_box.position.x < room.get("_gates")[1].position.x and room.buff_box.position.x < room.bomb.position.x, "buff crate sits on safe side of combat gate")
 	await capture("/tmp/hotline-prologue-supplies.png")
@@ -307,26 +307,11 @@ func run() -> void:
 	await drain_dialogue(room)
 	for enemy in room.targets:
 		enemy.set_physics_process(false)
-	for index in 12:
-		if room.player.heat.is_overheated:
-			break
-		var attack := room.player._get_attack_transform()
-		check(room.player.weapons.try_attack(attack.origin, Vector2.LEFT, room.player), "actual combat fire accumulates heat")
-		await frames(16)
-	check(room.get("_warned_high_heat") and room.get("_warned_overheat"), "real combat heat triggers contextual reminders")
-	check(not paused and room.player.is_input_enabled() and room.step == HotlinePrologue.Step.WAVE and room.get("_pending_step") < 0, "heat reminder never pauses or becomes a progression requirement")
-	check(room.get("_heat_tip").visible and not room.get("_dialogue_panel").visible, "heat uses a brief hint instead of a blocking dialogue")
-	check(absf(combat_hud.get("_heat_meter").value - room.player.heat.current_heat) <= room.player.heat.dissipation_per_second / 30.0 and combat_hud.get("_heat_warning").visible, "production HUD shows actual combat overheat")
-	var heat_reminder: String = room.get("_heat_tip").text
-	await capture("/tmp/hotline-prologue-heat.png")
-	for index in 900:
-		if not room.player.heat.is_overheated and not room.get("_heat_tip").visible:
-			break
-		await frames(1)
-	check(not room.player.heat.is_overheated and not room.get("_heat_tip").visible and room.step == HotlinePrologue.Step.WAVE, "cooling happens during normal battle and the reminder expires")
-	room.player.heat.try_add_heat(room.player.heat.effective_max())
-	await frames()
-	check(not room.get("_heat_tip").visible and room.get("_heat_tip").text == heat_reminder, "repeated overheat does not spam the lesson")
+	var attack := room.player._get_attack_transform()
+	check(room.player.weapons.try_attack(attack.origin, Vector2.LEFT, room.player), "combat fire submits a circuit attack")
+	await frames(48)
+	check(not paused and room.player.is_input_enabled() and room.step == HotlinePrologue.Step.WAVE and room.get("_pending_step") < 0, "circuit attack never blocks the lesson")
+	check(not combat_hud.get("_heat_meter").visible and "能量" in String(combat_hud.get_circuit_hud_snapshot().energy), "production HUD shows energy without a heat meter")
 	await shoot_at(room, room.bomb)
 	await frames(35)
 	check(room.bomb.broken and is_instance_valid(room.bomb.patch) and room.bomb.patch.explosion_count == 1, "wave bomb is destroyed by actual pistol fire and explodes")
@@ -355,7 +340,7 @@ func run() -> void:
 	check(ids == ["armor", "pistol", "smart_fire"], "wave rewards are pistol, cyberware and bulletproof armor")
 	await drain_dialogue(room)
 	check(room.step == HotlinePrologue.Step.CODEX and room.get_node_or_null("Codex") != null and room.get_node_or_null("SynthesisTable") != null, "Codex and table appear after all loot is collected")
-	check(room.player.inventory.backpack.get_item_count() == 3, "all three drops enter real inventory")
+	check(room.player.inventory.backpack.get_item_count() == 2 and int(room.player.cyberware.circuit.get_library_counts().get(CyberwareController.SMART_FIRE, 0)) > 0, "equipment enters the backpack and cyberware enters the circuit library")
 	if room.step != HotlinePrologue.Step.CODEX:
 		print("Recovery diagnostic: ", room.player.inventory.backpack.get_item_count(), "; player=", room.player.position)
 		for item in room.recovery_pickups:
@@ -398,7 +383,7 @@ func run() -> void:
 	room.upgrade_panel.select_material(1, material)
 	room.upgrade_panel.get("_synthesis_button").pressed.emit()
 	check(room.last_synthesis_result != null and ComponentRolls.quality(room.last_synthesis_result) == 2, "real forge upgrades the two pistols")
-	check(room.player.inventory.weapon_slot.get_item() == room.last_synthesis_result and room.player.inventory.backpack.get_item_count() == 2, "result stays equipped while armor and cyberware remain in bag")
+	check(room.player.inventory.weapon_slot.get_item() == room.last_synthesis_result and room.player.inventory.backpack.get_item_count() == 1, "result stays equipped while armor remains in the bag")
 	check(not room.synthesize(subject, material), "consumed pistols cannot be reused")
 	await capture("/tmp/hotline-prologue-synthesis.png")
 	key(KEY_ESCAPE)
@@ -415,7 +400,7 @@ func run() -> void:
 	key(KEY_E)
 	key(KEY_E, false)
 	await frames()
-	check(room.boss_buff_box.state == PowerBox.State.CLAIMED and is_equal_approx(room.player.heat.cooling_multiplier, 1.5), "boss entrance buff works through real E interaction")
+	check(room.boss_buff_box.state == PowerBox.State.CLAIMED and is_equal_approx(room.player.cyberware.circuit.room_energy_recovery_bonus, 0.5), "boss entrance buff increases circuit energy recovery")
 	await shoot_at(room, room.boss_bomb)
 	await frames(35)
 	check(room.boss_bomb.broken and room.boss_bomb.patch.explosion_count == 1, "boss explosive can be detonated with the equipped pistol")
@@ -485,7 +470,7 @@ func run() -> void:
 		key(KEY_ESCAPE, false)
 		await frames(3)
 		check(room.step == expected, "Escape advances to exactly one next tutorial stage")
-	check(room.player.weapons.get_current_weapon() != null and room.player.inventory.backpack.get_item_count() == 3, "stage skips preserve the equipment needed by subsequent lessons")
+	check(room.player.weapons.get_current_weapon() != null and room.player.inventory.backpack.get_item_count() == 2 and int(room.player.cyberware.circuit.get_library_counts().get(CyberwareController.SMART_FIRE, 0)) > 0, "stage skips preserve the equipment needed by subsequent lessons")
 	room.upgrade_panel.close()
 	await frames()
 	for expected in [HotlinePrologue.Step.MINI_BOSS, HotlinePrologue.Step.TRANSFER]:

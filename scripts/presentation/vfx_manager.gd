@@ -13,6 +13,7 @@ const DEATH_EFFECT := preload("res://scripts/presentation/death_burst_effect.gd"
 const MOVEMENT_EFFECT := preload("res://scripts/presentation/movement_particle_effect.gd")
 const ROCK_WAVE_EFFECT := preload("res://scripts/presentation/rock_wave_effect.gd")
 const GLITCH_SCAN_EFFECT := preload("res://scripts/presentation/glitch_scan_effect.gd")
+const IMPACT_FRAME_EFFECT := preload("res://scripts/presentation/impact_frame_effect.gd")
 const AFTERIMAGE_COLOR := Color(0.25, 0.85, 1.0, 0.55)
 const AFTERIMAGE_DURATION := 0.25
 const FEEDBACK_GROUP_WINDOW_USEC := 90_000
@@ -42,11 +43,15 @@ var _active_movements: Array[MovementParticleEffect] = []
 var _stain_layer: Variant
 var _stain_serial := 0
 var perfect_feedback: PerfectParryFeedback
+var impact_frame: Variant
 var _feedback_groups: Dictionary = {}
 var _continuous_player_hurt_at: Dictionary = {}
 
 
 func _ready() -> void:
+	impact_frame = IMPACT_FRAME_EFFECT.new()
+	impact_frame.name = "ImpactFrameEffect"
+	add_child(impact_frame)
 	perfect_feedback = PERFECT_FEEDBACK.new()
 	perfect_feedback.name = "PerfectParryFeedback"
 	add_child(perfect_feedback)
@@ -82,6 +87,7 @@ func _ready() -> void:
 		scene_flow.scene_swapped.connect(
 			func(scene: Node, _payload: Dictionary) -> void:
 				perfect_feedback.clear()
+				impact_frame.stop()
 				_clear_movement_effects()
 				_attach_stain_layer(scene)
 		)
@@ -234,6 +240,7 @@ func _on_combat_moment_requested(kind: StringName, world_position: Vector2) -> v
 			spawn_flash(world_position, Color(0.35, 0.9, 1.0, 0.45 if reduced_flashes else 0.8), 28.0 if reduced_flashes else 44.0, 0.28)
 		&"boss_break":
 			spawn_flash(world_position, Color(1.0, 0.72, 0.25, 0.5 if reduced_flashes else 0.95), 32.0 if reduced_flashes else 50.0, 0.32)
+			impact_frame.play_world(world_position, reduced_flashes)
 
 
 func spawn_flash(world_position: Vector2, color: Color, radius: float, duration: float = 0.18) -> void:
@@ -463,6 +470,8 @@ func _on_damage_resolved(result: DamageResult) -> void:
 	var impact_color := _weapon_color(weapon_id)
 	var target_is_player := target is PlayerController
 	var secondary_group_hit := _is_secondary_feedback_group(result) or _is_repeated_continuous_hurt(result)
+	if _should_play_impact_frame(result, target_is_player, secondary_group_hit):
+		impact_frame.play_world(target.global_position, reduced_flashes, direction)
 	if result.ignore_reason == DamageResult.IgnoreReason.INVULNERABLE and target_is_player:
 		_spawn_hit_afterimage(target, -direction, Color(0.48, 0.94, 1.0, 0.48), 9.0)
 		return
@@ -493,6 +502,25 @@ func _on_damage_resolved(result: DamageResult) -> void:
 				var target_visual: Node = (target as EnemyController).visuals if target is EnemyController else ((target as PlayerController).visuals if target is PlayerController else null)
 				if is_instance_valid(target_visual) and target_visual.has_method("flash_hit"):
 					target_visual.flash_hit(impact_color)
+
+
+func _should_play_impact_frame(result: DamageResult, _target_is_player: bool, secondary_group_hit: bool) -> bool:
+	if secondary_group_hit:
+		return false
+	if result.outcome in [DamageResult.Outcome.REFLECTED, DamageResult.Outcome.PERFECT_BLOCKED]:
+		return true
+	if result.outcome != DamageResult.Outcome.DAMAGED or result.final_damage <= 0:
+		return false
+	if result.fatal_damage_prevented:
+		return true
+	var weapon_id := result.packet.weapon_id if result.packet != null else &""
+	if not result.target_defeated or not is_instance_valid(result.target):
+		return false
+	if weapon_id == &"rail_cannon":
+		return true
+	if result.target.is_in_group(&"bosses"):
+		return true
+	return result.target is EnemyController and (result.target as EnemyController).profile != null and (result.target as EnemyController).profile.role == EnemyProfile.Role.HEAVY_ANCHOR
 
 
 func _impact_direction(result: DamageResult) -> Vector2:

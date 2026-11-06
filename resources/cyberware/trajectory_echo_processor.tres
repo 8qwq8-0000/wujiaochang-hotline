@@ -6,7 +6,12 @@
 script = ExtResource("1")
 module_id = &"trajectory_echo_processor"
 display_name = "轨迹回响处理器"
-description = "单发弹丸或激光命中时，折射至 96 像素内最近的另一名敌人，造成 50% 伤害（至少 1 点）；成功折射后冷却 4 秒。"
+description = "本轮每次攻击首次命中时产生延迟回声。"
+target_scope = Array[StringName]([&"weapon_call"])
+grade = 3
+circuit_kind = 1
+circuit_energy_cost = 28.0
+circuit_tags = PackedStringArray("回声")
 trigger_cooldown = 4.0
 trajectory_echo_radius = 96.0
 trajectory_echo_damage_ratio = 0.5

@@ -54,6 +54,8 @@ func run_checks() -> void:
 		await physics_frame
 	check(not paused and ui.get("_overlay").visible, "real cleared exit opens choice without pausing")
 	check(ui.get("_overlay").anchor_top == 1.0 and ui.get("_overlay").size.x > 300, "exit choice uses the bottom dialogue layout")
+	var exit_rect: Rect2 = ui.get("_overlay").get_global_rect()
+	check(exit_rect.encloses(ui.get("_title").get_global_rect()) and exit_rect.encloses(ui.get("_buttons").get_global_rect()), "exit title and actions stay inside the border")
 	player.global_position = exit.global_position - Vector2(100, 0)
 	for frame in 4:
 		await physics_frame
@@ -87,7 +89,8 @@ func run_checks() -> void:
 		quit(1)
 		return
 	check(run.extraction_result.items.size() == 5, "both weapons, defense and spare bag extracted once")
-	check(run.extraction_result.player_state == before, "extraction retains full serialized state")
+	check(run.extraction_result.player_state.inventory == before.inventory, "extraction retains equipment and bag")
+	check(int(run.extraction_result.player_state.cyberware_circuit.slot_capacity) == 3 and float(run.extraction_result.player_state.cyberware_circuit.maximum_energy) == 80.0, "extraction resets next run to three slots and eighty energy")
 	var result: Dictionary = run.extraction_result.duplicate(true)
 	ui.extract()
 	check(run.extraction_result == result, "repeat extraction does not duplicate rewards")

@@ -151,11 +151,11 @@ func _build_combat_workspace() -> void:
 	var slot_a := Label.new()
 	slot_a.text = "> 主武器  制式手枪"
 	weapon_stack.add_child(slot_a)
-	weapon_stack.add_child(_meter("热量", 64, 100, 10, CyberUITheme.WARNING))
+	weapon_stack.add_child(_meter("能量", 64, 80, 10, CyberUITheme.WARNING))
 	var slot_b := Label.new()
 	slot_b.text = "  副武器  警棍"
 	weapon_stack.add_child(slot_b)
-	weapon_stack.add_child(_meter("热量", 18, 100, 10, CyberUITheme.PHOSPHOR))
+	weapon_stack.add_child(_meter("能量", 18, 80, 10, CyberUITheme.PHOSPHOR))
 
 	var notices := VBoxContainer.new()
 	notices.name = "NoticeStack"

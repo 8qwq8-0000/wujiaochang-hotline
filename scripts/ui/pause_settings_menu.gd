@@ -11,6 +11,8 @@ const RESOLUTIONS: Array[Vector2i] = [
 ]
 const DISPLAY_CONFIRM_SECONDS := 10.0
 const START_MENU_SCENE := "res://scenes/ui/start_menu.tscn"
+const OS_FRAME := preload("res://assets/art/ui/os_hud/shared_os_frame_v2.png")
+const SECONDARY_OPTION_BORDER := preload("res://scripts/ui/secondary_option_border.gd")
 const UI_SECTION := &"UISettings"
 const CRT_STRENGTH_SETTING := &"CRTStrength"
 const HUD_SCALE_SETTING := &"HUDScale"
@@ -24,8 +26,13 @@ var _owns_pause := false
 var _settings_visible := false
 var _settings_only := false
 var _overlay: ColorRect
+var _shell: Control
 var _menu_page: VBoxContainer
 var _settings_page: VBoxContainer
+var _settings_tabs: TabContainer
+var _settings_nav: VBoxContainer
+var _settings_nav_buttons: Array[Button] = []
+var _settings_nav_indicators: Array[ColorRect] = []
 var _history_page: VBoxContainer
 var _history_label: Label
 var _resolution: OptionButton
@@ -125,19 +132,35 @@ func close_menu() -> void:
 func _build_ui() -> void:
 	_overlay = ColorRect.new()
 	_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_overlay.color = Color(CyberUITheme.BACKGROUND, 0.96)
-	_overlay.theme = CyberUITheme.create_theme()
+	_overlay.color = Color(0.025, 0.035, 0.045, 0.78)
+	_overlay.theme = CyberUITheme.create_os_theme()
 	add_child(_overlay)
 	var center := CenterContainer.new()
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_overlay.add_child(center)
-	var panel := TerminalPanel.new()
-	panel.title = "系统菜单"
-	panel.custom_minimum_size = Vector2(520, 330)
-	center.add_child(panel)
+	_shell = Control.new()
+	_shell.name = "OSFrame"
+	_shell.mouse_filter = Control.MOUSE_FILTER_STOP
+	center.add_child(_shell)
+	var frame := TextureRect.new()
+	frame.name = "FrameArt"
+	frame.texture = OS_FRAME
+	frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	frame.stretch_mode = TextureRect.STRETCH_SCALE
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_shell.add_child(frame)
+	var margin := MarginContainer.new()
+	margin.name = "ContentMargin"
+	for side in ["left", "right"]:
+		margin.add_theme_constant_override("margin_" + side, 33)
+	for side in ["top", "bottom"]:
+		margin.add_theme_constant_override("margin_" + side, 32)
+	_shell.add_child(margin)
+	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var pages := VBoxContainer.new()
 	pages.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	panel.add_child(pages)
+	margin.add_child(pages)
 	_menu_page = _build_main_page()
 	pages.add_child(_menu_page)
 	_settings_page = _build_settings_page()
@@ -148,6 +171,17 @@ func _build_ui() -> void:
 	_crt_overlay.name = "CRTOverlay"
 	_crt_overlay.strength = _get_saved_crt_strength()
 	add_child(_crt_overlay)
+	get_viewport().size_changed.connect(_fit_shell)
+	_fit_shell()
+
+
+func _fit_shell() -> void:
+	if _shell == null:
+		return
+	var viewport_size := get_viewport().get_visible_rect().size
+	_shell.custom_minimum_size = Vector2(minf(500.0, viewport_size.x - 12.0), minf(310.0, viewport_size.y - 12.0))
+	if _settings_nav != null:
+		_settings_nav.custom_minimum_size.x = 76.0 if viewport_size.x < 540.0 else 92.0
 
 
 func _build_main_page() -> VBoxContainer:
@@ -165,18 +199,22 @@ func _build_main_page() -> VBoxContainer:
 	var resume := Button.new()
 	resume.text = "继续"
 	resume.pressed.connect(close_menu)
+	_add_secondary_option_border(resume)
 	page.add_child(resume)
 	var settings := Button.new()
 	settings.text = "设置"
 	settings.pressed.connect(_show_settings_page)
+	_add_secondary_option_border(settings)
 	page.add_child(settings)
 	var history := Button.new()
 	history.text = "最近通讯"
 	history.pressed.connect(_show_history_page)
+	_add_secondary_option_border(history)
 	page.add_child(history)
 	var return_to_menu := Button.new()
 	return_to_menu.text = "返回主菜单"
 	return_to_menu.pressed.connect(_return_to_main_menu)
+	_add_secondary_option_border(return_to_menu)
 	page.add_child(return_to_menu)
 	page.set_meta("focus", resume)
 	return page
@@ -185,20 +223,48 @@ func _build_main_page() -> VBoxContainer:
 func _build_settings_page() -> VBoxContainer:
 	var page := VBoxContainer.new()
 	page.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	page.add_theme_constant_override("separation", 8)
+	page.add_theme_constant_override("separation", 6)
 	var title := Label.new()
 	title.text = "设置"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 16)
+	title.add_theme_font_size_override("font_size", 14)
 	page.add_child(title)
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	page.add_child(scroll)
-	var content := VBoxContainer.new()
-	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	content.add_theme_constant_override("separation", 8)
-	scroll.add_child(content)
-	_add_section_title(content, "视频")
+	var divide := HSeparator.new()
+	page.add_child(divide)
+	var body := HBoxContainer.new()
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body.add_theme_constant_override("separation", 16)
+	page.add_child(body)
+	var nav := VBoxContainer.new()
+	_settings_nav = nav
+	nav.custom_minimum_size.x = 92
+	nav.add_theme_constant_override("separation", 19)
+	body.add_child(nav)
+	_settings_tabs = TabContainer.new()
+	_settings_tabs.tabs_visible = false
+	_settings_tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_settings_tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body.add_child(_settings_tabs)
+	var tabs := _settings_tabs
+	for index in 5:
+		var nav_row := HBoxContainer.new()
+		nav_row.add_theme_constant_override("separation", 8)
+		nav.add_child(nav_row)
+		var indicator := ColorRect.new()
+		indicator.color = Color("e7ac62")
+		indicator.custom_minimum_size = Vector2(2, 19)
+		indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		nav_row.add_child(indicator)
+		_settings_nav_indicators.append(indicator)
+		var nav_button := Button.new()
+		nav_button.text = ["显示", "视觉反馈", "音频", "输入与触控", "开发测试"][index]
+		nav_button.alignment = HORIZONTAL_ALIGNMENT_CENTER
+		nav_button.flat = true
+		nav_button.pressed.connect(_select_settings_tab.bind(index))
+		_add_secondary_option_border(nav_button)
+		nav_row.add_child(nav_button)
+		_settings_nav_buttons.append(nav_button)
+	_settings_tabs.tab_changed.connect(_on_settings_tab_changed)
+	var content := _settings_tab(tabs, "显示")
 	_resolution = OptionButton.new()
 	for value in RESOLUTIONS:
 		_resolution.add_item("%d × %d" % [value.x, value.y])
@@ -208,16 +274,17 @@ func _build_settings_page() -> VBoxContainer:
 	_fullscreen.text = "全屏"
 	_fullscreen.toggled.connect(_on_fullscreen_toggled)
 	content.add_child(_fullscreen)
-	_crt_strength = OptionButton.new()
-	for label in ["关闭", "低", "标准"]:
-		_crt_strength.add_item(label)
-	_crt_strength.item_selected.connect(_on_crt_strength_selected)
-	_add_labeled_control(content, "显像管效果", _crt_strength)
 	_hud_scale = OptionButton.new()
 	for label in ["100%", "125%", "150%"]:
 		_hud_scale.add_item(label)
 	_hud_scale.item_selected.connect(_on_hud_scale_selected)
 	_add_labeled_control(content, "战斗 HUD 缩放", _hud_scale)
+	content = _settings_tab(tabs, "视觉反馈")
+	_crt_strength = OptionButton.new()
+	for label in ["关闭", "轻微", "标准"]:
+		_crt_strength.add_item(label)
+	_crt_strength.item_selected.connect(_on_crt_strength_selected)
+	_add_labeled_control(content, "信号故障特效", _crt_strength)
 	_reduced_flashes = CheckButton.new()
 	_reduced_flashes.text = "降低闪烁"
 	_reduced_flashes.toggled.connect(_on_reduced_flashes_toggled)
@@ -232,10 +299,10 @@ func _build_settings_page() -> VBoxContainer:
 		_feedback_quality.add_item(label)
 	_feedback_quality.item_selected.connect(_on_feedback_quality_selected)
 	_add_labeled_control(content, "战斗特效质量", _feedback_quality)
-	var preview_frame := PanelContainer.new()
-	preview_frame.custom_minimum_size = Vector2(360.0, 112.0)
+	var preview_frame := MarginContainer.new()
+	preview_frame.custom_minimum_size = Vector2(200.0, 56.0)
 	var preview_stack := Control.new()
-	preview_stack.custom_minimum_size = Vector2(360.0, 112.0)
+	preview_stack.custom_minimum_size = Vector2(200.0, 56.0)
 	preview_frame.add_child(preview_stack)
 	_feedback_preview_layer = PlayerDamageFeedbackLayer.new()
 	_feedback_preview_layer.name = "FeedbackPreview"
@@ -260,7 +327,7 @@ func _build_settings_page() -> VBoxContainer:
 	_confirm_row.add_child(revert)
 	content.add_child(_confirm_row)
 	_confirm_row.hide()
-	_add_section_title(content, "音频")
+	content = _settings_tab(tabs, "音频")
 	_add_volume_slider(content, "总音量", AudioServer.get_bus_index(&"Master"))
 	_add_volume_slider(content, "音乐", AudioServer.get_bus_index(&"Music"))
 	_add_volume_slider(content, "音效", AudioServer.get_bus_index(&"SFX"))
@@ -273,7 +340,7 @@ func _build_settings_page() -> VBoxContainer:
 	_mute.text = "全部静音"
 	_mute.toggled.connect(_on_mute_toggled)
 	content.add_child(_mute)
-	_add_section_title(content, "移动端")
+	content = _settings_tab(tabs, "输入与触控")
 	_touch_preview = CheckButton.new()
 	_touch_preview.text = "触控布局预览（Windows）"
 	_touch_preview.toggled.connect(_on_touch_preview_toggled)
@@ -298,7 +365,7 @@ func _build_settings_page() -> VBoxContainer:
 	replay_touch_tutorial.text = "重新查看触控引导"
 	replay_touch_tutorial.pressed.connect(_on_replay_touch_tutorial_pressed)
 	content.add_child(replay_touch_tutorial)
-	_add_section_title(content, "测试选项")
+	content = _settings_tab(tabs, "开发测试")
 	_test_mode = CheckButton.new()
 	_test_mode.text = "测试模式（临时装备与进度）"
 	_test_mode.toggled.connect(_on_test_mode_toggled)
@@ -321,7 +388,27 @@ func _build_settings_page() -> VBoxContainer:
 	back.pressed.connect(_leave_settings_page)
 	page.add_child(back)
 	page.set_meta("focus", _resolution)
+	_on_settings_tab_changed(0)
 	return page
+
+
+func _select_settings_tab(index: int) -> void:
+	_settings_tabs.current_tab = index
+	_on_settings_tab_changed(index)
+
+
+func _on_settings_tab_changed(index: int) -> void:
+	for button_index in _settings_nav_buttons.size():
+		var button := _settings_nav_buttons[button_index]
+		button.add_theme_color_override("font_color", Color("e7ac62") if button_index == index else Color("aca9a4"))
+		button.get_node("SecondaryBorder").set("selected", button_index == index)
+		_settings_nav_indicators[button_index].modulate.a = 1.0 if button_index == index else 0.0
+
+
+func _add_secondary_option_border(button: Button) -> void:
+	var border: Control = SECONDARY_OPTION_BORDER.new()
+	border.name = "SecondaryBorder"
+	button.add_child(border)
 
 
 func _build_history_page() -> VBoxContainer:
@@ -349,11 +436,23 @@ func _build_history_page() -> VBoxContainer:
 	return page
 
 
-func _add_section_title(parent: VBoxContainer, text: String) -> void:
-	var label := Label.new()
-	label.text = text
-	label.add_theme_font_size_override("font_size", 18)
-	parent.add_child(label)
+func _settings_tab(tabs: TabContainer, title: String) -> VBoxContainer:
+	var scroll := ScrollContainer.new()
+	scroll.name = title
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	tabs.add_child(scroll)
+	var content := VBoxContainer.new()
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content.add_theme_constant_override("separation", 10)
+	scroll.add_child(content)
+	var heading := Label.new()
+	heading.text = title
+	heading.add_theme_font_size_override("font_size", 12)
+	content.add_child(heading)
+	var spacer := Control.new()
+	spacer.custom_minimum_size.y = 12
+	content.add_child(spacer)
+	return content
 
 
 func _add_labeled_control(parent: VBoxContainer, text: String, control: Control) -> void:
@@ -364,13 +463,18 @@ func _add_labeled_control(parent: VBoxContainer, text: String, control: Control)
 	row.add_child(label)
 	row.add_child(control)
 	parent.add_child(row)
+	var rule := ColorRect.new()
+	rule.color = Color(0.75, 0.76, 0.73, 0.22)
+	rule.custom_minimum_size.y = 1.0
+	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(rule)
 
 
 func _add_volume_slider(parent: VBoxContainer, text: String, bus_index: int) -> void:
 	if bus_index < 0:
 		return
 	var slider := HSlider.new()
-	slider.custom_minimum_size.x = 240
+	slider.custom_minimum_size.x = 140
 	slider.min_value = 0.0
 	slider.max_value = 1.0
 	slider.step = 0.05
@@ -647,5 +751,5 @@ func _exit_tree() -> void:
 
 
 func _get_saved_crt_strength() -> CRTOverlay.Strength:
-	var saved := int(PlayerConfig.get_config(UI_SECTION, CRT_STRENGTH_SETTING, CRTOverlay.Strength.LOW))
+	var saved := int(PlayerConfig.get_config(UI_SECTION, CRT_STRENGTH_SETTING, CRTOverlay.Strength.OFF))
 	return clampi(saved, CRTOverlay.Strength.OFF, CRTOverlay.Strength.STANDARD) as CRTOverlay.Strength

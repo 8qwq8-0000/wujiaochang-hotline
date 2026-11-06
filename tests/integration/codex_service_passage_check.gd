@@ -43,7 +43,6 @@ func run_checks() -> void:
 	store.save_path = SAVE_PATH
 	DirAccess.remove_absolute(SAVE_PATH)
 	store.create_new_profile()
-	var disk_before := FileAccess.get_file_as_string(SAVE_PATH)
 	var main: Node = load("res://scenes/bootstrap/main.tscn").instantiate()
 	root.add_child(main)
 	current_scene = main
@@ -61,24 +60,22 @@ func run_checks() -> void:
 	var player := floor.get_node("Player") as PlayerController
 	player.set_physics_process(false)
 	player.health.set_current_health(2)
-	player.heat.dissipation_per_second = 0.0
-	player.heat.set_heat(70.0)
-	player.heat.is_overheated = true
+	player.cyberware.circuit.set_energy(27.0)
 	player.consume_persona_drink(TalentCoreController.DEEP_NINJA)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 90
 	var inv := player.inventory
 	inv.weapon_slot.clear()
 	inv.weapon_slot.equip(ComponentRolls.create("pistol", 1, rng))
-	inv.cyberware_slot.equip(ComponentRolls.create("smart_fire", 1, rng))
 	inv.backpack.add_item(ComponentRolls.create("pistol", 1, rng))
-	inv.backpack.add_item(ComponentRolls.create("explosive_magazine", 1, rng))
 	while inv.backpack.get_item_count() < 6:
 		inv.backpack.add_item(ComponentRolls.create("armor", 1, rng))
-	for item in inv.backpack.get_items() + [inv.cyberware_slot.get_item()]:
+	for item in inv.backpack.get_items():
 		ComponentRolls.ensure(item)
 	inv._apply_equipment()
+	player.cyberware.store_circuit_modules(PackedStringArray(["combat_synapse_sensor_dash"]))
 	var before := player.export_run_state()
+	var energy_before: float = player.cyberware.circuit.current_energy
 	var ui := main.get_node("ExtractionFlow")
 	ui.continue_floor()
 	ui.continue_floor()
@@ -89,9 +86,11 @@ func run_checks() -> void:
 		return
 	player = passage.player
 	player.set_physics_process(false)
-	player.heat.dissipation_per_second = 0.0
-	check(player.export_run_state() == before, "passage keeps health, inventory identities and persona state")
-	check(player.heat.current_heat > 35.0 and player.heat.is_overheated, "passage does not reset carried heat or overheat lock")
+	var passage_after: Dictionary = player.export_run_state()
+	(passage_after.cyberware_circuit as Dictionary).erase("current_energy")
+	(before.cyberware_circuit as Dictionary).erase("current_energy")
+	check(passage_after == before, "passage keeps health, inventory identities and persona state")
+	check(player.cyberware.circuit.current_energy >= energy_before and player.cyberware.circuit.current_energy < energy_before + 20.0, "passage preserves current circuit energy while regeneration continues")
 	check(not paused and not main.get_node("PersonaRestFlow").is_open, "passage does not open persona rest or refill another floor")
 	check(run.persona_rest_refilled_floor == 1 and not run.persona_authorization_pending, "passage grants no extra persona authorization")
 	await capture("room")
@@ -103,6 +102,7 @@ func run_checks() -> void:
 			material = candidate
 			break
 	check(not passage.synthesize(inv.weapon_slot.get_item(), material), "workshop is locked before conversation")
+	var disk_before := FileAccess.get_file_as_string(SAVE_PATH)
 	player.position = passage.get_node("SynthesisNPC").position + Vector2(0, 47)
 	for frame in 3:
 		await physics_frame
@@ -126,32 +126,12 @@ func run_checks() -> void:
 	check(ComponentRolls.quality(inv.weapon_slot.get_item()) == 2 and inv.backpack.get_item_count() == 5, "workshop upgrades equipped gun while consuming its material from a full bag")
 	check(not passage.owns_synthesis_item(subject) and not passage.owns_synthesis_item(material), "consumed input instances cannot be reused")
 	check(not passage.synthesize(subject, material), "duplicate synthesis request cannot duplicate equipment")
-	var cyber_material: InventoryItem
-	for item in inv.backpack.get_items():
-		if item.get_property("slot") == "cyberware":
-			cyber_material = item
-	passage.upgrade_panel.select_material(passage.upgrade_panel.get("_target"), inv.cyberware_slot.get_item())
-	check(passage.upgrade_panel.get("_materials")[0] == inv.cyberware_slot.get_item() and passage.upgrade_panel.get("_target") == 1, "next selection fills subject and advances to material")
-	passage.upgrade_panel.select_material(passage.upgrade_panel.get("_target"), cyber_material)
-	passage.upgrade_panel.get("_synthesis_button").pressed.emit()
-	check(passage.upgrade_panel.get("_target") == 0 and passage.upgrade_panel.get("_materials") == [null, null], "repeated cyberware synthesis also returns to an empty subject slot")
-	check(player.cyberware.has_module(CyberwareController.SMART_FIRE) and player.cyberware.has_module(CyberwareController.EXPLOSIVE_MAGAZINE), "equipped compound activates both modules immediately")
-	var result := inv.cyberware_slot.get_item()
-	var duplicate_module := ComponentRolls.create("smart_fire", 1, rng)
-	check(inv.backpack.add_item(duplicate_module), "duplicate module fixture enters backpack")
+	check((passage.upgrade_panel.get("_event_subject") as OptionButton).item_count > 0 and (passage.upgrade_panel.get("_event_material") as OptionButton).item_count > 0, "forge lists owned event starters")
+	check(passage.synthesize_event_starters(&"combat_synapse_sensor", &"combat_synapse_sensor_dash"), "forge merges installed fire and stored dash starters")
+	check(player.cyberware.circuit.get_slots()[0] == String(CyberwareController.event_starter_id(3)), "merged event starter replaces the installed slot")
 	var before_duplicate := player.export_run_state()
-	passage.upgrade_panel.select_material(0, result)
-	passage.upgrade_panel.select_material(1, duplicate_module)
-	check(passage.upgrade_panel.get("_synthesis_button").disabled, "overlapping cyberware disables synthesis")
-	check(passage.upgrade_panel.get("_message").text.contains("主体已包含智能火控"), "duplicate module names the conflicting effect in the error")
-	check(passage.upgrade_panel.get("_preview").text.contains("义体模块重复"), "duplicate module replaces success preview with an error")
-	check(not passage.synthesize(result, duplicate_module), "backend also rejects existing module")
-	check(player.export_run_state() == before_duplicate, "duplicate rejection consumes neither equipped compound nor material")
-	passage.upgrade_panel.select_material(1, null)
-	check(passage.upgrade_panel.get("_message").text.is_empty(), "changing selection clears stale duplicate error")
-	inv.backpack.remove_item(duplicate_module)
-
-	check(not passage.synthesize(result, ComponentRolls.create("optical_intruder", 1, rng)), "unowned material is rejected")
+	check(not passage.synthesize_event_starters(CyberwareController.event_starter_id(3), &"combat_synapse_sensor"), "overlapping event effects cannot be merged twice")
+	check(player.export_run_state() == before_duplicate, "rejected event merge consumes nothing")
 	check(FileAccess.get_file_as_string(SAVE_PATH) == disk_before, "in-run synthesis never writes carried gear or cyberware to permanent warehouse storage")
 	await key(KEY_ESCAPE)
 	check(not paused and player.is_input_enabled(), "closing workshop resumes passage movement")

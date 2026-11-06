@@ -6,6 +6,11 @@
 script = ExtResource("1")
 module_id = &"smart_fire"
 display_name = "智能火控"
-description = "发射实体弹丸时，自动锁定准星附近的一名敌人。"
+description = "本轮攻击自动校准目标；弹丸和剑气继续追踪。"
+target_scope = Array[StringName]([&"weapon_call"])
+grade = 1
+circuit_kind = 1
+circuit_energy_cost = 8.0
+circuit_tags = PackedStringArray("追踪")
 targeting_half_angle_degrees = 25.0
 homing_turn_degrees_per_second = 360.0

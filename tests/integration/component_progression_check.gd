@@ -145,12 +145,12 @@ func run() -> void:
 	inv.backpack.clear()
 	inv.pickup("wheel", c)
 	inv.equip(0)
-	check(player.mobility.get_current_mode().max_speed > load("res://resources/mobility/wheel.tres").max_speed and player.guard.equipment_window_bonus > 0 and player.heat.equipment_cooling_bonus > 0, "mobility cooling and guard affixes affect runtime")
+	check(player.mobility.get_current_mode().max_speed > load("res://resources/mobility/wheel.tres").max_speed and player.guard.equipment_window_bonus > 0 and player.cyberware.circuit.energy_recovery_bonus > 0, "mobility energy recovery and guard affixes affect runtime")
 	var speed := player.mobility.get_current_mode().max_speed
 	inv._apply_equipment()
 	check(player.mobility.get_current_mode().max_speed == speed, "reapplying equipment never stacks mobility")
 	inv.unequip("mobility")
-	check(player.guard.equipment_window_bonus == 0 and player.heat.equipment_cooling_bonus == 0, "unequip removes bonuses")
+	check(player.guard.equipment_window_bonus == 0 and player.cyberware.circuit.energy_recovery_bonus == 0, "unequip removes bonuses")
 	var protective := inv.backpack.get_items()[0]
 	protective.set_property("affixes", {"status": 25, "capacity": 20})
 	inv.equip(0)

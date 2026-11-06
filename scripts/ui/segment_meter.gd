@@ -40,6 +40,10 @@ extends Control
 		queue_redraw()
 @export var show_loss_trail := false
 @export var loss_trail_color := Color(1.0, 0.22, 0.28, 0.52)
+@export var filled_texture: Texture2D
+@export var empty_texture: Texture2D
+@export var texture_cell_size := Vector2.ZERO
+@export var cell_gap := 2.0
 
 var _trail_value := -1.0
 var _trail_delay := 0.0
@@ -93,13 +97,18 @@ func _draw() -> void:
 	var numeric_width := 34.0 if show_numeric else 0.0
 	var meter_left := 58.0 if show_caption else 0.0
 	var available := maxf(size.x - meter_left - numeric_width, float(segments) * 4.0)
-	var gap := 2.0
-	var block_height := minf(14.0, maxf(size.y - 4.0, 4.0))
-	var block_width := block_height if square_segments else maxf(2.0, (available - gap * float(segments - 1)) / float(segments))
+	var gap := cell_gap
+	var textured := filled_texture != null and empty_texture != null and texture_cell_size.x > 0.0 and texture_cell_size.y > 0.0
+	var block_height := texture_cell_size.y if textured else minf(14.0, maxf(size.y - 4.0, 4.0))
+	var block_width := texture_cell_size.x if textured else (block_height if square_segments else maxf(2.0, (available - gap * float(segments - 1)) / float(segments)))
 	for index in segments:
 		var rect := Rect2(meter_left + float(index) * (block_width + gap), (size.y - block_height) * 0.5, block_width, block_height)
 		var color := meter_color if index < filled else (loss_trail_color if index < trail_filled else Color(meter_color, empty_alpha))
-		draw_rect(rect, color, true)
-		draw_rect(rect, Color(meter_color, 0.78 if index < filled else 0.42), false, 1.0)
+		if textured:
+			var texture := filled_texture if index < filled or index < trail_filled else empty_texture
+			draw_texture_rect(texture, rect, false, Color(1.0, 0.55, 0.55, 0.55) if index >= filled and index < trail_filled else Color.WHITE)
+		else:
+			draw_rect(rect, color, true)
+			draw_rect(rect, Color(meter_color, 0.78 if index < filled else 0.42), false, 1.0)
 	if show_numeric:
 		draw_string(CyberUITheme.FONT, Vector2(size.x - 32.0, 13.0), "%03d" % roundi(value), HORIZONTAL_ALIGNMENT_RIGHT, 32.0, 12, meter_color)

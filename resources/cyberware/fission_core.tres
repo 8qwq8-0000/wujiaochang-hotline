@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CyberwareData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/player/cyberware_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+module_id = &"fission_core"
+display_name = "裂变弹芯"
+description = "消耗 16 能量，把当前每条攻击无条件分为 −20°、原方向、+20° 三条，各保留 50% 伤害。"
+circuit_kind = 1
+grade = 2
+circuit_energy_cost = 16.0
+circuit_tags = PackedStringArray("裂变", "攻击")

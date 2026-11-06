@@ -5,8 +5,13 @@
 [resource]
 script = ExtResource("1")
 module_id = &"inertial_inversion_vertebra"
-display_name = "惯性逆变椎体"
-description = "冲刺无敌期间避开敌方命中时，释放 56 像素零伤害动能脉冲，推开附近敌人并使其失衡 0.35 秒；每次冲刺最多一次，冷却 3 秒，地形与持续伤害不触发。"
+display_name = "惯性反转脊椎"
+description = "以自身为锚点，先向右执行剩余槽位，再倒序折返一次；返程正常扣能。"
+target_scope = Array[StringName]([&"whole_round"])
+grade = 3
+circuit_kind = 3
+circuit_energy_cost = 26.0
+circuit_tags = PackedStringArray("反转")
 trigger_cooldown = 3.0
 inertia_pulse_radius = 56.0
 inertia_pulse_stagger_seconds = 0.35

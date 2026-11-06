@@ -8,6 +8,8 @@ var prop := ""
 var corner := ""
 
 func _ready() -> void:
+	# Keep architecture and props on the same hard pixel edge as the actors.
+	# The floor alone uses mip sampling to prevent shimmer in motion.
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 
 func _draw() -> void:

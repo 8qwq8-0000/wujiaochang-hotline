@@ -48,10 +48,15 @@ func run_checks() -> void:
 			root.push_input(click, true)
 		check(player.get("_attack_pressed"), "HUD click reaches attack input: " + path)
 	# Projectile code must support negative Y as well as other headings.
+	player.cyberware.set_physics_process(false)
 	for heading in [Vector2.UP, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT]:
 		player.weapons.reset_transient_state()
+		player.cyberware.reset_transient_state()
+		player.cyberware.circuit.set_energy(player.cyberware.circuit.maximum_energy)
 		player.heat.current_heat = 0
 		check(player.weapons.try_attack(player.global_position, heading, player), "fire heading " + str(heading))
+		for step in 5:
+			player.cyberware._physics_process(0.1)
 		var room := CombatProjectile.room_for_actor(player)
 		var shot: CombatProjectile
 		for child in room.get_children():

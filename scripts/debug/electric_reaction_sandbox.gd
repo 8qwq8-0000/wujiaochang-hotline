@@ -60,7 +60,7 @@ func _on_target_defeated(_enemy: EnemyController, _mandatory: bool) -> void:
 func _process(_delta: float) -> void:
 	var buff: RoomBuffComponent = player.get_node("RoomBuffComponent")
 	var name: String = RoomBuffComponent.TITLES.get(buff.active_buff,"无")
-	$UI/Status.text = "耐久 %d/3  热量 %.0f  %s  区域增益：%s" % [player.health.current_health,player.heat.current_heat,player.get_weapon_display_name(),name]
+	$UI/Status.text = "耐久 %d/3  能量 %.0f  %s  区域增益：%s" % [player.health.current_health,player.cyberware.circuit.current_energy,player.get_weapon_display_name(),name]
 
 func _draw() -> void:
 	draw_rect(Rect2(0,0,640,360),Color("101c28"))

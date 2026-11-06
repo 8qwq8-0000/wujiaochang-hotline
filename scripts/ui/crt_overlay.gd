@@ -5,7 +5,7 @@ enum Strength { OFF, LOW, STANDARD }
 
 const CRT_SHADER: Shader = preload("res://shaders/ui/crt_ui.gdshader")
 
-@export var strength: Strength = Strength.LOW :
+@export var strength: Strength = Strength.OFF :
 	set(value):
 		strength = value
 		_apply_strength()
@@ -30,7 +30,9 @@ func _process(delta: float) -> void:
 		return
 	_glitch_remaining = maxf(_glitch_remaining - delta, 0.0)
 	var ratio := _glitch_remaining / maxf(_glitch_duration, 0.01)
-	_set_shader_parameter(&"event_glitch", ratio)
+	_set_shader_parameter(&"event_glitch", ratio * (0.35 if strength == Strength.LOW else 0.7))
+	if _glitch_remaining <= 0.0:
+		visible = false
 
 
 func set_strength(next_strength: Strength) -> void:
@@ -42,24 +44,20 @@ func trigger_event_glitch(duration: float = 0.24) -> void:
 		return
 	_glitch_duration = maxf(duration, 0.01)
 	_glitch_remaining = _glitch_duration
-	_set_shader_parameter(&"event_glitch", 1.0)
+	visible = true
+	_set_shader_parameter(&"event_glitch", 0.35 if strength == Strength.LOW else 0.7)
 
 
 func _apply_strength() -> void:
 	if not is_node_ready() or not material is ShaderMaterial:
 		return
-	visible = strength != Strength.OFF
-	match strength:
-		Strength.LOW:
-			_set_shader_parameter(&"scanline_strength", 0.055)
-			_set_shader_parameter(&"noise_strength", 0.008)
-			_set_shader_parameter(&"flicker_strength", 0.004)
-		Strength.STANDARD:
-			_set_shader_parameter(&"scanline_strength", 0.1)
-			_set_shader_parameter(&"noise_strength", 0.018)
-			_set_shader_parameter(&"flicker_strength", 0.012)
-		_:
-			_set_shader_parameter(&"event_glitch", 0.0)
+	visible = strength != Strength.OFF and _glitch_remaining > 0.0
+	_set_shader_parameter(&"scanline_strength", 0.0)
+	_set_shader_parameter(&"noise_strength", 0.0)
+	_set_shader_parameter(&"flicker_strength", 0.0)
+	if strength == Strength.OFF:
+		_glitch_remaining = 0.0
+		_set_shader_parameter(&"event_glitch", 0.0)
 
 
 func _set_shader_parameter(parameter: StringName, value: Variant) -> void:

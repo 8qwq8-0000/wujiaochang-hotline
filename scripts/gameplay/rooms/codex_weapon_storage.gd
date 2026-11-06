@@ -51,8 +51,6 @@ func transfer(item: InventoryItem, deposit: bool) -> bool:
 		return false
 	var profile: Dictionary = store.get_profile()
 	var before := player.export_run_state()
-	var heat_before := player.heat.current_heat
-	var overheated_before := player.heat.is_overheated
 	var chest_before := chest.serialize()
 	var id := String(item.get_property("instance_id", ""))
 	var safe_loadout: Dictionary = profile.loadout.duplicate(true)
@@ -67,8 +65,6 @@ func transfer(item: InventoryItem, deposit: bool) -> bool:
 		# rest of the current run's inventory, cyberware, health or persona.
 		if not store.commit(saved_items, safe_loadout):
 			player.import_run_state(before)
-			player.heat.set_heat(heat_before)
-			player.heat.is_overheated = overheated_before
 			chest.deserialize(chest_before)
 			moved = false
 	if moved:

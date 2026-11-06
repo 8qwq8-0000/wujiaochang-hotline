@@ -25,6 +25,7 @@ var guard_direction: Vector2 = Vector2.RIGHT
 var _time_remaining: float = 0.0
 var _state_duration: float = 0.0
 var recovery_multiplier := 1.0
+var skip_next_recovery := false
 var equipment_window_bonus := 0.0
 var _persona_window_bonus := 0.0
 
@@ -61,6 +62,7 @@ func get_state_progress() -> float:
 
 
 func reset_to_idle() -> void:
+	skip_next_recovery = false
 	_enter_state(State.IDLE, 0.0)
 
 
@@ -158,7 +160,11 @@ func _advance_state() -> void:
 		State.PERFECT:
 			_enter_state(State.NORMAL, normal_seconds)
 		State.NORMAL:
-			_enter_state(State.RECOVERY, recovery_seconds * recovery_multiplier)
+			if skip_next_recovery:
+				skip_next_recovery = false
+				_enter_state(State.IDLE, 0.0)
+			else:
+				_enter_state(State.RECOVERY, recovery_seconds * recovery_multiplier)
 		State.RECOVERY:
 			_enter_state(State.IDLE, 0.0)
 

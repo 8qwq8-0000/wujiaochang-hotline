@@ -5,7 +5,12 @@
 [resource]
 script = ExtResource("1")
 module_id = &"explosive_magazine"
-display_name = "爆裂弹仓"
-description = "实体弹丸第一次命中时造成一次范围伤害。"
+display_name = "爆炸弹匣"
+description = "本轮每次攻击首次命中时造成范围伤害。"
+target_scope = Array[StringName]([&"weapon_call"])
+grade = 1
+circuit_kind = 1
+circuit_energy_cost = 14.0
+circuit_tags = PackedStringArray("爆炸")
 explosion_radius = 48.0
 explosion_damage = 1

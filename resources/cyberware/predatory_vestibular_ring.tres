@@ -5,6 +5,11 @@
 [resource]
 script = ExtResource("1")
 module_id = &"predatory_vestibular_ring"
-display_name = "掠食性前庭环"
-description = "任意武器直接击杀敌人时立即刷新突进；若击杀发生在突进期间，则在突进结束后刷新。同一攻击组多杀只结算一次，爆炸、电弧与轨迹回响等二次伤害不触发。"
+display_name = "捕食性前庭环"
+description = "本轮结束后免费以 100% 效能重演同一回路快照，排除自身。"
+target_scope = Array[StringName]([&"whole_round"])
+grade = 3
+circuit_kind = 3
+circuit_energy_cost = 32.0
+circuit_tags = PackedStringArray("重演")
 trigger_cooldown = 0.0

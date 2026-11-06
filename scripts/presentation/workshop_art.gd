@@ -28,7 +28,9 @@ static func asset(key: String) -> Texture2D:
 	return _cache[key]
 
 func _ready() -> void:
-	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	# Smooth the repeated floor only; actors and hard-surface props retain
+	# discrete edges through their own nearest-filtered render nodes.
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS if floor_pass and layout != null and layout.id == &"loading_workshop" else CanvasItem.TEXTURE_FILTER_NEAREST
 	if not floor_pass and layout != null:
 		y_sort_enabled = true
 		rebuild_scenery()
@@ -126,6 +128,29 @@ func rebuild_scenery() -> void:
 			piece.position = Vector2(rect.get_center().x, rect.end.y)
 			piece.footprint = Rect2(Vector2(-rect.size.x * 0.5, -rect.size.y), rect.size)
 			add_child(piece)
+	if layout.id == &"loading_workshop":
+		_add_workshop_light(Vector2(175, 410), Color("68c7dc"), 0.25)
+		_add_workshop_light(Vector2(770, 155), Color("ffc27a"), 0.19)
+
+func _add_workshop_light(at: Vector2, tint: Color, energy: float) -> void:
+	var gradient := Gradient.new()
+	gradient.colors = PackedColorArray([Color.WHITE, Color(1, 1, 1, 0)])
+	var mask := GradientTexture2D.new()
+	mask.width = 128
+	mask.height = 128
+	mask.gradient = gradient
+	mask.fill = GradientTexture2D.FILL_RADIAL
+	mask.fill_from = Vector2(0.5, 0.5)
+	mask.fill_to = Vector2(1.0, 0.5)
+	var light := PointLight2D.new()
+	light.name = "WorkshopPracticalLight"
+	light.position = at
+	light.texture = mask
+	light.texture_scale = 3.5
+	light.color = tint
+	light.energy = energy
+	light.blend_mode = Light2D.BLEND_MODE_ADD
+	add_child(light)
 
 func _draw_freight_markings() -> void:
 	var scale_factor := layout.room_size / Vector2(640, 360)

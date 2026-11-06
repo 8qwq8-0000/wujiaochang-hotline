@@ -110,11 +110,13 @@ static func windows_listener_snapshot(trace: Callable = Callable()) -> Dictionar
 	_trace(trace, "netstat")
 	var code := OS.execute("netstat", ["-ano"], output, true)
 	var snapshot := windows_snapshot_from_netstat(code, output)
-	if snapshot.known:
+	if snapshot.known and not (snapshot.listeners as Dictionary).is_empty():
 		return snapshot
 	_trace(trace, "powershell")
 	output.clear()
-	var script := "$ErrorActionPreference='Stop'; try { $listeners = @(Get-NetTCPConnection -ErrorAction Stop | Where-Object { $_.State -eq 'Listen' } | Select-Object LocalPort,OwningProcess); ConvertTo-Json -Compress -Depth 3 -InputObject @{ listeners = $listeners }; exit 0 } catch { exit 1 }"
+	# Some Windows builds report a bound loopback listener with an empty State.
+	# RemotePort 0 and a concrete owning PID still identify the listening socket.
+	var script := "$ErrorActionPreference='Stop'; try { $listeners = @(Get-NetTCPConnection -ErrorAction Stop | Where-Object { $_.State -eq 'Listen' -or ($_.RemotePort -eq 0 -and [string]$_.State -eq '') } | Select-Object LocalPort,OwningProcess); ConvertTo-Json -Compress -Depth 3 -InputObject @{ listeners = $listeners }; exit 0 } catch { exit 1 }"
 	code = execute_windows_powershell(script, output)
 	return windows_snapshot_from_powershell(code, output)
 

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="CyberwareData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/player/cyberware_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+module_id = &"combat_synapse_sensor_hit"
+display_name = "战斗突触感应器（命中）"
+description = "直接攻击对敌人造成伤害时启动回路。"
+target_scope = Array[StringName]([])
+grade = 0
+circuit_kind = 0
+circuit_energy_cost = 12.0
+circuit_tags = PackedStringArray("命中")

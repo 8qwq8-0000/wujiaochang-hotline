@@ -61,6 +61,7 @@ func run_checks() -> void:
 	freeze_enemies()
 	var assembler := main.find_child("FloorAssembler", true, false) as FloorAssembler
 	assembler.enemy_drop_chance = 0.0
+	assembler.cyberware_drop_chance = 0.0
 	var first: CombatRoom = assembler.generated_rooms[0]
 	var second: CombatRoom = assembler.generated_rooms[1]
 	var run := root.get_node("RunManager")
@@ -81,16 +82,16 @@ func run_checks() -> void:
 	await settle()
 	box.interact(player)
 	var buffs := player.get_node("RoomBuffComponent") as RoomBuffComponent
-	check(not buffs.active_buff.is_empty(), "first area grants its own power buff")
+	check(buffs.active_buff.is_empty() and box.state == PowerBox.State.READY, "terminal waits for its area to clear")
 	var first_enemy: EnemyController = get_first_node_in_group("enemies")
 	first.spawner._on_enemy_defeated(first_enemy, true)
 	first.spawner._on_enemy_defeated(first_enemy, true)
-	check(first.spawner.required_remaining == 5 and not first.cleared and first.reward_count == 0, "duplicate death signals cannot prematurely clear area or issue guarantee")
+	check(first.spawner.required_remaining == 5 and not first.cleared and first.reward_count == 0, "duplicate death signals cannot prematurely clear area or issue loot")
 	await clear_active()
 	check(first.cleared and not second.cleared and assembler._rooms_remaining == 1, "clearing first area does not clear the floor")
 	check(run.mandatory_enemies_remaining == 6 and buffs.active_buff.is_empty(), "first clear removes only its buff and leaves pending objectives")
 	check(assembler.passages[0].get_node("PassageSign").text == "前往下一区 →", "cleared area sign directs player onward")
-	check(first.reward_count == 1 and assembler.passages[0].unlocked, "first clear grants one supply and unlocks the passage")
+	check(first.reward_count == 0 and assembler.passages[0].unlocked, "first clear unlocks the passage without forced loot")
 	var passage := assembler.passages[0]
 	var sign := passage.get_node("PassageSign") as Label
 	check(sign.get_theme_font("font") == CyberUITheme.FONT and sign.position.x + sign.size.x <= 0, "passage sign uses HUD pixel font and fits inside the current room")
@@ -107,7 +108,7 @@ func run_checks() -> void:
 	player.velocity = Vector2.ZERO
 	check(player.inventory.can_change_equipment(), "cleared area allows equipment changes despite pending next area")
 	first._on_all_required_defeated()
-	check(first.reward_count == 1 and assembler._rooms_remaining == 1, "repeated clear cannot duplicate supply or floor progress")
+	check(first.reward_count == 0 and assembler._rooms_remaining == 1, "repeated clear cannot change loot or floor progress")
 	ui.open_exit()
 	check(not ui.get("_overlay").visible and not run.finish_extraction(player), "first clear cannot extract")
 	var identity := player.get_instance_id()
@@ -146,25 +147,17 @@ func run_checks() -> void:
 	player.global_position = box2.global_position+Vector2(0,-35)
 	await settle()
 	box2.interact(player)
-	check(not buffs.active_buff.is_empty() and buffs.source_room == second, "second power box grants an independent area buff")
+	check(buffs.active_buff.is_empty() and box2.state == PowerBox.State.READY, "second terminal also waits for its area to clear")
 	await clear_active()
 	check(second.cleared and run.mandatory_enemies_remaining == 0 and assembler._rooms_remaining == 0, "both cleared areas complete the floor")
 	check(assembler.passages[0].return_sealed and not assembler.passages[0].get("_barrier").disabled, "clearing second room never reopens return route")
-	check(buffs.active_buff.is_empty() and second.reward_count == 1, "second clear expires its buff and issues independent area guarantee")
+	check(buffs.active_buff.is_empty() and second.reward_count == 0, "second clear expires its buff without forced loot")
 	check(run.mandatory_enemies_remaining == 0, "floor objectives complete only after both clears")
 	check(not first.exit_elevator.enabled and second.exit_elevator.enabled, "only final exit becomes enabled")
-	var rewards := 0
-	for pickup in get_nodes_in_group("component_pickups"):
-		if pickup.has_meta("area_guarantee"):
-			rewards += 1
-	check(rewards == 2, "exactly one independent guarantee per area")
+	check(get_nodes_in_group("component_pickups").is_empty(), "missed drop rolls leave both areas without pickups")
 	second._on_all_required_defeated()
 	assembler._on_room_cleared(second)
-	check(get_nodes_in_group("component_pickups").size() == 2 and assembler._rooms_remaining == 0, "duplicate final clear cannot issue another area guarantee")
-	var guarantee: ComponentPickup = get_first_node_in_group("component_pickups")
-	var item := guarantee.rolled_item
-	var valid_drop := not ComponentRolls.cyberware_modules(item).is_empty() if str(item.get_property("slot", "")) == "cyberware" else ComponentRolls.quality(item) >= 1 and not ComponentRolls.affixes(item).is_empty()
-	check(valid_drop, "area guarantee contains a real rolled component or fixed-effect cyberware")
+	check(get_nodes_in_group("component_pickups").is_empty() and assembler._rooms_remaining == 0, "duplicate final clear cannot create loot")
 	player.global_position = second.exit_elevator.global_position
 	await settle()
 	check(ui.get("_overlay").visible and not paused, "actual final exit opens non-pausing extraction choice")

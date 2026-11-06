@@ -5,6 +5,7 @@ const MAIN_MENU := "res://scenes/ui/start_menu.tscn"
 const WAREHOUSE_MAIN := "res://scenes/bootstrap/warehouse_main.tscn"
 const FLOOR := "res://scenes/levels/floors/combat_prototype.tscn"
 const BOSS := "res://scenes/levels/bosses/rooftop_boss_arena.tscn"
+const CIRCUIT_LAB := "res://scenes/debug/cyberware_circuit_lab.tscn"
 
 var enabled := false
 var _ending := false
@@ -145,7 +146,7 @@ func apply_talents(persona_id: StringName, level: int, choices: Array) -> bool:
 
 
 func jump_to(floor_index: int) -> bool:
-	if not enabled or _ending or _busy or floor_index < -1 or floor_index > 3:
+	if not enabled or _ending or _busy or floor_index < -2 or floor_index > 3:
 		return false
 	_busy = true
 	var flow := _flow()
@@ -170,7 +171,7 @@ func jump_to(floor_index: int) -> bool:
 	var snapshot := player.export_run_state() if player != null else {}
 	if player != null:
 		snapshot["current_health"] = player.health.max_health
-	var destination := BOSS if floor_index == 3 else FLOOR
+	var destination := CIRCUIT_LAB if floor_index == -2 else (BOSS if floor_index == 3 else FLOOR)
 	if floor_index == -1:
 		destination = "res://scenes/levels/base/warehouse.tscn"
 		var store := get_node("/root/WarehouseStore")
@@ -293,9 +294,10 @@ func _build_ui() -> void:
 	_badge.hide()
 	_overlay = ColorRect.new()
 	_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_overlay.color = Color(0.015, 0.025, 0.04, 0.98)
-	_overlay.theme = CyberUITheme.create_theme()
+	_overlay.color = Color("20262afa")
+	_overlay.theme = CyberUITheme.create_os_theme()
 	add_child(_overlay)
+	CyberUITheme.add_os_frame(_overlay)
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	for side in ["left", "right", "top", "bottom"]:
@@ -361,6 +363,7 @@ func _build_ui() -> void:
 	_label(content, "关卡跳转（保留当前测试配装）")
 	var destinations := HBoxContainer.new()
 	content.add_child(destinations)
+	_button(destinations, "义体构筑试验场", _on_jump.bind(-2))
 	_button(destinations, "测试仓库", _on_jump.bind(-1))
 	for index in 3:
 		_button(destinations, "第 %d 层" % (index + 1), _on_jump.bind(index))

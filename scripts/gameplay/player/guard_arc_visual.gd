@@ -19,6 +19,8 @@ const PERFECT_FLASH_SECONDS := 0.08
 var shield_sprite: Sprite2D
 var direction_name: StringName = &"right"
 var _guard: GuardComponent
+var _cyberware: Node
+var _cyber_shields: Array[Sprite2D] = []
 var _direction := Vector2.RIGHT
 var _perfect_flash_remaining := 0.0
 var _disabled := false
@@ -34,6 +36,7 @@ func _ready() -> void:
 	shield_sprite.scale = Vector2.ONE * canvas_size / (SHIELD_TEXTURE.get_width() / 3.0)
 	add_child(shield_sprite)
 	_guard = get_node_or_null(guard_path) as GuardComponent
+	_cyberware = get_node_or_null("../../CyberwareController")
 	if _guard != null:
 		_guard.state_changed.connect(_on_state_changed)
 		_guard.perfect_guarded.connect(_on_perfect_guarded)
@@ -43,6 +46,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_perfect_flash_remaining = maxf(0.0, _perfect_flash_remaining - delta)
 	_refresh()
+	_refresh_cyber_shields()
 
 
 func update_guard(_state: GuardComponent.State, direction: Vector2, _arc_degrees: float) -> void:
@@ -100,3 +104,43 @@ func _refresh() -> void:
 			shield_sprite.frame = 4 if _perfect_flash_remaining > 0.0 else 5 + mini(1, int(progress * 2.0))
 		GuardComponent.State.RECOVERY:
 			shield_sprite.frame = 7 + mini(1, int(progress * 2.0))
+
+
+func _refresh_cyber_shields() -> void:
+	var directions: Array[Vector2] = []
+	var perfect_states: Array[bool] = []
+	if not _disabled and _cyberware != null:
+		for window in _cyberware.get_cyber_guard_windows():
+			var perfect := float(window.get("perfect_remaining", 0.0)) > 0.0
+			if bool(window.get("omnidirectional", false)):
+				for cardinal in DIRECTION_VECTORS.values():
+					directions.append(cardinal)
+					perfect_states.append(perfect)
+			else:
+				directions.append(Vector2(window.get("direction", Vector2.RIGHT)))
+				perfect_states.append(perfect)
+	while _cyber_shields.size() < directions.size():
+		var sprite := Sprite2D.new()
+		sprite.name = "CyberGuardShield"
+		sprite.hframes = 3
+		sprite.vframes = 3
+		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		sprite.scale = Vector2.ONE * canvas_size / (SHIELD_TEXTURE.get_width() / 3.0)
+		sprite.modulate = Color(0.55, 0.9, 1.0, 0.8)
+		add_child(sprite)
+		_cyber_shields.append(sprite)
+	for index in _cyber_shields.size():
+		var sprite := _cyber_shields[index]
+		sprite.visible = index < directions.size()
+		if not sprite.visible:
+			continue
+		var direction := directions[index].normalized()
+		var cardinal_name: StringName
+		if absf(direction.y) > absf(direction.x) * 0.75:
+			cardinal_name = &"up" if direction.y < 0.0 else &"down"
+		else:
+			cardinal_name = &"left" if direction.x < 0.0 else &"right"
+		sprite.texture = DIRECTION_TEXTURES[cardinal_name]
+		sprite.position = body_center + direction * shield_distance
+		sprite.rotation = wrapf(direction.angle() - Vector2(DIRECTION_VECTORS[cardinal_name]).angle(), -PI, PI)
+		sprite.frame = 4 if perfect_states[index] else 5

@@ -8,18 +8,12 @@ const ARMOR_RECOVERY_SECONDS := [12.0, 10.0, 10.0]
 const ARMOR_CAPACITY := [1, 1, 2]
 const QUALITY_COLORS := [Color("a8b1bd"), Color("e7edf3"), Color("70b7ff"), Color("cf99ff")]
 const COMPOUND_CYBERWARE_ICON := "res://assets/art/items/equipment_v1/compound_cyberware.png"
-# Conditional on a random equipment drop, the expanded cyberware catalog keeps
-# each heavy weapon at its tuned 1/14 rate (6/84); armor stays more common.
-const FLOOR_DROP_WEIGHTS := {
-	"pistol": 8, "scattergun": 6, "rail_cannon": 6,
-	"smart_fire": 4, "explosive_magazine": 4, "tactical_coprocessor": 4,
-	"optical_intruder": 4, "kill_heat_sink": 4, "heat_threshold_pulser": 4,
-	"momentum_recovery_tendon": 4, "trajectory_echo_processor": 4,
-	"ballistic_takeover_protocol": 4, "arc_ballistic_cortex": 4,
-	"inertial_inversion_vertebra": 4, "axon_recycler": 4,
-	"micro_rotor_reflex_bundle": 4, "predatory_vestibular_ring": 4,
-	"armor": 8,
-}
+const FLOOR_DROP_WEIGHTS := {"pistol": 8, "scattergun": 6, "rail_cannon": 6, "armor": 8}
+const CYBERWARE_GRADE_WEIGHTS := [8, 10, 5, 2]
+const EVENT_STARTER_DROPS := ["combat_synapse_sensor", "combat_synapse_sensor_dash", "combat_synapse_sensor_guard", "combat_synapse_sensor_hit", "combat_synapse_sensor_kill"]
+const LEGACY_CYBERWARE_IDS := {"kill_heat_sink": "kill_energy_sink", "heat_threshold_pulser": "shock_pulser"}
+static var _cyberware_grade_cache: Dictionary = {}
+static var _cyberware_resource_paths_cache: Dictionary = {}
 
 static func quality_color(item: InventoryItem) -> Color:
 	return QUALITY_COLORS[quality(item)] if ordinary(item) else Color.WHITE
@@ -31,7 +25,7 @@ static func apply_quality_color(control: Control, item: InventoryItem) -> void:
 
 # Five broad, additive bonuses. Values are percentages except guard window (ms).
 const AFFIXES := {
-	"cooling": ["散热", 10, 30], "capacity": ["热量上限", 10, 30],
+	"energy_recovery": ["能量恢复", 10, 30], "attack_speed": ["攻击速度", 10, 30],
 	"guard": ["完美格挡窗口", 20, 60],
 	"mobility": ["机动速度", 10, 25], "status": ["负面状态时长减免", 10, 25],
 }
@@ -60,6 +54,22 @@ static func migrate_snapshot(value: Variant) -> Variant:
 	var data := {}
 	for key in value:
 		data[key] = migrate_snapshot(value[key])
+	for field in ["prototype_id", "module_id"]:
+		if data.has(field):
+			data[field] = LEGACY_CYBERWARE_IDS.get(str(data[field]), data[field])
+	if data.has("modules") and data["modules"] is Array:
+		var mapped_modules := []
+		for module_id in data["modules"]:
+			mapped_modules.append(LEGACY_CYBERWARE_IDS.get(str(module_id), module_id))
+		data["modules"] = mapped_modules
+	elif data.has("modules") and data["modules"] is PackedStringArray:
+		var mapped_modules := PackedStringArray()
+		for module_id in data["modules"]:
+			mapped_modules.append(str(LEGACY_CYBERWARE_IDS.get(module_id, module_id)))
+		data["modules"] = mapped_modules
+	if data.has("effect"):
+		for old_id in LEGACY_CYBERWARE_IDS:
+			data["effect"] = str(data["effect"]).replace("/%s.tres" % old_id, "/%s.tres" % LEGACY_CYBERWARE_IDS[old_id])
 	if data.has("mobility") and data.has("primary") and data.has("secondary"):
 		data["cyberware"] = data.get("cyberware", {})
 		data.erase("mobility")
@@ -91,9 +101,13 @@ static func _migrate_serialized_affixes(data: Dictionary) -> void:
 
 static func _migrated_affixes(value: Dictionary) -> Dictionary:
 	var migrated := value.duplicate(true)
-	if migrated.has("attack"):
-		migrated["capacity"] = maxf(float(migrated.get("capacity", 0.0)), minf(float(migrated["attack"]), 30.0))
-		migrated.erase("attack")
+	for old_key in ["attack", "capacity"]:
+		if migrated.has(old_key):
+			migrated["attack_speed"] = maxf(float(migrated.get("attack_speed", 0.0)), minf(float(migrated[old_key]), 30.0))
+			migrated.erase(old_key)
+	if migrated.has("cooling"):
+		migrated["energy_recovery"] = maxf(float(migrated.get("energy_recovery", 0.0)), minf(float(migrated["cooling"]), 30.0))
+		migrated.erase("cooling")
 	return migrated
 
 static func quality(item: InventoryItem) -> int:
@@ -116,12 +130,12 @@ static func ensure(item: InventoryItem) -> void:
 		item.set_property("quality", 1)
 	if not item.has_property("affixes"):
 		# Deterministic old-save migration, never reroll on loading.
-		item.set_property("affixes", {"capacity" if item.get_property("slot") == "weapon" else "mobility": 20})
+		item.set_property("affixes", {"attack_speed" if item.get_property("slot") == "weapon" else "mobility": 20})
 	else:
 		item.set_property("affixes", _migrated_affixes(affixes(item)))
 
 static func make_item(id: String) -> InventoryItem:
-	var prototype_id := "pistol" if id in ["baton", "initial_baton"] else id
+	var prototype_id: String = "pistol" if id in ["baton", "initial_baton"] else str(LEGACY_CYBERWARE_IDS.get(id, id))
 	var item := InventoryItem.new(ComponentInventory.PROTOTYPES, prototype_id)
 	# Older scene transitions cleared GLoot's process-wide cached ProtoTree.
 	# Rebuild it before returning an item so already-authored pickups cannot
@@ -134,6 +148,7 @@ static func make_item(id: String) -> InventoryItem:
 static func create(id: String, tier: int, rng: RandomNumberGenerator) -> InventoryItem:
 	if id in ["baton", "initial_baton"]:
 		return create_issued_pistol()
+	id = LEGACY_CYBERWARE_IDS.get(id, id)
 	var item := create_without_affixes(id, tier, rng)
 	if item.get_prototype() == null:
 		return item
@@ -199,12 +214,7 @@ static func compatible(a: InventoryItem, b: InventoryItem) -> bool:
 	if not synthesizable(a) or not synthesizable(b) or a == b or a.get_property("instance_id", "") == b.get_property("instance_id", "") or a.get_property("slot") != b.get_property("slot"):
 		return false
 	if _is_cyberware(a):
-		var a_modules := cyberware_modules(a)
-		var b_modules := cyberware_modules(b)
-		for module_id in b_modules:
-			if module_id in a_modules:
-				return false
-		return a_modules.size() + b_modules.size() <= 4
+		return false
 	return synthesis_quality(a) == synthesis_quality(b)
 
 static func cyberware_overlap_error(a: InventoryItem, b: InventoryItem) -> String:
@@ -259,12 +269,31 @@ static func fuse(a: InventoryItem, b: InventoryItem, rng: RandomNumberGenerator)
 static func floor_weights(floor_number: int) -> Array:
 	return [[85, 14, 1], [65, 30, 5], [40, 45, 15], [20, 45, 35]][clampi(floor_number - 1, 0, 3)]
 
-static func floor_drop(floor_number: int, rng: RandomNumberGenerator) -> InventoryItem:
+static func floor_drop(floor_number: int, rng: RandomNumberGenerator, owned_counts: Dictionary = {}) -> InventoryItem:
 	var weights := floor_weights(floor_number)
 	var roll := rng.randi_range(1, 100)
 	var tier := 1 if roll <= weights[0] else (2 if roll <= weights[0] + weights[1] else 3)
 	# Keep the former baton's pistol weight without routing a formal drop through
 	# create_issued_pistol(), which intentionally creates a bound, affixless item.
+	var candidates := {}
+	for id in FLOOR_DROP_WEIGHTS:
+		candidates[id] = int(FLOOR_DROP_WEIGHTS[id]) * 5
+	candidates.merge(_cyberware_drop_candidates(owned_counts))
+	var total_weight := 0
+	for weight in candidates.values():
+		total_weight += int(weight)
+	var item_roll := rng.randi_range(1, total_weight)
+	for id in candidates:
+		item_roll -= int(candidates[id])
+		if item_roll <= 0:
+			return create(id, tier, rng)
+	return create("pistol", tier, rng)
+
+
+static func floor_equipment_drop(floor_number: int, rng: RandomNumberGenerator) -> InventoryItem:
+	var weights := floor_weights(floor_number)
+	var roll := rng.randi_range(1, 100)
+	var tier := 1 if roll <= weights[0] else (2 if roll <= weights[0] + weights[1] else 3)
 	var total_weight := 0
 	for weight in FLOOR_DROP_WEIGHTS.values():
 		total_weight += int(weight)
@@ -274,6 +303,57 @@ static func floor_drop(floor_number: int, rng: RandomNumberGenerator) -> Invento
 		if item_roll <= 0:
 			return create(id, tier, rng)
 	return create("pistol", tier, rng)
+
+
+static func guaranteed_cyberware_drop(_floor_number: int, rng: RandomNumberGenerator, owned_counts: Dictionary = {}) -> InventoryItem:
+	var candidates := _cyberware_drop_candidates(owned_counts)
+	var total_weight := 0
+	for weight in candidates.values():
+		total_weight += int(weight)
+	var item_roll := rng.randi_range(1, total_weight)
+	for id in candidates:
+		item_roll -= int(candidates[id])
+		if item_roll <= 0:
+			return create(id, 1, rng)
+	return create("smart_fire", 1, rng)
+
+
+static func _cyberware_drop_candidates(owned_counts: Dictionary) -> Dictionary:
+	var candidates := {}
+	for id in _cyberware_grades():
+		if id in EVENT_STARTER_DROPS:
+			continue
+		var grade := int(_cyberware_grade_cache[id])
+		var owned := maxi(int(owned_counts.get(StringName(id), owned_counts.get(id, 0))), 0)
+		candidates[id] = maxi(1, int(CYBERWARE_GRADE_WEIGHTS[grade]) * 5 / (owned * 3 + 1))
+	var missing := []
+	var owned_mask := 0
+	for raw_id in owned_counts:
+		if int(owned_counts[raw_id]) <= 0:
+			continue
+		var id := String(raw_id)
+		if id.begins_with("combat_synapse_sensor_combo_"):
+			owned_mask |= id.trim_prefix("combat_synapse_sensor_combo_").to_int()
+		else:
+			var event_index := EVENT_STARTER_DROPS.find(id)
+			if event_index >= 0:
+				owned_mask |= 1 << event_index
+	for index in EVENT_STARTER_DROPS.size():
+		if owned_mask & (1 << index) == 0:
+			var id: String = EVENT_STARTER_DROPS[index]
+			missing.append(id)
+	for index in missing.size():
+		candidates[missing[index]] = 80 / missing.size() + (1 if index < 80 % missing.size() else 0)
+	return candidates
+
+
+static func _cyberware_grades() -> Dictionary:
+	if _cyberware_grade_cache.is_empty():
+		for id in cyberware_resource_paths():
+			var resource := load(cyberware_resource_path(StringName(id))) as CyberwareData
+			if resource != null:
+				_cyberware_grade_cache[id] = clampi(resource.grade, 0, 3)
+	return _cyberware_grade_cache
 
 
 static func cyberware_modules(item: InventoryItem) -> PackedStringArray:
@@ -295,22 +375,19 @@ static func cyberware_modules(item: InventoryItem) -> PackedStringArray:
 
 
 static func cyberware_resource_path(module_id: StringName) -> String:
-	return {
-		&"smart_fire": "res://resources/cyberware/smart_fire.tres",
-		&"explosive_magazine": "res://resources/cyberware/explosive_magazine.tres",
-		&"tactical_coprocessor": "res://resources/cyberware/tactical_coprocessor.tres",
-		&"optical_intruder": "res://resources/cyberware/optical_intruder.tres",
-		&"kill_heat_sink": "res://resources/cyberware/kill_heat_sink.tres",
-		&"heat_threshold_pulser": "res://resources/cyberware/heat_threshold_pulser.tres",
-		&"momentum_recovery_tendon": "res://resources/cyberware/momentum_recovery_tendon.tres",
-		&"trajectory_echo_processor": "res://resources/cyberware/trajectory_echo_processor.tres",
-		&"ballistic_takeover_protocol": "res://resources/cyberware/ballistic_takeover_protocol.tres",
-		&"arc_ballistic_cortex": "res://resources/cyberware/arc_ballistic_cortex.tres",
-		&"inertial_inversion_vertebra": "res://resources/cyberware/inertial_inversion_vertebra.tres",
-		&"axon_recycler": "res://resources/cyberware/axon_recycler.tres",
-		&"micro_rotor_reflex_bundle": "res://resources/cyberware/micro_rotor_reflex_bundle.tres",
-		&"predatory_vestibular_ring": "res://resources/cyberware/predatory_vestibular_ring.tres",
-	}.get(module_id, "")
+	return cyberware_resource_paths().get(StringName(LEGACY_CYBERWARE_IDS.get(String(module_id), String(module_id))), "")
+
+
+static func cyberware_resource_paths() -> Dictionary:
+	if _cyberware_resource_paths_cache.is_empty():
+		for filename in DirAccess.get_files_at("res://resources/cyberware"):
+			if not filename.ends_with(".tres"):
+				continue
+			var path := "res://resources/cyberware/%s" % filename
+			var data := load(path) as CyberwareData
+			if data != null and not data.module_id.is_empty():
+				_cyberware_resource_paths_cache[data.module_id] = path
+	return _cyberware_resource_paths_cache.duplicate()
 
 
 static func cyberware_title(modules: PackedStringArray) -> String:
@@ -329,8 +406,8 @@ static func cyberware_indicator(modules: PackedStringArray) -> String:
 		["爆", "explosive_magazine"],
 		["协", "tactical_coprocessor"],
 		["侵", "optical_intruder"],
-		["散", "kill_heat_sink"],
-		["震", "heat_threshold_pulser"],
+		["蓄", "kill_energy_sink"],
+		["震", "shock_pulser"],
 		["腱", "momentum_recovery_tendon"],
 		["折", "trajectory_echo_processor"],
 		["劫", "ballistic_takeover_protocol"],
@@ -339,6 +416,8 @@ static func cyberware_indicator(modules: PackedStringArray) -> String:
 		["轴", "axon_recycler"],
 		["转", "micro_rotor_reflex_bundle"],
 		["猎", "predatory_vestibular_ring"],
+		["域", "omnidirectional_reflection_matrix"],
+		["炎", "calamity_flame"],
 	]:
 		entries.append("[%s%s]" % [entry[0], "●" if entry[1] in modules else "○"])
 	return " ".join(entries)

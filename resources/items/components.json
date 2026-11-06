@@ -1,4 +1,59 @@
 {
+	"active_neural_switch": {
+		"name": "主动神经开关",
+		"slot": "cyberware",
+		"effect": "res://resources/cyberware/active_neural_switch.tres",
+		"image": "res://assets/art/items/equipment_v1/active_neural_switch.png",
+		"maximum_stack_size": 1.0
+	},
+	"combat_synapse_sensor": {
+		"name": "战斗突触感应器（开火）",
+		"slot": "cyberware",
+		"effect": "res://resources/cyberware/combat_synapse_sensor.tres",
+		"image": "res://assets/art/items/equipment_v1/combat_synapse_sensor.png",
+		"maximum_stack_size": 1.0
+	},
+	"combat_synapse_sensor_dash": {
+		"name": "战斗突触感应器（突进）", "slot": "cyberware",
+		"effect": "res://resources/cyberware/combat_synapse_sensor_dash.tres",
+		"image": "res://assets/art/items/equipment_v1/combat_synapse_sensor.png", "maximum_stack_size": 1.0
+	},
+	"combat_synapse_sensor_guard": {
+		"name": "战斗突触感应器（格挡）", "slot": "cyberware",
+		"effect": "res://resources/cyberware/combat_synapse_sensor_guard.tres",
+		"image": "res://assets/art/items/equipment_v1/combat_synapse_sensor.png", "maximum_stack_size": 1.0
+	},
+	"combat_synapse_sensor_hit": {
+		"name": "战斗突触感应器（命中）", "slot": "cyberware",
+		"effect": "res://resources/cyberware/combat_synapse_sensor_hit.tres",
+		"image": "res://assets/art/items/equipment_v1/combat_synapse_sensor.png", "maximum_stack_size": 1.0
+	},
+	"combat_synapse_sensor_kill": {
+		"name": "战斗突触感应器（击杀）", "slot": "cyberware",
+		"effect": "res://resources/cyberware/combat_synapse_sensor_kill.tres",
+		"image": "res://assets/art/items/equipment_v1/combat_synapse_sensor.png", "maximum_stack_size": 1.0
+	},
+	"rhythm_pulser": {
+		"name": "节律脉冲器",
+		"slot": "cyberware",
+		"effect": "res://resources/cyberware/rhythm_pulser.tres",
+		"image": "res://assets/art/items/equipment_v1/rhythm_pulser.png",
+		"maximum_stack_size": 1.0
+	},
+	"guard_coprocessor": {
+		"name": "格挡协处理器",
+		"slot": "cyberware",
+		"effect": "res://resources/cyberware/guard_coprocessor.tres",
+		"image": "res://assets/art/items/equipment_v1/guard_coprocessor.png",
+		"maximum_stack_size": 1.0
+	},
+	"instruction_mirror_synapse": {
+		"name": "指令镜像突触",
+		"slot": "cyberware",
+		"effect": "res://resources/cyberware/instruction_mirror_synapse.tres",
+		"image": "res://assets/art/items/equipment_v1/instruction_mirror_synapse.png",
+		"maximum_stack_size": 1.0
+	},
 	"baton": {
 		"name": "警棍",
 		"slot": "weapon",
@@ -8,12 +63,10 @@
 	},
 	"calamity_flame": {
 		"name": "灾厄之炎",
-		"slot": "weapon",
-		"effect": "res://resources/weapons/calamity_flame.tres",
-		"image": "res://assets/art/weapons/placeholder/placeholder_arm_lock_baton_unpainted.png",
-		"maximum_stack_size": 1.0,
-		"bound": true,
-		"persona_weapon": "deep_ninja"
+		"slot": "cyberware",
+		"effect": "res://resources/cyberware/calamity_flame.tres",
+		"image": "res://assets/art/items/equipment_v1/calamity_flame.png",
+		"maximum_stack_size": 1.0
 	},
 	"pistol": {
 		"name": "制式手枪",
@@ -64,17 +117,17 @@
 		"image": "res://assets/art/items/equipment_v1/optical_intruder.png",
 		"maximum_stack_size": 1.0
 	},
-	"kill_heat_sink": {
-		"name": "击破散热器",
+	"kill_energy_sink": {
+		"name": "击杀蓄能罐",
 		"slot": "cyberware",
-		"effect": "res://resources/cyberware/kill_heat_sink.tres",
+		"effect": "res://resources/cyberware/kill_energy_sink.tres",
 		"image": "res://assets/art/items/equipment_v1/kill_heat_sink.png",
 		"maximum_stack_size": 1.0
 	},
-	"heat_threshold_pulser": {
-		"name": "热阈震荡器",
+	"shock_pulser": {
+		"name": "冲击脉冲器",
 		"slot": "cyberware",
-		"effect": "res://resources/cyberware/heat_threshold_pulser.tres",
+		"effect": "res://resources/cyberware/shock_pulser.tres",
 		"image": "res://assets/art/items/equipment_v1/heat_threshold_pulser.png",
 		"maximum_stack_size": 1.0
 	},
@@ -107,7 +160,7 @@
 		"maximum_stack_size": 1.0
 	},
 	"inertial_inversion_vertebra": {
-		"name": "惯性逆变椎体",
+		"name": "惯性反转脊椎",
 		"slot": "cyberware",
 		"effect": "res://resources/cyberware/inertial_inversion_vertebra.tres",
 		"image": "res://assets/art/items/equipment_v1/inertial_inversion_vertebra.png",
@@ -128,7 +181,7 @@
 		"maximum_stack_size": 1.0
 	},
 	"predatory_vestibular_ring": {
-		"name": "掠食性前庭环",
+		"name": "捕食性前庭环",
 		"slot": "cyberware",
 		"effect": "res://resources/cyberware/predatory_vestibular_ring.tres",
 		"image": "res://assets/art/items/equipment_v1/predatory_vestibular_ring.png",
@@ -140,6 +193,38 @@
 		"image": "res://assets/art/items/circuit_breaker.svg",
 		"maximum_stack_size": 1.0,
 		"circuit_breaker_used": false
+	},
+	"omnidirectional_reflection_matrix": {
+		"name": "全域反射矩阵",
+		"slot": "cyberware",
+		"effect": "res://resources/cyberware/omnidirectional_reflection_matrix.tres",
+		"image": "res://assets/art/items/equipment_v1/guard_coprocessor.png",
+		"maximum_stack_size": 1.0
+	},
+	"relay_starter": {
+		"name": "受信启动器", "slot": "cyberware",
+		"effect": "res://resources/cyberware/relay_starter.tres",
+		"image": "res://assets/art/items/equipment_v1/relay_starter.png", "maximum_stack_size": 1.0
+	},
+	"world": {
+		"name": "世界", "slot": "cyberware",
+		"effect": "res://resources/cyberware/world.tres",
+		"image": "res://assets/art/items/equipment_v1/world.png", "maximum_stack_size": 1.0
+	},
+	"ballistic_splicer": {
+		"name": "弹道缝合器", "slot": "cyberware",
+		"effect": "res://resources/cyberware/ballistic_splicer.tres",
+		"image": "res://assets/art/items/equipment_v1/ballistic_splicer.png", "maximum_stack_size": 1.0
+	},
+	"fission_core": {
+		"name": "裂变弹芯", "slot": "cyberware",
+		"effect": "res://resources/cyberware/fission_core.tres",
+		"image": "res://assets/art/items/equipment_v1/fission_core.png", "maximum_stack_size": 1.0
+	},
+	"penetration_booster": {
+		"name": "贯穿增压器", "slot": "cyberware",
+		"effect": "res://resources/cyberware/penetration_booster.tres",
+		"image": "res://assets/art/items/equipment_v1/penetration_booster.png", "maximum_stack_size": 1.0
 	},
 	"test_conductive_pistol": {
 		"name": "试验·导电枪",
