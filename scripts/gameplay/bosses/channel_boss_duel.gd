@@ -3,8 +3,15 @@ extends Node2D
 
 enum Stage { INTRO, AWAKENING, ACTIVE, ENDING, COMPLETE, STOPPED }
 const MAX_HEALTH := 60
+const ECHO_FIRST_MARK := 0.35
+const ECHO_INTERVAL := 0.52
+const PROTECT_RELEASE := 0.70
+const TAIL_CAST_DURATION := ChannelBossEffect.TAIL_WARNING + ChannelBossEffect.TAIL_FADE + 0.04
+const GLIDE_SPEED := 22.0
+const FORM_REVEAL := 0.55
+const REVEAL_BLEND := 0.20
 const INTRO := [
-	["Codex / 楼顶", "就是这里。修好的核心能把那些求救接回公共频道。我留在祭坛旁维持连接，你替我争取时间。"],
+	["Codex / 通讯", "就是这里。修好的核心能把那些求救接回公共频道。我来维持连接，你替我争取时间。"],
 	["神像 / 静默协议", "请保持安静。未经许可的声音，会惊醒她。"],
 	["Codex / 频道直连", "它把求救也当成了噪声。核心接入后，你身上的负担就会解除。我来接通频道，你拦住她。"],
 ]
@@ -26,10 +33,10 @@ var next_skill := 0
 var echo_count := 0
 var next_echo := -1.0
 var pulse_pending := false
+var tail_ready := true
 var form_awakened := false
 var attacks_started := [0, 0, 0]
 var auto_attacks := true
-var core_art: Sprite2D
 @onready var arena: RooftopBossArena = get_parent()
 @onready var run: Node = get_node("/root/RunManager")
 
@@ -38,36 +45,12 @@ func _ready() -> void:
 	dialogue = ChannelDialogue.new()
 	arena.add_child(dialogue)
 	arena.route_dialogue = dialogue
-	var codex := arena.codex
-	codex.escort_complete = true
-	codex.follow_player = false
-	codex.walk_target = Vector2.INF
-	codex.global_position = arena.to_global(Vector2(298, 260))
-	_build_connection_art()
 	camera = Camera2D.new()
 	camera.position = Vector2(480, 270)
 	camera.zoom = Vector2.ONE * (2.0 / 3.0)
 	arena.add_child(camera)
 	camera.make_current()
 	show_intro(0)
-
-
-func _build_connection_art() -> void:
-	var altar := Sprite2D.new()
-	altar.texture = preload("res://assets/art/environment/hidden_shrine_v1/altar.tres")
-	altar.scale = Vector2(64, 50) / altar.texture.get_size()
-	altar.position = Vector2(266, 250)
-	altar.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	altar.z_index = 3
-	add_child(altar)
-	core_art = Sprite2D.new()
-	core_art.texture = preload("res://assets/art/environment/hidden_shrine_v1/core.tres")
-	core_art.scale = Vector2(18, 22) / core_art.texture.get_size()
-	core_art.position = Vector2(266, 219)
-	core_art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	core_art.z_index = 4
-	core_art.hide()
-	add_child(core_art)
 
 
 func show_intro(index: int) -> void:
@@ -92,7 +75,6 @@ func begin_awakening() -> void:
 	arena.player.apply_channel_curse(false)
 	arena.player.health.repair(arena.player.health.max_health)
 	arena.player.set_input_enabled(false)
-	core_art.show()
 	stage = Stage.AWAKENING
 	stage_clock = 0
 	arena._set_phase(arena.Phase.AWAKENING)
@@ -107,8 +89,6 @@ func awaken_form() -> void:
 		return
 	form_awakened = true
 	arena.boss.channel_form = true
-	arena.boss.body_sprite.hide()
-	arena.boss.glow_sprite.hide()
 	arena.boss.get_node("PedestalCollision").set_deferred("disabled", true)
 	var collision: CollisionShape2D = arena.boss.hurt_box.get_node("CollisionShape2D")
 	var rectangle := RectangleShape2D.new()
@@ -116,6 +96,7 @@ func awaken_form() -> void:
 	collision.shape = rectangle
 	collision.position = Vector2(0, -73)
 	visual = ChannelBossAnimator.new()
+	visual.modulate.a = 0.0
 	arena.boss.add_child(visual)
 	arena.boss.health.configure_max_health(MAX_HEALTH)
 	arena.boss.health.damaged.connect(visual.flash_hit)
@@ -126,10 +107,14 @@ func start_combat() -> void:
 	if stage != Stage.AWAKENING:
 		return
 	awaken_form()
+	visual.modulate.a = 1.0
+	arena.boss.body_sprite.hide()
+	arena.boss.glow_sprite.hide()
 	stage = Stage.ACTIVE
 	cast_skill = &""
 	cast_clock = 0
 	recovery = 1.0
+	tail_ready = true
 	arena.boss.state = RooftopWhaleGoddess.State.ACTIVE
 	arena.boss.health.end_guard_link()
 	arena.boss.hurt_box.set_deferred("monitorable", true)
@@ -146,19 +131,22 @@ func cast_attack(index: int) -> void:
 	cast_skill = [&"echo", &"halo", &"protect"][index]
 	cast_clock = 0
 	echo_count = 0
-	next_echo = 0.35 if index == 0 else -1.0
+	next_echo = ECHO_FIRST_MARK if index == 0 else -1.0
 	pulse_pending = index == 2
 	attacks_started[index] += 1
 	next_skill = (index + 1) % 3
-	visual.play_cast(cast_skill)
 	if index == 0:
+		visual.play_cast(cast_skill, ECHO_FIRST_MARK + ChannelBossEffect.ECHO_WARNING, ECHO_INTERVAL)
 		arena.boss.play_echo_probe()
 		arena.room_lighting.pulse_echo()
 	elif index == 1:
+		visual.play_cast(cast_skill, ChannelBossEffect.HALO_WARNING)
 		var point := arena.to_local(arena.player.global_position)
 		point.x = clampf(point.x, 270, 690)
 		point.y = clampf(point.y, 300, 470)
 		spawn_effect(&"halo", arena.to_global(point))
+	else:
+		visual.play_cast(cast_skill, PROTECT_RELEASE)
 
 
 func spawn_effect(skill: StringName, point: Vector2) -> ChannelBossEffect:
@@ -168,6 +156,17 @@ func spawn_effect(skill: StringName, point: Vector2) -> ChannelBossEffect:
 	add_child(effect)
 	effect.global_position = point
 	return effect
+
+
+func _cast_tail() -> void:
+	tail_ready = false
+	cast_skill = &"tail"
+	cast_clock = 0.0
+	var origin := arena.boss.global_position - Vector2(0, 8)
+	var aim := (arena.player.global_position - origin) / Vector2(1.0, ChannelBossEffect.TAIL_Y_SCALE)
+	var effect := spawn_effect(cast_skill, origin)
+	effect.tail_angle = Vector2.DOWN.angle() if aim.is_zero_approx() else aim.angle()
+	visual.play_tail(aim.x)
 
 
 func clear_effects() -> void:
@@ -185,7 +184,7 @@ func stop_combat() -> void:
 	pulse_pending = false
 	clear_effects()
 	if is_instance_valid(visual):
-		visual.stop()
+		visual.freeze(false)
 	queue_redraw()
 
 
@@ -201,9 +200,7 @@ func begin_ending() -> void:
 	arena.boss.hurt_box.set_deferred("monitorable", false)
 	arena._clear_hostile_projectiles()
 	if is_instance_valid(visual):
-		visual.play(&"idle")
-		visual.set_process(false)
-		visual.modulate.a = 0.65
+		visual.freeze(true)
 	show_ending(0)
 	queue_redraw()
 
@@ -229,44 +226,63 @@ func complete_ending() -> void:
 func _physics_process(delta: float) -> void:
 	if stage == Stage.AWAKENING:
 		stage_clock += delta
-		if stage_clock < 0.55:
-			arena.boss.glow_sprite.modulate = Color(1, 0.85, 0.5, stage_clock / 0.55)
+		if stage_clock < FORM_REVEAL:
+			arena.boss.glow_sprite.modulate = Color(1, 0.85, 0.5, stage_clock / FORM_REVEAL)
 		else:
 			awaken_form()
-			arena.boss.position = Vector2(480, 245).lerp(Vector2(480, 315), smoothstep(0, 1, (stage_clock - 0.55) / 1.0))
+			var blend := smoothstep(FORM_REVEAL, FORM_REVEAL + REVEAL_BLEND, stage_clock)
+			visual.modulate.a = blend
+			arena.boss.body_sprite.modulate.a = 1.0 - blend
+			arena.boss.glow_sprite.modulate.a = 1.0 - blend
+			var lift := smoothstep(FORM_REVEAL + REVEAL_BLEND, 1.55, stage_clock)
+			arena.boss.position = Vector2(480, 245).lerp(Vector2(480, 315), lift)
 		if stage_clock >= 1.7:
 			start_combat()
 	elif stage == Stage.ACTIVE:
 		if arena.player.health.is_dead():
 			stop_combat()
 			return
-		if cast_skill != &"":
+		if cast_skill == &"tail":
 			cast_clock += delta
+			visual.update_cast(cast_clock)
+			if cast_clock >= TAIL_CAST_DURATION:
+				recovery -= cast_clock
+				cast_skill = &""
+		elif cast_skill != &"":
+			cast_clock += delta
+			visual.update_cast(cast_clock)
 			if next_echo >= 0 and cast_clock >= next_echo:
 				spawn_effect(&"echo", arena.player.global_position)
 				echo_count += 1
-				next_echo = next_echo + 0.52 if echo_count < 3 else -1.0
-			if pulse_pending and cast_clock >= 0.7:
+				next_echo = next_echo + ECHO_INTERVAL if echo_count < 3 else -1.0
+			if pulse_pending and cast_clock >= PROTECT_RELEASE:
 				spawn_effect(&"protect", arena.boss.global_position - Vector2(0, 8))
 				pulse_pending = false
 			if cast_clock >= 2.25:
 				var combined := arena.boss.health.get_health_ratio() <= 0.5
 				recovery = (0.25 if cast_skill == &"echo" else 0.85) if combined else 1.25
+				tail_ready = true
 				cast_skill = &""
 		else:
 			recovery -= delta
 			var before := arena.boss.position
 			var target_x := clampf(arena.player.position.x, 330, 630)
-			arena.boss.position.x = move_toward(before.x, target_x, delta * 22)
-			visual.update_motion(absf(before.x - arena.boss.position.x) > 0.01)
-			if auto_attacks and recovery <= 0 and arena._optical_disruption_remaining <= 0:
-				cast_attack(next_skill)
+			arena.boss.position.x = move_toward(before.x, target_x, delta * GLIDE_SPEED)
+			visual.update_motion((arena.boss.position.x - before.x) / (delta * GLIDE_SPEED))
+			if auto_attacks and arena._optical_disruption_remaining <= 0:
+				if tail_ready and recovery >= TAIL_CAST_DURATION:
+					_cast_tail()
+				elif recovery <= 0:
+					cast_attack(next_skill)
 		queue_redraw()
 
 
 func _draw() -> void:
 	if stage not in [Stage.ACTIVE, Stage.ENDING] or not is_instance_valid(arena):
 		return
+	if pulse_pending:
+		var charge := clampf(cast_clock / PROTECT_RELEASE, 0.0, 1.0)
+		ChannelBossEffect.draw_wave_charge(self, to_local(arena.boss.global_position) - Vector2(0, 8), charge)
 	var origin := to_local(arena.boss.global_position) + Vector2(-46, 15)
 	draw_rect(Rect2(origin - Vector2(2, 2), Vector2(96, 8)), Color("0b1621"))
 	draw_rect(Rect2(origin, Vector2(92, 4)), Color("33434d"))

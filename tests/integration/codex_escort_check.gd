@@ -320,7 +320,7 @@ func run_checks() -> void:
 	check(run.restore_channel_checkpoint(roof_checkpoint), "pending route restores")
 	flow.request_scene(ROOF)
 	arena = await scene() as RooftopBossArena
-	check(arena.phase == RooftopBossArena.Phase.SECOND_ENDING_PENDING and arena.codex.health.current_health == 2, "rooftop resume stays in pending route")
+	check(arena.phase == RooftopBossArena.Phase.SECOND_ENDING_PENDING and run.codex_companion.health == 2 and arena.get_node_or_null("CodexCompanion") == null, "rooftop resume preserves escort state without spawning Codex")
 	arena.route_dialogue.close()
 	# Replay an unfinished assault and fail during its first wave.
 	checkpoint = checkpoint.duplicate(true)

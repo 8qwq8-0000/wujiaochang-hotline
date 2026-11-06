@@ -35,7 +35,6 @@ var _attack_generation := 0
 var _test_mode := false
 var _test_player_state: Dictionary = {}
 var _optical_disruption_remaining := 0.0
-var codex: CodexCompanion
 var route_dialogue: ChannelDialogue
 var channel_duel: ChannelBossDuel
 
@@ -418,8 +417,6 @@ func _resolve_ending_route() -> void:
 		telegraph.clear()
 		_clear_hostile_projectiles()
 		run.set_mandatory_enemy_count(1)
-		codex = CodexCompanion.spawn(self, player, player.global_position + Vector2(-40, 20))
-		codex.escort_complete = true
 		_save_channel_checkpoint()
 		channel_duel = ChannelBossDuel.new()
 		channel_duel.name = "ChannelBossDuel"

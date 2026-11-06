@@ -122,7 +122,7 @@ func run_checks() -> void:
 	check(duel.stage == duel.Stage.ACTIVE and arena.phase == arena.Phase.BOSS_ACTIVE, "reveal starts actual boss combat")
 	check(player.is_input_enabled() and arena.boss.channel_form and duel.visual.visible, "player controls and front-facing animated form activate")
 	check(arena.boss.health.damage_enabled and not arena.boss.health.guard_link_active, "boss is directly vulnerable throughout combat")
-	check(arena.codex.escort_complete and arena.codex.health.current_health == 2, "Codex stays safe without fabricated healing")
+	check(arena.get_node_or_null("CodexCompanion") == null and run_manager.codex_companion.health == 2, "Codex is dialogue-only on the roof and retains escort health")
 	check(arena.boss.get_node("PedestalCollision").disabled, "floating form removes old pedestal collision")
 	var life := arena.boss.health.current_health
 	var bullet: CombatProjectile = load("res://scenes/combat/projectile.tscn").instantiate()
@@ -204,6 +204,45 @@ func run_checks() -> void:
 	effect.elapsed = 0.20
 	effect._physics_process(0.15)
 	check(player.health.current_health == health_before, "actual dash invulnerability avoids wave damage")
+	player.dash.cancel_dash()
+	duel.clear_effects()
+	await frames()
+	effect = duel.spawn_effect(&"protect", arena.boss.global_position)
+	player.position = arena.boss.position + Vector2(275, 0)
+	player.hurt_box.clear_invulnerability()
+	health_before = player.health.current_health
+	effect.previous_radius = effect.wave_radius(0.73)
+	effect.elapsed = 0.73
+	effect._physics_process(0.05)
+	check(player.health.current_health == health_before - 1, "extended wave damages beyond the old maximum")
+	duel.clear_effects()
+	await frames()
+	var tail_origin := arena.boss.global_position - Vector2(0, 8)
+	player.global_position = tail_origin + Vector2(0, 85)
+	duel.cast_skill = &""
+	duel.recovery = 1.0
+	duel.tail_ready = true
+	duel.auto_attacks = true
+	duel._physics_process(1.0 / 60.0)
+	check(duel.cast_skill == &"tail", "ordinary attack starts in a special skill's recovery window")
+	duel.auto_attacks = false
+	var tail := get_first_node_in_group("channel_boss_effects") as ChannelBossEffect
+	if tail != null:
+		var target := player.global_position
+		player.global_position = tail_origin - Vector2(0, 85)
+		check(tail.contains_impact(target) and not tail.contains_impact(player.global_position), "tail fan stays locked and leaves space behind the boss safe")
+		player.global_position = target
+		player.hurt_box.clear_invulnerability()
+		health_before = player.health.current_health
+		tail._physics_process(0.40)
+		check(player.health.current_health == health_before, "tail telegraph does not damage the player")
+		tail._physics_process(0.03)
+		check(player.health.current_health == health_before - 1, "tail sweep lands once after its telegraph")
+		player.hurt_box.clear_invulnerability()
+		tail._physics_process(0.03)
+		check(player.health.current_health == health_before - 1, "tail sweep cannot hit twice")
+	else:
+		check(false, "tail spawns a live fan")
 	duel.clear_effects()
 	await frames()
 	# Death cancels queued attacks, then restore this fixture only for victory checks.
