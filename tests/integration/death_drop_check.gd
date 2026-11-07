@@ -53,6 +53,12 @@ func run() -> void:
 	await settle()
 	var first: CombatRoom = assembler.generated_rooms[0]
 	var second: CombatRoom = assembler.generated_rooms[1]
+	var room_bounds := Rect2(Vector2.ONE * 24.0, CombatRoom.ROOM_SIZE - Vector2.ONE * 48.0)
+	var wall_death := first.to_global(Vector2(10, 160))
+	check(not assembler._drop_position_reachable(first, wall_death, room_bounds), "wall overlap is rejected before drop reservation")
+	var safe_wall_drop := assembler._reserve_drop_position(first, wall_death)
+	check(safe_wall_drop.distance_to(wall_death) > 18.0 and assembler._drop_position_reachable(first, safe_wall_drop, room_bounds), "wall death relocates loot to reachable floor")
+	assembler._pending_drop_positions.clear()
 	for enemy in get_nodes_in_group("enemies"):
 		enemy.set_physics_process(false)
 	var enemies := get_nodes_in_group("enemies")

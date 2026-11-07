@@ -1,0 +1,31 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/bosses/wing_guard.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/gameplay/combat/health_component.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/gameplay/combat/hurt_box.gd" id="3"]
+
+[sub_resource type="CircleShape2D" id="HurtShape"]
+radius = 19.0
+
+[node name="WingGuard" type="Node2D"]
+script = ExtResource("1")
+
+[node name="BodySprite" type="Sprite2D" parent="."]
+texture_filter = 2
+position = Vector2(0, -32)
+scale = Vector2(0.064, 0.064)
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("2")
+
+[node name="HurtBox" type="Area2D" parent="."]
+collision_layer = 16
+collision_mask = 0
+monitoring = false
+script = ExtResource("3")
+faction = 2
+health_path = NodePath("../HealthComponent")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HurtBox"]
+position = Vector2(0, -24)
+shape = SubResource("HurtShape")

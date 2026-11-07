@@ -255,12 +255,12 @@ func _reserve_drop_position(room: CombatRoom, origin: Vector2) -> Vector2:
 	for pending in _pending_drop_positions:
 		if int(pending.room_id) == room.get_instance_id():
 			occupied.append(Vector2(pending.position))
-	var room_bounds := Rect2(Vector2.ONE * 18.0, CombatRoom.ROOM_SIZE - Vector2.ONE * 36.0)
+	var room_bounds := Rect2(Vector2.ONE * 24.0, CombatRoom.ROOM_SIZE - Vector2.ONE * 48.0)
 	for radius in [0.0, 56.0, 84.0, 112.0, 140.0, 168.0, 196.0]:
 		for step in 8:
 			var angle := TAU * float(step) / 8.0
 			var candidate: Vector2 = origin + Vector2.RIGHT.rotated(angle) * float(radius)
-			if radius > 0.0 and not room_bounds.has_point(room.to_local(candidate)):
+			if not _drop_position_reachable(room, candidate, room_bounds):
 				continue
 			var clear := true
 			for position in occupied:
@@ -270,18 +270,51 @@ func _reserve_drop_position(room: CombatRoom, origin: Vector2) -> Vector2:
 			if clear:
 				_pending_drop_positions.append({"room_id": room.get_instance_id(), "position": candidate})
 				return candidate
-	for x in range(24, int(CombatRoom.ROOM_SIZE.x) - 24, 54):
-		for y in range(24, int(CombatRoom.ROOM_SIZE.y) - 24, 54):
-			var candidate := room.to_global(Vector2(x, y))
-			var clear := true
-			for position in occupied:
-				if candidate.distance_to(position) < 54.0:
-					clear = false
-					break
-			if clear:
-				_pending_drop_positions.append({"room_id": room.get_instance_id(), "position": candidate})
-				return candidate
+	var fallback_candidates: Array[Vector2] = []
+	for x in range(24, int(CombatRoom.ROOM_SIZE.x) - 24, 24):
+		for y in range(24, int(CombatRoom.ROOM_SIZE.y) - 24, 24):
+			fallback_candidates.append(room.to_global(Vector2(x, y)))
+	fallback_candidates.sort_custom(func(a: Vector2, b: Vector2) -> bool:
+		return a.distance_squared_to(origin) < b.distance_squared_to(origin))
+	for candidate in fallback_candidates:
+		if not _drop_position_reachable(room, candidate, room_bounds):
+			continue
+		var clear := true
+		for position in occupied:
+			if candidate.distance_to(position) < 54.0:
+				clear = false
+				break
+		if clear:
+			_pending_drop_positions.append({"room_id": room.get_instance_id(), "position": candidate})
+			return candidate
+	push_error("No reachable pickup position in combat room %s" % room.name)
 	return origin
+
+
+func _drop_position_reachable(room: CombatRoom, candidate: Vector2, bounds: Rect2) -> bool:
+	if not bounds.has_point(room.to_local(candidate)):
+		return false
+	var shape := CircleShape2D.new()
+	shape.radius = 18.0
+	var query := PhysicsShapeQueryParameters2D.new()
+	query.shape = shape
+	query.transform = Transform2D(0.0, candidate)
+	query.collision_mask = 1
+	if not room.get_world_2d().direct_space_state.intersect_shape(query, 1).is_empty():
+		return false
+	var navigation := room.get_node_or_null("NavigationRegion2D") as NavigationRegion2D
+	if navigation == null or navigation.navigation_polygon == null:
+		return true
+	var map := navigation.get_navigation_map()
+	var closest := NavigationServer2D.map_get_closest_point(map, candidate)
+	if closest.distance_to(candidate) > 16.0:
+		return false
+	var anchor := room.to_global(CombatRoom.ROOM_SIZE * 0.5)
+	var player := get_tree().get_first_node_in_group("player") as PlayerController
+	if player != null and room.contains_world_point(player.global_position):
+		anchor = player.global_position
+	var path := NavigationServer2D.map_get_path(map, anchor, candidate, true)
+	return not path.is_empty() and path[-1].distance_to(candidate) <= 16.0
 
 
 func _on_entity_defeated(entity: Node) -> void:

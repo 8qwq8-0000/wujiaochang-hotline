@@ -1,23 +1,23 @@
 [gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/gameplay/bosses/rooftop_whale_goddess.gd" id="1_boss"]
-[ext_resource type="Texture2D" path="res://assets/art/characters/bosses/rooftop_whale_goddess/rooftop_boss_dormant.png" id="2_dormant"]
-[ext_resource type="Texture2D" path="res://assets/art/characters/bosses/rooftop_whale_goddess/rooftop_boss_glow.png" id="4_glow"]
+[ext_resource type="Texture2D" path="res://assets/art/characters/bosses/rooftop_whale_goddess/rooftop_boss_dormant_large.png" id="2_dormant"]
+[ext_resource type="Texture2D" path="res://assets/art/characters/bosses/rooftop_whale_goddess/rooftop_boss_glow_large.png" id="4_glow"]
 [ext_resource type="Script" path="res://scripts/gameplay/bosses/rooftop_boss_health.gd" id="5_health"]
 [ext_resource type="Script" path="res://scripts/gameplay/combat/hurt_box.gd" id="6_hurtbox"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/bosses/rooftop_whale_echo_probe.wav" id="7_echo_probe"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/bosses/rooftop_whale_song.wav" id="7_echo_probe"]
 
 [sub_resource type="CanvasItemMaterial" id="GlowMaterial"]
 blend_mode = 1
 
 [sub_resource type="RectangleShape2D" id="PedestalShape"]
-size = Vector2(126, 30)
+size = Vector2(230, 112)
 
 [sub_resource type="RectangleShape2D" id="HurtShape"]
-size = Vector2(130, 230)
+size = Vector2(182, 322)
 
 [node name="RooftopWhaleGoddess" type="StaticBody2D"]
-texture_filter = 1
+texture_filter = 2
 collision_layer = 1
 collision_mask = 0
 script = ExtResource("1_boss")
@@ -26,14 +26,14 @@ dormant_texture = ExtResource("2_dormant")
 [node name="BodySprite" type="Sprite2D" parent="."]
 z_index = 19
 z_as_relative = false
-texture_filter = 1
+texture_filter = 2
 texture = ExtResource("2_dormant")
 
 [node name="GlowSprite" type="Sprite2D" parent="."]
 visible = false
 z_index = 19
 z_as_relative = false
-texture_filter = 1
+texture_filter = 2
 material = SubResource("GlowMaterial")
 texture = ExtResource("4_glow")
 
@@ -43,7 +43,7 @@ stream = ExtResource("7_echo_probe")
 bus = &"SFX"
 
 [node name="PedestalCollision" type="CollisionShape2D" parent="."]
-position = Vector2(0, 96)
+position = Vector2(0, 150)
 shape = SubResource("PedestalShape")
 
 [node name="HealthComponent" type="Node" parent="."]
@@ -61,5 +61,5 @@ health_path = NodePath("../HealthComponent")
 actor_path = NodePath("..")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="HurtBox"]
-position = Vector2(0, 18)
+position = Vector2(0, 25)
 shape = SubResource("HurtShape")

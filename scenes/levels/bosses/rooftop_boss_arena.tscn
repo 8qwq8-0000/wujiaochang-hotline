@@ -11,30 +11,49 @@
 [ext_resource type="Script" uid="uid://bsbdewcfvhlaf" path="res://scripts/gameplay/bosses/boss_attack_telegraph.gd" id="9_telegraph"]
 [ext_resource type="Script" uid="uid://bfy1kbsxqyxmn" path="res://scripts/gameplay/rooms/exit_elevator.gd" id="10_exit"]
 [ext_resource type="NavigationPolygon" path="res://resources/enemies/rooftop_boss_navigation.tres" id="11_navigation"]
-[ext_resource type="Texture2D" uid="uid://dvhhdmrv2swgq" path="res://assets/art/environment/boss/rooftop_server_chapel_base_v4.png" id="12_room"]
+[ext_resource type="Texture2D" path="res://assets/art/environment/boss/rooftop_server_chapel_base.png" id="12_room"]
+[ext_resource type="Texture2D" path="res://assets/art/environment/boss/rooftop_chess_floor_v1.png" id="15_floor"]
+[ext_resource type="Texture2D" path="res://assets/art/environment/boss/rooftop_server_chapel_foreground.png" id="16_foreground"]
 [ext_resource type="Script" uid="uid://x4miwykfhnld" path="res://scripts/gameplay/bosses/rooftop_boss_room_lighting.gd" id="13_lighting"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/bosses/rooftop_lightning.wav" id="14_lightning"]
 
 
 [sub_resource type="RectangleShape2D" id="HorizontalWall"]
-size = Vector2(960, 16)
+size = Vector2(1280, 16)
 
 [sub_resource type="RectangleShape2D" id="VerticalWall"]
-size = Vector2(16, 360)
+size = Vector2(16, 600)
 
 [sub_resource type="RectangleShape2D" id="TopNaveWall"]
-size = Vector2(688, 16)
+size = Vector2(918, 16)
 
 [sub_resource type="RectangleShape2D" id="ElevatorShape"]
 size = Vector2(50, 34)
+
+[sub_resource type="RectangleShape2D" id="LowerRailShape"]
+size = Vector2(570, 18)
 
 [node name="RooftopBossArena" type="Node2D" unique_id=2095464680 groups=["combat_rooms"]]
 script = ExtResource("1_arena")
 
 [node name="RoomArt" type="Sprite2D" parent="." unique_id=72967290]
 z_index = -100
-texture_filter = 1
-position = Vector2(480, 270)
+texture_filter = 2
+position = Vector2(640, 450)
+scale = Vector2(1.333333, 1.666667)
 texture = ExtResource("12_room")
+
+[node name="ChessFloor" type="Sprite2D" parent="."]
+z_index = -95
+texture_filter = 2
+position = Vector2(640, 524)
+texture = ExtResource("15_floor")
+
+[node name="RoomForeground" type="Sprite2D" parent="."]
+z_index = -94
+texture_filter = 2
+position = Vector2(640, 450)
+texture = ExtResource("16_foreground")
 
 [node name="RoomLighting" type="Node2D" parent="." unique_id=353488196]
 z_index = -90
@@ -43,36 +62,62 @@ background_path = NodePath("../RoomArt")
 
 [node name="Walls" type="Node2D" parent="." unique_id=618861284]
 
+[node name="LeftFloorEdge" type="StaticBody2D" parent="Walls"]
+collision_mask = 0
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="Walls/LeftFloorEdge"]
+polygon = PackedVector2Array(0, 0, 240, 0, 240, 300, 198, 750, 198, 900, 0, 900)
+
+[node name="RightFloorEdge" type="StaticBody2D" parent="Walls"]
+collision_mask = 0
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="Walls/RightFloorEdge"]
+polygon = PackedVector2Array(1040, 0, 1280, 0, 1280, 900, 1082, 900, 1082, 750, 1040, 300)
+
+[node name="LowerLeftRail" type="StaticBody2D" parent="Walls"]
+position = Vector2(285, 760)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/LowerLeftRail"]
+shape = SubResource("LowerRailShape")
+
+[node name="LowerRightRail" type="StaticBody2D" parent="Walls"]
+position = Vector2(995, 760)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/LowerRightRail"]
+shape = SubResource("LowerRailShape")
+
 [node name="TopWall" type="StaticBody2D" parent="Walls" unique_id=331610508]
-position = Vector2(480, 8)
+position = Vector2(640, 13.3333)
 collision_mask = 0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/TopWall" unique_id=859727967]
 shape = SubResource("HorizontalWall")
 
 [node name="BottomWall" type="StaticBody2D" parent="Walls" unique_id=1753984879]
-position = Vector2(480, 532)
+position = Vector2(640, 886.667)
 collision_mask = 0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/BottomWall" unique_id=796422788]
 shape = SubResource("HorizontalWall")
 
 [node name="LeftRackWall" type="StaticBody2D" parent="Walls" unique_id=702854833]
-position = Vector2(136, 348)
+position = Vector2(181.333, 580)
 collision_mask = 0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/LeftRackWall" unique_id=658262187]
 shape = SubResource("VerticalWall")
 
 [node name="RightRackWall" type="StaticBody2D" parent="Walls" unique_id=821180073]
-position = Vector2(824, 348)
+position = Vector2(1098.67, 580)
 collision_mask = 0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/RightRackWall" unique_id=197843892]
 shape = SubResource("VerticalWall")
 
 [node name="AltarWall" type="StaticBody2D" parent="Walls" unique_id=1156558814]
-position = Vector2(480, 176)
+position = Vector2(640, 293.333)
 collision_mask = 0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/AltarWall" unique_id=1680365547]
@@ -80,7 +125,7 @@ shape = SubResource("TopNaveWall")
 
 [node name="Boss" parent="." unique_id=659720845 instance=ExtResource("3_boss")]
 z_index = 18
-position = Vector2(480, 128)
+position = Vector2(640, 170)
 awakening_duration = 2.2
 
 [node name="Enemies" type="Node2D" parent="." unique_id=2110700422]
@@ -88,18 +133,18 @@ awakening_duration = 2.2
 [node name="EnemySpawnPoints" type="Node2D" parent="." unique_id=296739380]
 
 [node name="MeleeGuard" type="Marker2D" parent="EnemySpawnPoints" unique_id=1758544744]
-position = Vector2(222, 316)
+position = Vector2(296, 526.667)
 script = ExtResource("5_marker")
 profile = ExtResource("6_melee")
 
 [node name="RangedCantor" type="Marker2D" parent="EnemySpawnPoints" unique_id=1407376519]
-position = Vector2(738, 316)
+position = Vector2(984, 526.667)
 script = ExtResource("5_marker")
 role_tag = &"ranged_sightline"
 profile = ExtResource("7_ranged")
 
 [node name="HeavyDeacon" type="Marker2D" parent="EnemySpawnPoints" unique_id=576460344]
-position = Vector2(480, 356)
+position = Vector2(640, 593.333)
 script = ExtResource("5_marker")
 role_tag = &"heavy_anchor"
 profile = ExtResource("8_heavy")
@@ -109,20 +154,26 @@ script = ExtResource("4_spawner")
 marker_root_path = NodePath("../EnemySpawnPoints")
 spawn_parent_path = NodePath("../Enemies")
 seed_offset = 7701
+auto_spawn = false
 
 [node name="NavigationRegion2D" type="NavigationRegion2D" parent="." unique_id=1263071652]
 navigation_polygon = ExtResource("11_navigation")
 
 [node name="Player" parent="." unique_id=1286908243 instance=ExtResource("2_player")]
 z_index = 2
-position = Vector2(480, 486)
+position = Vector2(640, 810)
+
+[node name="LightningAudio" type="AudioStreamPlayer2D" parent="."]
+position = Vector2(640, 400)
+stream = ExtResource("14_lightning")
+bus = &"SFX"
 
 [node name="AttackTelegraph" type="Node2D" parent="." unique_id=1490755209]
 z_index = 20
 script = ExtResource("9_telegraph")
 
 [node name="ExitElevator" type="Area2D" parent="." unique_id=617776509]
-position = Vector2(480, 510)
+position = Vector2(640, 850)
 collision_layer = 64
 collision_mask = 2
 script = ExtResource("10_exit")
@@ -145,30 +196,32 @@ horizontal_alignment = 1
 
 [node name="SupportEnemies" type="Node2D" parent="."]
 
+[node name="SummonedEnemies" type="Node2D" parent="."]
+
 [node name="SupportSpawnPoints" type="Node2D" parent="."]
 
 [node name="MeleeSupport" type="Marker2D" parent="SupportSpawnPoints"]
-position = Vector2(220, 270)
+position = Vector2(293.333, 450)
 script = ExtResource("5_marker")
 profile = ExtResource("6_melee")
 
 [node name="RangedSupport" type="Marker2D" parent="SupportSpawnPoints"]
-position = Vector2(740, 270)
+position = Vector2(986.667, 450)
 script = ExtResource("5_marker")
 profile = ExtResource("7_ranged")
 
 [node name="HeavySupport" type="Marker2D" parent="SupportSpawnPoints"]
-position = Vector2(480, 356)
+position = Vector2(640, 593.333)
 script = ExtResource("5_marker")
 profile = ExtResource("8_heavy")
 
 [node name="MeleeSupportTwo" type="Marker2D" parent="SupportSpawnPoints"]
-position = Vector2(340, 320)
+position = Vector2(453.333, 533.333)
 script = ExtResource("5_marker")
 profile = ExtResource("6_melee")
 
 [node name="RangedSupportTwo" type="Marker2D" parent="SupportSpawnPoints"]
-position = Vector2(620, 320)
+position = Vector2(826.667, 533.333)
 script = ExtResource("5_marker")
 profile = ExtResource("7_ranged")
 

@@ -1,6 +1,6 @@
 extends SceneTree
-var failures := 0
 var checks := 0
+var failures := 0
 
 func _initialize() -> void:
 	call_deferred("run")
@@ -11,9 +11,9 @@ func check(value: bool, message: String) -> void:
 		failures += 1
 		push_error(message)
 
-func hit(damage: int = 99) -> DamagePacket:
+func hit(amount: int) -> DamagePacket:
 	var packet := DamagePacket.new()
-	packet.base_damage = damage
+	packet.base_damage = amount
 	packet.source_faction = CombatFaction.Id.PLAYER
 	return packet
 
@@ -22,123 +22,67 @@ func run() -> void:
 	arena.attack_loop_enabled = false
 	root.add_child(arena)
 	await process_frame
-	await process_frame
+	var room_art := arena.get_node("RoomArt") as Sprite2D
+	check(room_art.texture.resource_path.ends_with("rooftop_server_chapel_base.png") and room_art.position == Vector2(640, 450) and room_art.scale.is_equal_approx(Vector2(1.333333, 1.666667)), "original chapel architecture remains beneath separate floor")
+	check(room_art.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR, "chapel art uses smooth filtering")
+	check((arena.get_node("ChessFloor") as Sprite2D).texture.resource_path.ends_with("rooftop_chess_floor_v1.png") and (arena.get_node("ChessFloor") as Sprite2D).position == Vector2(640, 524), "generated 24x14 floor sits at revised grid origin")
+	check((arena.get_node("RoomForeground") as Sprite2D).z_index > (arena.get_node("ChessFloor") as Sprite2D).z_index, "altar steps and railing cover floor layer")
+	var foreground_image := (arena.get_node("RoomForeground") as Sprite2D).texture.get_image()
+	check(foreground_image.get_pixel(290, 350).a > 0.99 and foreground_image.get_pixel(990, 350).a > 0.99, "both side steps remain opaque above the floor")
+	check(foreground_image.get_pixel(640, 380).a < 0.01, "playable center stays transparent in foreground mask")
+	check(BossFloorGeometry.ORIGIN == Vector2(256, 300), "floor gameplay coordinates match standalone art")
+	await physics_frame
+	var space := arena.get_world_2d().direct_space_state
+	var foot_query := PhysicsPointQueryParameters2D.new()
+	foot_query.position = Vector2(640, 350)
+	foot_query.collision_mask = 1
+	check(not space.intersect_point(foot_query).is_empty(), "expanded pedestal blocks the statue feet")
+	var side_query := PhysicsPointQueryParameters2D.new()
+	side_query.position = Vector2(205, 550)
+	side_query.collision_mask = 1
+	check(not space.intersect_point(side_query).is_empty(), "floor-edge collision blocks side rack art")
+	var rail_query := PhysicsPointQueryParameters2D.new()
+	rail_query.position = Vector2(400, 760)
+	rail_query.collision_mask = 1
+	check(not space.intersect_point(rail_query).is_empty(), "lower railing blocks floor escape")
+	rail_query.position = Vector2(640, 760)
+	check(space.intersect_point(rail_query).is_empty(), "central elevator path remains open")
+	check(arena.boss.body_sprite.texture.resource_path.ends_with("rooftop_boss_dormant_large.png") and arena.boss.body_sprite.scale == Vector2.ONE and arena.boss.position == Vector2(640, 170), "boss uses aligned enlarged AI source")
+	check(arena.boss.body_sprite.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR, "boss art uses smooth filtering")
 	arena.player.health.configure_max_health(100)
-	check(arena.spawner.required_remaining == 3, "opening wave has three guards")
-	check(arena.boss.opening_guards_remaining == 3 and arena.boss.opening_guards_total == 3, "three guards have an independent counter")
-	check(arena.boss.health.max_health == 6, "boss phase two has exactly six health")
-	check(arena.boss.health.apply_damage(99, hit()) == 0, "opening guards protect dormant statue")
-	check(arena.get_node("SupportEnemies").get_child_count() == 0, "support wave is not spawned early")
-	# Exercise the real viewport/FOV checks at opposite sides of the arena.
-	var scout: EnemyController = arena.get_node("Enemies").get_child(0)
-	var scout_position := scout.global_position
-	var player_position := arena.player.global_position
-	var facing := scout.facing
-	scout.set_physics_process(false)
-	scout.global_position = Vector2(200,270)
-	scout.facing = Vector2.LEFT
-	scout._target = arena.player
-	arena.player.global_position = Vector2(780,480)
-	await physics_frame
-	await physics_frame
-	check(scout.can_see_target(), "boss guard sees across arena even behind its initial facing")
-	scout.profile.full_room_awareness = false
-	check(not scout.can_see_target(), "ordinary viewport cap would reject the same distant target")
-	scout.profile.full_room_awareness = true
-	scout.global_position = scout_position
-	scout.facing = facing
-	scout.set_physics_process(true)
-	arena.player.global_position = player_position
-	for path in ["melee_pressure", "ranged_sightline", "heavy_anchor"]:
-		var normal: EnemyProfile = load("res://resources/enemies/" + path + ".tres")
-		check(not normal.full_room_awareness and normal.vision_angle_degrees == 120, "boss awareness override leaves shared normal profiles unchanged")
-	var heavy: EnemyController
-	var remaining := 3
-	for enemy: EnemyController in arena.get_node("Enemies").get_children():
-		check(enemy.profile.full_room_awareness and enemy.profile.awareness_range == 1000 and enemy.profile.vision_angle_degrees == 360, "opening guard has full arena awareness")
-		check(enemy.health.max_health == (6 if enemy.profile.role == EnemyProfile.Role.HEAVY_ANCHOR else 4), "opening shields have six health while other guards have four")
-	var total_opening_health := 0
-	for enemy: EnemyController in arena.get_node("Enemies").get_children():
-		total_opening_health += enemy.health.max_health
-	check(total_opening_health == 14, "opening melee and ranged have four health, shield has six")
-	for enemy: EnemyController in arena.get_node("Enemies").get_children():
-		if enemy.profile.self_destruct_enabled:
-			heavy = enemy
-			continue
-		enemy.health.apply_damage(99, hit())
-		remaining -= 1
-		check(arena.boss.opening_guards_remaining == remaining, "each opening defeat updates independent guard counter")
-		check(arena.boss.get_halo_segments_remaining() == 5, "guard defeats do not change statue halo or boss health")
-		check(arena.boss.health.current_health == 6, "guard kills do not consume phase two boss health")
-		check(arena.phase == RooftopBossArena.Phase.MINIONS, "boss stays dormant while last guard remains")
-	heavy.health.apply_damage(99, hit())
-	check(arena.boss.opening_guards_remaining == 1, "heavy self-destruct must finish before guard wave clears")
-	await create_timer(0.6).timeout
-	check(arena.phase == RooftopBossArena.Phase.AWAKENING, "last guard starts original awakening cinematic")
-	check(arena.boss.opening_guards_remaining == 0 and arena.boss.health.get_precise_health() == 6, "clearing opening guards leaves boss health unchanged")
-	check(not arena.player.is_physics_processing(), "cinematic freezes player movement")
+	var wings := arena.get_node("Enemies").get_children()
+	check(wings.size() == 2 and arena.spawner.required_remaining == 0, "two dedicated wings replace ordinary opening wave")
+	check(arena.boss.opening_guards_total == 2 and arena.boss.health.current_health == 6, "opening counter and dormant boss health")
+	check(arena.boss.health.apply_damage(99, hit(99)) == 0, "dormant boss is protected")
+	var rook := wings[0] as WingGuard
+	var bishop := wings[1] as WingGuard
+	rook.set_active(false)
+	bishop.set_active(false)
+	check(rook.kind == WingGuard.Kind.ROOK and rook.health.max_health == 20, "rook has 20 health")
+	check(bishop.kind == WingGuard.Kind.BISHOP and bishop.health.max_health == 15, "bishop has 15 health")
+	check(arena.get_node("SupportEnemies").get_child_count() == 0, "queen is absent before fusion")
+	rook.health.apply_damage(20, hit(20))
+	check(arena.boss.opening_guards_remaining == 1 and arena.phase == RooftopBossArena.Phase.MINIONS, "first shattered core does not awaken boss")
+	bishop.health.apply_damage(15, hit(15))
+	check(arena.phase == RooftopBossArena.Phase.AWAKENING, "both cores trigger awakening")
+	check(not arena.player.is_physics_processing(), "cinematic freezes player")
 	await create_timer(0.8).timeout
-	check(arena.player.camera.zoom.is_equal_approx(Vector2.ONE), "cinematic keeps teammate camera scale")
-	check(arena.player.camera.position.length() > 1, "cinematic moves camera toward altar")
-	check(arena.boss.glow_sprite.visible and arena.room_lighting.phase_light > 0, "cinematic retains statue glow and room lighting")
-	await create_timer(1.8).timeout
-	check(arena.phase == RooftopBossArena.Phase.BOSS_ACTIVE, "cinematic ends in phase two")
-	check(arena.player.is_physics_processing(), "cinematic restores player movement")
-	check(arena.player.camera.zoom.is_equal_approx(Vector2.ONE * 0.8) and arena.player.camera.position.length() < 40, "phase two opens a wider view after original cinematic")
-	check(not arena.boss.hurt_box.monitorable and arena.boss.health.guard_link_active, "supports protect active boss from direct hits")
-	check(arena.get_node("SupportEnemies").get_child_count() == 5, "phase two spawns five supports")
-	arena._spawn_support_guards()
-	check(arena.get_node("SupportEnemies").get_child_count() == 5, "support wave cannot be duplicated")
-	check(root.get_node("RunManager").mandatory_enemies_remaining == 1, "boss remains mandatory during support wave")
-	var supports: Array[EnemyController] = []
-	var support_heavy: EnemyController
-	for enemy: EnemyController in arena.get_node("SupportEnemies").get_children():
-		check(enemy.profile.full_room_awareness and enemy.profile.awareness_range == 1000 and enemy.profile.vision_angle_degrees == 360, "second phase guard has full arena awareness")
-		check(enemy.is_physics_processing() and not enemy.health.is_dead(), "support fights alongside boss")
-		var expected_health := 6 if enemy.profile.role == EnemyProfile.Role.HEAVY_ANCHOR else 4
-		check(enemy.health.max_health == expected_health and enemy.health.current_health == expected_health, "both waves use six-health shields and four-health other guards")
-		if enemy.profile.self_destruct_enabled:
-			support_heavy = enemy
-		else:
-			supports.append(enemy)
-	supports.append(support_heavy)
-	check(arena.boss.health.apply_damage(99, hit()) == 0, "even direct health damage cannot bypass support shield")
-	var shot: CombatProjectile = load("res://scenes/combat/projectile.tscn").instantiate()
-	arena.add_child(shot)
-	shot.global_position = arena.boss.global_position + Vector2(0, 165)
-	shot.setup(arena.player, CombatFaction.Id.PLAYER, Vector2.UP, 99, 180)
-	await create_timer(0.4).timeout
-	check(arena.boss.health.get_precise_health() == 6, "real weapon shot cannot harm shielded boss")
-	var lost := 0
-	var roles := {0: 0, 1: 0, 2: 0}
-	for enemy in supports:
-		roles[int(enemy.profile.role)] += 1
-		for nonfatal in enemy.health.max_health - 1:
-			enemy.health.apply_damage(1, hit(1))
-			check(arena.boss.health.current_health == 6 - lost, "nonfatal shield damage never reduces boss health")
-		enemy.health.apply_damage(1, hit(1))
-		check(enemy.health.apply_damage(99, hit()) == 0, "dead minion cannot take repeat overkill damage")
-		if enemy.profile.self_destruct_enabled:
-			check(arena.boss.health.guard_link_active, "heavy must complete self destruction before shield opens")
-			await create_timer(0.6).timeout
-		lost += 1
-		check(arena.boss.health.current_health == 6 - lost, "each confirmed minion defeat removes exactly one boss health")
-		check(arena.boss.health.current_health == 6 - lost, "overkill never repeats linked boss damage")
-		if lost < 5:
-			check(arena.boss.health.apply_damage(99, hit()) == 0, "living supports keep boss immune")
-	check(roles == {0: 2, 1: 2, 2: 1}, "five supports are two melee, two ranged and one shield soldier")
-	await create_timer(0.6).timeout
-	check(not arena.boss.health.guard_link_active and arena.boss.hurt_box.monitorable, "clearing supports opens boss hurtbox")
-	check(absf(arena.boss.health.get_precise_health() - 1.0) < 0.00001, "shield removal preserves exactly 1 of 6 health")
-	check(arena.phase == RooftopBossArena.Phase.BOSS_ACTIVE and not arena.exit_elevator.enabled, "player must still defeat last health boss")
-	shot = load("res://scenes/combat/projectile.tscn").instantiate()
-	arena.add_child(shot)
-	shot.global_position = arena.boss.global_position + Vector2(0, 165)
-	shot.setup(arena.player, CombatFaction.Id.PLAYER, Vector2.UP, 1, 180)
-	await create_timer(0.4).timeout
-	await process_frame
-	check(arena.phase == RooftopBossArena.Phase.CLEARED and arena.exit_elevator.enabled, "remaining boss health must be depleted before exit opens")
-	check(arena.telegraph.mode == BossAttackTelegraph.Mode.NONE, "victory clears pending hazards")
+	check(arena.player.camera.zoom.is_equal_approx(Vector2.ONE) and arena.player.camera.position.length() > 1, "cinematic retains altar camera move")
+	await create_timer(2.0).timeout
+	check(arena.phase == RooftopBossArena.Phase.BOSS_ACTIVE and arena.player.is_physics_processing(), "awakening restores combat")
+	check(arena.player.camera.zoom.is_equal_approx(Vector2.ONE * 0.8), "second phase opens wider view")
+	var queen := arena.get_node("SupportEnemies").get_child(0) as WingGuard
+	queen.set_active(false)
+	check(queen.kind == WingGuard.Kind.QUEEN and queen.health.max_health == 35, "fused queen has 35 health")
+	check(arena.boss.health.guard_link_active and arena.boss.health.apply_damage(99, hit(99)) == 0, "queen protects boss")
+	for segment in 5:
+		queen.health.apply_damage(6, hit(6))
+		check(arena.boss.health.current_health == 6 - segment, "partial queen damage does not reduce boss health")
+		queen.health.apply_damage(1, hit(1))
+		check(arena.boss.health.current_health == 5 - segment, "each seven queen damage removes one boss health")
+	check(not arena.boss.health.guard_link_active and arena.boss.health.current_health == 1, "queen defeat exposes final boss health")
+	arena.boss.health.apply_damage(1, hit(1))
+	check(arena.phase == RooftopBossArena.Phase.CLEARED and arena.exit_elevator.enabled, "final direct hit clears room")
 	arena.queue_free()
 	await process_frame
 	print("Rooftop boss checks: ", checks, "; failures: ", failures)
