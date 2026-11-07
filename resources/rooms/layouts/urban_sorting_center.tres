@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="CombatLayoutData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/rooms/combat_layout_data.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/enemies/melee_pressure.tres" id="melee"]
+[ext_resource type="Resource" path="res://resources/enemies/ranged_sightline.tres" id="ranged"]
+[ext_resource type="Resource" path="res://resources/enemies/heavy_anchor.tres" id="shield"]
+
+[resource]
+script = ExtResource("1")
+id = &"urban_sorting_center"
+display_name = "城配分拣中心"
+covers = Array[Rect2]([Rect2(79, 105, 244, 47), Rect2(267, 219, 221, 40), Rect2(441, 215, 63, 65), Rect2(67, 52, 46, 40), Rect2(207, 283, 44, 44), Rect2(490, 65, 57, 42), Rect2(337, 74, 51, 35), Rect2(268, 279, 48, 38), Rect2(131, 53, 45, 37), Rect2(521, 274, 53, 41), Rect2(454, 299, 39, 31), Rect2(250, 59, 43, 31)])
+zones = Array[Rect2]([Rect2(16, 16, 122, 328), Rect2(138, 16, 183, 164), Rect2(138, 180, 183, 164), Rect2(321, 16, 182, 164), Rect2(321, 180, 182, 164), Rect2(503, 16, 121, 328)])
+doors = Array[Vector4]([])
+windows = Array[Rect2]([])
+sentry_positions = Array[Vector2]([Vector2(580, 103)])
+enemy_positions = Array[Vector2]([Vector2(154, 176), Vector2(562, 215), Vector2(244, 194), Vector2(350, 174), Vector2(509, 155), Vector2(302, 195)])
+enemy_profiles = Array[Resource]([ExtResource("ranged"), ExtResource("ranged"), ExtResource("melee"), ExtResource("melee"), ExtResource("melee"), ExtResource("shield")])
+power_position = Vector2(560, 232)
+power_spawn_zones = Array[int]([2, 3, 4, 5])
+clear_lanes = Array[Rect2]([Rect2(174, 155, 332, 33), Rect2(95, 193, 29, 43), Rect2(544, 143, 24, 61)])
+bomb_position = Vector2(404, 175)
+bomb_spacing_radius = 104.0
+floor_color = Color(0.09, 0.13, 0.17, 1)
+cover_color = Color(0.34, 0.42, 0.48, 1)

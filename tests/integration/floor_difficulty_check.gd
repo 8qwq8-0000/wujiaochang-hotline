@@ -1,6 +1,6 @@
 extends SceneTree
 
-const MAPS := ["interlinked_apartment", "loading_workshop", "freight_atrium", "dual_track_depot"]
+const MAPS := ["interlinked_apartment", "loading_workshop", "freight_atrium", "dual_track_depot", "underground_pump_station", "urban_sorting_center"]
 var checks := 0
 var failures := 0
 

@@ -20,6 +20,8 @@ const STRUCTURAL_PARTITION_MAX_THICKNESS := 6.1
 @export var sentry_positions: Array[Vector2] = []
 var navigation_obstacles: Array[Rect2] = []
 @export var bomb_position := Vector2(450, 245)
+# Exclusion around a placed box in world pixels, before placement clearance.
+@export var bomb_spacing_radius := 32.0
 @export var floor_color := Color("15212b")
 @export var cover_color := Color("405564")
 @export var room_size := Vector2(640.0, 360.0)
@@ -78,6 +80,7 @@ func scaled_for_room(scale_factor: float, base_size: Vector2 = Vector2(640.0, 36
 	result.power_position = _scaled_point(power_position, scale_factor, base_size)
 	result.power_spawn_zones.assign(power_spawn_zones)
 	result.bomb_position = _scaled_point(bomb_position, scale_factor, base_size)
+	result.bomb_spacing_radius = bomb_spacing_radius
 	return result
 
 

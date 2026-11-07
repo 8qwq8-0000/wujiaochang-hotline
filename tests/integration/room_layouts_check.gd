@@ -1,7 +1,7 @@
 extends SceneTree
 
-const FORMAL_IDS := ["interlinked_apartment", "loading_workshop", "freight_atrium", "dual_track_depot"]
-const IDS := ["interlinked_apartment", "loading_workshop", "freight_atrium", "dual_track_depot", "staggered_cover", "central_server", "storage_lanes", "cross_checkpoint", "offset_workshop", "split_office"]
+const FORMAL_IDS := ["interlinked_apartment", "loading_workshop", "freight_atrium", "dual_track_depot", "underground_pump_station", "urban_sorting_center"]
+const IDS := ["interlinked_apartment", "loading_workshop", "freight_atrium", "dual_track_depot", "underground_pump_station", "urban_sorting_center", "staggered_cover", "central_server", "storage_lanes", "cross_checkpoint", "offset_workshop", "split_office"]
 var checks := 0
 var failures := 0
 
@@ -42,7 +42,7 @@ func run() -> void:
 			root.add_child(floor_node)
 			current_scene = floor_node
 			var assembler: FloorAssembler = floor_node.get_node("FloorAssembler")
-			check(assembler.room_pool.size() == FORMAL_IDS.size(), "formal floor wires all four selected layouts")
+			check(assembler.room_pool.size() == FORMAL_IDS.size(), "formal floor wires all six selected layouts")
 			var paths: Array[String] = []
 			for room in assembler.generated_rooms:
 				paths.append(room.scene_file_path)
@@ -71,8 +71,8 @@ func run() -> void:
 			check(route_connected, "unlocked passage links different navigation meshes")
 			floor_node.queue_free()
 			await settle()
-	check(seen_layouts.size() == FORMAL_IDS.size(), "seed samples reach all four selected layouts")
-	check(seen_pairs.size() > 4, "seeds and floors provide varied pairs from four layouts")
+	check(seen_layouts.size() == FORMAL_IDS.size(), "seed samples reach all six selected layouts")
+	check(seen_pairs.size() > 4, "seeds and floors provide varied pairs from six layouts")
 	for id in FORMAL_IDS:
 		check(seen_slots.has(id + ":0") and seen_slots.has(id + ":1"), id + " appears as both first and final area")
 	for id in IDS:
@@ -122,6 +122,9 @@ func run() -> void:
 		check(no_wall_crossing, "%s navigation segments respect collider clearance" % id)
 		var target := Node2D.new()
 		target.add_to_group("player")
+		var health := HealthComponent.new()
+		health.name = "HealthComponent"
+		target.add_child(health)
 		target.position = entry
 		room.add_child(target)
 		var enemy: EnemyController = load("res://scenes/actors/enemies/enemy.tscn").instantiate()

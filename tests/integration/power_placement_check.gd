@@ -38,7 +38,7 @@ func run() -> void:
 	var store := root.get_node("WarehouseStore")
 	store.save_path = "user://power_placement_check.json"
 	var manager := root.get_node("RunManager")
-	for id in ["interlinked_apartment", "loading_workshop", "freight_atrium", "dual_track_depot"]:
+	for id in ["interlinked_apartment", "loading_workshop", "freight_atrium", "dual_track_depot", "underground_pump_station", "urban_sorting_center"]:
 		var source: CombatLayoutData = load("res://resources/rooms/layouts/" + id + ".tres")
 		var authored_power := source.power_position
 		var layout := source.scaled_for_room(CombatRoom.ROOM_SCALE)
