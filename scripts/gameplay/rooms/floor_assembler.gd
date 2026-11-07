@@ -8,7 +8,8 @@ const DEFAULT_ROOM := preload("res://scenes/levels/rooms/prototype_combat_room.t
 
 @export_range(1, 8, 1) var room_count: int = 1
 @export var sequential_progression := false
-@export_range(0.0, 1.0, 0.01) var enemy_drop_chance := 0.20
+@export_range(0.0, 1.0, 0.01) var enemy_drop_chance := 0.30
+@export_range(0.0, 1.0, 0.01) var cyberware_drop_chance := 0.18
 @export var room_spacing: Vector2 = Vector2(1000.0, 0.0)
 @export var room_pool: Array[RoomTemplateData] = []
 @export_range(0.0, 256.0, 1.0) var room_camera_north_extension := 0.0
@@ -20,7 +21,8 @@ var _rooms_remaining: int = 0
 var active_area_index := 0
 var passages: Array[CombatPassage] = []
 var _cleared_ids := {}
-var _guaranteed_areas := {}
+var _dropped_cyberware_counts := {}
+var _pending_drop_positions: Array[Dictionary] = []
 var _loot_rng := RandomNumberGenerator.new()
 var _drop_chance_rng := RandomNumberGenerator.new()
 
@@ -41,7 +43,8 @@ func assemble() -> void:
 		passage.queue_free()
 	passages.clear()
 	_cleared_ids.clear()
-	_guaranteed_areas.clear()
+	_dropped_cyberware_counts.clear()
+	_pending_drop_positions.clear()
 	active_area_index = 0
 	_chosen_scene_paths.clear()
 	var random := RandomNumberGenerator.new()
@@ -220,19 +223,65 @@ func try_enemy_drop(enemy: EnemyController, room: CombatRoom, death_position: Ve
 	if room not in generated_rooms or enemy.state != EnemyController.State.DEAD or enemy.has_meta("floor_loot_processed"):
 		return
 	enemy.set_meta("floor_loot_processed", true)
-	# Each area fulfils its own minimum if its previous death rolls all missed.
-	# EnemySpawner resolves objectives before CombatEvents publishes the death.
-	var area_id := room.get_instance_id()
-	var forced := not _guaranteed_areas.has(area_id) and room.cleared
-	if not forced and _drop_chance_rng.randf() >= enemy_drop_chance:
+	var equipment_hit := _drop_chance_rng.randf() < enemy_drop_chance
+	var cyberware_hit := _drop_chance_rng.randf() < cyberware_drop_chance
+	if not equipment_hit and not cyberware_hit:
 		return
-	var first_drop := not _guaranteed_areas.has(area_id)
-	_guaranteed_areas[area_id] = true
-	if first_drop:
-		room.reward_count += 1
 	var run := get_node_or_null("/root/RunManager")
-	var item := ComponentRolls.floor_drop(run.floor_index + 1 if run != null else 1, _loot_rng)
-	_spawn_enemy_drop.call_deferred(room, death_position, item, first_drop, enemy.get_instance_id())
+	var owned_counts := _dropped_cyberware_counts.duplicate()
+	var player := get_tree().get_first_node_in_group("player") as PlayerController
+	if player != null:
+		var library_counts := player.cyberware.circuit.get_library_counts()
+		for module_id in library_counts:
+			owned_counts[module_id] = int(owned_counts.get(module_id, 0)) + int(library_counts[module_id])
+	var floor_number: int = run.floor_index + 1 if run != null else 1
+	if equipment_hit:
+		var equipment := ComponentRolls.floor_equipment_drop(floor_number, _loot_rng)
+		_spawn_enemy_drop.call_deferred(room, _reserve_drop_position(room, death_position), equipment, enemy.get_instance_id())
+		room.reward_count += 1
+	if cyberware_hit:
+		var cyberware := ComponentRolls.guaranteed_cyberware_drop(floor_number, _loot_rng, owned_counts)
+		for module_id in ComponentRolls.cyberware_modules(cyberware):
+			_dropped_cyberware_counts[module_id] = int(_dropped_cyberware_counts.get(module_id, 0)) + 1
+		_spawn_enemy_drop.call_deferred(room, _reserve_drop_position(room, death_position), cyberware, enemy.get_instance_id())
+		room.reward_count += 1
+
+
+func _reserve_drop_position(room: CombatRoom, origin: Vector2) -> Vector2:
+	var occupied: Array[Vector2] = []
+	for child in room.get_children():
+		if child is ComponentPickup and not child.is_queued_for_deletion():
+			occupied.append(child.global_position)
+	for pending in _pending_drop_positions:
+		if int(pending.room_id) == room.get_instance_id():
+			occupied.append(Vector2(pending.position))
+	var room_bounds := Rect2(Vector2.ONE * 18.0, CombatRoom.ROOM_SIZE - Vector2.ONE * 36.0)
+	for radius in [0.0, 56.0, 84.0, 112.0, 140.0, 168.0, 196.0]:
+		for step in 8:
+			var angle := TAU * float(step) / 8.0
+			var candidate: Vector2 = origin + Vector2.RIGHT.rotated(angle) * float(radius)
+			if radius > 0.0 and not room_bounds.has_point(room.to_local(candidate)):
+				continue
+			var clear := true
+			for position in occupied:
+				if candidate.distance_to(position) < 54.0:
+					clear = false
+					break
+			if clear:
+				_pending_drop_positions.append({"room_id": room.get_instance_id(), "position": candidate})
+				return candidate
+	for x in range(24, int(CombatRoom.ROOM_SIZE.x) - 24, 54):
+		for y in range(24, int(CombatRoom.ROOM_SIZE.y) - 24, 54):
+			var candidate := room.to_global(Vector2(x, y))
+			var clear := true
+			for position in occupied:
+				if candidate.distance_to(position) < 54.0:
+					clear = false
+					break
+			if clear:
+				_pending_drop_positions.append({"room_id": room.get_instance_id(), "position": candidate})
+				return candidate
+	return origin
 
 
 func _on_entity_defeated(entity: Node) -> void:
@@ -247,14 +296,19 @@ func _on_entity_defeated(entity: Node) -> void:
 	try_enemy_drop(entity, room, entity.global_position)
 
 
-func _spawn_enemy_drop(room: CombatRoom, death_position: Vector2, item: InventoryItem, first_drop: bool, enemy_id: int) -> void:
+func _spawn_enemy_drop(room: CombatRoom, death_position: Vector2, item: InventoryItem, enemy_id: int) -> void:
+	if not is_instance_valid(room):
+		return
+	for index in range(_pending_drop_positions.size() - 1, -1, -1):
+		var pending: Dictionary = _pending_drop_positions[index]
+		if int(pending.room_id) == room.get_instance_id() and Vector2(pending.position) == death_position:
+			_pending_drop_positions.remove_at(index)
+			break
 	if not is_instance_valid(room) or room.is_queued_for_deletion() or not room.is_inside_tree():
 		return
 	var pickup: ComponentPickup = load("res://scenes/items/component_pickup.tscn").instantiate()
 	pickup.component_id = item.get_prototype().get_prototype_id()
 	pickup.rolled_item = item
 	pickup.set_meta("enemy_drop", enemy_id)
-	if first_drop:
-		pickup.set_meta("area_guarantee", true)
 	room.add_child(pickup)
 	pickup.global_position = death_position

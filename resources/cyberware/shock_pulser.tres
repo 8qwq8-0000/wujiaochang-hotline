@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="CyberwareData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/player/cyberware_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+module_id = &"shock_pulser"
+display_name = "冲击脉冲器"
+description = "使附近敌人失衡 0.35 秒；信号攻击条数每翻倍，冲击范围增加 16 像素，攻击条数加成最高 80 像素。"
+target_scope = Array[StringName]([])
+circuit_kind = 2
+grade = 1
+circuit_energy_cost = 16.0
+circuit_tags = PackedStringArray("脉冲", "控制")
+trigger_cooldown = 8.0
+overheat_pulse_radius = 64.0
+overheat_pulse_stagger_seconds = 0.35

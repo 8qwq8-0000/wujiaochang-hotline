@@ -6,7 +6,12 @@
 script = ExtResource("1")
 module_id = &"arc_ballistic_cortex"
 display_name = "电弧弹道皮层"
-description = "弹丸、散射、激光与近战命中时麻痹主目标并向 64 像素内最多 2 名未命中过的敌人放电；每次攻击不会重复目标，麻痹 0.2 秒且电弧不造成伤害，无冷却。"
+description = "本轮每次攻击首次命中时连锁两名敌人。"
+target_scope = Array[StringName]([&"weapon_call"])
+grade = 2
+circuit_kind = 1
+circuit_energy_cost = 22.0
+circuit_tags = PackedStringArray("电弧")
 trigger_cooldown = 0.0
 arc_chain_radius = 64.0
 arc_paralysis_seconds = 0.2

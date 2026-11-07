@@ -12,7 +12,10 @@ func _ready() -> void:
 
 func refresh() -> void:
 	var station := get_parent() as PowerBox
-	active = station.state == PowerBox.State.READY and station.scope_room().get("cleared") != true
+	active = (
+		(station.is_circuit_terminal() and station.scope_room().get("cleared") == true and station.state in [PowerBox.State.READY, PowerBox.State.CLAIMED])
+		or (station.state == PowerBox.State.READY and station.scope_room().get("cleared") != true)
+	)
 	visible = active
 	queue_redraw()
 

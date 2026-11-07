@@ -66,7 +66,7 @@ func set_enabled(value: bool) -> void:
 	_update_art()
 	var label := get_node_or_null("Label") as Label
 	if label != null:
-		label.text = "出口可用" if value else "清除必杀目标"
+		label.text = "出口可用" if value else "清场后开放"
 
 
 func can_interact(actor: Node2D) -> bool:

@@ -22,6 +22,7 @@ var _cancelled := false
 var _scripted_destination := Vector2.ZERO
 var _scripted := false
 var _damage_signal_emitted := false
+var hunt_invulnerable := false
 
 
 func tick(
@@ -54,6 +55,7 @@ func start_dash(
 	var heading := input_vector if not input_vector.is_zero_approx() else facing
 	_direction = heading.normalized() if not heading.is_zero_approx() else Vector2.RIGHT
 	_active_remaining = config.dash_duration
+	hunt_invulnerable = effect_kind == &"ninja_hunt"
 	cooldown_remaining = config.dash_cooldown
 	_hits.clear()
 	_cancelled = false
@@ -77,6 +79,7 @@ func start_scripted_dash(body: CharacterBody2D, destination: Vector2, effect_kin
 	_hits.clear()
 	_cancelled = false
 	_damage_signal_emitted = false
+	hunt_invulnerable = false
 	active_effect_kind = effect_kind
 	body.velocity = _direction * config.dash_speed * (1.0 + equipment_speed_bonus)
 	dash_started.emit(_direction)
@@ -103,6 +106,7 @@ func reset_transient_state() -> void:
 	_cancelled = false
 	_scripted = false
 	_damage_signal_emitted = false
+	hunt_invulnerable = false
 
 
 func is_dashing() -> bool:
@@ -117,6 +121,8 @@ func refresh_cooldown() -> void:
 func provides_invulnerability() -> bool:
 	if not is_dashing():
 		return false
+	if hunt_invulnerable:
+		return true
 	var elapsed := config.dash_duration - _active_remaining
 	return elapsed < config.invulnerability_seconds - 0.000001
 
@@ -166,6 +172,7 @@ func _finish_dash() -> void:
 	_scripted = false
 	_damage_signal_emitted = false
 	dash_ended.emit(cancelled)
+	hunt_invulnerable = false
 	_direction = Vector2.ZERO
 	active_effect_kind = &"dash"
 

@@ -9,7 +9,7 @@ func suite_name() -> String:
 func test_theme_uses_confirmed_palette_and_font() -> void:
 	var theme := CyberUITheme.create_theme()
 	assert_true(theme.default_font != null)
-	assert_eq(theme.default_font_size, 12)
+	assert_eq(theme.default_font_size, 13)
 	assert_eq(theme.get_color(&"font_color", &"Label"), CyberUITheme.PHOSPHOR)
 	assert_eq(theme.get_color(&"font_color", &"TerminalWarningLabel"), CyberUITheme.WARNING)
 	assert_eq(theme.get_color(&"font_color", &"TerminalDangerLabel"), CyberUITheme.DANGER)

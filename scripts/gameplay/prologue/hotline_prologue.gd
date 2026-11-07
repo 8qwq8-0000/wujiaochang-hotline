@@ -57,10 +57,6 @@ var _hit_flash := 0.0
 var _dialogue_queue: Array[Dictionary] = []
 var _dialogue_remaining := 0.0
 var _owns_dialogue_pause := false
-var _heat_tip: Label
-var _heat_tip_remaining := 0.0
-var _warned_high_heat := false
-var _warned_overheat := false
 var show_combat_hud := false
 var _hud_process_mode := Node.PROCESS_MODE_INHERIT
 var _hud: CanvasLayer
@@ -108,8 +104,6 @@ func _ready() -> void:
 	player.inventory.set("_has_picked_up_weapon", true)
 	player.inventory._apply_equipment()
 	player.inventory.panel.get("_overlay").visibility_changed.connect(_on_inventory_visibility)
-	player.heat.heat_changed.connect(_on_tutorial_heat_changed)
-	player.heat.overheated.connect(_on_tutorial_overheated)
 	player.health.fatal_damage_interceptor = _prevent_tutorial_death
 	player.health.damaged.connect(_on_player_damaged)
 	_hud = get_tree().current_scene.get_node_or_null("CombatHUD") as CanvasLayer
@@ -249,12 +243,6 @@ func _build_ui() -> void:
 	_dialogue = _label("", 13)
 	_dialogue.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(_dialogue)
-	_heat_tip = _label("", 11, AMBER)
-	_heat_tip.position = Vector2(14, 304)
-	_heat_tip.size = Vector2(380, 36)
-	_heat_tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_heat_tip.hide()
-	_layout.add_child(_heat_tip)
 	_boss_status = _label("", 12, AMBER)
 	_boss_status.position = Vector2(460, 47)
 	_layout.add_child(_boss_status)
@@ -350,7 +338,6 @@ func _set_step(value: Step) -> void:
 			_say("接线员", "这下有枪用了！按 Tab 打开背包，点一下刚捡的手枪就能装上，拖到武器槽也可以。装好再按 Tab 回来，我们一起试试。")
 		Step.SUPPLIES:
 			_clear_projectiles()
-			player.heat.reduce_heat(1000)
 			bomb = BOMB_SCENE.instantiate() as FuelBarrel
 			bomb.position = Vector2(880, 138)
 			add_child(bomb)
@@ -366,7 +353,7 @@ func _set_step(value: Step) -> void:
 				if index == 0:
 					enemy.health.fatal_damage_interceptor = _require_pistol_finish
 				enemy.defeated.connect(_on_wave_defeated.bind(["pistol", "smart_fire", "armor"][index]))
-			_say("接线员", "门开了！前面三个都在，试试刚装好的枪吧。鼠标瞄准，点左键开火。左上角的热量会随射击上涨，别一直打到过热。旁边那个炸药箱，现在也能派上用场了。")
+			_say("接线员", "门开了！试试刚装好的枪。鼠标瞄准，点左键启动回路，执行完才会发射。右下角能看到能量，旁边的炸药箱也能派上用场。")
 		Step.RECOVER:
 			_clear_targets()
 			_say("接线员", "打得不错！地上那把手枪，还有义体和防弹背心，都能带走。靠近按 E 收进背包吧，前面的 Codex 正好能帮我们处理这些装备。")
@@ -394,7 +381,7 @@ func _set_step(value: Step) -> void:
 			mini_boss.sprite.scale *= 1.35
 			targets.append(mini_boss)
 			_say("接线员", "合好了？接下来就是最后的中继守卫了。它有护盾和屏障，出手前会有预警。我们刚学的枪、盾反和冲刺都能用上。过了这里，就是仓库。")
-			_say("接线员", "入口还有个增益箱，这次是散热提升，会替换刚才的攻速增益。上边也有个炸药箱，找准机会再引爆吧。")
+			_say("接线员", "入口还有个增益箱，这次会加快能量恢复，并替换刚才的攻速增益。上边也有个炸药箱，找准机会再引爆吧。")
 		Step.TRANSFER:
 			_clear_targets()
 			_transfer_remaining = STEP_TRANSITION_SECONDS
@@ -610,26 +597,6 @@ func _continue_radio() -> void:
 			_next_dialogue()
 
 
-func _on_tutorial_heat_changed(current: float, maximum: float) -> void:
-	if step not in [Step.WAVE, Step.MINI_BOSS] or _warned_high_heat or current < maximum * 0.7:
-		return
-	_warned_high_heat = true
-	_show_heat_tip("枪有点烫了，换个位置，给它一点散热的时间。")
-
-
-func _on_tutorial_overheated() -> void:
-	if step not in [Step.WAVE, Step.MINI_BOSS] or _warned_overheat:
-		return
-	_warned_overheat = true
-	_show_heat_tip("过热了，先躲一躲。热量降下来就能继续开火。")
-
-
-func _show_heat_tip(text: String) -> void:
-	_heat_tip.text = text
-	_heat_tip_remaining = 5.0
-	_heat_tip.show()
-
-
 func _spawn_enemy(point: Vector2, ranged: bool) -> EnemyController:
 	var enemy := ENEMY.instantiate() as EnemyController
 	# Retain production behavior; slow only this tutorial's copied resources.
@@ -667,9 +634,6 @@ func _process(delta: float) -> void:
 	_tick_skip(delta)
 	if _leaving:
 		return
-	if not get_tree().paused:
-		_heat_tip_remaining = maxf(0.0, _heat_tip_remaining - delta)
-	_heat_tip.visible = _heat_tip_remaining > 0.0 and step in [Step.WAVE, Step.MINI_BOSS]
 	_line_age += delta
 	_dialogue.visible_characters = mini(_dialogue.get_total_character_count(), int(_line_age * 42.0))
 	_intro_continue.disabled = step == Step.BRIEFING and _line_age < 1.0

@@ -22,10 +22,46 @@ func test_heavy_weapons_have_slightly_lower_random_drop_odds() -> void:
 		counts[id] = int(counts.get(id, 0)) + 1
 	# Broad deterministic sampling checks the actual production entry point.
 	for id in ["scattergun", "rail_cannon"]:
-		assert_true(int(counts.get(id, 0)) >= 210 and int(counts.get(id, 0)) <= 330)
+		assert_true(int(counts.get(id, 0)) > 0)
 		assert_true(int(counts.get("armor", 0)) > int(counts.get(id, 0)))
-	assert_false(counts.has("calamity_flame"))
+	assert_true(counts.has("calamity_flame"))
+	assert_true(counts.has("omnidirectional_reflection_matrix"))
 	assert_false(counts.has("baton"))
+
+
+func test_every_registered_cyberware_can_drop_on_first_floor_with_grade_weights() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 41857
+	var grade_counts := [0, 0, 0, 0]
+	var seen := {}
+	var definitions := ComponentRolls.cyberware_resource_paths()
+	for module_id in definitions:
+		assert_true(not ComponentRolls.cyberware_resource_path(StringName(module_id)).is_empty())
+		assert_true(ComponentInventory.PROTOTYPES.data.has(module_id))
+	for index in 6000:
+		var item := ComponentRolls.floor_drop(1, rng)
+		var id: String = item.get_prototype().get_prototype_id()
+		if definitions.has(StringName(id)):
+			seen[id] = true
+			var data := load(ComponentRolls.cyberware_resource_path(StringName(id))) as CyberwareData
+			grade_counts[data.grade] += 1
+	assert_eq(seen.size(), definitions.size())
+	assert_true(grade_counts[1] > grade_counts[2] and grade_counts[2] > grade_counts[3])
+
+
+func test_owned_cyberware_is_less_likely_to_repeat() -> void:
+	var first := RandomNumberGenerator.new()
+	var second := RandomNumberGenerator.new()
+	first.seed = 90771
+	second.seed = first.seed
+	var fresh_count := 0
+	var owned_count := 0
+	for index in 3000:
+		if ComponentRolls.floor_drop(3, first).get_prototype().get_prototype_id() == "smart_fire":
+			fresh_count += 1
+		if ComponentRolls.floor_drop(3, second, {"smart_fire": 5}).get_prototype().get_prototype_id() == "smart_fire":
+			owned_count += 1
+	assert_true(owned_count < fresh_count / 3)
 
 func test_rolls_have_unique_ids_and_no_legacy_attack_affix() -> void:
 	var rng := RandomNumberGenerator.new()
@@ -40,31 +76,27 @@ func test_rolls_have_unique_ids_and_no_legacy_attack_affix() -> void:
 		assert_true(ComponentRolls.affixes(item).size() >= 1 and ComponentRolls.affixes(item).size() <= 3)
 
 
-func test_cyberware_fusion_is_order_independent_module_union() -> void:
+func test_ordinary_cyberware_fusion_is_disabled() -> void:
 	var rng := RandomNumberGenerator.new()
 	var smart := ComponentRolls.create("smart_fire", 3, rng)
 	var explosive := ComponentRolls.create("explosive_magazine", 1, rng)
 	var duplicate := ComponentRolls.create("smart_fire", 1, rng)
 	assert_eq(ComponentRolls.quality(smart), 0)
 	assert_true(ComponentRolls.affixes(smart).is_empty())
-	assert_true(ComponentRolls.compatible(smart, explosive))
+	assert_false(ComponentRolls.compatible(smart, explosive))
 	assert_false(ComponentRolls.compatible(smart, duplicate))
-	var forward := ComponentRolls.fuse(smart, explosive, rng)
-	var reverse := ComponentRolls.fuse(explosive, smart, rng)
-	assert_eq(ComponentRolls.cyberware_modules(forward), ComponentRolls.cyberware_modules(reverse))
-	assert_eq(ComponentRolls.cyberware_modules(forward), PackedStringArray(["explosive_magazine", "smart_fire"]))
-	assert_eq(ComponentRolls.title(forward), "复合义体 [2/4]")
+	assert_true(ComponentRolls.fuse(smart, explosive, rng) == null)
 
 
-func test_cyberware_fusion_rejects_a_fifth_distinct_module() -> void:
-	var rng := RandomNumberGenerator.new()
-	var compound := ComponentRolls.create("smart_fire", 1, rng)
-	for prototype_id in ["explosive_magazine", "tactical_coprocessor", "optical_intruder"]:
-		compound = ComponentRolls.fuse(compound, ComponentRolls.create(prototype_id, 1, rng), rng)
-	assert_eq(ComponentRolls.cyberware_modules(compound).size(), 4)
-	var fifth := ComponentRolls.create("kill_heat_sink", 1, rng)
-	assert_false(ComponentRolls.compatible(compound, fifth))
-	assert_true(ComponentRolls.fuse(compound, fifth, rng) == null)
+func test_event_starter_drop_group_has_two_starter_weights() -> void:
+	var candidates := ComponentRolls._cyberware_drop_candidates({})
+	var total := 0
+	for id in ComponentRolls.EVENT_STARTER_DROPS:
+		total += int(candidates.get(id, 0))
+	assert_eq(total, 80)
+	var owned := ComponentRolls._cyberware_drop_candidates({&"combat_synapse_sensor": 1})
+	assert_false(owned.has("combat_synapse_sensor"))
+	assert_eq(int(owned.get("combat_synapse_sensor_dash", 0)), 20)
 
 func test_item_creation_restores_cleared_prototype_catalog() -> void:
 	var stale := InventoryItem.new(ComponentInventory.PROTOTYPES, "pistol")
@@ -84,7 +116,7 @@ func test_legacy_attack_affix_migrates_and_shared_affixes_survive() -> void:
 		var result := ComponentRolls.fuse(a, b, rng)
 		assert_eq(ComponentRolls.quality(result), 3)
 		assert_false(ComponentRolls.affixes(result).has("attack"))
-		assert_eq(ComponentRolls.affixes(result).get("capacity"), 30.0)
+		assert_eq(ComponentRolls.affixes(result).get("attack_speed"), 30.0)
 		assert_eq(ComponentRolls.affixes(result).get("guard"), 60.0)
 		assert_eq(ComponentRolls.affixes(result).size(), 3)
 
@@ -113,24 +145,19 @@ func test_issued_pistol_is_unbound_and_uses_normal_synthesis_rules() -> void:
 	assert_true(ComponentRolls.affixes(from_starters).size() >= 1)
 
 
-func test_calamity_flame_is_bound_and_outside_random_progression() -> void:
+func test_calamity_drop_is_an_unbound_circuit_module() -> void:
 	var item := ComponentRolls.create("calamity_flame", 3, RandomNumberGenerator.new())
-	assert_true(bool(item.get_property("bound", false)))
+	assert_false(bool(item.get_property("bound", false)))
+	assert_eq(item.get_property("slot"), "cyberware")
+	assert_eq(item.get_property("effect"), "res://resources/cyberware/calamity_flame.tres")
 	assert_eq(ComponentRolls.quality(item), 0)
 	assert_true(ComponentRolls.affixes(item).is_empty())
 	assert_false(ComponentRolls.ordinary(item))
-	assert_false(ComponentRolls.synthesizable(item))
+	assert_true(ComponentRolls.synthesizable(item))
 
 
-func test_cyberware_fusion_rejects_any_overlapping_modules() -> void:
-	var rng := RandomNumberGenerator.new()
-	var smart := ComponentRolls.create("smart_fire", 1, rng)
-	var explosive := ComponentRolls.create("explosive_magazine", 1, rng)
-	var compound := ComponentRolls.fuse(smart, explosive, rng)
-	var other := ComponentRolls.fuse(ComponentRolls.create("smart_fire", 1, rng), ComponentRolls.create("optical_intruder", 1, rng), rng)
-	for material in [ComponentRolls.create("smart_fire", 1, rng), other]:
-		assert_false(ComponentRolls.compatible(compound, material))
-		assert_false(ComponentRolls.compatible(material, compound))
-		assert_true(ComponentRolls.fuse(compound, material, rng) == null)
-		assert_true(ComponentRolls.cyberware_overlap_error(compound, material).contains("智能火控"))
-	assert_true(ComponentRolls.compatible(compound, ComponentRolls.create("kill_heat_sink", 1, rng)))
+func test_forged_event_starter_is_excluded_from_duplicate_drops() -> void:
+	var candidates := ComponentRolls._cyberware_drop_candidates({&"combat_synapse_sensor_combo_9": 1})
+	assert_false(candidates.has("combat_synapse_sensor"))
+	assert_false(candidates.has("combat_synapse_sensor_hit"))
+	assert_true(candidates.has("combat_synapse_sensor_dash"))

@@ -70,7 +70,7 @@ func update_status(core: TalentCoreController, state: Dictionary, alive: bool) -
 			_add_tag(tags, core, &"gaze", "凝视", bool(state.get("gaze_active", false)))
 			_add_tag(tags, core, &"ceaseless_hunt", "追猎", bool(state.get("chase_active", false)))
 			_add_tag(tags, core, &"read_opening", "识隙", false)
-			_add_tag(tags, core, &"borrowed_step", "借步", false)
+			_add_tag(tags, core, &"borrowed_step", "迫影先机", false)
 		TalentCoreController.LEGENDARY_MASTER:
 			var samples := int(state.get("analysis_samples", 0))
 			var required := int(state.get("analysis_required", 2))
@@ -94,12 +94,11 @@ func update_status(core: TalentCoreController, state: Dictionary, alive: bool) -
 			_meter.maximum = 100
 			_meter.value = feedback
 			_meter.mouse_filter = Control.MOUSE_FILTER_PASS
-			_meter.tooltip_text = "移速 +%d%%\n散热 +%d%%\n攻速 +%d%%" % [
+			_meter.tooltip_text = "移速 +%d%%\n攻速 +%d%%" % [
 				floori(float(state.get("rock_move_bonus_percent", 0.0)) + 0.501),
-				floori(float(state.get("rock_cooling_bonus_percent", 0.0)) + 0.501),
 				floori(float(state.get("rock_attack_speed_bonus_percent", 0.0)) + 0.501),
 			]
-			_add_tag(tags, core, &"seamless_switch", "无缝换台", bool(state.get("seamless_free_attack", false)))
+			_add_tag(tags, core, &"seamless_switch", "无缝连奏", bool(state.get("seamless_free_attack", false)))
 			_add_tag(tags, core, &"encore_autopilot", "核武器", float(state.get("encore_remaining", 0)) > 0)
 			_add_tag(tags, core, &"distortion_gain", "破音增益", bool(state.get("distortion_active", false)))
 			_add_tag(tags, core, &"steady_beat", "稳定拍点", false)

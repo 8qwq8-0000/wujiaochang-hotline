@@ -76,14 +76,12 @@ func run_checks() -> void:
 	# The merged control panel must expose the main branch's advanced modules,
 	# and granting them must still use the real inventory with isolated saves.
 	for advanced_id in ["momentum_recovery_tendon", "trajectory_echo_processor", "ballistic_takeover_protocol", "arc_ballistic_cortex", "inertial_inversion_vertebra", "axon_recycler", "micro_rotor_reflex_bundle", "predatory_vestibular_ring"]:
+		var module_id := StringName(advanced_id)
+		var circuit: CyberwareCircuitState = warehouse.player.cyberware.circuit
+		var previous_count := int(circuit.get_library_counts().get(module_id, 0))
 		check(advanced_id in tools._item_ids and tools.grant_item(advanced_id), "F8 grants advanced cyberware %s" % advanced_id)
-		var granted: InventoryItem
-		for item in warehouse.player.inventory.backpack.get_items():
-			if item.get_prototype().get_prototype_id() == advanced_id:
-				granted = item
-		check(granted != null and granted.get_texture() != null and advanced_id in ComponentRolls.cyberware_modules(granted), "advanced module retains image and effect %s" % advanced_id)
-		if granted != null:
-			warehouse.player.inventory.backpack.remove_item(granted)
+		var prototype := ComponentRolls.make_item(advanced_id)
+		check(prototype != null and prototype.get_texture() != null and int(circuit.get_library_counts().get(module_id, 0)) == previous_count + 1, "advanced module retains image and enters circuit library %s" % advanced_id)
 	check(not tools.grant_item("unknown", 1), "unknown item rejected")
 	check(not tools.grant_item("circuit_breaker", 1), "duplicate insurance core rejected")
 	for index in 6:
@@ -101,6 +99,12 @@ func run_checks() -> void:
 	check(before_bad == warehouse.player.talent_core.export_state(), "invalid build has no partial mutations")
 	check(warehouse.save_loadout(), "test warehouse autosave succeeds in memory")
 	check(FileAccess.get_file_as_bytes(SAVE) == original_bytes, "test equipment and talents do not touch disk")
+	check(await tools.jump_to(-2), "dedicated cyberware circuit lab jump works")
+	var circuit_lab := await wait_room()
+	check(circuit_lab != null and circuit_lab.scene_file_path == "res://scenes/debug/cyberware_circuit_lab.tscn", "test flow loads the circuit lab inside the persistent gameplay host")
+	check(circuit_lab.get_node("Player").cyberware.circuit.get_library_counts().size() == 9, "real test-mode jump grants the first-playable circuit library")
+	check(await tools.jump_to(-1), "circuit lab can return to the test warehouse")
+	warehouse = await wait_room()
 	for index in 3:
 		check(await tools.jump_to(index), "direct jump reaches floor %d" % (index + 1))
 		var floor := await wait_room()

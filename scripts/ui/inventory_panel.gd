@@ -9,7 +9,6 @@ var _message: Label
 var _buttons: Array[Button] = []
 var _weapon: Button
 var _secondary: Button
-var _cyberware: Button
 var _defense: Button
 var _discard_menu: PopupMenu
 var _discard_target: InventoryItem
@@ -27,22 +26,22 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_overlay = Control.new()
 	_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_overlay.theme = CyberUITheme.create_os_theme()
 	add_child(_overlay)
 	_overlay.add_theme_font_size_override("font_size", 13)
 	var shade := ColorRect.new()
-	shade.color = Color(0.02, 0.03, 0.06, 0.8)
+	shade.color = Color("171d20cc")
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_overlay.add_child(shade)
 	var panel := Panel.new()
 	_panel = panel
 	panel.clip_contents = true
 	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color("152233")
-	panel_style.border_color = Color("49718f")
-	panel_style.set_border_width_all(2)
-	panel_style.set_corner_radius_all(8)
+	panel_style.bg_color = Color("20262a")
+	panel_style.set_border_width_all(0)
 	panel.add_theme_stylebox_override("panel", panel_style)
 	_overlay.add_child(panel)
+	CyberUITheme.add_os_frame(panel)
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	for side in ["left", "right", "top", "bottom"]:
@@ -88,14 +87,12 @@ func _ready() -> void:
 	body.add_child(equipment)
 	_weapon = _make_slot(equipment, "weapon")
 	_secondary = _make_slot(equipment, "weapon_secondary")
-	_cyberware = _make_slot(equipment, "cyberware")
 	_defense = _make_slot(equipment, "defense")
 	_blackbox = _make_slot(equipment, "blackbox")
 	# Click shortcuts remain available; dragging explicitly chooses the target slot.
 	_weapon.pressed.connect(func() -> void: inventory.unequip("weapon"))
 	_secondary.pressed.connect(func() -> void: inventory.unequip("weapon_secondary"))
 	_defense.pressed.connect(func() -> void: inventory.unequip("defense"))
-	_cyberware.pressed.connect(func() -> void: inventory.unequip("cyberware"))
 	_blackbox.pressed.connect(func() -> void: inventory.take_from_blackbox())
 	var separator := HSeparator.new()
 	body.add_child(separator)
@@ -163,7 +160,7 @@ func _input(event: InputEvent) -> void:
 		if not _swiping and absf(distance) > 18.0:
 			_swiping = true
 			# A swipe cancels the slot tap/long-press before GUI dispatch.
-			for slot in _buttons + [_weapon, _secondary, _cyberware, _defense, _blackbox]:
+			for slot in _buttons + [_weapon, _secondary, _defense, _blackbox]:
 				slot._reset_touch_hold()
 		if _swiping:
 			_scroll.scroll_vertical = _scroll_start - int(distance)
@@ -177,7 +174,7 @@ func _finish_touch_drop(point: Vector2, canceled: bool) -> void:
 		if _trash_zone.get_global_rect().has_point(point):
 			target = _trash_zone
 		elif _scroll.get_global_rect().has_point(point):
-			for slot in _buttons + [_weapon, _secondary, _cyberware, _defense, _blackbox]:
+			for slot in _buttons + [_weapon, _secondary, _defense, _blackbox]:
 				if slot.get_global_rect().has_point(point):
 					target = slot
 					break
@@ -224,11 +221,11 @@ func set_open(value: bool) -> void:
 		_fit_panel()
 		call_deferred("_fit_panel")
 		_scroll.scroll_vertical = 0
-		_message.text = "上下滑动查看装备；点按换装，长按拖到槽位或下方丢弃区。"
+		_message.text = "上下滑动查看装备；义体会直接进入独立回路库，按 C 编辑。"
 		refresh()
 	else:
 		_close_button.release_focus()
-		for button in _buttons + [_weapon, _secondary, _cyberware, _defense, _blackbox]:
+		for button in _buttons + [_weapon, _secondary, _defense, _blackbox]:
 			button.release_focus()
 
 func _process(_delta: float) -> void:
@@ -250,7 +247,7 @@ func refresh() -> void:
 		if inventory.is_channel_core(item):
 			_buttons[index].tooltip_text = "残损频道核心\n第二结局前置道具，固定占用第一格，不可丢弃、移动或存入黑匣。\n携带期间：生命上限 1、移速 -15%、突进冷却 +40%、散热 -30%。"
 		# Empty cells stay enabled so Godot can deliver drops to them.
-	for entry in [{"button": _weapon, "location": "weapon", "title": "主武器"}, {"button": _secondary, "location": "weapon_secondary", "title": "副武器"}, {"button": _cyberware, "location": "cyberware", "title": "义体槽"}, {"button": _defense, "location": "defense", "title": "防御槽"}, {"button": _blackbox, "location": "blackbox", "title": "黑匣"}]:
+	for entry in [{"button": _weapon, "location": "weapon", "title": "主武器"}, {"button": _secondary, "location": "weapon_secondary", "title": "副武器"}, {"button": _defense, "location": "defense", "title": "防御槽"}, {"button": _blackbox, "location": "blackbox", "title": "黑匣"}]:
 		var item := inventory.item_at(entry.location)
 		var name := ComponentRolls.title(item).replace("（绑定）", "") if item != null else "空位（可拖入）"
 		if entry.location == "blackbox" and item != null:

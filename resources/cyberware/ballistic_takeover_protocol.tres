@@ -6,7 +6,12 @@
 script = ExtResource("1")
 module_id = &"ballistic_takeover_protocol"
 display_name = "弹道接管协议"
-description = "可反射的无范围敌方弹丸进入 28 像素内时，接管并制导至 220 像素内最近敌人；清除状态效果，成功后冷却 6 秒。"
+description = "接管附近最近的敌方弹丸并制导；当前攻击条数越多，搜索范围越大。"
+target_scope = Array[StringName]([])
+circuit_kind = 2
+grade = 2
+circuit_energy_cost = 20.0
+circuit_tags = PackedStringArray("接管")
 trigger_cooldown = 6.0
 takeover_radius = 28.0
 takeover_target_radius = 220.0

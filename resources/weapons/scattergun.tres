@@ -12,6 +12,7 @@ attack_kind = 2
 damage = 1
 cooldown = 0.90
 heat_per_attack = 25.0
+feedback_gain = 25.0
 attack_range = 300.0
 projectile_speed = 430.0
 projectile_count = 5

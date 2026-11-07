@@ -71,9 +71,6 @@ func _ready() -> void:
 func receive_scene_payload(payload: Dictionary) -> void:
 	if payload.has("player_state"):
 		player.import_run_state(payload.player_state)
-	if payload.has("transit_heat"):
-		player.heat.set_heat(float(payload.transit_heat.get("current", 0.0)))
-		player.heat.is_overheated = bool(payload.transit_heat.get("overheated", false))
 
 func talk_to_codex() -> void:
 	if departing or player.inventory.is_open or upgrade_panel.is_open or safe_storage.panel.is_open or player.health.is_dead():
@@ -109,7 +106,7 @@ func synthesize(subject: InventoryItem, material: InventoryItem) -> bool:
 		return false
 	if not owns_synthesis_item(subject) or not owns_synthesis_item(material) or not ComponentRolls.compatible(subject, material):
 		var overlap_error := ComponentRolls.cyberware_overlap_error(subject, material)
-		upgrade_panel.show_message(overlap_error if not overlap_error.is_empty() else "请选择两件兼容组件；复合义体最多四种不同模块")
+		upgrade_panel.show_message(overlap_error if not overlap_error.is_empty() else "请选择两件兼容装备；事件义体请用下方兼并功能")
 		return false
 	var inv: ComponentInventory = player.inventory
 	var location := inv.item_location(subject)
@@ -138,6 +135,19 @@ func synthesize(subject: InventoryItem, material: InventoryItem) -> bool:
 	upgrade_panel.refresh()
 	return true
 
+
+func synthesize_event_starters(subject_id: StringName, material_id: StringName) -> bool:
+	if not dialogue_completed or departing or _mutating or player.health.is_dead():
+		return false
+	_mutating = true
+	var merged := player.cyberware.merge_event_starters(subject_id, material_id)
+	if merged:
+		run.set_player_state(player.export_run_state())
+	_mutating = false
+	upgrade_panel.show_message("事件启动器已兼并。" if merged else "请选择两件监听事件不同的启动器。")
+	upgrade_panel.refresh()
+	return merged
+
 func depart() -> bool:
 	if departing or get_tree().paused or player.health.is_dead():
 		return false
@@ -148,7 +158,7 @@ func depart() -> bool:
 	if flow == null:
 		return false
 	var snapshot := player.export_run_state()
-	var payload := {"player_state": snapshot, "transit_heat": {"current": player.heat.current_heat, "overheated": player.heat.is_overheated}}
+	var payload := {"player_state": snapshot}
 	if not flow.request_scene(FLOOR_PATH, payload):
 		$Status.text = "暂时无法进入第三层，请重试"
 		return false

@@ -55,13 +55,14 @@ func _ready() -> void:
 	layer = 97
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_overlay = ColorRect.new()
-	_overlay.color = Color("050a11f7")
+	_overlay.color = Color("20262af7")
 	_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_overlay.theme = CyberUITheme.create_theme()
+	_overlay.theme = CyberUITheme.create_os_theme()
 	add_child(_overlay)
 	_canvas = Control.new()
+	_canvas.size = Vector2(640, 360)
 	_overlay.add_child(_canvas)
-	_box(Rect2(18, 16, 604, 328), Color("101b28"), Color("344454"))
+	CyberUITheme.add_os_frame(_canvas)
 	_line(Rect2(18, 16, 4, 38), GOLD)
 	_text("ARCHIVE  /  行动档案", Rect2(32, 25, 400, 16), 9, GOLD)
 	_heading = _text("通关记录", Rect2(31, 42, 360, 32), 25, Color("eef2ed"))
@@ -328,9 +329,9 @@ func _show_entry() -> void:
 			var id: String = PERSONA_NAMES.keys()[_selected]
 			var unlocked: bool = id in codex.get("personas", [])
 			_entry_title.text = PERSONA_NAMES[id] if unlocked else "未解锁"
-			_entry_tag.text = "人格档案 / %02d" % (_selected + 1)
+			_entry_tag.text = ""
 			if not unlocked:
-				_content.text = "尚未收录此人格。\n将人格带出行动后，资料会在这里留存。"
+				_content.text = "带该人格通关后解锁。"
 				return
 			_show_bottle(id)
 			var descriptions := {
@@ -344,9 +345,9 @@ func _show_entry() -> void:
 			var entry: Dictionary = EnemyCatalog.ENTRIES[_selected]
 			var unlocked: bool = entry.id in codex.get("enemies", [])
 			_entry_title.text = entry.name if unlocked else "未解锁"
-			_entry_tag.text = entry.tag if unlocked else "敌人档案 / %02d" % (_selected + 1)
+			_entry_tag.text = entry.tag if unlocked else ""
 			if not unlocked:
-				_content.text = "[color=#899cae]尚无遭遇记录[/color]\n\n在行动中遇到该敌人后解锁。"
+				_content.text = "首次遭遇后解锁。"
 				return
 			_portrait.texture = EnemyCatalog.portrait(entry)
 			_portrait_mark.hide()

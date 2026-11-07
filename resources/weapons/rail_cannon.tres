@@ -12,6 +12,7 @@ attack_kind = 3
 damage = 3
 cooldown = 1.10
 heat_per_attack = 35.0
+feedback_gain = 35.0
 attack_range = 1000.0
 beam_width = 48.0
 beam_wall_penetration_distance = 160.0

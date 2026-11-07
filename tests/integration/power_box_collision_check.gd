@@ -34,6 +34,7 @@ func run_checks() -> void:
 	var target := box.global_position + Vector2(0, 12)
 	for claimed in [false, true]:
 		if claimed:
+			room.cleared = true
 			player.global_position = box.global_position + Vector2(40, 0)
 			await settle()
 			box.interact(player)

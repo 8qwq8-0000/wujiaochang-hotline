@@ -15,6 +15,7 @@ signal player_died(packet: DamagePacket)
 
 const DEFAULT_CONFIG := preload("res://resources/player/default_player_config.tres")
 const AFTERIMAGE_INTERVAL := 0.05
+const WORLD_AFTERIMAGE_INTERVAL := 0.13
 const MOVEMENT_NOISE_INTERVAL := 0.35
 const MOBILITY_BURST_NOISE_RADIUS := 220.0
 const INPUT_BUFFER_SECONDS := 0.12
@@ -75,13 +76,10 @@ func _ready() -> void:
 	hurt_box.damage_invulnerability_seconds = config.damage_invulnerability_seconds
 	weapons.configure(config.default_weapon, config.debug_loadout_enabled)
 	visuals.set_weapon(weapons.get_current_weapon())
-	guard.heat_refund_requested.connect(heat.reduce_heat)
+	heat.set_physics_process(false)
 	guard.state_changed.connect(_on_guard_state_changed)
 	health.health_changed.connect(_on_health_changed)
 	health.died.connect(_on_died)
-	heat.heat_changed.connect(_on_heat_changed)
-	heat.overheated.connect(_on_overheated)
-	heat.recovered.connect(_on_heat_recovered)
 	weapons.weapon_changed.connect(_on_weapon_changed)
 	weapons.attack_performed.connect(_on_attack_performed)
 	dash.dash_started.connect(_on_dash_started)
@@ -105,21 +103,27 @@ func _process(_delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if _dead or not _input_enabled or inventory.is_open or event.is_echo():
 		return
+	if cyberware.is_world_stopped():
+		return
 	persona_combat.notify_player_input(event)
 	if event.is_action_pressed("attack"):
+		persona_combat.cancel_hunt_followups()
 		_attack_pressed = true
 		_attack_held = true
-		_attack_buffer_remaining = INPUT_BUFFER_SECONDS
+		_attack_buffer_remaining = 0.2 if persona_combat.has_stable_beat() else INPUT_BUFFER_SECONDS
 	if event.is_action_released("attack"):
 		_attack_released = true
 		_attack_held = false
 		_attack_release_buffer_remaining = INPUT_BUFFER_SECONDS
 	if event.is_action_pressed("guard"):
+		persona_combat.cancel_hunt_followups()
 		_guard_buffer_remaining = INPUT_BUFFER_SECONDS
 	if event.is_action_pressed("mobility_ability"):
-		_dash_buffer_remaining = INPUT_BUFFER_SECONDS
+		_dash_buffer_remaining = 0.25 if persona_combat.has_hunt_chain() else INPUT_BUFFER_SECONDS
 	if InputMap.has_action("interact") and event.is_action_pressed("interact"):
 		interactor.request_interaction(self)
+	if InputMap.has_action("circuit_activate") and event.is_action_pressed("circuit_activate"):
+		cyberware.submit_circuit_request(&"active", aim_direction, PackedStringArray(["主动"]))
 	if event.is_action_pressed("weapon_switch") or event.is_action_pressed("weapon_next"):
 		weapons.cycle_weapon(1)
 	if event.is_action_pressed("weapon_previous"):
@@ -128,6 +132,17 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _physics_process(delta: float) -> void:
 	_update_aim_direction()
+	if cyberware.is_world_stopped():
+		var world_input := Input.get_vector("move_left", "move_right", "move_up", "move_down") if _input_enabled else Vector2.ZERO
+		velocity = world_input * dash.config.walk_speed
+		move_and_slide()
+		visuals.update_visual(aim_direction, velocity, guard.state, guard.guard_arc_degrees)
+		persona_combat.queue_redraw()
+		_afterimage_active_remaining = WORLD_AFTERIMAGE_INTERVAL + delta
+		if not world_input.is_zero_approx():
+			_tick_afterimages(delta, WORLD_AFTERIMAGE_INTERVAL)
+		_update_camera(delta)
+		return
 	_consume_buffered_defense_actions()
 	guard.update_direction(aim_direction)
 	if _dead:
@@ -142,7 +157,7 @@ func _physics_process(delta: float) -> void:
 	weapons.update_attack_pose(global_position, aim_direction, self)
 	# The muzzle must use this frame's aim before an attack is spawned.
 	visuals.update_visual(aim_direction, velocity, guard.state, guard.guard_arc_degrees, weapons.get_melee_swing_angle_offset(), _logical_aim_world_position())
-	if _input_enabled and guard.can_attack() and dash.can_attack() and _should_attack_this_frame():
+	if _input_enabled and (guard.can_attack() or persona_combat.can_attack_during_guard()) and dash.can_attack() and _should_attack_this_frame():
 		var attack := _get_attack_transform()
 		if weapons.try_attack(attack.origin, attack.x.normalized(), self):
 			_consume_attack_buffer()
@@ -198,7 +213,13 @@ func set_circuit_breaker_equipped(equipped: bool) -> void:
 
 
 func consume_persona_drink(persona_id: StringName) -> bool:
-	return talent_core.consume_persona_drink(persona_id)
+	if not talent_core.consume_persona_drink(persona_id):
+		return false
+	if cyberware.circuit.slot_capacity < CyberwareCircuitState.SLOT_COUNT:
+		cyberware.circuit.set_slot_capacity(cyberware.circuit.slot_capacity + 1)
+		cyberware.circuit.expand_capacity()
+		cyberware.circuit_changed.emit(cyberware.export_circuit_state())
+	return true
 
 
 func set_persona_talent(persona_id: StringName, tier: int, talent_id: StringName) -> bool:
@@ -240,6 +261,10 @@ func receive_damage(packet: DamagePacket) -> DamageResult:
 
 func try_persona_guard(packet: DamagePacket) -> bool:
 	return persona_combat.try_proxy_guard(packet)
+
+
+func try_cyberware_guard(packet: DamagePacket) -> DamageResult:
+	return cyberware.try_cyberware_guard(packet)
 
 
 func should_ignore_damage(packet: DamagePacket) -> bool:
@@ -335,6 +360,7 @@ func export_run_state() -> Dictionary:
 		"current_health": health.current_health,
 		"channel_curse": channel_curse_active,
 		"weapon_id": String(weapon.id) if weapon != null else "",
+		"cyberware_circuit": cyberware.export_circuit_state(),
 		"talent_core": talent_core.export_state(),
 		"circuit_breaker": circuit_breaker.export_state(),
 	}
@@ -344,6 +370,10 @@ func import_run_state(state: Dictionary) -> void:
 	apply_channel_curse(bool(state.get("channel_curse", false)))
 	if state.is_empty():
 		return
+	# Restore the independent circuit before inventory migration so any legacy
+	# cyberware found in the old bag/slot is merged instead of overwritten.
+	if state.has("cyberware_circuit") and state["cyberware_circuit"] is Dictionary:
+		cyberware.import_circuit_state(state["cyberware_circuit"])
 	if state.has("inventory") and state["inventory"] is Dictionary:
 		inventory.import_run_state(state["inventory"])
 	elif state.has("weapon_id"):
@@ -368,7 +398,7 @@ func import_run_state(state: Dictionary) -> void:
 		inventory.sync_insurance()
 	health.set_current_health(int(state.get("current_health", health.max_health)))
 	talent_core.sync_health(health.current_health)
-	reset_transient_state()
+	reset_transient_state(true)
 
 
 func export_recovery_state() -> Dictionary:
@@ -385,6 +415,13 @@ func export_settlement_state(preserve_inventory: bool) -> Dictionary:
 		state.inventory = inventory.export_settlement_inventory()
 	else:
 		state.inventory = inventory.export_recovery_inventory()
+	state.cyberware_circuit = {
+		"library": {},
+		"slots": [],
+		"slot_capacity": CyberwareCircuitState.INITIAL_SLOT_COUNT,
+		"current_energy": CyberwareCircuitState.DEFAULT_MAXIMUM_ENERGY,
+		"maximum_energy": CyberwareCircuitState.DEFAULT_MAXIMUM_ENERGY,
+	}
 	state["channel_curse"] = false
 	state.current_health = _channel_base_config.max_health if channel_curse_active else config.max_health
 	state.circuit_breaker.equipped = inventory.blackbox_slot.get_item() != null and inventory.blackbox_slot.get_item().get_property("slot", "") == "insurance"
@@ -401,7 +438,7 @@ func _has_persona_archive_content(archive: Dictionary) -> bool:
 	return not (archive.get("run_metrics", {}) as Dictionary).is_empty()
 
 
-func reset_transient_state() -> void:
+func reset_transient_state(preserve_circuit_queues: bool = false) -> void:
 	var room_buff := get_node_or_null("RoomBuffComponent")
 	if room_buff != null:
 		room_buff.clear()
@@ -410,7 +447,7 @@ func reset_transient_state() -> void:
 	statuses.clear_all()
 	guard.reset_to_idle()
 	dash.reset_transient_state()
-	cyberware.reset_transient_state()
+	cyberware.reset_transient_state(preserve_circuit_queues)
 	weapons.reset_transient_state()
 	persona_combat.reset_transient_state()
 	hurt_box.clear_invulnerability()
@@ -499,7 +536,7 @@ func _consume_buffered_defense_actions() -> void:
 		_guard_buffer_remaining = 0.0
 	if _dash_buffer_remaining > 0.0:
 		var movement := Input.get_vector("move_left", "move_right", "move_up", "move_down")
-		if dash.start_dash(self, aim_direction, movement):
+		if persona_combat.try_start_player_dash(movement):
 			_dash_buffer_remaining = 0.0
 
 
@@ -605,15 +642,20 @@ func _on_cyberware_triggered(module_id: StringName) -> void:
 
 
 func _on_guard_state_changed(state: GuardComponent.State) -> void:
+	if state == GuardComponent.State.STARTUP:
+		cyberware.submit_event_starters(4, guard.guard_direction, PackedStringArray(["格挡"]))
 	guard_state_changed.emit(state)
 
 
 func _on_attack_performed(_data: WeaponComponentData) -> void:
+	cyberware.on_weapon_attack_performed(aim_direction)
 	visuals.play_weapon_attack()
 	combat_feedback_requested.emit(&"attack", global_position)
 
 
 func _on_dash_started(direction: Vector2) -> void:
+	if persona_combat.should_submit_dash_event():
+		cyberware.submit_event_starters(2, direction, PackedStringArray(["突进"]))
 	_afterimage_active_remaining = dash.config.dash_duration
 	_afterimage_emit_remaining = 0.0
 	_movement_effect_last_position = global_position
@@ -660,14 +702,14 @@ func _publish_movement_noise(radius: float) -> void:
 		events.publish_movement_noise(self, global_position, radius)
 
 
-func _tick_afterimages(delta: float) -> void:
+func _tick_afterimages(delta: float, interval: float = AFTERIMAGE_INTERVAL) -> void:
 	if _afterimage_active_remaining <= 0.0 or _dead:
 		return
 	_afterimage_active_remaining = maxf(_afterimage_active_remaining - delta, 0.0)
 	_afterimage_emit_remaining -= delta
 	if _afterimage_emit_remaining > 0.0:
 		return
-	_afterimage_emit_remaining += AFTERIMAGE_INTERVAL
+	_afterimage_emit_remaining += interval
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null:
 		events.request_afterimage(self, visuals.body_sprite)
@@ -708,6 +750,7 @@ func _clear_afterimages() -> void:
 func _on_hit_resolved(result: DamageResult) -> void:
 	if result.final_damage <= 0:
 		return
+	persona_combat.cancel_hunt_followups()
 	visuals.play_hurt_flash()
 	combat_feedback_requested.emit(&"hurt", global_position)
 

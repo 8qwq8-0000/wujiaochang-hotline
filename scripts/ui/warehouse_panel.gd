@@ -21,14 +21,15 @@ func _ready() -> void:
 	layer = 95
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_overlay = ColorRect.new()
-	_overlay.color = Color("020b09f5")
-	_overlay.theme = CyberUITheme.create_theme()
-	_overlay.theme.set_stylebox("scroll", "VScrollBar", _box(Color("07120c"), Color("173b27"), 0))
-	_overlay.theme.set_stylebox("grabber", "VScrollBar", _box(Color("28553a"), Color("427957"), 0))
-	_overlay.theme.set_stylebox("grabber_highlight", "VScrollBar", _box(Color("427957"), CyberUITheme.PHOSPHOR, 0))
-	_overlay.theme.set_stylebox("grabber_pressed", "VScrollBar", _box(Color("568b60"), CyberUITheme.HIGHLIGHT, 0))
+	_overlay.color = Color("20262af5")
+	_overlay.theme = CyberUITheme.create_os_theme()
+	_overlay.theme.set_stylebox("scroll", "VScrollBar", _box(Color("20262a"), Color("4c5050"), 0))
+	_overlay.theme.set_stylebox("grabber", "VScrollBar", _box(Color("8f7658"), Color("e7ac62"), 0))
+	_overlay.theme.set_stylebox("grabber_highlight", "VScrollBar", _box(Color("b18b5e"), Color("e7ac62"), 0))
+	_overlay.theme.set_stylebox("grabber_pressed", "VScrollBar", _box(Color("e7ac62"), Color("e6e1d8"), 0))
 	_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_overlay)
+	CyberUITheme.add_os_frame(_overlay)
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	for side in ["left", "right", "top", "bottom"]:
@@ -38,7 +39,7 @@ func _ready() -> void:
 	column.add_theme_constant_override("separation", 7)
 	margin.add_child(column)
 	var header := PanelContainer.new()
-	header.add_theme_stylebox_override("panel", _box(Color("10271d"), CyberUITheme.DIM_GREEN, 8))
+	header.add_theme_stylebox_override("panel", _box(Color("252b30"), Color("8f7658"), 8))
 	column.add_child(header)
 	var heading := HBoxContainer.new()
 	header.add_child(heading)
@@ -58,7 +59,7 @@ func _ready() -> void:
 	column.add_child(status)
 	_count = _label(status, "", 12, CyberUITheme.HIGHLIGHT)
 	_count.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_bag_meter = _label(status, "", 10, CyberUITheme.PHOSPHOR)
+	_bag_meter = _label(status, "", 10, Color("e7ac62"))
 	var columns := HBoxContainer.new()
 	columns.add_theme_constant_override("separation", 10)
 	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -66,7 +67,7 @@ func _ready() -> void:
 	_bag_list = _make_list(columns, "01 / 随身装备", "点击存入  →  储物箱")
 	_chest_list = _make_list(columns, "02 / 安全储存", "已永久保存 · 回仓库取用" if deposit_only else "点击取出  →  背包")
 	var detail_panel := PanelContainer.new()
-	detail_panel.add_theme_stylebox_override("panel", _box(Color("0d2119"), CyberUITheme.DIM_GREEN, 6))
+	detail_panel.add_theme_stylebox_override("panel", _box(Color("252b30"), Color("8f7658"), 6))
 	column.add_child(detail_panel)
 	_detail = _label(detail_panel, "", 11, CyberUITheme.HIGHLIGHT)
 	_detail.custom_minimum_size.y = 29
@@ -93,7 +94,7 @@ func _label(parent: Node, text: String, size: int, color: Color) -> Label:
 func _make_list(parent: Control, title: String, hint: String) -> VBoxContainer:
 	var panel := TerminalPanel.new()
 	panel.title = title
-	panel.accent_color = Color("427957")
+	panel.accent_color = Color("e7ac62")
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.size_flags_stretch_ratio = 1.0
 	parent.add_child(panel)
@@ -114,7 +115,7 @@ func _make_list(parent: Control, title: String, hint: String) -> VBoxContainer:
 func _show_empty(parent: Control, title: String, hint: String) -> void:
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size.y = 85
-	panel.add_theme_stylebox_override("panel", _box(Color("0a1913"), Color("1c3b2a"), 10))
+	panel.add_theme_stylebox_override("panel", _box(Color("252b30"), Color("8f7658"), 10))
 	parent.add_child(panel)
 	var column := VBoxContainer.new()
 	column.alignment = BoxContainer.ALIGNMENT_CENTER

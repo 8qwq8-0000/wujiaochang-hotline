@@ -1,0 +1,85 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://scripts/debug/cyberware_circuit_lab.gd" id="1_lab"]
+[ext_resource type="PackedScene" path="res://scenes/actors/player/player.tscn" id="2_player"]
+[ext_resource type="Script" path="res://scripts/debug/cyberware_lab_dummy.gd" id="3_dummy"]
+[ext_resource type="Script" path="res://scripts/gameplay/combat/health_component.gd" id="4_health"]
+[ext_resource type="Script" path="res://scripts/gameplay/combat/hurt_box.gd" id="5_hurt"]
+[ext_resource type="Font" path="res://resources/ui/chinese_font_12.tres" id="6_font"]
+
+[sub_resource type="RectangleShape2D" id="WallHorizontal"]
+size = Vector2(640, 16)
+
+[sub_resource type="RectangleShape2D" id="WallVertical"]
+size = Vector2(16, 360)
+
+[sub_resource type="CircleShape2D" id="DummyShape"]
+radius = 16.0
+
+[node name="CyberwareCircuitLab" type="Node2D" groups=["combat_rooms"]]
+script = ExtResource("1_lab")
+
+[node name="Bounds" type="StaticBody2D" parent="."]
+collision_layer = 1
+collision_mask = 0
+
+[node name="Top" type="CollisionShape2D" parent="Bounds"]
+position = Vector2(320, -8)
+shape = SubResource("WallHorizontal")
+
+[node name="Bottom" type="CollisionShape2D" parent="Bounds"]
+position = Vector2(320, 368)
+shape = SubResource("WallHorizontal")
+
+[node name="Left" type="CollisionShape2D" parent="Bounds"]
+position = Vector2(-8, 180)
+shape = SubResource("WallVertical")
+
+[node name="Right" type="CollisionShape2D" parent="Bounds"]
+position = Vector2(648, 180)
+shape = SubResource("WallVertical")
+
+[node name="Player" parent="." instance=ExtResource("2_player")]
+position = Vector2(138, 205)
+
+[node name="InfiniteTarget" type="Node2D" parent="."]
+position = Vector2(392, 118)
+script = ExtResource("3_dummy")
+
+[node name="HealthComponent" type="Node" parent="InfiniteTarget"]
+script = ExtResource("4_health")
+max_health = 999
+
+[node name="HurtBox" type="Area2D" parent="InfiniteTarget"]
+collision_layer = 16
+collision_mask = 0
+monitoring = false
+monitorable = true
+script = ExtResource("5_hurt")
+faction = 2
+health_path = NodePath("../HealthComponent")
+actor_path = NodePath("..")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="InfiniteTarget/HurtBox"]
+shape = SubResource("DummyShape")
+
+[node name="LabUI" type="CanvasLayer" parent="."]
+layer = 18
+
+[node name="Controls" type="HBoxContainer" parent="LabUI"]
+offset_left = 116.0
+offset_top = 8.0
+offset_right = 524.0
+offset_bottom = 38.0
+theme_override_constants/separation = 6
+
+[node name="Status" type="Label" parent="LabUI"]
+offset_left = 112.0
+offset_top = 42.0
+offset_right = 528.0
+offset_bottom = 62.0
+theme_override_colors/font_color = Color(0.45, 1, 0.604, 1)
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 11
+text = "按 C 打开义体回路编辑器；F 主动启动；左键射击。"
+horizontal_alignment = 1

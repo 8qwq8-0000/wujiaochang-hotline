@@ -6,7 +6,12 @@
 script = ExtResource("1")
 module_id = &"micro_rotor_reflex_bundle"
 display_name = "微转子反射束"
-description = "任意武器直接命中时返还本次攻击冷却的 25%；若同一次攻击造成击杀，则总返还提升至 50%。同一攻击组只结算一份额度，爆炸、电弧与轨迹回响等二次伤害不触发。"
+description = "执行后使本轮剩余槽位的执行间隔乘 0.25，最低 0.01 秒。"
+target_scope = Array[StringName]([&"remaining_slots"])
+circuit_kind = 3
+grade = 1
+circuit_energy_cost = 10.0
+circuit_tags = PackedStringArray("速度")
 trigger_cooldown = 0.0
 micro_rotor_hit_refund_ratio = 0.25
 micro_rotor_kill_refund_ratio = 0.5

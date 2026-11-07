@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="CyberwareData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/player/cyberware_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+module_id = &"calamity_flame"
+display_name = "灾厄之炎"
+description = "将当前攻击信号改写为红黑刀气并加入一次近身挥击；两者继续接受右侧义体修改。"
+target_scope = Array[StringName]([&"whole_round", &"weapon_call"])
+grade = 3
+circuit_kind = 3
+circuit_energy_cost = 26.0
+circuit_tags = PackedStringArray("刀气")

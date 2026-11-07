@@ -6,6 +6,7 @@ const STAIN_LAYER_SCRIPT := preload("res://scripts/presentation/cyber_stain_laye
 const IMPACT_SCRIPT := preload("res://scripts/presentation/impact_particle_effect.gd")
 const MOVEMENT_SCRIPT := preload("res://scripts/presentation/movement_particle_effect.gd")
 const ROCK_WAVE_SCRIPT := preload("res://scripts/presentation/rock_wave_effect.gd")
+const IMPACT_FRAME_SCRIPT := preload("res://scripts/presentation/impact_frame_effect.gd")
 
 
 func suite_name() -> String:
@@ -192,6 +193,49 @@ func test_dense_hitstop_keeps_only_strongest_request_in_merge_window() -> void:
 	manager._restore_time_scale()
 	assert_true(is_equal_approx(Engine.time_scale, original_scale))
 	manager.free()
+
+
+func test_impact_frame_is_local_directional_and_keeps_a_readable_tail() -> void:
+	var effect: Variant = track(IMPACT_FRAME_SCRIPT.new())
+	(Engine.get_main_loop() as SceneTree).root.add_child(effect)
+	effect.play_world(Vector2(120.0, 80.0), false, Vector2.DOWN)
+	assert_true(effect.is_active())
+	assert_eq(effect._duration_usec, IMPACT_FRAME_SCRIPT.STANDARD_DURATION_USEC)
+	assert_eq(effect.global_position, Vector2(120.0, 80.0))
+	assert_eq(effect._direction, Vector2.DOWN)
+	assert_true(effect is Node2D)
+	assert_true(effect.maximum_radius() <= 64.0)
+	var tail_time: int = effect._started_at_usec + 300_000
+	effect._update_at(tail_time)
+	assert_true(effect.is_active())
+	assert_true(effect.current_radius(tail_time) > 40.0)
+	assert_false(effect.play_world(Vector2(240.0, 160.0), false))
+	assert_eq(effect.global_position, Vector2(120.0, 80.0))
+	effect._update_at(effect._started_at_usec + effect._duration_usec)
+	assert_false(effect.is_active())
+	effect._last_started_at_usec -= IMPACT_FRAME_SCRIPT.RETRIGGER_LOCKOUT_USEC
+	effect.play_world(Vector2.ZERO, true)
+	assert_eq(effect._duration_usec, IMPACT_FRAME_SCRIPT.REDUCED_DURATION_USEC)
+	assert_eq(effect.maximum_radius(), IMPACT_FRAME_SCRIPT.REDUCED_RADIUS)
+
+
+func test_impact_frame_only_triggers_for_priority_hits() -> void:
+	var manager := VFXManager.new()
+	var result := DamageResult.new()
+	result.outcome = DamageResult.Outcome.DAMAGED
+	result.final_damage = 1
+	result.packet = DamagePacket.new()
+	result.target = Node2D.new()
+	assert_false(manager._should_play_impact_frame(result, false, false))
+	result.packet.weapon_id = &"rail_cannon"
+	assert_false(manager._should_play_impact_frame(result, false, false))
+	result.target_defeated = true
+	assert_true(manager._should_play_impact_frame(result, false, false))
+	assert_false(manager._should_play_impact_frame(result, false, true))
+	result.outcome = DamageResult.Outcome.PERFECT_BLOCKED
+	assert_true(manager._should_play_impact_frame(result, true, false))
+	manager.free()
+	result.target.free()
 
 
 func test_feedback_group_marks_followup_targets_as_secondary() -> void:

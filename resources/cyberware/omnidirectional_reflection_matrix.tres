@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="CyberwareData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/player/cyberware_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+module_id = &"omnidirectional_reflection_matrix"
+display_name = "全域反射矩阵"
+description = "展开 0.16 秒的 360° 完美格挡领域，可格挡攻击全部按完美格挡处理。"
+target_scope = Array[StringName]([&"guard_call"])
+circuit_kind = 2
+grade = 2
+circuit_energy_cost = 24.0
+circuit_tags = PackedStringArray("全域")

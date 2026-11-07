@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CyberwareData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/player/cyberware_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+module_id = &"relay_starter"
+display_name = "受信启动器"
+description = "不能独立启动。收到其他启动器的攻击信号时消耗 16 能量，加入一组未受上游修改的基础武器攻击。"
+circuit_kind = 0
+grade = 2
+circuit_energy_cost = 16.0
+circuit_tags = PackedStringArray("接力", "攻击")

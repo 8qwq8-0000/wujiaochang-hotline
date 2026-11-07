@@ -11,6 +11,7 @@ const PERSONA_PORTRAITS := {
 	&"legendary_master": preload("res://assets/art/ui/start_menu/persona_xiangshan_ghost.png"),
 	&"rock_vigilante": preload("res://assets/art/ui/start_menu/persona_johnny_ghost.png"),
 }
+const CIRCUIT_LAB := "res://scenes/debug/cyberware_circuit_lab.tscn"
 
 var enabled := false
 var _ending := false
@@ -156,10 +157,12 @@ func apply_talents(persona_id: StringName, level: int, choices: Array) -> bool:
 
 
 func jump_to(floor_index: int) -> bool:
-	if floor_index < -1 or floor_index > 3:
+	if floor_index < -2 or floor_index > 3:
 		return false
 	var destination := BOSS if floor_index == 3 else FLOOR
-	if floor_index == -1:
+	if floor_index == -2:
+		destination = CIRCUIT_LAB
+	elif floor_index == -1:
 		destination = "res://scenes/levels/base/warehouse.tscn"
 	return await _jump_to(floor_index, destination)
 
@@ -391,6 +394,7 @@ func _build_ui() -> void:
 	_overlay.color = Color("09131f")
 	_overlay.theme = theme
 	add_child(_overlay)
+	CyberUITheme.add_os_frame(_overlay)
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	for side in ["left", "right", "top", "bottom"]:
@@ -425,6 +429,7 @@ func _build_ui() -> void:
 	destinations.add_theme_constant_override("h_separation", 5)
 	destinations.add_theme_constant_override("v_separation", 5)
 	routes.add_child(destinations)
+	_button(destinations, "义体构筑试验场", _on_jump.bind(-2))
 	_button(destinations, "测试仓库", _on_jump.bind(-1))
 	for index in 3:
 		_button(destinations, "第 %d 层" % (index + 1), _on_jump.bind(index))

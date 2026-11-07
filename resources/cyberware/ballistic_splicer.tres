@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CyberwareData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/player/cyberware_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+module_id = &"ballistic_splicer"
+display_name = "弹道缝合器"
+description = "消耗 18 能量，把当前同种类攻击各合并为一条，伤害求和且不设上限，穿透敌人和墙壁，贴图最多放大三倍。"
+circuit_kind = 3
+grade = 2
+circuit_energy_cost = 18.0
+circuit_tags = PackedStringArray("合并", "贯穿")

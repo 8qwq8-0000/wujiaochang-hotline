@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="CyberwareData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/player/cyberware_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+module_id = &"kill_energy_sink"
+display_name = "击杀蓄能罐"
+description = "执行时恢复 20 能量。击杀事件启动时恢复 30 能量。"
+target_scope = Array[StringName]([])
+circuit_kind = 2
+grade = 2
+circuit_energy_cost = 10.0
+fixed_energy_refund = 20.0
+circuit_tags = PackedStringArray("回能", "击杀")
+trigger_cooldown = 0.5

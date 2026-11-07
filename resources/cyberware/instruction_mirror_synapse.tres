@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="CyberwareData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/player/cyberware_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+module_id = &"instruction_mirror_synapse"
+display_name = "指令镜像突触"
+description = "复制向它传递信号的上一枚义体；若不可复制，则复制下一枚。启动器与镜像不可复制。"
+target_scope = Array[StringName]([&"previous_slot"])
+grade = 2
+circuit_kind = 3
+circuit_energy_cost = 20.0
+circuit_tags = PackedStringArray("镜像")
