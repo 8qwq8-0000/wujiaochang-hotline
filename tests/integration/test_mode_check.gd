@@ -22,6 +22,16 @@ func wait_room() -> Node:
 			return flow._scene_container.get_child(0)
 	return null
 
+func key(code: Key) -> void:
+	for pressed in [true, false]:
+		var event := InputEventKey.new()
+		event.keycode = code
+		event.physical_keycode = code
+		event.pressed = pressed
+		root.push_input(event, true)
+		await process_frame
+
+
 func run_checks() -> void:
 	var store := root.get_node("WarehouseStore")
 	store.save_path = SAVE
@@ -45,21 +55,33 @@ func run_checks() -> void:
 	check(not await tools.jump_to(3), "jump rejects normal mode")
 	var menu := main.get_node("PauseSettingsMenu")
 	menu.open_settings_only()
-	menu._test_mode.set_pressed(true)
-	check(tools.enabled and store.test_session_active and tools._badge.visible, "settings switch enables the isolated session")
-	menu._open_test_tools()
-	check(tools._overlay.visible and paused, "settings opens a paused test panel")
-	var shortcut := InputEventKey.new()
-	shortcut.keycode = KEY_F8
-	shortcut.pressed = true
-	root.push_input(shortcut, true)
-	await process_frame
-	check(not tools._overlay.visible and not paused, "F8 closes and resumes a test panel")
-	root.push_input(shortcut, true)
-	await process_frame
-	check(tools._overlay.visible and paused, "F8 opens and pauses a test panel")
+	var obsolete_switch := false
+	for button in menu.find_children("*", "BaseButton", true, false):
+		obsolete_switch = obsolete_switch or "测试模式" in button.text or "打开测试面板" in button.text
+	check(not obsolete_switch, "settings no longer contains the test mode switch or entry")
+	menu.close_menu()
+	await key(KEY_F8)
+	check(tools.enabled and store.test_session_active and tools._badge.visible, "F8 enables the isolated session directly")
+	check(tools._overlay.visible and paused, "F8 immediately opens the paused test panel")
+	await key(KEY_F8)
+	check(tools.enabled and not tools._overlay.visible and not paused and current_scene == main, "F8 closes only panel and keeps current game instead of returning to menu")
+	await key(KEY_F8)
+	check(tools.enabled and tools._overlay.visible and paused, "F8 reopens panel without restarting test session")
+	await key(KEY_ESCAPE)
+	check(tools.enabled and not tools._overlay.visible and not paused, "Esc resumes play while retaining the isolated test session")
+	tools._badge.pressed.emit()
+	check(tools._overlay.visible and paused, "badge reopens the paused test panel")
 	check(tools.grant_item("rail_cannon", 3), "prototype weapon can be granted")
 	check(ComponentRolls.quality(warehouse.player.inventory.secondary_weapon_slot.get_item()) == 3, "granted weapon retains requested quality")
+	# The merged control panel must expose the main branch's advanced modules,
+	# and granting them must still use the real inventory with isolated saves.
+	for advanced_id in ["momentum_recovery_tendon", "trajectory_echo_processor", "ballistic_takeover_protocol", "arc_ballistic_cortex", "inertial_inversion_vertebra", "axon_recycler", "micro_rotor_reflex_bundle", "predatory_vestibular_ring"]:
+		var module_id := StringName(advanced_id)
+		var circuit: CyberwareCircuitState = warehouse.player.cyberware.circuit
+		var previous_count := int(circuit.get_library_counts().get(module_id, 0))
+		check(advanced_id in tools._item_ids and tools.grant_item(advanced_id), "F8 grants advanced cyberware %s" % advanced_id)
+		var prototype := ComponentRolls.make_item(advanced_id)
+		check(prototype != null and prototype.get_texture() != null and int(circuit.get_library_counts().get(module_id, 0)) == previous_count + 1, "advanced module retains image and enters circuit library %s" % advanced_id)
 	check(not tools.grant_item("unknown", 1), "unknown item rejected")
 	check(not tools.grant_item("circuit_breaker", 1), "duplicate insurance core rejected")
 	for index in 6:
@@ -98,6 +120,35 @@ func run_checks() -> void:
 	check(await tools.jump_to(-1), "test warehouse jump works")
 	warehouse = await wait_room()
 	check(warehouse.player.talent_core.core_level == 3 and warehouse.player.inventory.secondary_weapon_slot.get_item() != null, "warehouse jump preserves test build")
+	check(await tools.jump_to_codex(), "direct Codex passage preserves current test build")
+	var passage := await wait_room()
+	check(passage.is_in_group("intermission") and root.get_node("RunManager").floor_index == 1, "passage jump uses the second-floor intermission")
+	passage.talk_to_codex()
+	check(not passage.get("_escort_dialogue"), "ordinary passage keeps ordinary Codex conversation")
+	passage.panel.close()
+	check(not await tools.jump_to_codex(true), "core passage refuses a full backpack without discarding equipment")
+	var material = passage.player.inventory.backpack.get_items()[0]
+	passage.player.inventory.backpack.remove_item(material)
+	check(await tools.jump_to_codex(true), "core passage jump grants actual core in isolated session")
+	passage = await wait_room()
+	check(root.get_node("RunManager").carries_channel_core(passage.player), "core passage contains real prerequisite collectible")
+	check(passage.player.talent_core.core_level == 3 and passage.player.inventory.secondary_weapon_slot.get_item() != null, "passage jump preserves equipment and selected talents")
+	passage.talk_to_codex()
+	check(passage.get("_escort_dialogue") and passage.panel.lines[0].contains("残损频道核心"), "core passage jump triggers new escort conversation")
+	while passage.panel.is_open:
+		passage.panel.advance()
+	for _frame in 4:
+		await process_frame
+	passage.upgrade_panel.close()
+	check(root.get_node("RunManager").codex_is_alive() and passage.get_node("CodexCompanion").health.current_health == 3, "test passage can recruit three-health Codex")
+	check(FileAccess.get_file_as_bytes(SAVE) == original_bytes, "core unlock, pickup and escort never modify formal file")
+	check(await tools.jump_to_channel_boss(), "direct second-ending Boss jump prepares actual route")
+	var channel_arena := await wait_room() as RooftopBossArena
+	check(channel_arena != null and channel_arena.channel_duel != null, "test jump reaches production duel controller")
+	check(paused and channel_arena.route_dialogue.visible, "test jump preserves paused entry story")
+	check(root.get_node("RunManager").channel_boss_ready() and root.get_node("RunManager").carries_channel_core(channel_arena.player), "test jump supplies core and completed ambush")
+	check(FileAccess.get_file_as_bytes(SAVE) == original_bytes, "second-ending test jump cannot modify formal file")
+	channel_arena.route_dialogue.close()
 	check(await tools.jump_to(3), "direct Boss jump works")
 	var arena := await wait_room() as RooftopBossArena
 	check(arena != null and arena.phase == RooftopBossArena.Phase.MINIONS, "Boss starts in its normal opening phase")
@@ -116,9 +167,10 @@ func run_checks() -> void:
 	tools.open_panel()
 	check(tools.defeat_boss() and arena.phase == RooftopBossArena.Phase.CLEARED, "quick victory also handles shielded second phase")
 	tools.close_panel()
+	var record_count: int = store.get_legacy_drinks().size()
 	var extraction := main.get_node("ExtractionFlow")
 	extraction.complete_victory()
-	check(extraction._settled and not store.get_legacy_drinks().is_empty(), "test victory can exercise settlement and records")
+	check(extraction._settled and store.get_legacy_drinks().size() == record_count + 1, "test victory can exercise settlement and records")
 	check(FileAccess.get_file_as_bytes(SAVE) == original_bytes, "test victory cannot write a formal record")
 	check(store.create_new_profile("low_pressure"), "new profile can be tried in test mode")
 	check(FileAccess.get_file_as_bytes(SAVE) == original_bytes, "test new profile does not replace formal save")
@@ -133,7 +185,11 @@ func run_checks() -> void:
 	check(FileAccess.get_file_as_bytes(SAVE) == original_bytes, "formal save is byte-identical after the whole session")
 	check(not tools.defeat_boss() and not tools.clear_area(), "combat commands disabled after exit")
 	check(not tools._badge.visible and not tools._overlay.visible, "test UI is hidden after exit")
-	check(tools.set_enabled(true), "test mode can be re-enabled from main menu")
+	await key(KEY_F8)
+	check(tools.enabled and tools._overlay.visible, "F8 re-enables test mode directly from main menu")
+	check(await tools.jump_to_codex(true), "main menu can jump directly to core passage")
+	var menu_passage := await wait_room()
+	check(menu_passage.is_in_group("intermission") and root.get_node("RunManager").carries_channel_core(menu_passage.player), "main menu route prepares playable core passage")
 	check(await tools.jump_to(3), "main menu jump creates a gameplay host")
 	var second_arena := await wait_room() as RooftopBossArena
 	check(second_arena != null, "main menu direct Boss reaches arena")
@@ -143,7 +199,7 @@ func run_checks() -> void:
 	check(not recovered.get_node("Player").health.is_dead(), "jump refills test player health")
 	var second_menu := current_scene.get_node("PauseSettingsMenu")
 	second_menu.open_settings_only()
-	second_menu._test_mode.set_pressed(false)
+	tools.set_enabled(false)
 	for frame in 600:
 		await process_frame
 		if not tools.enabled:

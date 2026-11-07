@@ -68,11 +68,19 @@ func run_checks() -> void:
 	check(store.get_legacy_drinks().size() == 1, "repeated victory UI calls cannot duplicate the record")
 	ui.return_to_warehouse()
 	var warehouse := await wait_scene(flow)
-	check(warehouse != null and warehouse.is_in_group("warehouse") and not paused, "completed victory returns to warehouse")
+	check(warehouse != null and warehouse.is_in_group("warehouse"), "completed victory returns to warehouse")
+	for _frame in 6:
+		await process_frame
+	var hotline: Node = warehouse.get_node("ChannelHotline")
+	check(paused and hotline.dialogue.visible and hotline.dialogue.get("_text").text.contains("有人能听见吗"), "original victory automatically announces second ending")
+	hotline.dialogue._choose(hotline._show_unlock)
+	check(paused and hotline.dialogue.get("_text").text.contains("第二结局「频道归还」已解锁"), "call continues to second-ending unlock page")
+	hotline.dialogue._choose(hotline.acknowledge_intro)
+	check(not paused and store.has_seen_channel_intro(), "acknowledging unlock restores play and persists once-only notice")
 	check(warehouse.get_node_or_null("ArchiveTerminal") != null, "warehouse exposes the archive terminal")
 	warehouse.archive_panel.open()
 	var archive_text: String = warehouse.archive_panel.get("_content").text
-	check(paused and warehouse.archive_panel.get("_entry_title").text == "遗产饮料（1 瓶）", "archive panel renders the saved legacy drink")
+	check(paused and warehouse.archive_panel.get("_entry_title").text.contains("摧毁中枢") and warehouse.archive_panel.get("_summary").text.contains("1"), "archive panel renders the saved legacy drink")
 	check(archive_text.contains("最后使用的人格：深渊忍者"), "archive renders the final persona")
 	warehouse.archive_panel.close()
 	main.queue_free()

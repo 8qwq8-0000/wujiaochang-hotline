@@ -142,7 +142,10 @@ func _physics_process(delta: float) -> void:
 			queue_free()
 			return
 	var query := PhysicsRayQueryParameters2D.create(global_position, next_position, 1)
-	query.exclude = _pierced_wall_rids
+	var excluded := _pierced_wall_rids.duplicate()
+	if is_instance_valid(source) and source is StaticBody2D:
+		excluded.append(source.get_rid())
+	query.exclude = excluded
 	var wall_hit := get_world_2d().direct_space_state.intersect_ray(query)
 	if not wall_hit.is_empty():
 		if circuit_pierce_remaining != 0:
@@ -158,6 +161,8 @@ func _physics_process(delta: float) -> void:
 		_resolved = true
 		# Door leaves are world-blocking StaticBody2Ds. Notify their owning door
 		# before consuming the impact; ordinary walls still just stop the shot.
+		if wall_hit.collider.has_method("receive_projectile_hit"):
+			wall_hit.collider.receive_projectile_hit(_make_damage_packet())
 		var door: AutomaticDoor = wall_hit.collider.get_parent() as AutomaticDoor
 		if door != null:
 			door.receive_hit(_make_damage_packet())
@@ -209,6 +214,8 @@ func _on_area_entered(area: Area2D) -> void:
 	# The player's upward-offset hurt box overlaps the upward muzzle position.
 	# Enemy fire passes through allies so ranged units can fire from cover.
 	if area is HurtBox2DComponent and is_instance_valid(source) and area.actor == source:
+		return
+	if area is HurtBox2DComponent and faction == CombatFaction.Id.PLAYER and is_instance_valid(area.actor) and area.actor.is_in_group("companions"):
 		return
 	if area is HurtBox2DComponent and faction == CombatFaction.Id.ENEMY and area.faction == CombatFaction.Id.ENEMY:
 		return

@@ -164,6 +164,25 @@ func pickup(component_id: String, rolled_item: InventoryItem = null) -> bool:
 		_notify("已拾取：%s" % item.get_title(), &"pickup")
 	return true
 
+
+func is_channel_core(item: InventoryItem) -> bool:
+	return item != null and item.get_prototype() != null and item.get_prototype().get_prototype_id() == "channel_core"
+
+
+func grant_channel_core() -> bool:
+	for item in backpack.get_items():
+		if is_channel_core(item):
+			backpack.move_item(backpack.get_item_index(item), 0)
+			return true
+	var core := ComponentRolls.make_item("channel_core")
+	if not backpack.add_item(core):
+		_notify("背包已满，请空出一格再拾取核心", &"full")
+		return false
+	_assign_instance_id(core)
+	backpack.move_item(backpack.get_item_index(core), 0)
+	changed.emit()
+	return true
+
 func try_pick_nearest() -> bool:
 	var nearest := get_nearest_reachable_pickup()
 	if nearest == null:
@@ -286,6 +305,8 @@ func _fits_location(item: InventoryItem, location: String) -> bool:
 
 func can_drop_item(item: InventoryItem, destination: String, index: int = -1) -> bool:
 	if not is_open or player.health.is_dead() or player.health.resolving_damage:
+		return false
+	if is_channel_core(item) or is_channel_core(item_at(destination, index)):
 		return false
 	var source := item_location(item)
 	if source.is_empty() or (destination != "backpack" and _slot_for(destination) == null):
@@ -535,7 +556,7 @@ func export_settlement_inventory() -> Dictionary:
 	snapshot.cyberware = {}
 	var retained_items: Array = []
 	for item in backpack.get_items():
-		if item.get_property("slot", "") != "cyberware":
+		if item.get_property("slot", "") != "cyberware" and not is_channel_core(item):
 			retained_items.append(item.serialize())
 	snapshot.backpack["items"] = retained_items
 	return snapshot
@@ -598,6 +619,10 @@ func import_run_state(state: Dictionary) -> void:
 	if migrated_calamity_slots > 0:
 		player.cyberware.store_circuit_modules(PackedStringArray([CALAMITY_FLAME_ID]), migrated_calamity_slots)
 	_calamity_flame_granted = bool(state.get("calamity_flame_granted", _has_component(CALAMITY_FLAME_ID)))
+	for item in backpack.get_items():
+		if is_channel_core(item):
+			backpack.move_item(backpack.get_item_index(item), 0)
+			break
 	_apply_equipment()
 	changed.emit()
 	if removed_legacy_mobility:
@@ -645,7 +670,7 @@ func export_recovery_inventory() -> Dictionary:
 
 
 func can_discard(item: InventoryItem) -> bool:
-	return is_open and not player.health.is_dead() and not player.health.resolving_damage and item != null and backpack.has_item(item)
+	return is_open and not player.health.is_dead() and not player.health.resolving_damage and item != null and backpack.has_item(item) and not is_channel_core(item)
 
 
 func discard_backpack_item(item: InventoryItem) -> bool:

@@ -1,4 +1,11 @@
 {
+	"channel_core": {
+		"name": "残损频道核心",
+		"slot": "quest",
+		"image": "res://assets/art/environment/hidden_shrine_v1/core.tres",
+		"maximum_stack_size": 1.0,
+		"bound": true
+	},
 	"active_neural_switch": {
 		"name": "主动神经开关",
 		"slot": "cyberware",

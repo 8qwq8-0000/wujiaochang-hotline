@@ -41,6 +41,8 @@ var _portrait: TextureRect
 var _portrait_mark: Label
 var _entry_title: Label
 var _entry_tag: Label
+var _heading: Label
+var _footer: Label
 var _summary: Label
 var _tabs: Array[Button] = []
 var _rows: Array[Button] = []
@@ -62,11 +64,12 @@ func _ready() -> void:
 	_overlay.add_child(_canvas)
 	CyberUITheme.add_os_frame(_canvas)
 	_line(Rect2(18, 16, 4, 38), GOLD)
-	_text("遗产酒谱", Rect2(31, 32, 360, 32), 25, Color("eef2ed"))
+	_text("ARCHIVE  /  行动档案", Rect2(32, 25, 400, 16), 9, GOLD)
+	_heading = _text("通关记录", Rect2(31, 42, 360, 32), 25, Color("eef2ed"))
 	_close_button = _button("关闭 [Esc]", Rect2(514, 33, 92, 28), close)
 	_summary = _text("", Rect2(32, 78, 570, 18), 11, MUTED)
-	for index in 3:
-		var button := _button(["遗产酒谱", "人格档案", "敌人图鉴"][index], Rect2(32 + index * 130, 105, 122, 27), _select_tab.bind(index))
+	for index in 4:
+		var button := _button(["通关记录", "结局档案", "人格档案", "敌人图鉴"][index], Rect2(32 + index * 145, 105, 139, 27), _select_tab.bind(index))
 		button.toggle_mode = true
 		_tabs.append(button)
 	_line(Rect2(32, 141, 574, 1), Color("344454"))
@@ -99,7 +102,8 @@ func _ready() -> void:
 	_content.add_theme_font_size_override("normal_font_size", 11)
 	_place(_content, Rect2(330, 210, 264, 80))
 	_line(Rect2(32, 313, 574, 1), Color("344454"))
-	var footer := _text("仅作记录，无属性加成", Rect2(271, 321, 335, 14), 9, MUTED)
+	_footer = _text("", Rect2(32, 321, 230, 14), 9, GOLD)
+	var footer := _text("仅作记录，无属性加成  /  滚轮查看详情", Rect2(271, 321, 335, 14), 9, MUTED)
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	get_viewport().size_changed.connect(_resize)
 	_resize()
@@ -227,7 +231,25 @@ func refresh() -> void:
 	for entry in EnemyCatalog.ENTRIES:
 		if entry.id in codex.get("enemies", []):
 			unlocked += 1
-	_summary.text = "封存 %d 瓶   人格 %d（共 3）   敌人 %d（共 %d）" % [drinks.size(), codex.get("personas", []).size(), unlocked, EnemyCatalog.ENTRIES.size()]
+	_heading.text = ["通关记录", "结局档案", "人格档案", "敌人图鉴"][_tab]
+	match _tab:
+		0:
+			_summary.text = "累计通关 %d 次" % drinks.size()
+			_footer.text = "每次通关，独立留档"
+		1:
+			var completed: Array[String] = []
+			for record: Dictionary in drinks:
+				var ending := String(record.get("ending", "core_destroyed"))
+				if ending not in completed and ending in ["core_destroyed", "channel_returned"]:
+					completed.append(ending)
+			_summary.text = "已完成结局 %d / 2" % completed.size()
+			_footer.text = "结局进度 · 路线线索"
+		2:
+			_summary.text = "已收录人格 %d / 3" % codex.get("personas", []).size()
+			_footer.text = "人格资料 · 异常通讯"
+		3:
+			_summary.text = "已发现敌人 %d / %d" % [unlocked, EnemyCatalog.ENTRIES.size()]
+			_footer.text = "遭遇记录 · 应对提示"
 	for index in _tabs.size():
 		_tabs[index].set_pressed_no_signal(index == _tab)
 	for child in _list.get_children():
@@ -242,9 +264,12 @@ func refresh() -> void:
 				var date := Time.get_datetime_dict_from_unix_time(int(record.get("created_unix", 0)))
 				labels.append("%02d.%02d  %s" % [int(date.month), int(date.day), PERSONA_NAMES.get(String(record.get("last_persona_id", "")), "行动记录")])
 		1:
+			labels.append("摧毁中枢 · " + ("已完成" if not drinks.is_empty() else "可挑战"))
+			labels.append("频道归还 · " + _channel_status())
+		2:
 			for id in PERSONA_NAMES:
 				labels.append(PERSONA_NAMES[id] if id in codex.get("personas", []) else "未解锁")
-		2:
+		3:
 			for entry in EnemyCatalog.ENTRIES:
 				labels.append(entry.name if entry.id in codex.get("enemies", []) else "未解锁")
 	for index in labels.size():
@@ -259,7 +284,7 @@ func refresh() -> void:
 		_rows.append(button)
 	if labels.is_empty():
 		var empty := Label.new()
-		empty.text = "尚无封存记录"
+		empty.text = "暂无通关记录"
 		empty.add_theme_color_override("font_color", MUTED)
 		empty.add_theme_font_size_override("font_size", 11)
 		_list.add_child(empty)
@@ -279,18 +304,28 @@ func _show_entry() -> void:
 	match _tab:
 		0:
 			var drinks: Array = store.get_legacy_drinks()
-			_entry_title.text = "封存记录"
-			_entry_tag.text = ""
+			_entry_title.text = "暂无通关记录"
+			_entry_tag.text = "完成行动后自动保存"
 			if drinks.is_empty():
 				_portrait_mark.text = "—"
-				_content.text = "通关后收录本次行动。"
+				_content.text = "完整通关后，会在这里保存本次行动的结局、用时、人格与战斗表现。"
 				return
 			var record: Dictionary = drinks[_selected]
+			_entry_title.text = "第 %02d 次通关 · %s" % [_selected + 1, "频道归还" if record.get("ending", "core_destroyed") == "channel_returned" else "摧毁中枢"]
+			_entry_tag.text = "通关记录 / %02d" % (_selected + 1)
 			var lines := PackedStringArray()
 			_append_drink(lines, record, _selected + 1)
 			_content.text = "\n".join(lines).strip_edges()
 			_show_bottle(String(record.get("last_persona_id", "")))
 		1:
+			if _selected == 1:
+				_show_channel_status()
+				return
+			_entry_title.text = "第一结局 · 摧毁中枢"
+			_entry_tag.text = "已完成" if not store.get_legacy_drinks().is_empty() else "可挑战"
+			_portrait_mark.text = "Ⅰ"
+			_content.text = "[color=#e7c77a]常规路线[/color]\n逐层突破，抵达楼顶并摧毁中枢。\n\n完成后保存通关记录，并解锁「频道归还」路线。"
+		2:
 			var id: String = PERSONA_NAMES.keys()[_selected]
 			var unlocked: bool = id in codex.get("personas", [])
 			_entry_title.text = PERSONA_NAMES[id] if unlocked else "未解锁"
@@ -306,7 +341,7 @@ func _show_entry() -> void:
 			}
 			var leak_id := String(TalentCoreController.SEMANTIC_LEAK_IDS.get(StringName(id), ""))
 			_content.text = descriptions[id] + "\n\n[color=#e7c77a]异常通讯[/color]\n" + (LEAK_TEXT.get(leak_id, "") if leak_id in codex.get("semantic_leaks", []) else "未收录：在行动中达到三级后发现。") + "\n\n人格等级、天赋和关系在行动结束后清空。"
-		2:
+		3:
 			var entry: Dictionary = EnemyCatalog.ENTRIES[_selected]
 			var unlocked: bool = entry.id in codex.get("enemies", [])
 			_entry_title.text = entry.name if unlocked else "未解锁"
@@ -317,6 +352,34 @@ func _show_entry() -> void:
 			_portrait.texture = EnemyCatalog.portrait(entry)
 			_portrait_mark.hide()
 			_content.text = "[color=#e7c77a]战斗特点[/color]\n%s\n\n[color=#80e0d9]应对提示[/color]\n%s" % [entry.behavior, entry.counter]
+
+
+func _channel_status() -> String:
+	var store := get_node("/root/WarehouseStore")
+	for record: Dictionary in store.get_legacy_drinks():
+		if record.get("ending", "") == "channel_returned":
+			return "已完成"
+	return "已解锁" if store.is_channel_route_unlocked() else "未解锁"
+
+
+func _show_channel_status() -> void:
+	var status := _channel_status()
+	_entry_title.text = "第二结局 · 频道归还"
+	_entry_tag.text = status
+	_portrait_mark.text = "Ⅱ"
+	if status == "未解锁":
+		_content.text = "[color=#e7c77a]解锁条件[/color]\n完成一次「摧毁中枢」结局并保存通关记录。\n\n解锁后，可在普通行动中寻找通往「频道归还」的隐藏路线。"
+		return
+	var lines := "[color=#80e0d9]第二结局路线已解锁[/color]\n中枢残片中恢复了一段被屏蔽的求救呼叫。楼内备份系统仍能重新部署中枢。\n\n[color=#e7c77a]路线提示[/color]\n下一次普通行动，第一层清场后留意两个出口。有光环的是正常出口；另一扇门受到枪击时会作出反应。门后隐藏房的祭坛上，留着残损频道核心。\n\n[color=#e7c77a]拾取代价[/color]\n生命上限 1、移速 -15%、突进冷却 +40%、散热 -30%。确认拾取后，本局无法撤离。携带核心抵达第二层后的整备通道，与 Codex 交谈即可邀请她同行。第三层需要守住修复祭坛的三波突袭。祭坛完好并携带核心抵达楼顶后，Codex 接入核心，解除携带负担并恢复正常耐久；随后与苏醒的神像单挑，夺回公共频道。祭坛被毁则继续原本的两阶段 Boss 战。返回主菜单可从最近安全检查点继续。"
+	var discoveries: Array = get_node("/root/WarehouseStore").get_profile().get("channel_story", {}).get("discoveries", [])
+	if not discoveries.is_empty():
+		lines += "\n\n[color=#e7c77a]已发现[/color]"
+		var names := {"call_record": "原始呼叫", "signature_key": "频道签名", "writeback_isolated": "回写隔离", "shrine_core": "残损频道核心"}
+		for discovery: String in discoveries:
+			lines += "\n· " + String(names.get(discovery, discovery))
+	if status == "已完成":
+		lines = "[color=#e7c77a]频道归还 · 已完成[/color]\n公共频道已恢复。新的呼叫正在等待接线。\n\n" + lines
+	_content.text = lines
 
 
 func _show_bottle(persona_id: String) -> void:
@@ -331,6 +394,7 @@ func _append_drink(lines: PackedStringArray, record: Dictionary, index: int) -> 
 	lines.append("[font_size=12][color=#80e0d9]#%02d  %04d-%02d-%02d[/color][/font_size]" % [
 		index, int(date.get("year", 0)), int(date.get("month", 0)), int(date.get("day", 0))
 	])
+	lines.append("结局：" + ("频道归还" if record.get("ending", "core_destroyed") == "channel_returned" else "摧毁中枢"))
 	lines.append("通关用时 %.1f 秒，行动种子 %d" % [float(record.get("clear_seconds", 0.0)), int(record.get("run_seed", 0))])
 	var last_persona_id := String(record.get("last_persona_id", ""))
 	if not last_persona_id.is_empty():

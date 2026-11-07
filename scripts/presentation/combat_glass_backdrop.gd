@@ -64,7 +64,7 @@ func _process(delta: float) -> void:
 	_wall_playlist.advance(delta)
 	var camera := get_viewport().get_camera_2d()
 	if camera != null:
-		_camera_x = camera.get_screen_center_position().x
+		_camera_x = to_local(camera.get_screen_center_position()).x
 	queue_redraw()
 	if is_instance_valid(_glass_details):
 		_glass_details.queue_redraw()

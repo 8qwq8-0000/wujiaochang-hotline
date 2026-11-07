@@ -12,6 +12,7 @@ var small_obstacles: Array[Rect2] = []
 @export_range(0.0, 256.0, 1.0) var camera_north_extension := 0.0
 
 signal room_cleared
+var ambush_managed := false
 var cleared := false
 var sequence_managed := false
 var area_index := 0
@@ -37,7 +38,12 @@ func _ready() -> void:
 	_expand_room_shell()
 	if layout != null:
 		layout = layout.scaled_for_room(ROOM_SCALE, BASE_ROOM_SIZE)
-		_place_sentries()
+		if ambush_managed:
+			# Reserve the existing workbench footprint and the short approach.
+			layout.navigation_obstacles.append(Rect2(76, 427, 72, 22))
+			layout.clear_lanes.append(Rect2(56, 286, 124, 220))
+		else:
+			_place_sentries()
 		var run := get_node_or_null("/root/RunManager")
 		var seed_value: int = (run.run_seed if run != null else 1) + 104729 * (run.floor_index + 1 if run != null else 1) + area_index * 97 + hash(layout.id)
 		layout.power_position = EncounterPropPlacement.choose_power_position(layout, seed_value)
@@ -128,7 +134,8 @@ func activate() -> void:
 	if active or cleared:
 		return
 	active = true
-	spawner.spawn_all()
+	if not ambush_managed:
+		spawner.spawn_all()
 	_configure_player_camera_if_inside()
 
 
@@ -372,6 +379,7 @@ func _place_barrel() -> void:
 				blockers.append(Rect2(cover.position - shape.size * 0.5, shape.size))
 	var run := get_node_or_null("/root/RunManager")
 	var seed_value: int = (run.run_seed if run != null else 1) + 104729 * (run.floor_index + 1 if run != null else 1) + area_index * 97
+	var spacing := Vector2.ONE * (layout.bomb_spacing_radius if layout != null else 32.0)
 	for index in BOMB_BOX_COUNT:
 		var barrel := $FuelBarrel as FuelBarrel
 		if index > 0:
@@ -380,7 +388,7 @@ func _place_barrel() -> void:
 			add_child(barrel)
 		barrel.position = EncounterPropPlacement.choose_barrel_position(spawner.planned_positions(self), blockers, doors, $PowerBox.position, seed_value + index * 7919, $FuelBarrel.position, windows, ROOM_SIZE)
 		# Keep separate boxes apart and leave a walking lane around each one.
-		blockers.append(Rect2(barrel.position - Vector2(32, 32), Vector2(64, 64)))
+		blockers.append(Rect2(barrel.position - spacing, spacing * 2.0))
 
 
 func _place_sentries() -> void:

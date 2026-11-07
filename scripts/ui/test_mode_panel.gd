@@ -4,7 +4,13 @@ extends CanvasLayer
 const MAIN_MENU := "res://scenes/ui/start_menu.tscn"
 const WAREHOUSE_MAIN := "res://scenes/bootstrap/warehouse_main.tscn"
 const FLOOR := "res://scenes/levels/floors/combat_prototype.tscn"
+const CODEX_PASSAGE := "res://scenes/levels/intermissions/codex_service_passage.tscn"
 const BOSS := "res://scenes/levels/bosses/rooftop_boss_arena.tscn"
+const PERSONA_PORTRAITS := {
+	&"deep_ninja": preload("res://assets/art/ui/start_menu/persona_naraku_ghost.png"),
+	&"legendary_master": preload("res://assets/art/ui/start_menu/persona_xiangshan_ghost.png"),
+	&"rock_vigilante": preload("res://assets/art/ui/start_menu/persona_johnny_ghost.png"),
+}
 const CIRCUIT_LAB := "res://scenes/debug/cyberware_circuit_lab.tscn"
 
 var enabled := false
@@ -67,13 +73,18 @@ func _end_session() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if not enabled or _ending or not event is InputEventKey or not event.pressed or event.echo:
+	if _ending or _busy or not event is InputEventKey or not event.pressed or event.echo:
 		return
-	if event.keycode == KEY_F8 or (_overlay.visible and event.keycode == KEY_ESCAPE):
+	if event.keycode == KEY_F8 or event.physical_keycode == KEY_F8:
+		if not enabled and not set_enabled(true):
+			return
 		if _overlay.visible:
 			close_panel()
 		else:
 			open_panel()
+		get_viewport().set_input_as_handled()
+	elif enabled and _overlay.visible and (event.keycode == KEY_ESCAPE or event.physical_keycode == KEY_ESCAPE):
+		close_panel()
 		get_viewport().set_input_as_handled()
 
 
@@ -85,7 +96,7 @@ func open_panel() -> void:
 	_owns_pause = not get_tree().paused
 	get_tree().paused = true
 	_overlay.show()
-	_message.text = "自由领取装备、选择天赋或跳转关卡。测试数据不写入正式存档。"
+	_message.text = "测试数据不写入正式存档。选择操作后，即可收起面板继续试玩。"
 	_sync_persona()
 	_items.grab_focus()
 
@@ -146,7 +157,26 @@ func apply_talents(persona_id: StringName, level: int, choices: Array) -> bool:
 
 
 func jump_to(floor_index: int) -> bool:
-	if not enabled or _ending or _busy or floor_index < -2 or floor_index > 3:
+	if floor_index < -2 or floor_index > 3:
+		return false
+	var destination := BOSS if floor_index == 3 else FLOOR
+	if floor_index == -2:
+		destination = CIRCUIT_LAB
+	elif floor_index == -1:
+		destination = "res://scenes/levels/base/warehouse.tscn"
+	return await _jump_to(floor_index, destination)
+
+
+func jump_to_codex(with_core := false) -> bool:
+	return await _jump_to(1, CODEX_PASSAGE, with_core)
+
+
+func jump_to_channel_boss() -> bool:
+	return await _jump_to(3, BOSS, true, true)
+
+
+func _jump_to(floor_index: int, destination: String, with_core := false, with_duel := false) -> bool:
+	if not enabled or _ending or _busy:
 		return false
 	_busy = true
 	var flow := _flow()
@@ -168,12 +198,27 @@ func jump_to(floor_index: int) -> bool:
 		_busy = false
 		return false
 	var player := _player()
+	var original_player := player.export_run_state() if player != null else {}
+	if with_core:
+		if player == null or not player.inventory.grant_channel_core():
+			_busy = false
+			_message.text = "请先空出一格背包，再进入携带核心的通道"
+			return false
+		player.apply_channel_curse(true)
 	var snapshot := player.export_run_state() if player != null else {}
 	if player != null:
 		snapshot["current_health"] = player.health.max_health
-	var destination := CIRCUIT_LAB if floor_index == -2 else (BOSS if floor_index == 3 else FLOOR)
+	var core_route: bool = (destination == CODEX_PASSAGE or with_duel) and player != null and get_node("/root/RunManager").carries_channel_core(player)
+	if core_route:
+		var store := get_node("/root/WarehouseStore")
+		if not store.is_channel_route_unlocked():
+			var profile: Dictionary = store.get_profile()
+			if not store.commit(profile.chest, profile.loadout, "", {"id": "test-codex-route", "ending": "core_destroyed", "personas": [], "semantic_leaks": []}):
+				player.import_run_state(original_player)
+				_busy = false
+				return false
+		store.acknowledge_channel_intro()
 	if floor_index == -1:
-		destination = "res://scenes/levels/base/warehouse.tscn"
 		var store := get_node("/root/WarehouseStore")
 		if not store.commit(store.get_profile().chest, snapshot):
 			_busy = false
@@ -195,12 +240,19 @@ func jump_to(floor_index: int) -> bool:
 	run.begin_run()
 	run.floor_index = maxi(floor_index, 0)
 	run.persistent_run = floor_index >= 0
+	if core_route:
+		run.channel_route_active = true
+		run.channel_record_found = true
+		if with_duel:
+			run.codex_companion = {"joined": true, "health": 3, "arrived": false, "ambush_complete": true}
 	# Direct talent selection replaces the mandatory drink screen on test jumps.
 	run.persona_authorization_floor = run.floor_index
 	run.persona_authorization_pending = false
 	run.persona_rest_refilled_floor = run.floor_index
 	run.set_player_state(snapshot)
 	if not flow.request_scene(destination, {"player_state": snapshot}):
+		if is_instance_valid(player):
+			player.import_run_state(original_player)
 		_restore_run(run, old_run)
 		_busy = false
 		return false
@@ -216,6 +268,8 @@ func jump_to(floor_index: int) -> bool:
 	_busy = false
 	var success := not flow._is_loading and flow._scene_container.get_child_count() > 0 and flow._scene_container.get_child(0).scene_file_path == destination
 	if not success:
+		if is_instance_valid(player):
+			player.import_run_state(original_player)
 		_restore_run(run, old_run)
 	return success
 
@@ -280,71 +334,155 @@ func defeat_boss() -> bool:
 	return true
 
 
+const INK := Color("dce8f2")
+const SOFT_INK := Color("8299af")
+const ACCENT := Color("61d9d0")
+const LINE := Color("2a4055")
+
+
+func _panel_box(fill: Color, border: Color, padding := 8) -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = fill
+	box.border_color = border
+	box.set_border_width_all(1)
+	box.set_corner_radius_all(4)
+	box.set_content_margin_all(padding)
+	return box
+
+
+func _test_theme() -> Theme:
+	var theme := CyberUITheme.create_theme()
+	for type_name in [&"Label", &"Button", &"OptionButton", &"PopupMenu"]:
+		theme.set_color("font_color", type_name, INK)
+		theme.set_color("font_hover_color", type_name, Color.WHITE)
+		theme.set_color("font_focus_color", type_name, Color.WHITE)
+		theme.set_color("font_pressed_color", type_name, ACCENT)
+		theme.set_color("font_disabled_color", type_name, Color(SOFT_INK, 0.45))
+	for type_name in [&"Button", &"OptionButton"]:
+		theme.set_stylebox("normal", type_name, _panel_box(Color("172a3b"), LINE, 5))
+		theme.set_stylebox("hover", type_name, _panel_box(Color("213d50"), ACCENT, 5))
+		theme.set_stylebox("pressed", type_name, _panel_box(Color("1b494e"), ACCENT, 5))
+		theme.set_stylebox("disabled", type_name, _panel_box(Color("101d2b"), Color("203144"), 5))
+		theme.set_stylebox("focus", type_name, _panel_box(Color.TRANSPARENT, ACCENT, 5))
+	theme.set_stylebox("panel", "PopupMenu", _panel_box(Color("122334"), LINE))
+	theme.set_stylebox("hover", "PopupMenu", _panel_box(Color("244653"), ACCENT, 4))
+	theme.set_constant("v_separation", "PopupMenu", 8)
+	theme.set_stylebox("separator", "HSeparator", _panel_box(LINE, LINE, 0))
+	theme.set_stylebox("scroll", "VScrollBar", _panel_box(Color("0c1824"), Color("0c1824"), 2))
+	theme.set_stylebox("grabber", "VScrollBar", _panel_box(LINE, LINE, 2))
+	theme.set_stylebox("grabber_highlight", "VScrollBar", _panel_box(ACCENT, ACCENT, 2))
+	theme.set_stylebox("grabber_pressed", "VScrollBar", _panel_box(ACCENT, ACCENT, 2))
+	return theme
+
+
 func _build_ui() -> void:
+	var theme := _test_theme()
 	_badge = Button.new()
-	_badge.text = "测试模式 · F8 打开面板"
+	_badge.text = "● 测试模式  /  F8"
+	_badge.tooltip_text = "打开测试面板；Esc 收起后继续试玩"
 	_badge.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	_badge.offset_left = -224
+	_badge.offset_left = -160
 	_badge.offset_right = -8
 	_badge.offset_top = 4
 	_badge.offset_bottom = 28
-	_badge.theme = CyberUITheme.create_theme()
+	_badge.theme = theme
 	_badge.pressed.connect(open_panel)
 	add_child(_badge)
 	_badge.hide()
 	_overlay = ColorRect.new()
 	_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_overlay.color = Color("20262afa")
-	_overlay.theme = CyberUITheme.create_os_theme()
+	_overlay.color = Color("09131f")
+	_overlay.theme = theme
 	add_child(_overlay)
 	CyberUITheme.add_os_frame(_overlay)
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 16)
+		margin.add_theme_constant_override("margin_" + side, 12)
 	_overlay.add_child(margin)
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 8)
 	margin.add_child(column)
-	var heading := Label.new()
-	heading.text = "测试面板"
+	var header := HBoxContainer.new()
+	column.add_child(header)
+	var titles := VBoxContainer.new()
+	titles.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	titles.add_theme_constant_override("separation", 0)
+	header.add_child(titles)
+	var heading := _label(titles, "测试控制台", INK)
 	heading.add_theme_font_size_override("font_size", 20)
-	column.add_child(heading)
+	_label(titles, "自由配装 · 快速跳转 · 即时验证", SOFT_INK).add_theme_font_size_override("font_size", 10)
+	var status := _label(header, "● 隔离测试中", ACCENT)
+	status.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	column.add_child(scroll)
-	var content := VBoxContainer.new()
+	var content := HBoxContainer.new()
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	content.add_theme_constant_override("separation", 8)
 	scroll.add_child(content)
-	_label(content, "领取装备（关闭面板后按 Tab 配装）")
-	var equipment := HBoxContainer.new()
-	content.add_child(equipment)
+	var routes := _card(content, "01  关卡跳转", "保留当前测试配装")
+	routes.get_parent().size_flags_stretch_ratio = 0.9
+	var destinations := GridContainer.new()
+	destinations.columns = 2
+	destinations.add_theme_constant_override("h_separation", 5)
+	destinations.add_theme_constant_override("v_separation", 5)
+	routes.add_child(destinations)
+	_button(destinations, "义体构筑试验场", _on_jump.bind(-2))
+	_button(destinations, "测试仓库", _on_jump.bind(-1))
+	for index in 3:
+		_button(destinations, "第 %d 层" % (index + 1), _on_jump.bind(index))
+	_button(destinations, "直达 Boss", _on_jump.bind(3))
+	_button(destinations, "二结局 Boss", _on_channel_boss_jump)
+	_button(routes, "直达 Codex 通道", _on_codex_jump.bind(false))
+	_button(routes, "通道＋二结局核心", _on_codex_jump.bind(true))
+	var separator := HSeparator.new()
+	routes.add_child(separator)
+	var cheats := HBoxContainer.new()
+	cheats.add_theme_constant_override("separation", 5)
+	routes.add_child(cheats)
+	_button(cheats, "一键清场", func() -> void: _message.text = "本层已清理" if clear_area() else "请先进入战斗关卡")
+	_button(cheats, "击败 Boss", func() -> void: _message.text = "Boss 已击败，可前往出口结算" if defeat_boss() else "请先进入未通关的 Boss 关")
+	var loadout := VBoxContainer.new()
+	loadout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	loadout.add_theme_constant_override("separation", 8)
+	content.add_child(loadout)
+	var equipment := _card(loadout, "02  装备补给", "领取后按 Tab 配装")
+	var equipment_row := HBoxContainer.new()
+	equipment_row.add_theme_constant_override("separation", 5)
+	equipment.add_child(equipment_row)
 	_items = OptionButton.new()
 	_items.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_items.fit_to_longest_item = false
+	_style_image_options(_items)
 	for id: String in ComponentInventory.PROTOTYPES.data:
 		var prototype: Dictionary = ComponentInventory.PROTOTYPES.data[id]
 		if bool(prototype.get("debug_only", false)) or bool(prototype.get("bound", false)) or id in ["baton", "initial_baton", "wheel"] or str(prototype.get("slot", "")) not in ["weapon", "cyberware", "defense", "insurance"]:
 			continue
 		_item_ids.append(id)
 		var item := ComponentRolls.make_item(id)
-		_items.add_item(item.get_title())
+		_items.add_icon_item(item.get_texture(), item.get_title())
+		_items.get_popup().set_item_icon_max_width(_items.item_count - 1, 24)
 	_items.item_selected.connect(func(_index: int) -> void: _sync_quality())
-	equipment.add_child(_items)
+	equipment_row.add_child(_items)
 	_quality = OptionButton.new()
 	for text in ["制式", "改良", "原型"]:
 		_quality.add_item(text)
-	equipment.add_child(_quality)
+	equipment_row.add_child(_quality)
 	_sync_quality()
-	_button(equipment, "领取", _on_grant)
-	_label(content, "直接选择人格和天赋（无需饮料）")
+	_button(equipment_row, "领取", _on_grant, true)
+	var talents := _card(loadout, "03  人格与天赋", "直接应用，无需饮料")
 	var persona_row := HBoxContainer.new()
-	content.add_child(persona_row)
+	persona_row.add_theme_constant_override("separation", 5)
+	talents.add_child(persona_row)
 	_persona = OptionButton.new()
 	_persona.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_persona.fit_to_longest_item = false
+	_style_image_options(_persona)
 	for id in TalentCoreController.PERSONA_IDS:
-		_persona.add_item(TalentCoreController.PERSONA_DISPLAY_NAMES[id])
+		_persona.add_icon_item(PERSONA_PORTRAITS[id], TalentCoreController.PERSONA_DISPLAY_NAMES[id])
+		_persona.get_popup().set_item_icon_max_width(_persona.item_count - 1, 28)
 	_persona.item_selected.connect(func(_index: int) -> void: _refresh_talents())
 	persona_row.add_child(_persona)
 	_level = OptionButton.new()
@@ -353,48 +491,85 @@ func _build_ui() -> void:
 	_level.select(2)
 	_level.item_selected.connect(func(_index: int) -> void: _refresh_talents())
 	persona_row.add_child(_level)
-	_button(persona_row, "应用天赋", _on_apply_talents)
+	_button(persona_row, "应用", _on_apply_talents, true)
 	for tier in range(1, 4):
 		var choices := OptionButton.new()
 		choices.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		content.add_child(choices)
+		choices.fit_to_longest_item = false
+		_style_image_options(choices)
+		choices.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		choices.item_selected.connect(func(_index: int) -> void: _sync_talent_tooltips())
+		talents.add_child(choices)
 		_talents.append(choices)
 	_refresh_talents()
-	_label(content, "关卡跳转（保留当前测试配装）")
-	var destinations := HBoxContainer.new()
-	content.add_child(destinations)
-	_button(destinations, "义体构筑试验场", _on_jump.bind(-2))
-	_button(destinations, "测试仓库", _on_jump.bind(-1))
-	for index in 3:
-		_button(destinations, "第 %d 层" % (index + 1), _on_jump.bind(index))
-	_button(destinations, "直达 Boss", _on_jump.bind(3))
-	var cheats := HBoxContainer.new()
-	content.add_child(cheats)
-	_button(cheats, "一键清场", func() -> void: _message.text = "本层已清理" if clear_area() else "请先进入战斗关卡")
-	_button(cheats, "直接击败 Boss", func() -> void: _message.text = "Boss 已击败，可前往出口结算" if defeat_boss() else "请先进入未通关的 Boss 关")
+	var feedback := PanelContainer.new()
+	feedback.add_theme_stylebox_override("panel", _panel_box(Color("102830"), Color("265058"), 6))
+	column.add_child(feedback)
 	_message = Label.new()
 	_message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_message.add_theme_color_override("font_color", CyberUITheme.WARNING)
-	column.add_child(_message)
+	_message.add_theme_font_size_override("font_size", 11)
+	_message.add_theme_color_override("font_color", ACCENT)
+	feedback.add_child(_message)
 	var footer := HBoxContainer.new()
+	footer.add_theme_constant_override("separation", 8)
 	column.add_child(footer)
-	_button(footer, "关闭面板 / F8", close_panel)
-	_button(footer, "退出测试并返回主菜单", func() -> void: set_enabled(false))
+	var hint := _label(footer, "F8 / Esc  收起后继续试玩", SOFT_INK)
+	hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hint.add_theme_font_size_override("font_size", 10)
+	_button(footer, "返回游戏", close_panel, true)
+	var exit_button := _button(footer, "结束测试", func() -> void: set_enabled(false))
+	exit_button.tooltip_text = "结束隔离测试并返回主菜单"
+	exit_button.add_theme_color_override("font_color", Color("e7ac96"))
 	_overlay.hide()
 
 
-func _label(parent: Node, text: String) -> void:
+func _card(parent: Node, title: String, subtitle: String) -> VBoxContainer:
+	var panel := PanelContainer.new()
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.add_theme_stylebox_override("panel", _panel_box(Color("101f2e"), LINE, 7))
+	parent.add_child(panel)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 4)
+	panel.add_child(column)
+	_label(column, title, ACCENT)
+	_label(column, subtitle, SOFT_INK).add_theme_font_size_override("font_size", 10)
+	return column
+
+
+func _label(parent: Node, text: String, color := INK) -> Label:
 	var label := Label.new()
 	label.text = text
-	label.add_theme_color_override("font_color", CyberUITheme.HIGHLIGHT)
+	label.add_theme_color_override("font_color", color)
 	parent.add_child(label)
+	return label
 
 
-func _button(parent: Node, text: String, action: Callable) -> void:
+func _button(parent: Node, text: String, action: Callable, primary := false) -> Button:
 	var button := Button.new()
 	button.text = text
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.custom_minimum_size.y = 24
+	if primary:
+		button.add_theme_stylebox_override("normal", _panel_box(Color("20464c"), Color("3b7e80"), 5))
+		button.add_theme_color_override("font_color", Color("b7f4e9"))
 	button.pressed.connect(action)
 	parent.add_child(button)
+	return button
+
+
+func _style_image_options(options: OptionButton) -> void:
+	options.expand_icon = true
+	options.add_theme_constant_override("icon_max_width", 20)
+	options.add_theme_constant_override("h_separation", 5)
+	options.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	options.get_popup().max_size = Vector2i(480, 280)
+
+
+func _sync_talent_tooltips() -> void:
+	var id := TalentCoreController.PERSONA_IDS[_persona.selected]
+	for index in _talents.size():
+		var talent_id: StringName = TalentCoreController.TALENT_OPTIONS[id][index + 1][_talents[index].selected]
+		_talents[index].tooltip_text = "%s\n%s" % [PersonaRestFlow.TALENT_TEXT[talent_id][0], PersonaRestFlow.TALENT_SUMMARY[talent_id]]
 
 
 func _sync_persona() -> void:
@@ -413,11 +588,15 @@ func _refresh_talents() -> void:
 		choices.clear()
 		var options: Array = TalentCoreController.TALENT_OPTIONS[id][index + 1]
 		for talent_id: StringName in options:
-			choices.add_item("%d  %s  %s" % [index + 1, PersonaRestFlow.TALENT_TEXT[talent_id][0], PersonaRestFlow.TALENT_SUMMARY[talent_id]])
+			var icon := load("res://assets/art/ui/test_talents/%s.svg" % talent_id) as Texture2D
+			choices.add_icon_item(icon, "%d 阶  ·  %s" % [index + 1, PersonaRestFlow.TALENT_TEXT[talent_id][0]])
+			choices.get_popup().set_item_icon_max_width(choices.item_count - 1, 20)
+			choices.get_popup().set_item_tooltip(choices.item_count - 1, PersonaRestFlow.TALENT_TEXT[talent_id][1])
 		if player != null:
 			var selected := options.find(player.talent_core.get_talent_choice(id, index + 1))
 			choices.select(maxi(selected, 0))
 		choices.disabled = index > _level.selected
+	_sync_talent_tooltips()
 
 
 func _on_grant() -> void:
@@ -439,3 +618,16 @@ func _on_apply_talents() -> void:
 func _on_jump(index: int) -> void:
 	var success := await jump_to(index)
 	_message.text = "已进入目标关卡" if success else "暂时无法跳转，请等待加载结束后重试"
+
+
+func _on_codex_jump(with_core: bool) -> void:
+	var success := await jump_to_codex(with_core)
+	if success:
+		_message.text = "已进入 Codex 通道" + ("，携带核心可触发同行对话" if with_core else "")
+	elif not _message.text.contains("空出一格"):
+		_message.text = "暂时无法跳转通道，请等待加载结束后重试"
+
+
+func _on_channel_boss_jump() -> void:
+	var success := await jump_to_channel_boss()
+	_message.text = "已进入二结局 Boss，按 Enter 继续剧情" if success else "请先空出一格背包，或等待加载结束后重试"

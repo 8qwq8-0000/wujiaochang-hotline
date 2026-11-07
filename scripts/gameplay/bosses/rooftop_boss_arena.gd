@@ -10,6 +10,8 @@ enum Phase {
 	AWAKENING,
 	BOSS_ACTIVE,
 	CLEARED,
+	CHANNEL_TAKEOVER,
+	SECOND_ENDING_PENDING,
 }
 
 const ROOM_SIZE := Vector2(960.0, 540.0)
@@ -33,6 +35,8 @@ var _attack_generation := 0
 var _test_mode := false
 var _test_player_state: Dictionary = {}
 var _optical_disruption_remaining := 0.0
+var route_dialogue: ChannelDialogue
+var channel_duel: ChannelBossDuel
 
 
 func _enter_tree() -> void:
@@ -41,6 +45,9 @@ func _enter_tree() -> void:
 
 
 func _ready() -> void:
+	var run := get_node("/root/RunManager")
+	if not run.channel_resume.is_empty():
+		player.import_run_state(run.get_player_state())
 	_configure_guard_awareness()
 	_configure_arena_camera()
 	room_lighting.reset_to_phase_one()
@@ -56,7 +63,7 @@ func _ready() -> void:
 	_set_phase(Phase.MINIONS)
 	_start_boss_music(1)
 	boss.set_opening_guards(OPENING_GUARD_COUNT, OPENING_GUARD_COUNT)
-	_publish_notice(&"boss_phase_one", "第一阶段：清除三名守卫，唤醒神像", Color(0.45, 0.9, 1.0), 2.4)
+	call_deferred("_resolve_ending_route")
 
 
 func _process(delta: float) -> void:
@@ -239,6 +246,8 @@ func _on_player_died(_packet: DamagePacket) -> void:
 	_attack_generation += 1
 	telegraph.clear()
 	_clear_hostile_projectiles()
+	if is_instance_valid(channel_duel):
+		channel_duel.stop_combat()
 
 
 func _push_camera_to_altar() -> void:
@@ -267,7 +276,7 @@ func _damage_player_in_rect(rect: Rect2) -> void:
 
 
 func _damage_player(source_position: Vector2, damage_type: StringName = &"energy") -> void:
-	if get_tree().paused or phase != Phase.BOSS_ACTIVE or player.health.is_dead():
+	if get_tree().paused or phase not in [Phase.BOSS_ACTIVE, Phase.CHANNEL_TAKEOVER] or player.health.is_dead():
 		return
 	var packet := DamagePacket.new()
 	packet.base_damage = 1
@@ -290,6 +299,9 @@ func _on_boss_health_changed(_current: int, _maximum: int, _delta: int) -> void:
 func _on_boss_defeated() -> void:
 	if phase == Phase.CLEARED:
 		return
+	if is_instance_valid(channel_duel) and channel_duel.stage != ChannelBossDuel.Stage.COMPLETE:
+		channel_duel.begin_ending()
+		return
 	_attack_generation += 1
 	telegraph.clear()
 	_clear_support_guards()
@@ -306,7 +318,7 @@ func _on_boss_defeated() -> void:
 	if events != null:
 		events.publish_room_cleared(self)
 		events.publish_floor_cleared()
-	_publish_notice(&"boss_defeated", "神谕中止，楼顶出口已开放", Color(0.4, 1.0, 0.62), 3.0)
+	_publish_notice(&"boss_defeated", "公共频道已恢复，楼顶出口已开放" if is_instance_valid(channel_duel) else "神谕中止，楼顶出口已开放", Color(0.4, 1.0, 0.62), 3.0)
 	room_cleared.emit()
 	boss_defeated.emit()
 
@@ -376,3 +388,40 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_R:
 		get_tree().reload_current_scene()
+
+
+func _save_channel_checkpoint() -> void:
+	var run := get_node("/root/RunManager")
+	if not run.channel_route_active or _test_mode:
+		return
+	var saved := {"scene": scene_file_path, "seed": run.run_seed, "floor": 3, "route": run.export_channel_state(),
+		"player": player.export_run_state(), "elapsed": float(Time.get_ticks_msec() - run.run_started_msec) / 1000,
+		"medical_used": run.codex_medical_supply_used}
+	if not get_node("/root/WarehouseStore").save_channel_progress(saved):
+		_publish_notice(&"channel_save_error", "楼顶检查点保存失败，请检查可用空间", Color("e37662"), 3.0)
+	run.channel_resume.clear()
+
+
+func _resolve_ending_route() -> void:
+	var run := get_node("/root/RunManager")
+	if not _test_mode and run.channel_route_active and run.codex_is_alive() and bool(run.codex_companion.get("ambush_complete", false)) and run.carries_channel_core(player):
+		run.codex_companion.arrived = true
+		_set_phase(Phase.SECOND_ENDING_PENDING)
+		_attack_generation += 1
+		boss.health.damage_enabled = false
+		boss.hurt_box.set_deferred("monitorable", false)
+		for enemies in [$Enemies, $SupportEnemies]:
+			for enemy in enemies.get_children():
+				enemy.set_physics_process(false)
+				enemy.queue_free()
+		telegraph.clear()
+		_clear_hostile_projectiles()
+		run.set_mandatory_enemy_count(1)
+		_save_channel_checkpoint()
+		channel_duel = ChannelBossDuel.new()
+		channel_duel.name = "ChannelBossDuel"
+		add_child(channel_duel)
+		return
+	else:
+		_publish_notice(&"boss_phase_one", "第一阶段：清除三名守卫，唤醒神像", Color(0.45, 0.9, 1.0), 2.4)
+	_save_channel_checkpoint()

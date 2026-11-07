@@ -6,9 +6,11 @@
 
 iOS 适配：`godot --headless --path . --script res://tests/integration/ios_mobile_check.gd` 检查原生导出预设、左右横屏、Retina 安全区与 iPad 边距；`mobile_controls_check.gd` 继续覆盖共享触控行为。`python3 tools/build_ios.py --check` 检查本机环境，`--build device` / `--build simulator` 可编译未签名产物。安装和验证范围见 `docs/technical/iOS手机端适配实施说明.md`。
 
-遗产酒谱与敌人图鉴：`godot --headless --path . --script res://tests/integration/warehouse_archive_check.gd`，覆盖旧档兼容、画面外及墙体遮挡不解锁、实际敌人/炮台/Boss 遭遇、跨实例保存、失败回滚、测试模式隔离、三页签和未解锁信息隐藏、Esc 关闭恢复。窗口模式添加 `-- --capture` 可输出酒谱、人格与敌人页截图到 `/tmp/hotline-archive-*.png`。旧存档未记录历史遭遇，首次更新后需重新遇敌解锁。
+通关记录、结局档案与敌人图鉴：`godot --headless --path . --script res://tests/integration/warehouse_archive_check.gd`，覆盖旧档兼容、画面外及墙体遮挡不解锁、实际敌人/炮台/Boss 遭遇、跨实例保存、失败回滚、测试模式隔离、四页签、通关记录与结局进度分离和未解锁信息隐藏、Esc 关闭恢复。窗口模式添加 `-- --capture` 可输出通关记录、结局、人格与敌人页截图到 `/tmp/hotline-archive-*.png`。旧存档未记录历史遭遇，首次更新后需重新遇敌解锁。
 
 # Tests
+
+第二结局神像单挑与入场剧情：`godot --headless --path . --script res://tests/integration/channel_boss_duel_check.gd`。覆盖真实Enter推进、暂停、核心接入与诅咒解除、实际子弹命中、三招伤害及安全边界、突进穿波、死亡清理、楼顶重入和完整二结局结算，59项检查通过。窗口模式追加`-- --capture`保存正式房间截图；自动化夹具生命不代表正式平衡。F8面板新增“二结局Boss”直接试玩，仍采用内存存档隔离。
 
 剧情序章：`godot --headless --fixed-fps 60 --path . --script res://tests/integration/prologue_check.gd`，使用独立存档检查开场无枪与纯对话、突进击杀、正式敌人 AI 与弹速对照及盾反实际击杀、手枪掉落、Tab 背包装备、取消强制热量练习、实战热量提醒不暂停且不重复、自然散热恢复、通信暂停玩家/敌人/子弹/热量、真实鼠标点击正文/场景/面板继续、正式 HUD 的生命/热量同步与右下角武器显示及最大缩放避让、入口增益先领后开战与自动开门、约 1.5 秒阶段缓冲与仓库传送缓冲、手枪波次和环境箱、三件战利品、Codex 对话解锁合成、小 Boss 区独立炸药箱/散热增益箱与真实使用、自动传送进入仓库、底部通信引向保险箱与死亡丢失/箱内保留说明、关闭通信后恢复操作，以及跳过与存档隔离。窗口模式追加 `-- --capture` 可输出序章截图。详见[实施说明](../docs/technical/剧情序章与基础教学实施说明.md)。
 
@@ -205,4 +207,22 @@ Codex 通道整备：`godot --headless --path . --script res://tests/integration
 
 Codex 通道安全寄存与小血瓶：`godot --headless --path . --script res://tests/integration/codex_supplies_check.gd`，33 项覆盖真实 E 打开寄存箱、只列出武器、已装备/背包武器永久寄存、既有安全配装去重、保存失败回滚与热量保留、防重复寄存、死亡后重新读档及回仓取出；桌上血瓶满血不消耗、恢复 1 格、使用后消失、同次行动重载不刷新与新行动补充。非 headless 追加 `-- --capture` 保存 `/tmp/codex-supplies-*.png`。
 
-设置内测试模式：`godot --headless --path . --script tests/integration/test_mode_check.gd`，覆盖默认关闭、设置开关和 F8、领取品质／容量／保险唯一限制、三人格全部天赋分支、非法天赋无部分修改、测试仓库与三层跳转、未激活区域清场、Boss 开场与护盾阶段快速通关、结算／新建档案隔离、主菜单直达 Boss、死亡后跳关恢复、退出后正式档案及存档字节完全一致，以及正常保存恢复。测试文件使用 `.godot/test-mode-check.json`，结束后删除。
+F8 快捷测试模式：`godot --headless --path . --script tests/integration/test_mode_check.gd`，覆盖默认关闭、设置不含测试入口、F8 开合面板不离开当前关卡、Esc 收起面板、普通/携带核心通道跳转、领取品质／容量／保险唯一限制、三人格全部天赋分支、非法天赋无部分修改、测试仓库与三层跳转、未激活区域清场、Boss 开场与护盾阶段快速通关、结算／新建档案隔离、主菜单直达 Boss、死亡后跳关恢复、退出后正式档案及存档字节完全一致，以及正常保存恢复。测试文件使用 `.godot/test-mode-check.json`，结束后删除。
+
+第二结局“频道归还”：`godot --headless --path . --script res://tests/integration/channel_route_check.gd` 检查首轮通关解锁、第一层接入选择、撤离禁止、第二/三层无旧任务的正常通行与 Codex 补给、Boss 联动和三节点接管、结局保存及测试模式隔离；`godot --headless --path . --script res://tests/integration/channel_recovery_check.gd` 检查安全节点存档、正式主菜单恢复、死亡与放弃、楼顶/Codex 恢复及旧任务房存档迁回普通楼层。窗口运行前者并追加 `-- --channel-visual` 可输出 `/tmp/channel-route-preview/` 截图。详见[第二结局实施说明](../docs/technical/第二结局频道归还实施说明.md)。
+
+二结局自动解锁提示：`godot --headless --path . --script res://tests/integration/channel_intro_check.gd`，覆盖首次回仓自动弹出、旧通关记录兼容、说明文字、暂停与恢复、确认保存失败重试、跨实例持久化、一次性提示、测试隔离及已完成二结局时不显示过时提醒。窗口运行追加 `-- --capture` 输出 `/tmp/hotline-channel-intro.png`。
+
+二结局底部通信统一：`godot --headless --path . --script res://tests/integration/channel_dialogue_check.gd`，检查紧凑底部布局、长文分页、Enter/鼠标继续、最终页才显示选择、安全选项默认焦点、背景点击不误接入、任务回调时机、结局 Esc 跳过和暂停恢复。窗口运行追加 `-- --capture` 保存 `/tmp/channel-unified-choice.png` 与 `/tmp/channel-unified-feedback.png`。
+
+隐藏区域与核心背包：`godot --headless --path . --script res://tests/integration/channel_hidden_shrine_check.gd`。当前覆盖 68 项：三次命中开门、受击动画与镜头不跳、独立区域淡入/淡出和往返、独立上方背景、两盾兵三狙击手与导航、左右拾取选择、满包拒绝、核心固定第一格和不可丢弃/移动/入黑匣、保存失败回滚与跨层恢复。窗口模式追加 `-- --capture` 生成 `/tmp/hidden-shrine-*.png`。
+
+隐藏区域最新专项为 72 项：另覆盖右下方上楼门的清场解锁、未拾取核心仍可上楼、从新门前往第二层，以及减少掩体后的可达性。
+
+暗门破裂动画后专项更新为 74 项，验证动画收尾和破口持久显示；窗口截图模式额外输出 `/tmp/hidden-shrine-break-frame-*.png`。
+
+龙娘四方向动画资源：`godot --headless --path . --script res://tests/integration/dragon_animation_check.gd`，24 项检查覆盖四方向切换、实际帧推进、停步朝向及脚底原点。窗口运行追加 `-- --preview` 持续预览，追加 `-- --capture` 输出 `/tmp/hotline-dragon-animation.png`。资源说明见 `docs/art/validation/dragon_gpt_v1/README.md`；尚未接入正式同行流程。
+
+Codex 招募、单区域突袭与结局分流：`godot --headless --path . --script res://tests/integration/codex_escort_check.gd`，覆盖原对话、招募及回滚、三格生命与 1.2 秒保护、真实敌方子弹与友方穿透、只锁玩家、第三层单区域、龙娘到位后等待玩家靠近才暂停对话、右侧接受、延后准备、实际交互探测器重开、确认前不刷怪、确认后固定三波、长时间等待不超时、第三波结束不刷新第四波、隔墙持续追击、计时与清场双条件、死亡取消后续波次、保存恢复及两种楼顶分支。窗口运行追加 `-- --capture`，设备对话及战斗截图输出到 `/tmp/codex-escort-03-ready.png` 与 `/tmp/codex-escort-04-ambush.png`。
+
+2026-11-04 主分支整合：98 个单元测试及 35 个专项入口通过；F8 121 项包含八种高级义体实际领取/图标/模块验证，频道通信 18 项包含原生触屏及模拟鼠标去重。完整结果和实际窗口检查见[整合记录](../docs/technical/本地变更与PR准备说明_2026-11-04.md)。

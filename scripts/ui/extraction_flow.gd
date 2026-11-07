@@ -139,7 +139,7 @@ func settle_death() -> void:
 	get_tree().paused = true
 	_overlay.show()
 	_clear_buttons()
-	if not store.commit(profile.chest, recovery):
+	if not store.commit(profile.chest, recovery, "", {}, {"checkpoint": {}}):
 		_title.text = "死亡结算保存失败"
 		_settlement_note.text = "保存失败，请重试"
 		_details.text = store.error_message + "。请重试，尚未返回仓库。"
@@ -147,6 +147,7 @@ func settle_death() -> void:
 		return
 	_death_pending = false
 	run.run_finished = true
+	run.reset_channel_route()
 	run.set_player_state(recovery)
 	_settled = true
 	_title.text = "行动失败"
@@ -173,7 +174,7 @@ func open_exit(exit: ExitElevator = null) -> void:
 		if not run.persistent_run or arena.phase != RooftopBossArena.Phase.CLEARED:
 			return
 		_title.text = "通关"
-		_details.text = "完成记录后，本次行动会加入遗产酒谱。"
+		_details.text = "保存后，可在仓库的「通关记录」中查看本次行动。"
 		_clear_buttons()
 		_add_button("保存通关记录", complete_victory)
 		_overlay.show()
@@ -181,8 +182,15 @@ func open_exit(exit: ExitElevator = null) -> void:
 	_title.text = "本层已清理"
 	_details.text = "撤离带走装备，或继续前往下一层。"
 	_clear_buttons()
-	_add_button("撤离结算", extract)
-	_add_button("继续下一层", continue_floor)
+	if run.channel_route_active:
+		_title.text = "直连行动 / 撤离已封锁"
+		_details.text = "本层目标已完成，继续登楼。层间整备与 Codex 补给仍可使用。"
+	elif is_instance_valid(exit) and exit.ascent_only:
+		_title.text = "前往第二层"
+		_details.text = "上行门已开放。继续前往第二层；也可以先返回查看祭坛或整理装备。"
+	else:
+		_add_button("撤离结算", extract)
+	_add_button("前往第二层" if is_instance_valid(exit) and exit.ascent_only else "继续下一层", continue_floor)
 	_overlay.show()
 
 
@@ -234,6 +242,9 @@ func continue_floor() -> void:
 		return
 	if is_instance_valid(_bound_scene) and _bound_scene.is_in_group("intermission"):
 		return
+	if run.mandatory_enemies_remaining > 0 or not run.channel_floor_ready():
+		_details.text = "请先清理本层。"
+		return
 	var snapshot: Dictionary = _player.export_run_state()
 	var destination := BOSS_PATH if run.floor_index >= run.NORMAL_FLOOR_COUNT - 1 else FLOOR_PATH
 	var service_stop: bool = run.floor_index == 1
@@ -258,7 +269,7 @@ func complete_victory() -> void:
 	var store := get_node("/root/WarehouseStore")
 	var profile: Dictionary = store.get_profile()
 	var record: Dictionary = run.victory_result.record
-	if not store.commit(profile.chest, run.victory_result.player_state, "", record):
+	if not store.commit(profile.chest, run.victory_result.player_state, "", record, {"checkpoint": {}}):
 		run.run_finished = false
 		run.victory_result.clear()
 		run.set_player_state(_player.export_run_state())
@@ -272,7 +283,7 @@ func complete_victory() -> void:
 	_overlay.title = "HOTLINE / 完整通关"
 	_overlay.accent_color = CyberUITheme.WARNING
 	_settlement_note.text = "遗产记录已保存 / 义体随行动结束清除"
-	_title.text = "遗产饮料已铸造 · 完整通关"
+	_title.text = "频道归还 · 完整通关" if record.get("ending", "core_destroyed") == "channel_returned" else "摧毁中枢 · 完整通关"
 	var persona_lines := PackedStringArray()
 	for entry: Dictionary in record.get("personas", []):
 		var talent := String(entry.get("tier_3_talent", ""))
@@ -290,6 +301,11 @@ func complete_victory() -> void:
 		float(record.get("peak_rock_feedback", 0.0)),
 		int(record.get("rock_attacks", 0)),
 	]
+	if record.get("ending", "core_destroyed") == "core_destroyed":
+		_details.text += "\n\n新的热线调查已解锁。中枢残片中恢复了一段求救呼叫；下一次行动可在第一层追查。"
+	else:
+		_details.text += "\n\n公共路由已恢复，控制权已撤销。求救信号重新传出。"
+	run.reset_channel_route()
 	_clear_buttons()
 	_add_button("返回仓库", return_to_warehouse)
 

@@ -61,6 +61,7 @@ var _cover_stuck := 0.0
 var _cover_retry := 0.0
 var barrier_skill: EnemyBarrierSkill
 var stationary_test_target := false
+var pursue_player := false
 var _stagger_remaining: float = 0.0
 var _target: Node2D
 var _windup_remaining := 0.0
@@ -205,19 +206,20 @@ func _physics_process(delta: float) -> void:
 		_submit_navigation_velocity(search_velocity)
 		queue_redraw()
 		return
-	if (not is_instance_valid(_target) or not _same_room(_target)) and _optical_disruption_remaining <= 0.0:
+	if (not is_instance_valid(_target) or not _same_room(_target) or _target_is_dead()) and _optical_disruption_remaining <= 0.0:
 		_target = null
 		for candidate in get_tree().get_nodes_in_group("player"):
 			if candidate is Node2D and _same_room(candidate):
-				_target = candidate
-				break
+				var candidate_health := candidate.get_node_or_null("HealthComponent") as HealthComponent
+				if candidate_health != null and not candidate_health.is_dead() and (_target == null or global_position.distance_squared_to(candidate.global_position) < global_position.distance_squared_to(_target.global_position)):
+					_target = candidate
 	if not is_instance_valid(_target):
 		_forget_target()
 		_windup_remaining = 0.0
 		_tick_patrol(delta)
 		queue_redraw()
 		return
-	if _target is PlayerController and _target.health.is_dead():
+	if _target_is_dead():
 		_forget_target()
 		_windup_remaining = 0.0
 		_stop_navigation_motion()
@@ -228,6 +230,9 @@ func _physics_process(delta: float) -> void:
 		_cancel_investigation()
 		_alert_to(_target.global_position, true)
 		_ensure_precharge()
+	elif pursue_player:
+		_cancel_precharge()
+		_alert_to(_target.global_position, false)
 	elif _alerted:
 		_cancel_precharge()
 		_memory_remaining = maxf(_memory_remaining - delta, 0.0)
@@ -847,7 +852,7 @@ func _tick_self_destruct(delta: float) -> void:
 
 func _explode_and_finalize() -> void:
 	var radius := profile.attack_range
-	for actor in get_tree().get_nodes_in_group("player") + get_tree().get_nodes_in_group("enemies"):
+	for actor in get_tree().get_nodes_in_group("player") + get_tree().get_nodes_in_group("companions") + get_tree().get_nodes_in_group("enemies"):
 		if actor == self or not actor is Node2D or not is_instance_valid(actor) or not _same_room(actor):
 			continue
 		var target := actor as Node2D
@@ -1230,3 +1235,10 @@ func modify_incoming_damage(_packet: DamagePacket, amount: int) -> int:
 	var applied := maxi(ceili(exact - 0.00001), 0)
 	_signal_damage_remainder = exact - applied
 	return applied
+
+
+func _target_is_dead() -> bool:
+	if not is_instance_valid(_target):
+		return true
+	var target_health := _target.get_node_or_null("HealthComponent") as HealthComponent
+	return target_health != null and target_health.is_dead()

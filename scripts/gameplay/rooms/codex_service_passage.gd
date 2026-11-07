@@ -10,6 +10,14 @@ var upgrade_panel: CanvasLayer
 var safe_storage: Node2D
 var last_synthesis_result: InventoryItem
 var _mutating := false
+var _escort_dialogue := false
+var companion: CodexCompanion
+const ESCORT_LINES: Array[String] = [
+	"你带来的……是残损频道核心？里面还有没能发出去的求救信号。直接摧毁中枢，这些信号也会一起消失。",
+	"我跟你上去。这枚核心必须在楼顶现场接入，远程连接撑不到那里。你负责开路，我会跟着你。",
+	"祭坛只有三格耐久。第三层有一台能修复核心的设备，但启动它会引来突袭。到那里后由你决定何时开始；如果祭坛被摧毁，你就按原计划摧毁中枢。",
+	"先把装备整理好。工坊和补给仍然可以使用；准备好以后，从右侧前往第三层。我们一起上楼顶。",
+]
 var _art: Node2D = preload("res://scripts/presentation/warehouse_art.gd").new()
 @onready var player: PlayerController = $Player
 @onready var run: Node = get_node("/root/RunManager")
@@ -57,6 +65,8 @@ func _ready() -> void:
 	for label in find_children("*", "Label", true, false):
 		label.add_theme_font_override("font", CyberUITheme.FONT)
 	queue_redraw()
+	call_deferred("_restore_escort")
+	call_deferred("_save_channel_checkpoint")
 
 func receive_scene_payload(payload: Dictionary) -> void:
 	if payload.has("player_state"):
@@ -68,9 +78,22 @@ func talk_to_codex() -> void:
 	if dialogue_completed:
 		upgrade_panel.open()
 	else:
+		_escort_dialogue = run.carries_channel_core(player) and run.codex_companion.is_empty() and run.channel_route_active
+		panel.lines.assign(ESCORT_LINES if _escort_dialogue else panel.LINES)
+		panel._page = 0
+		panel.completion_text = "一起行动 / 打开工坊 [E]" if _escort_dialogue else "打开合成台 [E]"
 		panel.open()
 
 func _on_dialogue_completed() -> void:
+	if _escort_dialogue and run.codex_companion.is_empty():
+		if not run.recruit_codex(player):
+			$Status.text = "无法开始同行，请确认仍携带残损频道核心"
+			return
+		if not _save_channel_checkpoint():
+			run.codex_companion.clear()
+			$Status.text = "同行进度保存失败，请重新与 Codex 交谈"
+			return
+		_spawn_escort()
 	dialogue_completed = true
 	$Status.text = "装备工坊已开放。准备好后向右前往第三层"
 	upgrade_panel.call_deferred("open")
@@ -180,3 +203,36 @@ func _draw() -> void:
 
 func _exit_tree() -> void:
 	_art.free()
+
+
+func _save_channel_checkpoint() -> bool:
+	if not run.channel_route_active:
+		return true
+	var saved := {"scene": scene_file_path, "seed": run.run_seed, "floor": run.floor_index,
+		"route": run.export_channel_state(), "player": player.export_run_state(),
+		"medical_used": run.codex_medical_supply_used,
+		"persona_floor": run.persona_authorization_floor, "persona_pending": run.persona_authorization_pending,
+		"persona_refilled": run.persona_rest_refilled_floor,
+		"elapsed": float(Time.get_ticks_msec() - run.run_started_msec) / 1000}
+	if not get_node("/root/WarehouseStore").save_channel_progress(saved):
+		$Status.text = "补给通道检查点保存失败，请重试进入下一层"
+		return false
+	else:
+		$Status.text = "频道直连持续中 / 可在此补给、合成，再前往第三层"
+	run.channel_resume.clear()
+	return true
+
+
+func _restore_escort() -> void:
+	if not run.codex_companion.is_empty():
+		dialogue_completed = true
+		_spawn_escort()
+
+
+func _spawn_escort() -> void:
+	$SynthesisNPC/RefinedArt.hide()
+	$SynthesisNPC/Name.text = "装备工坊"
+	$SynthesisNPC/Prompt.text = "[E] 使用合成台"
+	if run.codex_is_alive() and not is_instance_valid(companion):
+		companion = CodexCompanion.spawn(self, player, $SynthesisNPC/RefinedArt.global_position)
+		companion.follow_player = true

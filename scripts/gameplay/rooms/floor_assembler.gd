@@ -14,6 +14,7 @@ const DEFAULT_ROOM := preload("res://scenes/levels/rooms/prototype_combat_room.t
 @export var room_pool: Array[RoomTemplateData] = []
 @export_range(0.0, 256.0, 1.0) var room_camera_north_extension := 0.0
 
+var codex_ambush := false
 var _chosen_scene_paths := {}
 var generated_rooms: Array[Node] = []
 var _rooms_remaining: int = 0
@@ -55,14 +56,18 @@ func assemble() -> void:
 	var floor_number: int = run_manager.floor_index + 1 if run_manager != null else 1
 	var difficulty_step := floor_number - 1 if floor_number >= 1 and floor_number <= 3 else 0
 	for index in room_count:
-		var packed := _choose_room(random, floor_number)
+		var packed := load("res://scenes/levels/rooms/variants/freight_atrium.tscn") as PackedScene if codex_ambush else _choose_room(random, floor_number)
 		var room := packed.instantiate()
 		room.position = room_spacing * index
 		if room is CombatRoom:
 			room.get_node("EnemySpawner").health_bonus = difficulty_step
 			room.get_node("EnemySpawner").melee_speed_multiplier = 1.0 + 0.1 * difficulty_step
 			room.signal_emitter_enabled = difficulty_step >= 1
-			room.extra_enemy_count = difficulty_step
+			room.extra_enemy_count = 0 if codex_ambush else difficulty_step
+			room.ambush_managed = codex_ambush
+			if codex_ambush:
+				room.get_node("EnemySpawner").completion_held = not bool(run_manager.codex_companion.get("ambush_complete", false))
+				room.get_node("EnemySpawner").initial_wave_size = 3
 			room.camera_north_extension = room_camera_north_extension
 		if sequential_progression and room is CombatRoom:
 			room.configure_stage(index, room_count)
@@ -126,7 +131,9 @@ func _on_room_cleared(_room: Node) -> void:
 	if sequential_progression:
 		var index := generated_rooms.find(_room)
 		if index >= 0 and index < passages.size():
-			passages[index].unlock()
+			var mission := get_parent().get_node_or_null("ChannelMission")
+			if mission == null or mission.allows_next_area():
+				passages[index].unlock()
 		_refresh_objectives()
 	if _rooms_remaining > 0:
 		return
@@ -155,7 +162,26 @@ func _build_passages() -> void:
 func _begin_sequence() -> void:
 	if generated_rooms.is_empty():
 		return
-	generated_rooms[0].activate()
+	var run := get_node("/root/RunManager")
+	var saved: Array = run.channel_resume.get("cleared", [])
+	if codex_ambush and bool(run.codex_companion.get("ambush_complete", false)):
+		saved = [true]
+	for index in mini(saved.size(), generated_rooms.size()):
+		if not saved[index]:
+			continue
+		var room: CombatRoom = generated_rooms[index]
+		room.spawner._spawned = true
+		room.spawner.required_remaining = 0
+		room.cleared = true
+		room.active = true
+		for turret in room.find_children("*", "StaticBody2D", true, false):
+			if turret is SentryTurret:
+				turret.queue_free()
+		_on_room_cleared(room)
+	if saved.size() > 0 and saved[0] and saved.size() > 1 and float(run.channel_resume.get("x", 0)) >= generated_rooms[1].position.x:
+		active_area_index = 1
+		passages[0].seal_return()
+	generated_rooms[active_area_index].activate()
 	_refresh_objectives()
 
 
@@ -167,8 +193,14 @@ func _physics_process(_delta: float) -> void:
 	var player := get_tree().get_first_node_in_group("player") as PlayerController
 	if player == null or player.health.is_dead():
 		return
+	var mission := get_parent().get_node_or_null("ChannelMission")
+	if mission != null and not mission.allows_next_area():
+		return
 	var next: CombatRoom = generated_rooms[active_area_index + 1]
 	if next.contains_world_point(player.global_position):
+		var escort := get_parent().get_node_or_null("CodexCompanion") as CodexCompanion
+		if escort != null and not escort.health.is_dead() and not next.contains_world_point(escort.global_position):
+			return
 		passages[active_area_index].seal_return()
 		active_area_index += 1
 		get_node("/root/CombatEvents").publish_notice(&"return_path_closed", "后方通道已封闭", Color("e6bc73"))

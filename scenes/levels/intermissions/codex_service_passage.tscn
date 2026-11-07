@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://bybl40t2emqv4"]
 
-[ext_resource type="Texture2D" uid="uid://dvcv47n7jflv7" path="res://assets/art/environment/refined/gpt_synthesist.png" id="art_mechanic"]
+[ext_resource type="PackedScene" path="res://scenes/actors/companions/dragon_visual.tscn" id="dragon_visual"]
 [ext_resource type="Texture2D" uid="uid://bkyqt2t67fbat" path="res://assets/art/environment/warehouse/workbench_v2.png" id="art_workbench"]
 [ext_resource type="Texture2D" uid="uid://cubkyvsvop1y7" path="res://assets/art/environment/warehouse/chest_v2.png" id="chest_art"]
 [ext_resource type="Script" uid="uid://dlua384ihlh1u" path="res://scripts/presentation/warehouse_door_sigil.gd" id="door_sigil"]
@@ -19,10 +19,6 @@ size = Vector2(16, 162)
 
 [sub_resource type="RectangleShape2D" id="DoorShape"]
 size = Vector2(48, 64)
-
-[sub_resource type="AtlasTexture" id="Art_mechanic"]
-atlas = ExtResource("art_mechanic")
-region = Rect2(100, 12, 1017, 1376)
 
 [sub_resource type="AtlasTexture" id="Art_workbench"]
 atlas = ExtResource("art_workbench")
@@ -138,11 +134,8 @@ theme_override_font_sizes/font_size = 10
 text = "[E] 与 Codex 交谈"
 horizontal_alignment = 1
 
-[node name="RefinedArt" type="Sprite2D" parent="SynthesisNPC" unique_id=1657406353]
-texture_filter = 1
-position = Vector2(-7, 5)
-scale = Vector2(0.036337208, 0.036337208)
-texture = SubResource("Art_mechanic")
+[node name="RefinedArt" parent="SynthesisNPC" instance=ExtResource("dragon_visual")]
+position = Vector2(-7, 30)
 
 [node name="Workbench" type="Node2D" parent="SynthesisNPC" unique_id=1742195231]
 position = Vector2(-25, -45)

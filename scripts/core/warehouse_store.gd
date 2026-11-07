@@ -64,7 +64,8 @@ func commit(
 	chest: Array,
 	loadout: Dictionary,
 	difficulty: String = "",
-	legacy_record: Dictionary = {}
+	legacy_record: Dictionary = {},
+	channel_update: Dictionary = {}
 ) -> bool:
 	if not load_profile():
 		return false
@@ -77,6 +78,15 @@ func commit(
 	if not legacy_record.is_empty():
 		legacy_drinks.append(legacy_record.duplicate(true))
 		_merge_legacy_record(codex, legacy_record)
+	var story: Dictionary = _profile.get("channel_story", {"discoveries": []}).duplicate(true)
+	var discoveries: Array = story.get("discoveries", []).duplicate()
+	for discovery: String in channel_update.get("discoveries", []):
+		if discovery not in discoveries:
+			discoveries.append(discovery)
+	story["discoveries"] = discoveries
+	if channel_update.has("intro_seen"):
+		story["intro_seen"] = bool(channel_update.intro_seen)
+	var checkpoint: Dictionary = channel_update.get("checkpoint", _profile.get("channel_checkpoint", {})).duplicate(true)
 	var next := {
 		"version": SAVE_VERSION,
 		"chest": chest.duplicate(true),
@@ -84,6 +94,8 @@ func commit(
 		"difficulty": difficulty if not difficulty.is_empty() else _profile.get("difficulty", ["low_pressure", "standard", "high_pressure"][int(get_node("/root/GameSettings").difficulty)]),
 		"codex": codex,
 		"legacy_drinks": legacy_drinks,
+		"channel_story": story,
+		"channel_checkpoint": checkpoint,
 	}
 	next = ComponentRolls.migrate_snapshot(next)
 	if not _valid_profile(next):
@@ -133,6 +145,66 @@ func _valid_profile(value: Variant) -> bool:
 	for enemy_id: Variant in codex.get("enemies", []):
 		if not enemy_id is String:
 			return false
+	if not value.get("channel_story", {}) is Dictionary or not value.get("channel_checkpoint", {}) is Dictionary:
+		return false
+	if not value.get("channel_story", {}).get("intro_seen", false) is bool:
+		return false
+	if not value.get("channel_story", {}).get("discoveries", []) is Array:
+		return false
+	var checkpoint: Dictionary = value.get("channel_checkpoint", {})
+	if not checkpoint.is_empty():
+		if not checkpoint.get("player") is Dictionary or not checkpoint.get("route") is Dictionary:
+			return false
+		var floor_value := int(checkpoint.get("floor", -1))
+		if floor_value not in [0, 1, 2, 3]:
+			return false
+		var allowed_scene := "res://scenes/levels/bosses/rooftop_boss_arena.tscn" if floor_value == 3 else "res://scenes/levels/floors/combat_prototype.tscn"
+		var saved_scene: String = checkpoint.get("scene", allowed_scene)
+		if saved_scene != allowed_scene and not (floor_value == 1 and saved_scene == "res://scenes/levels/intermissions/codex_service_passage.tscn"):
+			return false
+		var route: Dictionary = checkpoint.route
+		for flag in ["active", "record", "key", "isolated"]:
+			if not route.get(flag) is bool:
+				return false
+		if not route.active or not route.record:
+			return false
+		if not route.get("codex", {}) is Dictionary:
+			return false
+		var escort: Dictionary = route.get("codex", {})
+		if not escort.is_empty():
+			if not escort.get("joined") is bool or not escort.get("arrived") is bool or not escort.get("health") is float and not escort.get("health") is int:
+				return false
+			if not escort.get("ambush_complete", false) is bool:
+				return false
+			if not escort.get("ambush_failed", false) is bool:
+				return false
+			var altar_hp: Variant = escort.get("altar_health", 3)
+			if not (altar_hp is int or altar_hp is float) or float(altar_hp) != floorf(float(altar_hp)) or float(altar_hp) < 0 or float(altar_hp) > 3:
+				return false
+			var hp := float(escort.health)
+			if hp != floorf(hp) or hp < 0 or hp > 3 or not escort.joined or (escort.arrived and hp == 0):
+				return false
+			if not escort.get("repaired_areas", []) is Array:
+				return false
+			var repair_keys: Array = escort.get("repaired_areas", [])
+			if repair_keys.size() > 24:
+				return false
+			var seen_repairs := {}
+			for key: Variant in repair_keys:
+				if not key is String or key in seen_repairs:
+					return false
+				var parts: PackedStringArray = key.split(":")
+				if parts.size() != 2 or not parts[0].is_valid_int() or not parts[1].is_valid_int() or int(parts[0]) < 0 or int(parts[0]) > 2 or int(parts[1]) < 0 or int(parts[1]) > 7:
+					return false
+				seen_repairs[key] = true
+		if not checkpoint.get("cleared", []) is Array or not checkpoint.get("pickups", []) is Array:
+			return false
+		for cleared: Variant in checkpoint.get("cleared", []):
+			if not cleared is bool:
+				return false
+		for pickup: Variant in checkpoint.get("pickups", []):
+			if not pickup is Dictionary or not pickup.get("item") is Dictionary:
+				return false
 	if not value.get("legacy_drinks", []) is Array:
 		return false
 	for record: Variant in value.get("legacy_drinks", []):
@@ -301,3 +373,29 @@ func _merge_legacy_record(codex: Dictionary, record: Dictionary) -> void:
 	leaks.sort()
 	codex["personas"] = personas
 	codex["semantic_leaks"] = leaks
+
+
+func is_channel_route_unlocked() -> bool:
+	for record: Dictionary in get_legacy_drinks():
+		# Pre-feature victory records are the original destruction ending.
+		if record.get("ending", "core_destroyed") == "core_destroyed":
+			return true
+	return false
+
+
+func save_channel_progress(checkpoint: Dictionary, discoveries: Array = []) -> bool:
+	var profile := get_profile()
+	return commit(profile.chest, profile.loadout, "", {}, {"checkpoint": checkpoint, "discoveries": discoveries})
+
+
+func get_channel_checkpoint() -> Dictionary:
+	return get_profile().get("channel_checkpoint", {}).duplicate(true)
+
+
+func has_seen_channel_intro() -> bool:
+	return bool(get_profile().get("channel_story", {}).get("intro_seen", false))
+
+
+func acknowledge_channel_intro() -> bool:
+	var profile := get_profile()
+	return commit(profile.chest, profile.loadout, "", {}, {"intro_seen": true})
