@@ -54,6 +54,8 @@ func _on_tree_node_added(node: Node) -> void:
 
 
 func _bind_existing_player() -> void:
+	if not is_inside_tree():
+		return
 	var player := get_tree().get_first_node_in_group(&"player") as PlayerController
 	if player != null:
 		_bind_player(player)

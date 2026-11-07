@@ -431,6 +431,8 @@ func show_home() -> void:
 	if exists and valid:
 		var profile: Dictionary = store.get_profile()
 		summary = "仓库装备 %d 件" % profile.chest.size()
+		if not store.get_channel_checkpoint().is_empty():
+			summary = "频道行动未结束 / 继续游戏将恢复最近安全检查点"
 	elif not valid:
 		summary = store.error_message + "；可开始新存档。"
 	_status = _label(summary, 17, MUTED if valid else AMBER)
@@ -510,6 +512,20 @@ func start_new_game() -> void:
 
 func continue_game() -> void:
 	if _busy or not store.has_saved_profile() or not store.load_profile():
+		return
+	var checkpoint: Dictionary = store.get_channel_checkpoint()
+	if not checkpoint.is_empty():
+		_busy = true
+		var run := get_node("/root/RunManager")
+		if run.restore_channel_checkpoint(checkpoint):
+			var difficulty: String = store.get_profile().get("difficulty", "standard")
+			get_node("/root/GameSettings").set_difficulty(["low_pressure", "standard", "high_pressure"].find(difficulty) as GameSettingsController.Difficulty, false)
+			_stop_lobby_music()
+			var error := get_tree().change_scene_to_file("res://scenes/bootstrap/main.tscn")
+			if error == OK:
+				return
+		_busy = false
+		_status.text = "频道行动暂时无法恢复，请重试。"
 		return
 	_enter_warehouse()
 

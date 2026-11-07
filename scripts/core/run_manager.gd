@@ -22,6 +22,15 @@ var operator_hack_announced := false
 var persona_authorization_floor := -1
 var persona_authorization_pending := false
 var persona_rest_refilled_floor := -1
+var channel_route_active := false
+var channel_record_found := false
+
+# Legacy checkpoint fields; no longer gate travel or rooftop takeover.
+var channel_key_found := false
+var channel_isolated := false
+var channel_takeover_complete := false
+var codex_companion: Dictionary = {}
+var channel_resume: Dictionary = {}
 var run_started_msec := 0
 
 
@@ -39,6 +48,7 @@ func begin_run(seed_value: int = 0) -> void:
 	persona_authorization_floor = -1
 	persona_authorization_pending = false
 	persona_rest_refilled_floor = -1
+	reset_channel_route()
 	run_started_msec = Time.get_ticks_msec()
 	run_started.emit(run_seed)
 
@@ -104,7 +114,7 @@ func consume_persona_rest_refill(floor_value: int = floor_index) -> bool:
 func finish_extraction(player: PlayerController) -> bool:
 	if run_finished or not is_instance_valid(player) or player.health.is_dead():
 		return false
-	if mandatory_enemies_remaining > 0:
+	if channel_route_active or mandatory_enemies_remaining > 0:
 		return false
 	extraction_result = {
 		"seed": run_seed,
@@ -121,6 +131,7 @@ func finish_victory(player: PlayerController) -> bool:
 	if (
 		run_finished
 		or not persistent_run
+		or (channel_boss_ready() and not channel_takeover_complete)
 		or floor_index < NORMAL_FLOOR_COUNT
 		or mandatory_enemies_remaining > 0
 		or not is_instance_valid(player)
@@ -155,6 +166,7 @@ func finish_victory(player: PlayerController) -> bool:
 	var record := {
 		"id": "%d-%d" % [int(Time.get_unix_time_from_system()), run_seed],
 		"created_unix": int(Time.get_unix_time_from_system()),
+		"ending": "channel_returned" if bool(codex_companion.get("arrived", false)) and channel_takeover_complete else "core_destroyed",
 		"run_seed": run_seed,
 		"clear_seconds": snappedf(elapsed_seconds, 0.1),
 		"last_persona_id": last_persona_id,
@@ -183,3 +195,93 @@ func capture_player_state(player: PlayerController, repair_amount: int = 0) -> D
 		snapshot["current_health"] = mini(current + repair_amount, player.config.max_health)
 	set_player_state(snapshot)
 	return snapshot.duplicate(true)
+
+
+func reset_channel_route() -> void:
+	channel_route_active = false
+	channel_record_found = false
+	channel_key_found = false
+	channel_isolated = false
+	channel_takeover_complete = false
+	codex_companion.clear()
+	channel_resume.clear()
+
+
+func activate_channel_route() -> bool:
+	if not persistent_run or run_finished or floor_index != 0 or not channel_record_found:
+		return false
+	if not get_node("/root/WarehouseStore").is_channel_route_unlocked():
+		return false
+	channel_route_active = true
+	return true
+
+
+func channel_floor_ready() -> bool:
+	if not channel_route_active:
+		return true
+	return channel_record_found and (floor_index != 2 or not codex_is_alive() or bool(codex_companion.get("ambush_failed", false)) or bool(codex_companion.get("ambush_complete", false)))
+
+
+func channel_boss_ready() -> bool:
+	return channel_route_active and channel_record_found and codex_is_alive() and bool(codex_companion.get("arrived", false)) and bool(codex_companion.get("ambush_complete", false))
+
+
+func export_channel_state() -> Dictionary:
+	return {"active": channel_route_active, "record": channel_record_found,
+		"key": channel_key_found, "isolated": channel_isolated, "codex": codex_companion.duplicate(true)}
+
+
+func restore_channel_checkpoint(data: Dictionary) -> bool:
+	if data.is_empty() or not data.get("route", {}).get("active", false):
+		return false
+	begin_run(int(data.get("seed", 1)))
+	persistent_run = true
+	floor_index = int(data.get("floor", 0))
+	var route: Dictionary = data.route
+	channel_route_active = true
+	channel_record_found = bool(route.get("record", false))
+	channel_key_found = bool(route.get("key", false))
+	channel_isolated = bool(route.get("isolated", false))
+	codex_companion = route.get("codex", {}).duplicate(true)
+	# Preserve already reached rooftops from the former escort route.
+	if floor_index == 3 and bool(codex_companion.get("arrived", false)):
+		codex_companion.ambush_complete = true
+	codex_medical_supply_used = bool(data.get("medical_used", false))
+	persona_authorization_floor = int(data.get("persona_floor", -1))
+	persona_authorization_pending = bool(data.get("persona_pending", false))
+	persona_rest_refilled_floor = int(data.get("persona_refilled", -1))
+	player_state = data.player.duplicate(true)
+	channel_resume = data.duplicate(true)
+	run_started_msec -= int(float(data.get("elapsed", 0)) * 1000)
+	return true
+
+
+func carries_channel_core(player: PlayerController) -> bool:
+	if not is_instance_valid(player):
+		return false
+	for item in player.inventory.backpack.get_items():
+		if player.inventory.is_channel_core(item):
+			return true
+	return false
+
+
+func recruit_codex(player: PlayerController) -> bool:
+	if not persistent_run or run_finished or floor_index != 1 or not channel_route_active or not carries_channel_core(player) or not codex_companion.is_empty():
+		return false
+	codex_companion = {"joined": true, "health": 3, "arrived": false, "repaired_areas": [], "ambush_complete": false}
+	return true
+
+
+func codex_is_alive() -> bool:
+	return bool(codex_companion.get("joined", false)) and int(codex_companion.get("health", 0)) > 0
+
+
+func save_codex_progress() -> bool:
+	var store := get_node("/root/WarehouseStore")
+	var saved: Dictionary = store.get_channel_checkpoint()
+	if saved.is_empty():
+		return false
+	# Keep the last safe room/player snapshot, but never revive an escort by
+	# reopening that snapshot after she was injured or killed.
+	saved.route = export_channel_state()
+	return store.save_channel_progress(saved)

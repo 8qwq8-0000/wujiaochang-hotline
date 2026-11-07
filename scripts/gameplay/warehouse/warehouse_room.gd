@@ -60,6 +60,10 @@ func _ready() -> void:
 		$Instructions.text = store.error_message
 	elif not save_loadout():
 		$Instructions.text = store.error_message
+	if store.is_channel_route_unlocked():
+		var hotline := preload("res://scripts/gameplay/channel/channel_hotline.gd").new()
+		hotline.name = "ChannelHotline"
+		add_child(hotline)
 	queue_redraw()
 
 

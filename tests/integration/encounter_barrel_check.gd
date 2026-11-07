@@ -33,7 +33,7 @@ func run() -> void:
 	var empty: Array[Vector2] = []
 	check(EncounterPropPlacement.choose_barrel_position(empty,blockers,doors,Vector2.ZERO,1,Vector2(100,70)) == Vector2(100,70), "empty encounter keeps authored fallback")
 	var run_manager := root.get_node("RunManager")
-	for id in ["interlinked_apartment", "loading_workshop", "freight_atrium", "dual_track_depot"]:
+	for id in ["interlinked_apartment", "loading_workshop", "freight_atrium", "dual_track_depot", "underground_pump_station", "urban_sorting_center"]:
 		var safe_count := 0
 		var multi_hit_count := 0
 		var varied := {}
@@ -55,7 +55,7 @@ func run() -> void:
 				check(EncounterPropPlacement.is_safe(box.position, layout.enemy_positions, all_blockers, layout.doors, layout.power_position, room.ROOM_SIZE), "each box avoids geometry, doorways, entry, exit and actors")
 				for other: FuelBarrel in boxes:
 					if box.get_index() < other.get_index():
-						check(box.position.distance_to(other.position) >= 54, "bomb boxes remain separated")
+						check(box.position.distance_to(other.position) >= layout.bomb_spacing_radius + EncounterPropPlacement.CLEARANCE, "bomb boxes remain separated")
 			if EncounterPropPlacement.is_safe(point,layout.enemy_positions,all_blockers,layout.doors,layout.power_position,room.ROOM_SIZE):
 				safe_count += 1
 			var region: NavigationRegion2D = room.get_node("NavigationRegion2D")

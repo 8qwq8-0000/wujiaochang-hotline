@@ -1,6 +1,6 @@
 extends SceneTree
 
-const IDS := ["interlinked_apartment", "loading_workshop", "freight_atrium", "dual_track_depot"]
+const IDS := ["interlinked_apartment", "loading_workshop", "freight_atrium", "dual_track_depot", "underground_pump_station", "urban_sorting_center"]
 var checks := 0
 var failures := 0
 

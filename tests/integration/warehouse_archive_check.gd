@@ -99,13 +99,36 @@ func run() -> void:
 	var panel: WarehouseArchivePanel = warehouse.archive_panel
 	panel.open()
 	check(paused and panel.is_open, "archive opens and pauses game")
-	check(panel._content.text.contains("通关后收录"), "empty wine rack explains how to collect")
-	panel._select_tab(2)
+	check(panel._tabs.size() == 4 and panel._heading.text == "通关记录", "archive starts on plainly named clear records tab")
+	check(panel._rows.is_empty() and panel._content.text.contains("完整通关"), "empty records contain no ending or placeholder rows")
+	panel._select_tab(1)
+	check(panel._rows.size() == 2 and panel._entry_tag.text == "可挑战", "ending archive contains both endings independently")
+	panel._select_entry(1)
+	check(panel._entry_tag.text == "未解锁", "new profile second ending starts locked")
+	check(panel._content.text.contains("摧毁中枢") and not panel._content.text.contains("受到枪击"), "locked ending explains prerequisite without route spoilers")
+	store.begin_test_session()
+	check(store.commit(store.get_profile().chest, store.get_profile().loadout, "", {"id": "archive-original-clear", "personas": [], "semantic_leaks": []}), "old victory fixture saved")
+	panel._select_tab(0)
+	check(panel._rows.size() == 1 and panel._content.text.contains("摧毁中枢") and panel._entry_tag.text == "通关记录 / 01", "first clear has its own record without ending status rows")
+	check(panel._summary.text == "累计通关 1 次", "records summary counts clears only")
+	panel._select_tab(1)
+	panel._select_entry(1)
+	check(panel._entry_tag.text == "已解锁" and panel._content.text.contains("受到枪击"), "old victory unlocks separate ending card with route hints")
+	check(store.commit(store.get_profile().chest, store.get_profile().loadout, "", {"id": "archive-channel-clear", "ending": "channel_returned", "personas": [], "semantic_leaks": []}, {"discoveries": ["shrine_core"]}), "second ending fixture saved")
+	panel.refresh()
+	check(panel._entry_tag.text == "已完成" and panel._content.text.contains("公共频道已恢复") and panel._content.text.contains("残损频道核心"), "completed ending and discoveries appear in ending archive")
+	check(panel._summary.text == "已完成结局 2 / 2", "ending summary counts distinct completed endings")
+	panel._select_tab(0)
+	panel._select_entry(1)
+	check(panel._rows.size() == 2 and panel._content.text.contains("频道归还") and panel._entry_tag.text == "通关记录 / 02", "second clear keeps correct record index")
+	store.end_test_session()
+	panel.refresh()
+	panel._select_tab(3)
 	check(panel._rows.size() == EnemyCatalog.ENTRIES.size(), "all catalog entries have a slot")
 	check(panel._entry_title.text == "近战施压者" and panel._portrait.texture != null, "discovered enemy shows identity and image")
 	panel._select_entry(1)
 	check(panel._entry_title.text == "未解锁" and panel._portrait.texture == null and not panel._content.text.contains("狙击手"), "locked entry hides image and identity")
-	panel._select_tab(1)
+	panel._select_tab(2)
 	check(panel._rows.size() == 3 and panel._entry_title.text == "未解锁", "persona archive has three locked cards")
 	var cancel := InputEventAction.new()
 	cancel.action = "pause"
@@ -135,10 +158,15 @@ func run() -> void:
 		await RenderingServer.frame_post_draw
 		get_root().get_texture().get_image().save_png("/tmp/hotline-archive-wine.png")
 		panel._select_tab(1)
+		panel._select_entry(1)
+		await process_frame
+		await RenderingServer.frame_post_draw
+		get_root().get_texture().get_image().save_png("/tmp/hotline-archive-endings.png")
+		panel._select_tab(2)
 		await process_frame
 		await RenderingServer.frame_post_draw
 		get_root().get_texture().get_image().save_png("/tmp/hotline-archive-personas.png")
-		panel._select_tab(2)
+		panel._select_tab(3)
 		panel._select_entry(4)
 		await process_frame
 		await process_frame

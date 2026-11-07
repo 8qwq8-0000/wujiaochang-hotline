@@ -1,0 +1,13 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/presentation/dragon_sprite_animator.gd" id="animator"]
+[ext_resource type="SpriteFrames" path="res://assets/art/characters/companions/dragon_gpt_v1/frames.tres" id="frames"]
+
+[node name="DragonVisual" type="AnimatedSprite2D"]
+texture_filter = 1
+scale = Vector2(0.22, 0.22)
+sprite_frames = ExtResource("frames")
+animation = &"idle_down"
+centered = false
+offset = Vector2(-128, -232)
+script = ExtResource("animator")

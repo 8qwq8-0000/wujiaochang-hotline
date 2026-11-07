@@ -27,6 +27,7 @@ var halo_segments_remaining := 5
 var _anger_remaining := 0.0
 var opening_guards_remaining := 3
 var opening_guards_total := 3
+var channel_form := false
 
 
 func _ready() -> void:
@@ -43,7 +44,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	if state != State.ACTIVE:
+	if state != State.ACTIVE or channel_form:
 		return
 	_anger_remaining = maxf(_anger_remaining - delta, 0.0)
 	var breath := 0.64 + sin(Time.get_ticks_msec() * 0.0035) * 0.16
@@ -137,7 +138,7 @@ func _on_died(_packet: DamagePacket) -> void:
 
 func _draw() -> void:
 	# Opening guards have their own counter; no statue health bar before awakening.
-	if state in [State.DORMANT, State.AWAKENING]:
+	if channel_form or state in [State.DORMANT, State.AWAKENING]:
 		return
 	var center := Vector2(0.0, -78.0)
 	var radius := 54.0

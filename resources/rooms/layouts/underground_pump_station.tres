@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="CombatLayoutData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/rooms/combat_layout_data.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/enemies/melee_pressure.tres" id="melee"]
+[ext_resource type="Resource" path="res://resources/enemies/ranged_sightline.tres" id="ranged"]
+[ext_resource type="Resource" path="res://resources/enemies/heavy_anchor.tres" id="shield"]
+
+[resource]
+script = ExtResource("1")
+id = &"underground_pump_station"
+display_name = "地下泵站"
+covers = Array[Rect2]([Rect2(134, 95, 165, 63), Rect2(350, 230, 173, 63), Rect2(260, 80, 48, 38), Rect2(340, 239, 47, 34), Rect2(81, 64, 39, 35), Rect2(505, 74, 44, 34), Rect2(540, 244, 43, 35), Rect2(111, 274, 42, 30), Rect2(-35.1667, 6.3333, 315, 34), Rect2(302.3333, 5.8333, 362, 37), Rect2(57, 296, 52, 34), Rect2(257, 258, 58, 35), Rect2(480, 312, 45, 26), Rect2(365, 83, 46, 34)])
+zones = Array[Rect2]([Rect2(16, 16, 122, 328), Rect2(138, 16, 183, 164), Rect2(138, 180, 183, 164), Rect2(321, 16, 182, 164), Rect2(321, 180, 182, 164), Rect2(503, 16, 121, 328)])
+doors = Array[Vector4]([])
+windows = Array[Rect2]([])
+sentry_positions = Array[Vector2]([Vector2(582, 78)])
+enemy_positions = Array[Vector2]([Vector2(122, 105), Vector2(554, 309), Vector2(392, 168), Vector2(427, 177), Vector2(320, 190), Vector2(475, 178)])
+enemy_profiles = Array[Resource]([ExtResource("ranged"), ExtResource("ranged"), ExtResource("melee"), ExtResource("melee"), ExtResource("melee"), ExtResource("shield")])
+power_position = Vector2(320, 60)
+power_spawn_zones = Array[int]([2, 3, 4, 5])
+clear_lanes = Array[Rect2]([Rect2(128, 42, 282, 24), Rect2(145, 166, 409, 35), Rect2(224, 306, 294, 22)])
+bomb_position = Vector2(543, 196)
+bomb_spacing_radius = 104.0
+floor_color = Color(0.09, 0.13, 0.17, 1)
+cover_color = Color(0.34, 0.42, 0.48, 1)

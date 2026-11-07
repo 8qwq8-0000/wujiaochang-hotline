@@ -1,0 +1,23 @@
+{
+  "animation": "front_float_move",
+  "source_frames": 8,
+  "columns": 4,
+  "rows": 2,
+  "frame_size": [
+    384,
+    512
+  ],
+  "frame_duration_ms": 140,
+  "loop": true,
+  "draft": true,
+  "horizontal_alignment_offsets": [
+    -4,
+    20,
+    20,
+    20,
+    -4,
+    20,
+    18,
+    18
+  ]
+}

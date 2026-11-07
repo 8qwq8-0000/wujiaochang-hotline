@@ -13,6 +13,9 @@ const ENEMY_SCENE_PATH := "res://scenes/actors/enemies/enemy.tscn"
 
 @export var auto_spawn := true
 @export var report_to_run_manager := true
+var completion_held := false
+var initial_wave_size := 0
+var _spawn_cursor := 0
 var health_bonus := 0
 var melee_speed_multiplier := 1.0
 var _plan_ready := false
@@ -32,6 +35,10 @@ func spawn_all() -> void:
 	if _spawned:
 		return
 	_spawned = true
+	spawn_pending_wave(initial_wave_size)
+
+
+func spawn_pending_wave(count: int = 0) -> void:
 	_prepare_plan()
 	var run_manager := get_node_or_null("/root/RunManager")
 	var spawn_parent := get_node(spawn_parent_path) as Node2D
@@ -41,7 +48,10 @@ func spawn_all() -> void:
 	# Resolve after scripts finish loading; room templates and enemy scripts can
 	# otherwise preload each other and cache an empty PackedScene.
 	var enemy_scene := load(ENEMY_SCENE_PATH) as PackedScene
-	for marker in _spawn_plan:
+	var end := _spawn_plan.size() if count <= 0 else mini(_spawn_cursor + count, _spawn_plan.size())
+	var wave := _spawn_plan.slice(_spawn_cursor, end)
+	_spawn_cursor = end
+	for marker: EnemySpawnMarker in wave:
 		var enemy: EnemyController = enemy_scene.instantiate()
 		enemy.profile = marker.profile
 		var speed_scaled := marker.profile.role == EnemyProfile.Role.MELEE_PRESSURE and not is_equal_approx(melee_speed_multiplier, 1.0)
@@ -62,7 +72,7 @@ func spawn_all() -> void:
 	required_remaining_changed.emit(required_remaining)
 	if run_manager != null and report_to_run_manager:
 		run_manager.set_mandatory_enemy_count(required_remaining)
-	if required_remaining == 0:
+	if required_remaining == 0 and not completion_held:
 		all_required_defeated.emit()
 
 
@@ -75,7 +85,7 @@ func _on_enemy_defeated(_enemy: EnemyController, was_mandatory: bool) -> void:
 	var run_manager := get_node_or_null("/root/RunManager")
 	if run_manager != null and report_to_run_manager:
 		run_manager.set_mandatory_enemy_count(required_remaining)
-	if required_remaining == 0:
+	if required_remaining == 0 and not completion_held:
 		all_required_defeated.emit()
 
 func _prepare_plan() -> void:
@@ -91,7 +101,7 @@ func _prepare_plan() -> void:
 
 func remaining_objectives() -> int:
 	if _spawned:
-		return required_remaining
+		return required_remaining + (1 if completion_held else 0)
 	_prepare_plan()
 	var count := 0
 	for marker in _spawn_plan:
@@ -106,3 +116,10 @@ func planned_positions(relative_to: Node2D) -> Array[Vector2]:
 	for marker in _spawn_plan:
 		points.append(relative_to.to_local(marker.global_position))
 	return points
+
+
+func release_completion() -> void:
+	completion_held = false
+	required_remaining_changed.emit(required_remaining)
+	if required_remaining == 0:
+		all_required_defeated.emit()

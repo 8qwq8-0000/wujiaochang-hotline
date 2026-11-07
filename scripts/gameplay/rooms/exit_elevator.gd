@@ -4,22 +4,31 @@ extends Area2D
 signal entered
 signal exited
 
+const DOOR_SCALE := 0.051252183
+const DOOR_OFFSET := Vector2(19.3, -6)
+
 @export var show_exit_art := true
+@export var ascent_only := false
 var enabled: bool = false
 var _door_art: Sprite2D
 var _sigil: Sprite2D
 
 
-func _ready() -> void:
+static func door_texture() -> Texture2D:
 	var texture := AtlasTexture.new()
 	texture.atlas = preload("res://assets/art/environment/warehouse/elevator_east_v3.png")
 	texture.region = Rect2(148, 75, 652, 1717)
+	return texture
+
+
+func _ready() -> void:
+	var texture := door_texture()
 	_door_art = Sprite2D.new()
 	_door_art.name = "DoorArt"
 	_door_art.texture = texture
 	_door_art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	_door_art.position = Vector2(19.3, -6)
-	_door_art.scale = Vector2.ONE * 0.051252183
+	_door_art.position = DOOR_OFFSET
+	_door_art.scale = Vector2.ONE * DOOR_SCALE
 	_door_art.visible = show_exit_art
 	add_child(_door_art)
 	_sigil = preload("res://scripts/presentation/warehouse_door_sigil.gd").new()
@@ -38,11 +47,12 @@ func _ready() -> void:
 
 
 func _clip_sigil_to_room() -> void:
-	if get_parent() is CombatRoom:
+	if get_parent() is CombatRoom or get_parent() is ChannelTaskRoom:
 		# The full warehouse projection must stop at the room's inner wall.
 		# Keep the original sprite origin while cropping only the exterior side.
 		var source_size := _sigil.texture.get_size()
-		var wall_x := CombatRoom.ROOM_SIZE.x - 16.0
+		var room_width := CombatRoom.ROOM_SIZE.x if get_parent() is CombatRoom else ChannelTaskRoom.SIZE.x
+		var wall_x := room_width - 16.0
 		var visible_width := clampf((wall_x - position.x - _sigil.position.x) / _sigil.scale.x + source_size.x * 0.5, 0, source_size.x)
 		_sigil.region_enabled = true
 		_sigil.region_filter_clip_enabled = true
