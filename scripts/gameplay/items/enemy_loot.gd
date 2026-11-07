@@ -5,7 +5,7 @@ func _ready() -> void:
 	get_node("/root/CombatEvents").entity_defeated.connect(_on_defeated)
 
 func _on_defeated(entity: Node) -> void:
-	if not entity is EnemyController or entity.state != EnemyController.State.DEAD or entity.has_meta("component_loot_emitted"):
+	if not entity is EnemyController or entity.state != EnemyController.State.DEAD or entity.has_meta("component_loot_emitted") or entity.has_meta("boss_summoned_minion"):
 		return
 	entity.set_meta("component_loot_emitted", true)
 	var owner_node := entity.get_parent()

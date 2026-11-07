@@ -173,9 +173,10 @@ godot --headless --path . --script res://tests/integration/automatic_door_check.
 ```sh
 godot --headless --path . --script res://tests/integration/rooftop_boss_check.gd
 godot --headless --path . --script res://tests/integration/boss_patterns_check.gd
+godot --headless --path . --script res://tests/integration/wing_guards_check.gd
 ```
 
-分别覆盖一阶段三名守卫合计三血、独立计数且不扣 Boss 血、保留推镜头和神像苏醒；二阶段三名三血守卫与 Boss 同时攻击、Boss 无敌、逐点联动损血、清完恰好留下 3/6 血、真实子弹命中与击杀；原本落点和十字激光、交点一次伤害、暂停／死亡取消；实际重开输入、仓库独立测试存档及往返。战斗界面不显示 Boss 连续血条或阶段标签，神像光环分段与 AI 通讯承担状态反馈。
+分别覆盖一阶段左／右翼卫 20／15 点生命、苏醒转场、二阶段合翼卫 35 点与鲸神逐 7 点联动、最后直接击败鲸神；六档落雷、透视地板格、暂停冻结、透明落雷贴图生命周期，以及四段随从攻击动画每段 8 帧的资源加载和运行播放。贴墙掉落与拾取另见 `death_drop_check.gd`。
 
 贴身射击：`godot --headless --path . --script res://tests/integration/point_blank_shooting_check.gd`，使用真实玩家武器握点、枪口与子弹回调，覆盖制式手枪、散射器、轨道炮表现模板的八方向贴身命中、自身忽略及近距离墙体阻挡。轨道炮仅作为武器模板构造测试，不代表已加入正式装备池。
 

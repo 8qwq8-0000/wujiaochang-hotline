@@ -6,18 +6,14 @@ extends Node2D
 
 const LIGHT_TICK_SECONDS := 1.0 / 12.0
 const SERVER_LIGHTS := [
-	Vector2(36.0, 54.0), Vector2(70.0, 86.0), Vector2(108.0, 120.0),
-	Vector2(146.0, 62.0), Vector2(178.0, 104.0), Vector2(212.0, 72.0),
-	Vector2(250.0, 118.0), Vector2(286.0, 78.0), Vector2(112.0, 196.0),
-	Vector2(82.0, 238.0), Vector2(126.0, 282.0), Vector2(92.0, 330.0),
-	Vector2(924.0, 54.0), Vector2(890.0, 86.0), Vector2(852.0, 120.0),
-	Vector2(814.0, 62.0), Vector2(782.0, 104.0), Vector2(748.0, 72.0),
-	Vector2(710.0, 118.0), Vector2(674.0, 78.0), Vector2(848.0, 196.0),
-	Vector2(878.0, 238.0), Vector2(834.0, 282.0), Vector2(868.0, 330.0),
+	Vector2(344, 29), Vector2(344, 145), Vector2(344, 195),
+	Vector2(394, 29), Vector2(394, 145), Vector2(394, 195),
+	Vector2(886, 29), Vector2(886, 145), Vector2(886, 195),
+	Vector2(936, 29), Vector2(936, 145), Vector2(936, 195),
 ]
 const DUST_BASES := [
-	Vector2(380.0, 250.0), Vector2(430.0, 326.0), Vector2(478.0, 220.0),
-	Vector2(522.0, 382.0), Vector2(566.0, 286.0), Vector2(612.0, 420.0),
+	Vector2(506.667, 416.667), Vector2(573.333, 543.333), Vector2(637.333, 366.667),
+	Vector2(696, 636.667), Vector2(754.667, 476.667), Vector2(816, 700),
 ]
 
 var phase_light := 0.0
@@ -27,9 +23,12 @@ var _light_accumulator := 0.0
 var _light_tick := 0
 
 @onready var background: Sprite2D = get_node_or_null(background_path) as Sprite2D
+var _base_background_scale := Vector2.ONE
 
 
 func _ready() -> void:
+	if is_instance_valid(background):
+		_base_background_scale = background.scale
 	set_process(true)
 	queue_redraw()
 
@@ -38,7 +37,7 @@ func reset_to_phase_one() -> void:
 	phase_light = 0.0
 	_echo_remaining = 0.0
 	if is_instance_valid(background):
-		background.scale = Vector2.ONE
+		background.scale = _base_background_scale
 		background.modulate = Color.WHITE
 	set_process(true)
 	queue_redraw()
@@ -74,8 +73,8 @@ func _process(delta: float) -> void:
 		_echo_remaining = maxf(_echo_remaining - delta, 0.0)
 		_apply_echo_refraction()
 		queue_redraw()
-	elif is_instance_valid(background) and background.scale != Vector2.ONE:
-		background.scale = Vector2.ONE
+	elif is_instance_valid(background) and background.scale != _base_background_scale:
+		background.scale = _base_background_scale
 		background.modulate = Color.WHITE
 		queue_redraw()
 	if phase_light > 0.0 and phase_light < 0.999:
@@ -87,7 +86,7 @@ func _apply_echo_refraction() -> void:
 		return
 	var progress := 1.0 - _echo_remaining / _echo_duration
 	var wave := sin(progress * PI) * 0.003
-	background.scale = Vector2(1.0 + wave, 1.0 - wave * 0.65)
+	background.scale = _base_background_scale * Vector2(1.0 + wave, 1.0 - wave * 0.65)
 	background.modulate = Color(1.0 + wave * 5.0, 1.0 + wave * 3.0, 1.0 + wave * 6.0, 1.0)
 
 
@@ -95,7 +94,7 @@ func _draw() -> void:
 	# The environment is darkened independently so actors and warnings retain
 	# their silhouettes during phase one.
 	var darkness := lerpf(0.42, 0.07, phase_light)
-	draw_rect(Rect2(0.0, 0.0, 960.0, 540.0), Color(0.005, 0.008, 0.015, darkness), true)
+	draw_rect(Rect2(0.0, 0.0, 1280.0, 900.0), Color(0.005, 0.008, 0.015, darkness), true)
 	if phase_light > 0.001:
 		_draw_phase_two_light()
 	_draw_server_lights()
@@ -109,10 +108,10 @@ func _draw_phase_two_light() -> void:
 	var beam_alpha := phase_light * 0.105 * breathe
 	draw_colored_polygon(
 		PackedVector2Array([
-			Vector2(420.0, 116.0),
-			Vector2(540.0, 116.0),
-			Vector2(654.0, 476.0),
-			Vector2(306.0, 476.0),
+			Vector2(560, 193.333),
+			Vector2(720, 193.333),
+			Vector2(872, 793.333),
+			Vector2(408, 793.333),
 		]),
 		Color(1.0, 0.67, 0.2, beam_alpha)
 	)
@@ -121,8 +120,8 @@ func _draw_phase_two_light() -> void:
 	for index in DUST_BASES.size():
 		var base: Vector2 = DUST_BASES[index]
 		var drift := float((ambient_tick * 2 + index * 6) % 20)
-		var point := Vector2(base.x, base.y - drift).snapped(Vector2(2.0, 2.0))
-		draw_rect(Rect2(point, Vector2(2.0, 2.0)), Color(1.0, 0.78, 0.34, phase_light * 0.38), true)
+		var point := Vector2(base.x, base.y - drift).snapped(Vector2(2.66667, 3.33333))
+		draw_rect(Rect2(point, Vector2(2.66667, 3.33333)), Color(1.0, 0.78, 0.34, phase_light * 0.38), true)
 
 
 func _draw_server_lights() -> void:
@@ -135,14 +134,14 @@ func _draw_server_lights() -> void:
 		if intensity <= 0.0:
 			continue
 		var position: Vector2 = SERVER_LIGHTS[index]
-		var distance_from_altar := absf(position.x - 480.0) / 480.0
+		var distance_from_altar := absf(position.x - 640.0) / 640.0
 		var amber_wake_threshold := 0.18 + distance_from_altar * 0.68
 		var amber := phase_light >= amber_wake_threshold and distance_from_altar < 0.57 and index % 3 != 1
 		var alpha_scale := lerpf(0.42, 0.82, phase_light)
 		var color := Color(1.0, 0.68, 0.22, intensity * alpha_scale) if amber else Color(0.22, 0.92, 0.84, intensity * alpha_scale)
-		var size := Vector2(2.0, 4.0) if index % 7 == 0 else Vector2(2.0, 2.0)
+		var size := Vector2(2.66667, 6.66667) if index % 7 == 0 else Vector2(2.66667, 3.33333)
 		var rect := Rect2(position, size)
-		if amber and absf(position.x - 480.0) < 250.0:
+		if amber and absf(position.x - 640.0) < 333.0:
 			draw_rect(rect.grow(2.0), Color(1.0, 0.56, 0.12, color.a * 0.14), true)
 		draw_rect(rect, color, true)
 

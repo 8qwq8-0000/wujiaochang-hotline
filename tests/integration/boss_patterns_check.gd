@@ -1,13 +1,9 @@
 extends SceneTree
-
 var checks := 0
 var failures := 0
-var hits := 0
-
 
 func _initialize() -> void:
 	call_deferred("run")
-
 
 func check(value: bool, message: String) -> void:
 	checks += 1
@@ -15,60 +11,51 @@ func check(value: bool, message: String) -> void:
 		failures += 1
 		push_error(message)
 
-
 func run() -> void:
 	var arena: RooftopBossArena = load("res://scenes/levels/bosses/rooftop_boss_arena.tscn").instantiate()
 	arena.attack_loop_enabled = false
-	arena.get_node("EnemySpawner").auto_spawn = false
 	root.add_child(arena)
 	await process_frame
+	for wing in arena.get_node("Enemies").get_children():
+		wing.set_active(false)
 	arena.player.set_physics_process(false)
 	arena.player.health.configure_max_health(100)
 	arena.player.hurt_box.damage_invulnerability_seconds = 0
 	arena.player.hurt_box.clear_invulnerability()
-	arena.player.hurt_box.hit_resolved.connect(func(_result): hits += 1)
 	arena.boss.activate_immediately()
 	arena._set_phase(RooftopBossArena.Phase.BOSS_ACTIVE)
 	arena._spawn_support_guards()
-	for enemy in arena.get_node("SupportEnemies").get_children():
-		enemy.set_physics_process(false)
+	arena.get_node("SupportEnemies").get_child(0).set_active(false)
+	check(arena._attack_counts(6) == Vector2i(1, 1), "six health uses one point and one lane")
+	check(arena._attack_counts(5) == Vector2i(2, 1), "five health uses two points")
+	check(arena._attack_counts(4) == Vector2i(2, 2), "four health adds a second lane")
+	check(arena._attack_counts(3) == Vector2i(3, 2), "three health adds a third point")
+	check(arena._attack_counts(2) == Vector2i(3, 3), "two health adds a third lane")
+	check(arena._attack_counts(1) == Vector2i(4, 4), "last health uses four points and lanes")
+	var lane := arena._thunder_lane(Vector2(480, 400), true, 0)
+	check(lane.size() == 24 and lane[0].y == lane[-1].y and lane[0].x < lane[-1].x, "horizontal thunder lane follows orthographic 32px floor cells")
+	arena._show_lightning_at(Vector2(480, 335))
+	check(arena.get_node_or_null("WhaleLightningStrike") is Sprite2D, "generated lightning texture enters runtime effect layer")
+	await create_timer(0.3).timeout
+	check(arena.get_node_or_null("WhaleLightningStrike") == null, "lightning sprite frees after brief strike")
 	arena.player.global_position = Vector2(480, 400)
-	var lasers := arena._make_cross_lasers(arena.player.global_position)
-	check(lasers.size() == 2 and lasers[0].size.x == 14 and lasers[1].size.y == 14, "cross contains vertical and horizontal beams")
-	arena.telegraph.show_cross(lasers, 0.78)
-	check(arena.telegraph.cross_lasers.size() == 2, "both beams have matching telegraphs")
-	var before := hits
-	arena._damage_player_in_cross(lasers)
-	check(hits == before + 1, "cross intersection deals one hit, not two")
-	arena.player.global_position = Vector2(530, 450)
-	before = hits
-	arena._damage_player_in_cross(lasers)
-	check(hits == before, "outside cross remains safe")
-
-	# Pause during a real coroutine timer, then resume into the delayed strike.
-	arena.player.global_position = Vector2(480,400)
 	arena._attack_generation = 1
 	arena._run_attack_loop(1)
-	await create_timer(0.45).timeout
-	check(arena.telegraph.mode == BossAttackTelegraph.Mode.ORACLE_WARNING, "real loop reaches oracle warning")
-	check(arena.boss.health.guard_link_active, "shielded boss continues its original attacks alongside living supports")
+	await create_timer(0.15).timeout
+	check(arena.telegraph.mode == BossAttackTelegraph.Mode.ECHO, "visible sonar begins attack")
+	await create_timer(0.55).timeout
+	check(arena.telegraph.mode == BossAttackTelegraph.Mode.THUNDER_WARNING, "locked cell warns before lightning")
 	var elapsed := arena.telegraph.elapsed
 	var life := arena.player.health.current_health
 	paused = true
-	await create_timer(1.2).timeout
-	check(arena.telegraph.mode == BossAttackTelegraph.Mode.ORACLE_WARNING and arena.telegraph.elapsed == elapsed, "pause freezes warning and coroutine timer")
-	arena._damage_player(arena.player.global_position)
-	check(arena.player.health.current_health == life, "pause blocks direct hazard damage too")
+	await create_timer(1.0).timeout
+	check(arena.telegraph.elapsed == elapsed and arena.player.health.current_health == life, "pause freezes warning and damage")
 	paused = false
-	await create_timer(0.8).timeout
-	check(arena.player.health.current_health == life - 1, "pending strike resumes after unpause")
+	await create_timer(0.65).timeout
+	check(arena.player.health.current_health == life - 1, "point lightning hits locked cell once")
 	arena._attack_generation += 1
 	arena.telegraph.clear()
-	arena.telegraph.show_cross(lasers, 0.78)
-	arena.player.health.fatal_damage_interceptor = Callable()
-	arena.player.health.apply_damage(999, DamagePacket.new())
-	check(arena.telegraph.mode == BossAttackTelegraph.Mode.NONE, "player death cancels pending hazards")
 	arena.queue_free()
 	await process_frame
-	print("Boss pattern checks: ",checks,"; failures: ",failures)
+	print("Boss pattern checks: ", checks, "; failures: ", failures)
 	quit(0 if failures == 0 else 1)
