@@ -24,8 +24,9 @@ const TAKEOVER_LANDING_RADII := [96.0, 80.0, 64.0, 48.0]
 const TAKEOVER_LANDING_ANGLES := [0.0, PI / 4.0, -PI / 4.0, PI / 2.0, -PI / 2.0]
 const TAKEOVER_ESCAPE_PROBE := 14.0
 const HUNT_TRIGGER_DISTANCE := 40.0
-const HUNT_PREVIEW_SECONDS := 0.18
 const HUNT_MAX_SEGMENTS := 3
+const HUNT_CHAIN_WINDOW := 0.25
+const HUNT_PATH_REFRESH := 0.1
 const MASTER_AURA_RADIUS := 220.0
 
 @onready var player: PlayerController = get_parent() as PlayerController
@@ -48,10 +49,13 @@ var _recorded_marked_chain := 0
 var _gaze_remaining := 0.0
 var _gaze_attack_pending := false
 var _gaze_used_targets: Dictionary = {}
-var _chase_remaining := 0.0
 var _chase_path: PackedVector2Array = []
-var _chase_path_index := 0
-var _chase_dash_event_fired := false
+var _hunt_refresh_remaining := 0.0
+var _hunt_segments := 0
+var _hunt_window := 0.0
+var _hunt_pending_refresh := false
+var _hunt_cancel_pending := false
+var _hunt_last_direction := Vector2.ZERO
 var _borrowed_step_target_id := 0
 var _borrowed_step_near := false
 var _next_circuit_speed := 1.0
@@ -118,6 +122,7 @@ func _ready() -> void:
 	var current_weapon := weapons.get_current_weapon()
 	_last_weapon_id = current_weapon.id if current_weapon != null else &""
 	_apply_persona_modifiers()
+	dash.dash_ended.connect(_on_hunt_dash_ended)
 
 
 func _physics_process(delta: float) -> void:
@@ -135,9 +140,22 @@ func _physics_process(delta: float) -> void:
 
 
 func _draw() -> void:
-	if _chase_remaining > 0.0 and _chase_path.size() > 1:
+	if _is_active(TalentCoreController.DEEP_NINJA) and _has_talent(&"ceaseless_hunt") and _chase_path.size() > 1:
+		var heading := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+		if heading.is_zero_approx():
+			heading = player.aim_direction
+		var ready := dash.cooldown_remaining <= 0.0 and heading.dot(_hunt_direction()) > 0.0
+		var glow := 0.75 if ready else 0.27
+		var reduced_flashes := bool(PlayerConfig.get_config(&"UISettings", &"ReducedFlashes", false))
+		var pulse := 0.0 if reduced_flashes else float(Time.get_ticks_msec() % 800) / 800.0
 		for index in range(1, _chase_path.size()):
-			draw_dashed_line(to_local(_chase_path[index - 1]), to_local(_chase_path[index]), Color(0.8, 0.25, 1.0, 0.42), 2.0, 6.0)
+			var a := to_local(_chase_path[index - 1])
+			var b := to_local(_chase_path[index])
+			draw_line(a, b, Color(0.22, 0.01, 0.04, glow * 0.7), 8.0, true)
+			draw_line(a, b, Color(1.0, 0.12, 0.2, glow), 2.5, true)
+			if not reduced_flashes and fposmod(float(index) * 0.23 - pulse, 1.0) < 0.18:
+				draw_line(a.lerp(b, 0.35), a.lerp(b, 0.65), Color(1.0, 0.38, 0.55, glow), 3.5, true)
+		draw_arc(to_local(_chase_path[_chase_path.size() - 1]), 7.0, 0.0, TAU, 16, Color(1.0, 0.16, 0.28, glow), 1.5, true)
 	if _is_active(TalentCoreController.DEEP_NINJA) and _is_live_enemy(marked_target):
 		var center := to_local(marked_target.global_position + Vector2(0.0, -10.0))
 		draw_arc(center, 15.0, 0.0, TAU, 28, Color(0.75, 0.25, 1.0, 0.9), 2.0, true)
@@ -234,7 +252,7 @@ func reset_transient_state() -> void:
 	_next_circuit_damage_bonus = 0
 	_next_circuit_copy = false
 	_counter_window_remaining = 0.0
-	_chase_dash_event_fired = false
+	_clear_hunt_chain(false)
 	rock_feedback = 0.0
 	_marked_hit_streak = 0
 	_marked_kill_streak = 0
@@ -283,11 +301,11 @@ func get_runtime_snapshot() -> Dictionary:
 		"rock_feedback": rock_feedback,
 		"analyzed_attack_count": _analyzed_attacks.size(),
 		"prediction_source_count": _analyzed_sources.size(),
-		"soft_takeover_active": _gaze_remaining > 0.0 or _chase_remaining > 0.0 or _master_loop_remaining > 0.0,
+		"soft_takeover_active": _gaze_remaining > 0.0 or _master_loop_remaining > 0.0,
 		"blood_step_remaining": _blood_step_remaining,
 		"resonance_remaining": _resonance_remaining,
 		"gaze_active": _gaze_remaining > 0.0,
-		"chase_active": _chase_remaining > 0.0,
+		"chase_active": _hunt_segments > 0,
 		"analysis_has_threat": threat_live,
 		"analysis_samples": minf(samples, MASTER_ANALYSIS_SECONDS),
 		"analysis_required": MASTER_ANALYSIS_SECONDS,
@@ -316,11 +334,14 @@ func _tick_deep_ninja(delta: float) -> void:
 	if _gaze_attack_pending and _gaze_remaining <= 0.0 and _is_live_enemy(marked_target) and weapons.get_cooldown_remaining() <= 0.0:
 		_gaze_attack_pending = false
 		player.cyberware.submit_weapon_fire(player.global_position.direction_to(marked_target.global_position), weapons.get_current_weapon())
-	_chase_remaining = maxf(_chase_remaining - delta, 0.0)
-	if _chase_remaining > 0.0:
-		queue_redraw()
-	elif not _chase_path.is_empty() and not dash.is_dashing():
-		_execute_next_hunt_segment()
+	_hunt_refresh_remaining -= delta
+	if _has_talent(&"ceaseless_hunt") and _hunt_refresh_remaining <= 0.0:
+		_hunt_refresh_remaining = HUNT_PATH_REFRESH
+		_prepare_hunt_path()
+	if _hunt_window > 0.0 and not dash.is_dashing():
+		_hunt_window = maxf(_hunt_window - delta, 0.0)
+		if _hunt_window <= 0.0:
+			_clear_hunt_chain()
 	if _borrowed_strike_target != null and not dash.is_dashing():
 		var strike_target := _borrowed_strike_target.get_ref() as EnemyController
 		_borrowed_strike_target = null
@@ -435,12 +456,63 @@ func can_queue_seamless() -> bool:
 
 
 func should_submit_dash_event() -> bool:
-	if _chase_path.is_empty():
-		return true
-	if _chase_dash_event_fired:
-		return false
-	_chase_dash_event_fired = true
 	return true
+
+
+func has_hunt_chain() -> bool:
+	return _hunt_segments > 0
+
+
+func try_start_player_dash(movement: Vector2) -> bool:
+	if dash.is_dashing():
+		return false
+	var chaining := _hunt_segments > 0 and _hunt_window > 0.0
+	if chaining:
+		dash.cooldown_remaining = 0.0
+	elif dash.cooldown_remaining > 0.0:
+		return false
+	var heading := movement if not movement.is_zero_approx() else player.aim_direction
+	var qualified := _is_active(TalentCoreController.DEEP_NINJA) and _has_talent(&"ceaseless_hunt") and _is_live_enemy(marked_target) and not _chase_path.is_empty() and heading.dot(_hunt_direction()) > 0.0
+	if not qualified and chaining:
+		_clear_hunt_chain()
+		dash.cooldown_remaining = 0.0
+	var started := dash.start_dash(player, player.aim_direction, movement, &"ninja_hunt" if qualified else &"dash")
+	if started and qualified:
+		_hunt_segments += 1
+		_hunt_window = 0.0
+		# The group pays its cooldown when the last segment or input window ends.
+		dash.cooldown_remaining = 0.0
+	return started
+
+
+func cancel_hunt_followups() -> void:
+	if _hunt_segments > 0:
+		if dash.is_dashing():
+			_hunt_cancel_pending = true
+		else:
+			_clear_hunt_chain()
+
+
+func _on_hunt_dash_ended(cancelled: bool) -> void:
+	if _hunt_segments <= 0:
+		return
+	if cancelled or _hunt_cancel_pending or _hunt_segments >= HUNT_MAX_SEGMENTS or not _is_live_enemy(marked_target):
+		_clear_hunt_chain()
+	else:
+		_hunt_window = HUNT_CHAIN_WINDOW
+
+
+func _clear_hunt_chain(apply_cooldown: bool = true) -> void:
+	if _hunt_segments > 0 and apply_cooldown:
+		dash.cooldown_remaining = 0.0 if _hunt_pending_refresh else dash.config.dash_cooldown
+	elif _hunt_segments > 0:
+		dash.cooldown_remaining = 0.0
+	_hunt_segments = 0
+	_hunt_window = 0.0
+	_hunt_pending_refresh = false
+	_hunt_cancel_pending = false
+	if not apply_cooldown:
+		_hunt_last_direction = Vector2.ZERO
 
 
 func take_circuit_talent_effects() -> Dictionary:
@@ -576,7 +648,10 @@ func _on_deep_ninja_hit(enemy: EnemyController, result: DamageResult) -> void:
 	core.maximize_run_metric(&"highest_marked_kill_chain", _recorded_marked_chain)
 	_record_relationship_event(TalentCoreController.DEEP_NINJA)
 	if _has_talent(&"blood_step"):
-		dash.cooldown_remaining = 0.0
+		if _hunt_segments > 0:
+			_hunt_pending_refresh = true
+		else:
+			dash.cooldown_remaining = 0.0
 		_blood_step_remaining = 2.0
 		_next_circuit_speed = 0.7
 	if _has_talent(&"shared_hunt_resonance") and _marked_kill_streak >= 3:
@@ -584,8 +659,7 @@ func _on_deep_ninja_hit(enemy: EnemyController, result: DamageResult) -> void:
 		_resonance_remaining = 6.0
 		_publish_notice(&"shared_hunt", "风林山火", Color(0.75, 0.35, 1.0))
 	_set_mark(_select_execution_target(enemy), true)
-	if _has_talent(&"ceaseless_hunt") and _is_live_enemy(marked_target):
-		_prepare_hunt_path()
+	_hunt_refresh_remaining = 0.0
 
 
 func _on_attack_performed(data: WeaponComponentData) -> void:
@@ -644,6 +718,11 @@ func _set_mark(target: EnemyController, trigger_gaze: bool = false) -> void:
 	if marked_target == target:
 		return
 	marked_target = target
+	_hunt_refresh_remaining = 0.0
+	if _has_talent(&"ceaseless_hunt") and _is_live_enemy(target):
+		_prepare_hunt_path()
+	elif target == null:
+		_chase_path.clear()
 	_marked_hit_streak = 0
 	_borrowed_step_target_id = 0
 	_borrowed_step_near = false
@@ -990,9 +1069,7 @@ func _cancel_soft_takeover(cancel_master_loop: bool = true) -> void:
 		dash.cancel_dash(true)
 	_gaze_remaining = 0.0
 	_gaze_attack_pending = false
-	_chase_remaining = 0.0
 	_chase_path.clear()
-	_chase_path_index = 0
 	if cancel_master_loop:
 		_master_loop_remaining = 0.0
 	_borrowed_strike_target = null
@@ -1158,33 +1235,33 @@ func _perform_karate_chop(target: EnemyController) -> void:
 
 func _prepare_hunt_path() -> void:
 	if not _is_live_enemy(marked_target):
-		return
-	var toward := player.global_position.direction_to(marked_target.global_position)
-	var destination := marked_target.global_position - toward * 36.0
-	_chase_path = _build_hunt_path(destination, HUNT_MAX_SEGMENTS)
-	if _chase_path.size() < 2:
 		_chase_path.clear()
 		return
-	_chase_path_index = 1
-	_chase_dash_event_fired = false
-	_chase_remaining = HUNT_PREVIEW_SECONDS
-	var events := get_node_or_null("/root/CombatEvents")
-	if events != null:
-		for point in _chase_path:
-			events.request_path_afterimage(player, player.visuals.body_sprite, point)
+	_chase_path = _build_hunt_path(marked_target.global_position, 1000)
+	if _chase_path.size() >= 2:
+		_hunt_last_direction = _hunt_direction()
+
+
+func _hunt_direction() -> Vector2:
+	if _chase_path.size() < 2:
+		return _hunt_last_direction
+	for index in range(1, _chase_path.size()):
+		var direction := _chase_path[index] - player.global_position
+		if direction.length_squared() > 64.0:
+			return direction.normalized()
+	return _hunt_last_direction
 
 
 func _build_hunt_path(destination: Vector2, max_segments: int) -> PackedVector2Array:
-	var maps := NavigationServer2D.get_maps()
-	if maps.is_empty():
-		return PackedVector2Array()
-	var navigation_map: RID = maps[0]
+	var navigation_map: RID = player.get_world_2d().navigation_map
 	if not navigation_map.is_valid() or NavigationServer2D.map_get_iteration_id(navigation_map) <= 0:
 		return PackedVector2Array()
 	var closest := NavigationServer2D.map_get_closest_point(navigation_map, destination)
 	var raw := NavigationServer2D.map_get_path(navigation_map, player.global_position, closest, true)
 	if raw.size() < 2 or closest.distance_to(destination) > 12.0:
 		return PackedVector2Array()
+	if max_segments > HUNT_MAX_SEGMENTS:
+		return _round_hunt_path(raw, navigation_map)
 	var max_length := dash.config.dash_speed * dash.config.dash_duration * (1.0 + dash.equipment_speed_bonus)
 	var result := PackedVector2Array([player.global_position])
 	for index in range(1, raw.size()):
@@ -1199,19 +1276,34 @@ func _build_hunt_path(destination: Vector2, max_segments: int) -> PackedVector2A
 	return result
 
 
-func _execute_next_hunt_segment() -> void:
-	if _chase_path_index >= _chase_path.size() or not _is_live_enemy(marked_target):
-		_chase_path.clear()
-		if _is_live_enemy(marked_target):
-			player.cyberware.submit_weapon_fire(player.global_position.direction_to(marked_target.global_position), weapons.get_current_weapon(), true)
-		return
-	var destination := _chase_path[_chase_path_index]
-	_chase_path_index += 1
-	if not dash.start_scripted_dash(player, destination, &"ninja_chase"):
-		_chase_path.clear()
+func _round_hunt_path(raw: PackedVector2Array, navigation_map: RID) -> PackedVector2Array:
+	var rounded := PackedVector2Array([raw[0]])
+	for index in range(1, raw.size() - 1):
+		var corner := raw[index]
+		var incoming := (corner - raw[index - 1]).normalized()
+		var outgoing := (raw[index + 1] - corner).normalized()
+		var radius := minf(12.0, minf(corner.distance_to(raw[index - 1]), corner.distance_to(raw[index + 1])) * 0.25)
+		var before := corner - incoming * radius
+		var after := corner + outgoing * radius
+		var samples := PackedVector2Array()
+		var safe := radius > 1.0
+		for step in range(5):
+			var t := float(step) / 4.0
+			var point := before * (1.0 - t) * (1.0 - t) + corner * 2.0 * t * (1.0 - t) + after * t * t
+			if NavigationServer2D.map_get_closest_point(navigation_map, point).distance_to(point) > 1.0:
+				safe = false
+			samples.append(point)
+		if safe:
+			for point in samples:
+				rounded.append(point)
+		else:
+			rounded.append(corner)
+	rounded.append(raw[raw.size() - 1])
+	return rounded
 
 
 func _on_persona_changed(_persona_id: StringName) -> void:
+	_clear_hunt_chain()
 	_cancel_soft_takeover()
 	_next_circuit_speed = 1.0
 	_next_circuit_damage_bonus = 0
@@ -1237,6 +1329,7 @@ func _on_persona_level_changed(persona_id: StringName, _level: int) -> void:
 
 func _on_talent_build_changed(persona_id: StringName, _tier: int, _talent_id: StringName) -> void:
 	if persona_id == core.current_persona_id:
+		_clear_hunt_chain()
 		_apply_persona_modifiers()
 
 

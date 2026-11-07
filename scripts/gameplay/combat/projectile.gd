@@ -36,6 +36,7 @@ var _resolved := false
 var circuit_pierce_remaining := 0
 var circuit_penetration_boost := false
 var circuit_visual_scale := 1.0
+@onready var _base_visual_scale: Vector2 = ($Visual as Sprite2D).scale
 var _pierced_enemy_count := 0
 var _pierced_actor_ids: Dictionary = {}
 var _pierced_wall_rids: Array[RID] = []
@@ -196,7 +197,7 @@ func _sync_visual() -> void:
 	var visual := get_node_or_null("Visual") as Sprite2D
 	if visual != null:
 		visual.modulate = tint
-		visual.scale = Vector2.ONE * circuit_visual_scale
+		visual.scale = _base_visual_scale * circuit_visual_scale
 	queue_redraw()
 
 

@@ -48,7 +48,8 @@ const PENETRATION_BOOSTER := &"penetration_booster"
 const ARC_ATTACK_MEMORY_SECONDS := 3.0
 const MICRO_ROTOR_ATTACK_MEMORY_SECONDS := 3.0
 const PREDATORY_ATTACK_MEMORY_SECONDS := 3.0
-const CIRCUIT_STEP_SECONDS := 0.10
+const CIRCUIT_STEP_SECONDS := 0.05
+const CIRCUIT_MIN_STEP_SECONDS := 0.01
 const CIRCUIT_GUARD_PERFECT_SECONDS := 0.08
 const CIRCUIT_GUARD_TOTAL_SECONDS := 0.28
 const CIRCUIT_REQUEST_PRIORITY := [&"active", &"event", &"timed"]
@@ -782,7 +783,7 @@ func _begin_circuit_round(plan: Dictionary, request: Dictionary) -> void:
 		"guard_release": persona.can_attack_during_guard() and (get_parent() as PlayerController).guard.state != GuardComponent.State.IDLE,
 	}
 	_circuit_modifiers = {&"homing": 0, &"explosion": 0, &"arc": 0, &"echo": 0}
-	_circuit_step_interval = maxf(CIRCUIT_STEP_SECONDS * float(talent_effects.get("speed", 1.0)), 0.025)
+	_circuit_step_interval = maxf(CIRCUIT_STEP_SECONDS * float(talent_effects.get("speed", 1.0)), CIRCUIT_MIN_STEP_SECONDS)
 	_circuit_calamity_layers = 0
 	_initialize_signal_attacks(request, bool(talent_effects.get("dual_channel", false)), bool(talent_effects.get("copy_first", false)))
 	_circuit_step_remaining = 0.0
@@ -882,7 +883,7 @@ func _execute_next_circuit_step() -> void:
 		HEAT_THRESHOLD_PULSER:
 			_execute_circuit_heat_pulse(scale)
 		MICRO_ROTOR_REFLEX_BUNDLE:
-			_circuit_step_interval = maxf(_circuit_step_interval * 0.25, 0.025)
+			_circuit_step_interval = maxf(_circuit_step_interval * 0.25, CIRCUIT_MIN_STEP_SECONDS)
 		MOMENTUM_RECOVERY_TENDON:
 			circuit.add_energy(40.0)
 			_jump_to_round_settlement(step_index + 1)
@@ -1004,6 +1005,8 @@ func _call_circuit_weapon(attack: Dictionary) -> void:
 	for event_label in path:
 		tags.append("event_path:%s" % event_label)
 	var origin := player.visuals.get_weapon_mount_global_position()
+	if String(attack.get("kind", "projectile")) in ["projectile", "beam"]:
+		origin += direction.orthogonal() * float(attack.get("origin_offset", 0.0))
 	if weapon != null and weapon.attack_kind == WeaponComponentData.AttackKind.SPREAD:
 		weapon = weapon.duplicate(true) as WeaponComponentData
 		weapon.attack_kind = WeaponComponentData.AttackKind.PROJECTILE
@@ -1217,6 +1220,8 @@ func _append_base_signal_attacks(request: Dictionary) -> void:
 	var previous := _signal_attacks.duplicate(true)
 	_initialize_signal_attacks(request, false, false)
 	var added := _signal_attacks.duplicate(true)
+	for attack in added:
+		attack["origin_offset"] = 7.0
 	_signal_attacks = previous
 	_signal_attacks.append_array(added)
 

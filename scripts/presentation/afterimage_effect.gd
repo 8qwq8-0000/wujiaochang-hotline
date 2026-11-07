@@ -10,6 +10,10 @@ var _base_color := Color(0.25, 0.85, 1.0, 0.55)
 var _drift_velocity := Vector2.ZERO
 
 
+func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
+
+
 func play(
 	source: Node,
 	sprite: AnimatedSprite2D,
