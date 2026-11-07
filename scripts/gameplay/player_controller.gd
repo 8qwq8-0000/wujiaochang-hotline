@@ -15,6 +15,7 @@ signal player_died(packet: DamagePacket)
 
 const DEFAULT_CONFIG := preload("res://resources/player/default_player_config.tres")
 const AFTERIMAGE_INTERVAL := 0.05
+const WORLD_AFTERIMAGE_INTERVAL := 0.13
 const MOVEMENT_NOISE_INTERVAL := 0.35
 const MOBILITY_BURST_NOISE_RADIUS := 220.0
 const INPUT_BUFFER_SECONDS := 0.12
@@ -102,6 +103,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	persona_combat.notify_player_input(event)
 	if event.is_action_pressed("attack"):
+		persona_combat.cancel_hunt_followups()
 		_attack_pressed = true
 		_attack_held = true
 		_attack_buffer_remaining = 0.2 if persona_combat.has_stable_beat() else INPUT_BUFFER_SECONDS
@@ -110,9 +112,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		_attack_held = false
 		_attack_release_buffer_remaining = INPUT_BUFFER_SECONDS
 	if event.is_action_pressed("guard"):
+		persona_combat.cancel_hunt_followups()
 		_guard_buffer_remaining = INPUT_BUFFER_SECONDS
 	if event.is_action_pressed("mobility_ability"):
-		_dash_buffer_remaining = INPUT_BUFFER_SECONDS
+		_dash_buffer_remaining = 0.25 if persona_combat.has_hunt_chain() else INPUT_BUFFER_SECONDS
 	if InputMap.has_action("interact") and event.is_action_pressed("interact"):
 		interactor.request_interaction(self)
 	if InputMap.has_action("circuit_activate") and event.is_action_pressed("circuit_activate"):
@@ -130,9 +133,10 @@ func _physics_process(delta: float) -> void:
 		velocity = world_input * dash.config.walk_speed
 		move_and_slide()
 		visuals.update_visual(aim_direction, velocity, guard.state, guard.guard_arc_degrees)
-		_afterimage_active_remaining = 0.05
-		_afterimage_emit_remaining = minf(_afterimage_emit_remaining, 0.0)
-		_tick_afterimages(delta)
+		persona_combat.queue_redraw()
+		_afterimage_active_remaining = WORLD_AFTERIMAGE_INTERVAL + delta
+		if not world_input.is_zero_approx():
+			_tick_afterimages(delta, WORLD_AFTERIMAGE_INTERVAL)
 		_update_camera(delta)
 		return
 	_consume_buffered_defense_actions()
@@ -525,7 +529,7 @@ func _consume_buffered_defense_actions() -> void:
 		_guard_buffer_remaining = 0.0
 	if _dash_buffer_remaining > 0.0:
 		var movement := Input.get_vector("move_left", "move_right", "move_up", "move_down")
-		if dash.start_dash(self, aim_direction, movement):
+		if persona_combat.try_start_player_dash(movement):
 			_dash_buffer_remaining = 0.0
 
 
@@ -691,14 +695,14 @@ func _publish_movement_noise(radius: float) -> void:
 		events.publish_movement_noise(self, global_position, radius)
 
 
-func _tick_afterimages(delta: float) -> void:
+func _tick_afterimages(delta: float, interval: float = AFTERIMAGE_INTERVAL) -> void:
 	if _afterimage_active_remaining <= 0.0 or _dead:
 		return
 	_afterimage_active_remaining = maxf(_afterimage_active_remaining - delta, 0.0)
 	_afterimage_emit_remaining -= delta
 	if _afterimage_emit_remaining > 0.0:
 		return
-	_afterimage_emit_remaining += AFTERIMAGE_INTERVAL
+	_afterimage_emit_remaining += interval
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null:
 		events.request_afterimage(self, visuals.body_sprite)
@@ -739,6 +743,7 @@ func _clear_afterimages() -> void:
 func _on_hit_resolved(result: DamageResult) -> void:
 	if result.final_damage <= 0:
 		return
+	persona_combat.cancel_hunt_followups()
 	visuals.play_hurt_flash()
 	combat_feedback_requested.emit(&"hurt", global_position)
 

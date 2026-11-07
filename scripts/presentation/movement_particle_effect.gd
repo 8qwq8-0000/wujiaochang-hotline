@@ -221,6 +221,8 @@ func _draw_path_signature(fade: float) -> void:
 	color.a = fade * (0.2 if _reduced_flashes else 0.38)
 	var side := _direction.orthogonal()
 	match _effect_kind:
+		&"ninja_hunt":
+			draw_line(side * 3.5, _segment, color, 1.0, true)
 		&"ninja_chase":
 			draw_line(side * 3.5, _segment, color, 1.0, true)
 			draw_line(-side * 3.5, _segment, color, 1.0, true)

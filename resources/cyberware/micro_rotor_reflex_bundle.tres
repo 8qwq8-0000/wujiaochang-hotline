@@ -6,7 +6,7 @@
 script = ExtResource("1")
 module_id = &"micro_rotor_reflex_bundle"
 display_name = "微转子反射束"
-description = "执行后使本轮剩余槽位的执行间隔乘 0.25，最低 0.025 秒。"
+description = "执行后使本轮剩余槽位的执行间隔乘 0.25，最低 0.01 秒。"
 target_scope = Array[StringName]([&"remaining_slots"])
 circuit_kind = 3
 grade = 1

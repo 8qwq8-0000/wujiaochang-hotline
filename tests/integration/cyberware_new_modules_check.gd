@@ -29,6 +29,7 @@ func run() -> void:
 	player.cyberware.set_physics_process(false)
 	_test_splice_order()
 	_test_fission_and_relay()
+	_test_fire_event_relay()
 	await _test_world_stop()
 	await _test_penetration()
 	print("New cyberware failures: ", failures)
@@ -68,9 +69,23 @@ func _test_fission_and_relay() -> void:
 	_configure(PackedStringArray(["active_neural_switch", "smart_fire", "relay_starter"]))
 	attacks = player.cyberware._signal_attacks
 	check(attacks.size() == 2 and int((attacks[0].modifiers as Dictionary).get(&"homing", 0)) == 1 and int((attacks[1].modifiers as Dictionary).get(&"homing", 0)) == 0, "relay adds an unmodified base attack after smart fire")
+	check(is_equal_approx(float(attacks[1].get("origin_offset", 0.0)), 7.0), "relay shot uses a separate muzzle position")
 	_configure(PackedStringArray(["active_neural_switch", "relay_starter", "smart_fire"]))
 	attacks = player.cyberware._signal_attacks
 	check(attacks.size() == 2 and int((attacks[0].modifiers as Dictionary).get(&"homing", 0)) == 1 and int((attacks[1].modifiers as Dictionary).get(&"homing", 0)) == 1, "smart fire after relay modifies both attacks")
+
+
+func _test_fire_event_relay() -> void:
+	player.cyberware.reset_transient_state()
+	var ids := PackedStringArray(["combat_synapse_sensor", "relay_starter"])
+	player.cyberware.set_circuit_library_counts({&"combat_synapse_sensor": 1, &"relay_starter": 1})
+	check(bool(player.cyberware.set_circuit_slots(ids).get("ok", false)), "fire event relay circuit configures")
+	player.cyberware.circuit.set_energy(100.0)
+	var before := get_nodes_in_group("combat_projectiles").size()
+	check(player.cyberware.submit_weapon_fire(Vector2.RIGHT, player.weapons.get_current_weapon()), "fire event queues relay circuit")
+	for _index in 5:
+		player.cyberware._physics_process(0.1)
+	check(get_nodes_in_group("combat_projectiles").size() - before == 2, "fire event relay emits two projectiles")
 
 
 func _test_world_stop() -> void:

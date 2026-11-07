@@ -79,6 +79,8 @@ static func afterimage_color(persona_id: StringName, reduced_flashes: bool) -> C
 
 static func effect_strength(effect_kind: StringName) -> float:
 	match effect_kind:
+		&"ninja_hunt":
+			return 1.32
 		&"ninja_chase":
 			return 1.32
 		&"ninja_borrowed_step":

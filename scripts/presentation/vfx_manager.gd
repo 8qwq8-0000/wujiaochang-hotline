@@ -16,12 +16,13 @@ const GLITCH_SCAN_EFFECT := preload("res://scripts/presentation/glitch_scan_effe
 const IMPACT_FRAME_EFFECT := preload("res://scripts/presentation/impact_frame_effect.gd")
 const AFTERIMAGE_COLOR := Color(0.25, 0.85, 1.0, 0.55)
 const AFTERIMAGE_DURATION := 0.25
+const WORLD_AFTERIMAGE_DURATION := 0.7
 const FEEDBACK_GROUP_WINDOW_USEC := 90_000
 const FEEDBACK_QUALITY_SETTING := &"FeedbackQuality"
 
 @export_range(1, 256, 1) var total_effect_budget: int = 64
 @export_range(1, 128, 1) var prewarm_count: int = 12
-@export_range(1, 12, 1) var afterimage_budget: int = 6
+@export_range(1, 12, 1) var afterimage_budget: int = 8
 @export_range(1, 128, 1) var stain_budget: int = 48
 @export_range(1, 64, 1) var impact_budget: int = 24
 @export_range(1, 24, 1) var death_effect_budget: int = 10
@@ -357,7 +358,8 @@ func spawn_afterimage(source: Node, sprite: AnimatedSprite2D) -> void:
 	var persona_id := MovementFeedbackStyle.persona_id_for(source)
 	var reduced_flashes := bool(PlayerConfig.get_config(&"UISettings", &"ReducedFlashes", false))
 	var color := MovementFeedbackStyle.afterimage_color(persona_id, reduced_flashes) if source is PlayerController else AFTERIMAGE_COLOR
-	_spawn_afterimage_variant(source, sprite, color, AFTERIMAGE_DURATION, Vector2.ZERO, 0.0)
+	var duration := WORLD_AFTERIMAGE_DURATION if source is PlayerController and source.cyberware.is_world_stopped() else AFTERIMAGE_DURATION
+	_spawn_afterimage_variant(source, sprite, color, duration, Vector2.ZERO, 0.0)
 
 
 func spawn_path_afterimage(source: Node, sprite: AnimatedSprite2D, world_position: Vector2) -> void:

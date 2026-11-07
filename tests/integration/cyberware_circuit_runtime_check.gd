@@ -200,7 +200,7 @@ func _test_expanded_module_runtime(enemy: EnemyController) -> void:
 	player.cyberware.submit_circuit_request(&"active")
 	player.cyberware._physics_process(0.0)
 	_advance_circuit_steps(2)
-	check(is_equal_approx(float(player.cyberware.get("_circuit_step_interval")), 0.025), "micro rotor reaches the minimum remaining step interval")
+	check(is_equal_approx(float(player.cyberware.get("_circuit_step_interval")), 0.0125), "micro rotor quarters the default remaining step interval")
 	player.cyberware.reset_transient_state()
 	_configure(["active_neural_switch", "omnidirectional_reflection_matrix"])
 	player.cyberware.circuit.set_energy(100.0)
