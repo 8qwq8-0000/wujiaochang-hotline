@@ -169,11 +169,6 @@ func _on_minions_cleared() -> void:
 
 func _run_attack_loop(generation: int) -> void:
 	while _attack_is_current(generation):
-		if is_instance_valid(_queen):
-			while _queen.is_attacking():
-				await get_tree().process_frame
-				if not _attack_is_current(generation): return
-			_queen.set_active(false)
 		while _optical_disruption_remaining > 0.0:
 			await get_tree().process_frame
 			if not _attack_is_current(generation): return
@@ -206,9 +201,11 @@ func _run_attack_loop(generation: int) -> void:
 			telegraph.show_thunder(lane, 0.7)
 			await get_tree().create_timer(0.7, false).timeout
 			if not _attack_is_current(generation): return
-			$LightningAudio.play()
-			for cell in lane:
+			for cell_index in lane.size():
 				if not _attack_is_current(generation): return
+				var cell := lane[cell_index]
+				if cell_index % 4 == 0:
+					$LightningAudio.play()
 				telegraph.show_thunder([cell], 0.08, true)
 				_show_lightning_at(cell)
 				if not struck_this_round and player.global_position.distance_to(cell) <= 24.0:
@@ -216,8 +213,6 @@ func _run_attack_loop(generation: int) -> void:
 					struck_this_round = true
 				await get_tree().create_timer(0.035, false).timeout
 		telegraph.clear()
-		if is_instance_valid(_queen):
-			_queen.set_active(true)
 		await get_tree().create_timer(2.4, false).timeout
 	telegraph.clear()
 

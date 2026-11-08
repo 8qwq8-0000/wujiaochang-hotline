@@ -1,7 +1,7 @@
 class_name ComponentPickup
 extends Node2D
 
-@export_enum("pistol", "scattergun", "rail_cannon", "calamity_flame", "wheel", "armor") var component_id := "pistol"
+@export_enum("pistol", "scattergun", "rail_cannon", "gravity_wave", "calamity_flame", "wheel", "armor") var component_id := "pistol"
 var rolled_item: InventoryItem
 var _picked := false
 var _label: Label
@@ -15,6 +15,8 @@ func _ready() -> void:
 	icon.name = "ItemIcon"
 	icon.texture = rolled_item.get_texture()
 	icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	if component_id == "gravity_wave" and icon.texture != null:
+		icon.scale = Vector2.ONE * (40.0 / float(maxi(icon.texture.get_width(), icon.texture.get_height())))
 	if icon.texture != null and rolled_item.get_property("slot", "") in ["cyberware", "defense"]:
 		icon.scale = Vector2.ONE * minf(1.0, 32.0 / maxf(icon.texture.get_width(), icon.texture.get_height()))
 	add_child(icon)

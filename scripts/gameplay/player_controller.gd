@@ -47,6 +47,11 @@ var _input_enabled := true
 var _attack_pressed := false
 var _attack_released := false
 var _attack_held := false
+var _gravity_charging := false
+var _gravity_charge_seconds := 0.0
+var _gravity_pending := false
+var _gravity_pending_seconds := 0.0
+var _gravity_charge_bar: Node2D
 var _afterimage_active_remaining := 0.0
 var _afterimage_emit_remaining := 0.0
 var _movement_effect_last_position := Vector2.ZERO
@@ -92,6 +97,9 @@ func _ready() -> void:
 	circuit_breaker.circuit_breaker_triggered.connect(_on_circuit_breaker_triggered)
 	if not config.debug_loadout_enabled:
 		inventory._apply_equipment()
+	_gravity_charge_bar = Node2D.new()
+	_gravity_charge_bar.set_script(load("res://scripts/presentation/gravity_charge_bar.gd"))
+	add_child(_gravity_charge_bar)
 	_emit_public_state()
 	_camera_shake_last_usec = Time.get_ticks_usec()
 
@@ -111,15 +119,22 @@ func _unhandled_input(event: InputEvent) -> void:
 		_attack_pressed = true
 		_attack_held = true
 		_attack_buffer_remaining = 0.2 if persona_combat.has_stable_beat() else INPUT_BUFFER_SECONDS
+		if weapons.get_current_weapon() != null and weapons.get_current_weapon().id == &"gravity_wave":
+			_gravity_charging = true
+			_gravity_charge_seconds = 0.0
 	if event.is_action_released("attack"):
 		_attack_released = true
 		_attack_held = false
 		_attack_release_buffer_remaining = INPUT_BUFFER_SECONDS
+		if _gravity_charging:
+			_gravity_charging = false
+			_gravity_pending = true
+			_gravity_pending_seconds = _gravity_charge_seconds
 	if event.is_action_pressed("guard"):
 		persona_combat.cancel_hunt_followups()
 		_guard_buffer_remaining = INPUT_BUFFER_SECONDS
 	if event.is_action_pressed("mobility_ability"):
-		_dash_buffer_remaining = 0.25 if persona_combat.has_hunt_chain() else INPUT_BUFFER_SECONDS
+		_dash_buffer_remaining = 0.6 if persona_combat.has_hunt_chain() else INPUT_BUFFER_SECONDS
 	if InputMap.has_action("interact") and event.is_action_pressed("interact"):
 		interactor.request_interaction(self)
 	if InputMap.has_action("circuit_activate") and event.is_action_pressed("circuit_activate"):
@@ -132,6 +147,11 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _physics_process(delta: float) -> void:
 	_update_aim_direction()
+	if _gravity_charging:
+		_gravity_charge_seconds = minf(_gravity_charge_seconds + delta, 10.0)
+	if _gravity_charge_bar != null:
+		_gravity_charge_bar.set("progress", _gravity_charge_seconds / 10.0 if _gravity_charging else 0.0)
+		_gravity_charge_bar.queue_redraw()
 	if cyberware.is_world_stopped():
 		var world_input := Input.get_vector("move_left", "move_right", "move_up", "move_down") if _input_enabled else Vector2.ZERO
 		velocity = world_input * dash.config.walk_speed
@@ -161,6 +181,9 @@ func _physics_process(delta: float) -> void:
 		var attack := _get_attack_transform()
 		if weapons.try_attack(attack.origin, attack.x.normalized(), self):
 			_consume_attack_buffer()
+			_gravity_pending = false
+		elif _gravity_pending and weapons.get_cooldown_remaining() <= 0.0:
+			_gravity_pending = false
 	_tick_input_buffers(delta)
 	_update_camera(delta)
 	visuals.update_visual(
@@ -183,6 +206,8 @@ func set_input_enabled(enabled: bool) -> void:
 	_attack_pressed = false
 	_attack_released = false
 	_attack_held = false
+	_gravity_charging = false
+	_gravity_pending = false
 	_attack_buffer_remaining = 0.0
 	_attack_release_buffer_remaining = 0.0
 	_guard_buffer_remaining = 0.0
@@ -439,6 +464,11 @@ func _has_persona_archive_content(archive: Dictionary) -> bool:
 
 
 func reset_transient_state(preserve_circuit_queues: bool = false) -> void:
+	_gravity_charging = false
+	_gravity_pending = false
+	for orb in get_tree().get_nodes_in_group("gravity_wave_orbs"):
+		if orb is GravityWaveOrb and orb.source == self:
+			orb.queue_free()
 	var room_buff := get_node_or_null("RoomBuffComponent")
 	if room_buff != null:
 		room_buff.clear()
@@ -587,6 +617,9 @@ func _should_attack_this_frame() -> bool:
 	var data := weapons.get_current_weapon()
 	if data == null:
 		return false
+	if data.id == &"gravity_wave":
+		weapons.pending_charge_seconds = _gravity_pending_seconds
+		return _gravity_pending
 	var mobile_input := get_node_or_null("/root/MobileInput")
 	if mobile_input != null and mobile_input.is_manual_attack_active(self):
 		return data.trigger_mode != WeaponComponentData.TriggerMode.CHARGE
@@ -629,6 +662,8 @@ func _on_heat_recovered() -> void:
 
 
 func _on_weapon_changed(_index: int, data: WeaponComponentData) -> void:
+	_gravity_charging = false
+	_gravity_pending = false
 	visuals.set_weapon(data)
 	weapon_changed.emit(data)
 

@@ -1,0 +1,19 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/presentation/weapon_view.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/art/weapons/gravity_wave/weapon.png" id="2"]
+
+[node name="GravityWaveView" type="Node2D"]
+script = ExtResource("1")
+muzzle_socket_path = NodePath("BodyRoot/MuzzleSocket")
+
+[node name="BodyRoot" type="Node2D" parent="."]
+
+[node name="BodySprite" type="Sprite2D" parent="BodyRoot"]
+texture_filter = 1
+position = Vector2(18, 0)
+scale = Vector2(0.25, 0.25)
+texture = ExtResource("2")
+
+[node name="MuzzleSocket" type="Marker2D" parent="BodyRoot"]
+position = Vector2(39, 0)

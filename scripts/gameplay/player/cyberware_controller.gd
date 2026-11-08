@@ -76,6 +76,7 @@ var _micro_rotor_attack_groups: Dictionary = {}
 var _predatory_attack_groups: Dictionary = {}
 var _predatory_dash_refresh_pending := false
 var _circuit_queues: Dictionary = {}
+var _gravity_event_serial := 0
 var _circuit_cooldowns := {&"active": 0.0, &"event": 0.0, &"timed": 0.0}
 var _active_circuit_round: Dictionary = {}
 var _circuit_step_remaining := 0.0
@@ -286,6 +287,10 @@ func reset_transient_state(preserve_queues: bool = false) -> void:
 	circuit.clear_waiting_round()
 	if not preserve_queues:
 		_circuit_queues.clear()
+	else:
+		for key in _circuit_queues.keys():
+			if String(key).contains("_gravity_"):
+				_circuit_queues.erase(key)
 	_circuit_cooldowns = {&"active": 0.0, &"event": 0.0, &"timed": 0.0}
 	_active_circuit_round.clear()
 	_circuit_abort_remaining = 0.0
@@ -525,7 +530,7 @@ func submit_event_starters(event_flag: int, direction: Vector2, tags: PackedStri
 	return _submit_event_starters(event_flag, direction, tags, PackedStringArray(), 0)
 
 
-func _submit_event_starters(event_flag: int, direction: Vector2, tags: PackedStringArray, path: PackedStringArray, round_token: int) -> bool:
+func _submit_event_starters(event_flag: int, direction: Vector2, tags: PackedStringArray, path: PackedStringArray, round_token: int, weapon_override: WeaponComponentData = null) -> bool:
 	var accepted := false
 	var slots := circuit.get_slots()
 	for index in slots.size():
@@ -538,10 +543,14 @@ func _submit_event_starters(event_flag: int, direction: Vector2, tags: PackedStr
 		var seen_key := "%d:%d" % [round_token, index]
 		if round_token > 0 and _event_seen.has(seen_key):
 			continue
-		var key := StringName("event_%d" % index)
+		var cooldown_key := StringName("event_%d" % index)
+		var key := cooldown_key
+		if weapon_override != null and weapon_override.id == &"gravity_wave":
+			_gravity_event_serial += 1
+			key = StringName("event_%d_gravity_%d" % [index, _gravity_event_serial])
 		var player := get_parent() as PlayerController
 		var can_queue_early := event_flag == 1 and (player.persona_combat.is_nuclear_frenzy_active() or player.persona_combat.can_queue_seamless() and has_active_round())
-		if float(_circuit_cooldowns.get(key, 0.0)) > 0.0 and not can_queue_early:
+		if float(_circuit_cooldowns.get(cooldown_key, 0.0)) > 0.0 and not can_queue_early:
 			continue
 		var plan: Dictionary = circuit.compile_plan()
 		var starter := circuit.get_definition(module_id)
@@ -553,11 +562,17 @@ func _submit_event_starters(event_flag: int, direction: Vector2, tags: PackedStr
 			continue
 		_circuit_queues[key] = {
 			"kind": &"event", "starter_slot": index, "starter_id": module_id,
+			"cooldown_key": cooldown_key,
+			"gravity_room_id": CombatProjectile.room_for_actor(player).get_instance_id() if weapon_override != null and weapon_override.id == &"gravity_wave" else 0,
 			"direction": direction.normalized() if not direction.is_zero_approx() else Vector2.RIGHT,
 			"tags": tags.duplicate(),
-			"weapon": player.weapons.get_current_weapon().duplicate(true) if player != null else null,
+			"weapon": weapon_override.duplicate(true) if weapon_override != null else (player.weapons.get_current_weapon().duplicate(true) if player != null else null),
 			"path": path.duplicate(),
 		}
+		var queued_weapon := _circuit_queues[key]["weapon"] as WeaponComponentData
+		if weapon_override == null and queued_weapon != null and queued_weapon.id == &"gravity_wave":
+			queued_weapon.charge_seconds = player.weapons.last_manual_charge_seconds
+			_circuit_queues[key]["gravity_room_id"] = CombatProjectile.room_for_actor(player).get_instance_id()
 		(_circuit_queues[key]["path"] as PackedStringArray).append(label)
 		if round_token > 0:
 			_event_seen[seen_key] = true
@@ -576,7 +591,7 @@ func submit_weapon_fire(direction: Vector2, weapon: WeaponComponentData, automat
 		for queued in _circuit_queues.values():
 			if "开火" in PackedStringArray((queued as Dictionary).get("tags", [])):
 				return false
-	var accepted := submit_event_starters(1, direction, PackedStringArray(["开火"]))
+	var accepted := _submit_event_starters(1, direction, PackedStringArray(["开火"]), PackedStringArray(), 0, weapon)
 	if accepted and automatic:
 		for key in _circuit_queues:
 			var queued: Dictionary = _circuit_queues[key]
@@ -716,16 +731,24 @@ func _start_next_circuit_request() -> void:
 	var priority: Array[StringName] = [&"active"]
 	for index in circuit.get_slots().size():
 		priority.append(StringName("event_%d" % index))
+	for queued_key in _circuit_queues:
+		if String(queued_key).contains("_gravity_"):
+			priority.append(queued_key)
 	priority.append_array([&"event", &"timed"])
 	for request_kind in priority:
 		if not _circuit_queues.has(request_kind):
 			continue
 		var queued: Dictionary = _circuit_queues[request_kind]
 		var ignore_cooldown := (get_parent() as PlayerController).persona_combat.is_nuclear_frenzy_active() and "开火" in PackedStringArray(queued.get("tags", []))
-		if float(_circuit_cooldowns.get(request_kind, 0.0)) > 0.0 and not ignore_cooldown:
+		var cooldown_key := StringName(queued.get("cooldown_key", request_kind))
+		if float(_circuit_cooldowns.get(cooldown_key, 0.0)) > 0.0 and not ignore_cooldown:
 			continue
 		var request: Dictionary = _circuit_queues[request_kind]
 		var player := get_parent() as PlayerController
+		if int(request.get("gravity_room_id", 0)) > 0 and int(request.get("gravity_room_id", 0)) != CombatProjectile.room_for_actor(player).get_instance_id():
+			_circuit_queues.erase(request_kind)
+			circuit_queue_changed.emit(_circuit_queues.duplicate(true))
+			continue
 		if bool(request.get("automatic", false)) and player.weapons.get_cooldown_remaining() > 0.0:
 			continue
 		var plan: Dictionary = circuit.compile_plan(StringName(request.get("starter_id", "")))
@@ -755,7 +778,7 @@ func _start_next_circuit_request() -> void:
 			var weapon := player.weapons.get_current_weapon()
 			player.weapons.set_cooldown_remaining(0.0 if player.persona_combat.is_nuclear_frenzy_active() else weapon.cooldown / maxf(player.weapons.attack_speed_multiplier + player.weapons.persona_attack_speed_bonus + player.weapons.equipment_attack_speed_bonus, 0.01))
 		_circuit_queues.erase(request_kind)
-		_circuit_cooldowns[request_kind] = 0.75 if String(request_kind).begins_with("event") else CIRCUIT_STARTER_INTERVALS[request_kind]
+		_circuit_cooldowns[cooldown_key] = (0.5 if String(request_kind).contains("_gravity_") else 0.75) if String(request_kind).begins_with("event") else CIRCUIT_STARTER_INTERVALS[request_kind]
 		circuit_queue_changed.emit(_circuit_queues.duplicate(true))
 		_begin_circuit_round(started_plan, request)
 		return

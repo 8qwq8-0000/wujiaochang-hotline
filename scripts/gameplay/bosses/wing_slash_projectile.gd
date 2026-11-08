@@ -23,14 +23,14 @@ func launch(guard: WingGuard, player: PlayerController, direction: Vector2, cell
 	collision_mask = 8
 	monitoring = true
 	var shape := CircleShape2D.new()
-	shape.radius = 19.0 if cells == 2 else 24.0
+	shape.radius = 24.0 if cells == 2 else 30.0
 	var hitbox := CollisionShape2D.new()
 	hitbox.shape = shape
 	add_child(hitbox)
 	var sprite := Sprite2D.new()
 	sprite.texture = ROOK_TEXTURE if cells == 2 else QUEEN_TEXTURE
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	sprite.scale = Vector2(0.055, 0.055) if cells == 2 else Vector2(0.07, 0.07)
+	sprite.scale = Vector2(0.069, 0.069) if cells == 2 else Vector2(0.088, 0.088)
 	add_child(sprite)
 	area_entered.connect(_on_area_entered)
 	get_tree().create_timer(0.45, false).timeout.connect(queue_free)

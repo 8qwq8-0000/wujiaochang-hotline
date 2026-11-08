@@ -35,5 +35,6 @@ enum TriggerMode {
 @export_range(1.0, 64.0, 1.0) var melee_hit_radius: float = 10.0
 @export var damage_type: StringName = &"kinetic"
 @export var status_tags: PackedStringArray = []
+@export var charge_seconds: float = 0.0
 
 @export_range(0.0, 1000.0, 1.0) var noise_radius: float = 0.0

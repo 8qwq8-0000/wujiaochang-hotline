@@ -60,6 +60,27 @@ func run() -> void:
 	bishop.set_active(false)
 	check(rook.kind == WingGuard.Kind.ROOK and rook.health.max_health == 20, "rook has 20 health")
 	check(bishop.kind == WingGuard.Kind.BISHOP and bishop.health.max_health == 15, "bishop has 15 health")
+	var bishop_cell := BossFloorGeometry.nearest_cell(bishop.global_position)
+	var diagonal_target := BossFloorGeometry.cell_point(bishop_cell + Vector2i(2, 2))
+	arena.player.global_position = diagonal_target
+	check(not bishop._bishop_target_ray(bishop_cell).is_empty(), "bishop detects a distant player along a corner ray before repositioning")
+	arena.player.global_position = diagonal_target + Vector2(0, -64)
+	check(bishop._bishop_target_ray(bishop_cell).is_empty(), "bishop keeps diagonal targeting rather than scanning every angle")
+	bishop._warning_lines = [PackedVector2Array([Vector2(500, 300), Vector2(500, 700)])]
+	bishop._laser_active = true
+	arena.player.position = Vector2(530, 500)
+	arena.player.hurt_box.clear_invulnerability()
+	var laser_health := arena.player.health.current_health
+	bishop._physics_process(0.02)
+	arena.player.position = Vector2(505, 500)
+	bishop._physics_process(0.02)
+	check(arena.player.health.current_health == laser_health - 1, "entering an active bishop laser causes contact damage")
+	arena.player.hurt_box.clear_invulnerability()
+	bishop._physics_process(0.02)
+	check(arena.player.health.current_health == laser_health - 1, "one bishop laser damages at most once")
+	bishop._clear_warning()
+	var distant_bishop_cell := bishop._bishop_destination(Vector2i(2, 2), Vector2i(12, 12))
+	check(absi(distant_bishop_cell.x - 2) == absi(distant_bishop_cell.y - 2) and absi(absi(12 - distant_bishop_cell.x) - absi(12 - distant_bishop_cell.y)) <= 1 and distant_bishop_cell.distance_to(Vector2i(12, 12)) >= 6.0, "bishop can find a distant diagonal firing lane without approaching the player")
 	check(arena.get_node("SupportEnemies").get_child_count() == 0, "queen is absent before fusion")
 	rook.health.apply_damage(20, hit(20))
 	check(arena.boss.opening_guards_remaining == 1 and arena.phase == RooftopBossArena.Phase.MINIONS, "first shattered core does not awaken boss")
@@ -74,6 +95,8 @@ func run() -> void:
 	var queen := arena.get_node("SupportEnemies").get_child(0) as WingGuard
 	queen.set_active(false)
 	check(queen.kind == WingGuard.Kind.QUEEN and queen.health.max_health == 35, "fused queen has 35 health")
+	var landing := queen._queen_landing_cell(Vector2i(2, 3), Vector2i(17, 10))
+	check(landing.x == 2 or landing.y == 3 or absi(landing.x - 2) == absi(landing.y - 3), "queen landing follows a legal rook or bishop line")
 	check(arena.boss.health.guard_link_active and arena.boss.health.apply_damage(99, hit(99)) == 0, "queen protects boss")
 	for segment in 5:
 		queen.health.apply_damage(6, hit(6))

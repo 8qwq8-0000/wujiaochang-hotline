@@ -96,6 +96,13 @@
 		"image": "res://assets/art/weapons/placeholder/arm_lock_rail_cannon.png",
 		"maximum_stack_size": 1.0
 	},
+	"gravity_wave": {
+		"name": "引力波",
+		"slot": "weapon",
+		"effect": "res://resources/weapons/gravity_wave.tres",
+		"image": "res://assets/art/weapons/gravity_wave/weapon.png",
+		"maximum_stack_size": 1.0
+	},
 	"smart_fire": {
 		"name": "智能火控",
 		"slot": "cyberware",

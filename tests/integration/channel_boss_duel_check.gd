@@ -120,6 +120,14 @@ func run_checks() -> void:
 			break
 	duel.auto_attacks = false
 	check(duel.stage == duel.Stage.ACTIVE and arena.phase == arena.Phase.BOSS_ACTIVE, "reveal starts actual boss combat")
+	var boss_before_roam := arena.boss.position
+	duel._physics_process(1.0)
+	check(arena.boss.position.y > boss_before_roam.y and ChannelBossDuel.GLIDE_BOUNDS.has_point(arena.boss.position), "second boss leaves the altar line and roams inside the upper arena")
+	check(root.get_camera_2d() == player.camera and player.camera.zoom.is_equal_approx(Vector2.ONE * 0.6), "combat camera follows player at the wider arena zoom")
+	var visible_size := root.get_visible_rect().size / player.camera.zoom
+	var visible_world := Rect2(player.camera.get_screen_center_position() - visible_size * 0.5, visible_size)
+	check(visible_world.has_point(player.global_position) and visible_world.has_point(arena.boss.global_position), "opening combat frame keeps both player and boss visible")
+	check(duel.wings.size() == 2 and duel.wings[0].health.max_health == 10 and duel.wings[1].health.max_health == 8, "second ending starts with lighter rook and bishop escorts")
 	check(player.is_input_enabled() and arena.boss.channel_form and duel.visual.visible, "player controls and front-facing animated form activate")
 	check(arena.boss.health.damage_enabled and not arena.boss.health.guard_link_active, "boss is directly vulnerable throughout combat")
 	check(arena.get_node_or_null("CodexCompanion") == null and run_manager.codex_companion.health == 2, "Codex is dialogue-only on the roof and retains escort health")
@@ -139,10 +147,16 @@ func run_checks() -> void:
 		duel.clear_effects()
 		await frames()
 		duel.cast_attack(index)
+		check(duel.wings.all(func(wing: WingGuard) -> bool: return not is_instance_valid(wing) or wing.health.is_dead() or wing.active), "escorts remain active while the second boss casts")
 		await create_timer([1.2, 1.0, 1.12][index]).timeout
 		check(duel.attacks_started[index] > 0, "runtime cast starts: %d" % index)
 		check(not get_nodes_in_group("channel_boss_effects").is_empty(), "cast creates active effect: %d" % index)
 		await capture(["03-echo", "04-halo", "05-protect"][index])
+	duel.cast_attack(3)
+	var warned_cell := duel.lightning_cell
+	player.position += Vector2(80, 0)
+	await create_timer(0.8).timeout
+	check(duel.attacks_started[3] == 1 and duel.lightning_struck and duel.lightning_cell == warned_cell, "targeted lightning locks one cell and strikes after warning")
 	duel.set_physics_process(false)
 	duel.clear_effects()
 	await frames()
@@ -174,6 +188,21 @@ func run_checks() -> void:
 	effect.elapsed = 0.95
 	effect._physics_process(0.02)
 	check(player.health.current_health == health_before - 1, "halo damage follows warning release")
+	player.hurt_box.clear_invulnerability()
+	effect._physics_process(0.05)
+	check(player.health.current_health == health_before - 1, "lingering halo cannot damage the same player twice")
+	duel.clear_effects()
+	await frames()
+	effect = duel.spawn_effect(&"halo", player.global_position)
+	var halo_center := player.global_position
+	player.global_position = halo_center + Vector2(39, 0)
+	player.hurt_box.clear_invulnerability()
+	health_before = player.health.current_health
+	effect.elapsed = ChannelBossEffect.HALO_WARNING + 0.1
+	effect._physics_process(0.02)
+	player.global_position = halo_center
+	effect._physics_process(0.02)
+	check(player.health.current_health == health_before - 1, "entering a lingering halo after release causes contact damage")
 	var frozen := effect.elapsed
 	paused = true
 	await create_timer(0.06).timeout
