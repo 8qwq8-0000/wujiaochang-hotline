@@ -8,7 +8,7 @@ const ECHO_TAIL := 0.38
 const HALO_OFFSETS := [-78.0, 0.0, 78.0]
 const HALO_WIDTH := 20.0
 const HALO_WARNING := 0.96
-const HALO_TAIL := 0.36
+const HALO_TAIL := 0.6
 const WAVE_START_RADIUS := 24.0
 const WAVE_MAX_RADIUS := 285.0
 const WAVE_SPEED := 216.0 / 0.66
@@ -90,7 +90,11 @@ func _physics_process(delta: float) -> void:
 		queue_free()
 		return
 	elapsed += delta
-	if skill in [&"echo", &"halo", &"tail"]:
+	if skill == &"halo":
+		if not resolved and elapsed >= HALO_WARNING and elapsed <= HALO_WARNING + HALO_TAIL and contains_impact(arena.player.global_position):
+			resolved = true
+			arena._damage_player(global_position)
+	elif skill in [&"echo", &"tail"]:
 		var strike_time := _warning_time()
 		if not resolved and elapsed >= strike_time:
 			resolved = true

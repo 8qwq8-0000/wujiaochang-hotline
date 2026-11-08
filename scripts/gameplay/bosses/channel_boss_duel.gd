@@ -7,7 +7,9 @@ const ECHO_FIRST_MARK := 0.35
 const ECHO_INTERVAL := 0.52
 const PROTECT_RELEASE := 0.70
 const TAIL_CAST_DURATION := ChannelBossEffect.TAIL_WARNING + ChannelBossEffect.TAIL_FADE + 0.04
-const GLIDE_SPEED := 22.0
+const GLIDE_SPEED := 60.0
+const GLIDE_DISTANCE := 160.0
+const GLIDE_BOUNDS := Rect2(330.0, 330.0, 620.0, 230.0)
 const FORM_REVEAL := 0.55
 const REVEAL_BLEND := 0.20
 const INTRO := [
@@ -25,6 +27,9 @@ var stage := Stage.INTRO
 var dialogue: ChannelDialogue
 var visual: ChannelBossAnimator
 var camera: Camera2D
+var wings: Array[WingGuard] = []
+var lightning_cell := Vector2.ZERO
+var lightning_struck := false
 var stage_clock := 0.0
 var cast_skill: StringName = &""
 var cast_clock := 0.0
@@ -35,7 +40,7 @@ var next_echo := -1.0
 var pulse_pending := false
 var tail_ready := true
 var form_awakened := false
-var attacks_started := [0, 0, 0]
+var attacks_started := [0, 0, 0, 0]
 var auto_attacks := true
 @onready var arena: RooftopBossArena = get_parent()
 @onready var run: Node = get_node("/root/RunManager")
@@ -46,8 +51,8 @@ func _ready() -> void:
 	arena.add_child(dialogue)
 	arena.route_dialogue = dialogue
 	camera = Camera2D.new()
-	camera.position = Vector2(480, 270)
-	camera.zoom = Vector2.ONE * (2.0 / 3.0)
+	camera.position = Vector2(640, 420)
+	camera.zoom = Vector2.ONE * 0.8
 	arena.add_child(camera)
 	camera.make_current()
 	show_intro(0)
@@ -111,6 +116,12 @@ func start_combat() -> void:
 	arena.boss.body_sprite.hide()
 	arena.boss.glow_sprite.hide()
 	stage = Stage.ACTIVE
+	arena.player.camera.zoom = Vector2.ONE * 0.6
+	arena.player.camera.position = Vector2.ZERO
+	arena.player.camera.reset_smoothing()
+	arena.player.camera.make_current()
+	wings.append(arena._make_wing(WingGuard.Kind.ROOK, 10, BossFloorGeometry.cell_point(Vector2i(2, 5)), arena.get_node("Enemies")))
+	wings.append(arena._make_wing(WingGuard.Kind.BISHOP, 8, BossFloorGeometry.cell_point(Vector2i(21, 5)), arena.get_node("Enemies")))
 	cast_skill = &""
 	cast_clock = 0
 	recovery = 1.0
@@ -128,13 +139,13 @@ func start_combat() -> void:
 func cast_attack(index: int) -> void:
 	if stage != Stage.ACTIVE or arena.player.health.is_dead():
 		return
-	cast_skill = [&"echo", &"halo", &"protect"][index]
+	cast_skill = [&"echo", &"halo", &"protect", &"lightning"][index]
 	cast_clock = 0
 	echo_count = 0
 	next_echo = ECHO_FIRST_MARK if index == 0 else -1.0
 	pulse_pending = index == 2
 	attacks_started[index] += 1
-	next_skill = (index + 1) % 3
+	next_skill = (index + 1) % 4
 	if index == 0:
 		visual.play_cast(cast_skill, ECHO_FIRST_MARK + ChannelBossEffect.ECHO_WARNING, ECHO_INTERVAL)
 		arena.boss.play_echo_probe()
@@ -145,8 +156,13 @@ func cast_attack(index: int) -> void:
 		point.x = clampf(point.x, 270, 690)
 		point.y = clampf(point.y, 300, 470)
 		spawn_effect(&"halo", arena.to_global(point))
-	else:
+	elif index == 2:
 		visual.play_cast(cast_skill, PROTECT_RELEASE)
+	else:
+		lightning_cell = arena._grid_cell(arena.player.global_position)
+		lightning_struck = false
+		arena.telegraph.show_thunder([lightning_cell], 0.7)
+		arena.boss.play_echo_probe()
 
 
 func spawn_effect(skill: StringName, point: Vector2) -> ChannelBossEffect:
@@ -183,6 +199,8 @@ func stop_combat() -> void:
 	next_echo = -1
 	pulse_pending = false
 	clear_effects()
+	_clear_wings()
+	arena.telegraph.clear()
 	if is_instance_valid(visual):
 		visual.freeze(false)
 	queue_redraw()
@@ -192,6 +210,8 @@ func begin_ending() -> void:
 	if stage in [Stage.ENDING, Stage.COMPLETE, Stage.STOPPED]:
 		return
 	clear_effects()
+	_clear_wings()
+	arena.telegraph.clear()
 	stage = Stage.ENDING
 	cast_skill = &""
 	next_echo = -1
@@ -242,7 +262,20 @@ func _physics_process(delta: float) -> void:
 		if arena.player.health.is_dead():
 			stop_combat()
 			return
-		if cast_skill == &"tail":
+		if cast_skill == &"lightning":
+			cast_clock += delta
+			if not lightning_struck and cast_clock >= 0.7:
+				lightning_struck = true
+				arena.telegraph.show_thunder([lightning_cell], 0.15, true)
+				arena._show_lightning_at(lightning_cell)
+				arena.get_node("LightningAudio").play()
+				if arena.player.global_position.distance_to(lightning_cell) <= 24.0:
+					arena._damage_player(lightning_cell, &"electric")
+			if cast_clock >= 0.85:
+				arena.telegraph.clear()
+				cast_skill = &""
+				recovery = 1.25 if arena.boss.health.get_health_ratio() > 0.5 else 0.85
+		elif cast_skill == &"tail":
 			cast_clock += delta
 			visual.update_cast(cast_clock)
 			if cast_clock >= TAIL_CAST_DURATION:
@@ -266,8 +299,13 @@ func _physics_process(delta: float) -> void:
 		else:
 			recovery -= delta
 			var before := arena.boss.position
-			var target_x := clampf(arena.player.position.x, 330, 630)
-			arena.boss.position.x = move_toward(before.x, target_x, delta * GLIDE_SPEED)
+			var away := before - arena.player.position
+			if away.is_zero_approx():
+				away = Vector2.UP
+			var desired := arena.player.position + away.normalized() * GLIDE_DISTANCE
+			desired.x = clampf(desired.x, GLIDE_BOUNDS.position.x, GLIDE_BOUNDS.end.x)
+			desired.y = clampf(desired.y, GLIDE_BOUNDS.position.y, GLIDE_BOUNDS.end.y)
+			arena.boss.position = before.move_toward(desired, delta * GLIDE_SPEED)
 			visual.update_motion((arena.boss.position.x - before.x) / (delta * GLIDE_SPEED))
 			if auto_attacks and arena._optical_disruption_remaining <= 0:
 				if tail_ready and recovery >= TAIL_CAST_DURATION:
@@ -275,6 +313,14 @@ func _physics_process(delta: float) -> void:
 				elif recovery <= 0:
 					cast_attack(next_skill)
 		queue_redraw()
+
+
+func _clear_wings() -> void:
+	for wing in wings:
+		if is_instance_valid(wing):
+			wing.set_active(false)
+			wing.queue_free()
+	wings.clear()
 
 
 func _draw() -> void:

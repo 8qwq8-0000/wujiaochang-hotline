@@ -13,7 +13,6 @@ const TOWER_WIDTH := 1800.0
 const WALL_WIDTH := 1200.0
 const WALL_HEIGHT := 124.0
 const TOWER_PARALLAX := 0.38
-const DISTANT_PARALLAX := 0.08
 const FOG_PARALLAX := 0.13
 const AD_SCROLL_SECONDS := 12.0
 const AD_SCROLL_EDGE_HOLD := 0.14
@@ -72,7 +71,6 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	_draw_sky()
-	_draw_distant_city()
 	_draw_distant_fog()
 	_draw_opposite_tower()
 	_draw_outdoor_rain()
@@ -141,24 +139,6 @@ func _draw_sky() -> void:
 	for row in 6:
 		var shade := Color(0.018 + row * 0.005, 0.045 + row * 0.007, 0.075 + row * 0.010, 1.0)
 		draw_rect(Rect2(0.0, -BACKDROP_HEIGHT + row * 24.0, floor_width, 24.0), shade)
-
-
-func _draw_distant_city() -> void:
-	for index in range(-6, 12):
-		var anchor_x := float(index * 250 + 35)
-		var x := _project_x(anchor_x, DISTANT_PARALLAX)
-		var height := 38.0 + float(posmod(index * 31, 76))
-		var width := 48.0 + float(posmod(index * 19, 46))
-		var rect := Rect2(x, -height, width, height)
-		draw_rect(rect, Color("0a1420"))
-		for window_index in range(1, int(width / 11.0)):
-			var flicker := fposmod(_visual_time * 0.10 + float(index * 7 + window_index) * 0.37, 1.0)
-			if flicker > 0.80:
-				var window_color := Color(0.68, 0.50, 0.24, 0.28) if window_index % 4 == 0 else Color(0.34, 0.52, 0.61, 0.24)
-				draw_rect(Rect2(x + window_index * 10.0, -height + 8.0 + float(posmod(window_index * 13, int(maxf(height - 16.0, 1.0)))), 2.0, 2.0), window_color)
-	var beacon_x := _project_x(floor_width * 0.78, DISTANT_PARALLAX)
-	var beacon_alpha := 0.12 + 0.20 * maxf(sin(_visual_time * 1.2), 0.0)
-	draw_circle(Vector2(beacon_x, -122.0), 1.0, Color(0.76, 0.19, 0.22, beacon_alpha))
 
 
 func _draw_distant_fog() -> void:
