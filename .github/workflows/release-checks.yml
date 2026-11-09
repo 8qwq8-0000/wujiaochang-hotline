@@ -1,0 +1,53 @@
+name: Game regression checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: Test profile
+        required: true
+        type: choice
+        options:
+          - fast
+          - candidate
+
+jobs:
+  checks:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Download pinned Godot 4.7.2 Mono
+        shell: pwsh
+        run: |
+          $archive = Join-Path $env:RUNNER_TEMP 'godot.zip'
+          $destination = Join-Path $env:RUNNER_TEMP 'godot'
+          Invoke-WebRequest 'https://github.com/godotengine/godot-builds/releases/download/4.7.2-stable/Godot_v4.7.2-stable_mono_win64.zip' -OutFile $archive
+          Expand-Archive -LiteralPath $archive -DestinationPath $destination
+          $binary = Get-ChildItem -LiteralPath $destination -Filter 'Godot_v4.7.2-stable_mono_win64_console.exe' -Recurse | Select-Object -First 1
+          if ($null -eq $binary) { throw 'Godot executable is missing from the archive' }
+          "GODOT_BIN=$($binary.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Run regression profile
+        shell: pwsh
+        run: |
+          $profile = '${{ inputs.profile }}'
+          if ([string]::IsNullOrWhiteSpace($profile)) { $profile = 'fast' }
+          & $env:GODOT_BIN --headless --path . --import
+          if ($LASTEXITCODE -ne 0) { throw 'Godot resource import failed' }
+          python tools/run_release_checks.py $profile
+          if ($LASTEXITCODE -ne 0) { throw 'Game regression checks failed' }
+      - name: Preserve check reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: game-check-results
+          path: build/test-reports/
+          if-no-files-found: ignore

@@ -12,6 +12,9 @@ const FUSION_SHOCKWAVE := preload("res://scripts/presentation/gravity_fusion_sho
 const BLUE_TEXTURE := preload("res://assets/art/projectiles/gravity_wave/blue.png")
 const RED_TEXTURE := preload("res://assets/art/projectiles/gravity_wave/red.png")
 const PURPLE_TEXTURE := preload("res://assets/art/projectiles/gravity_wave/purple.png")
+const TRAIL_BLUE := Color(0.24, 0.75, 1.0, 0.6)
+const TRAIL_RED := Color(1.0, 0.27, 0.31, 0.62)
+const TRAIL_PURPLE := Color(0.77, 0.37, 1.0, 0.75)
 
 var kind := BLUE
 var charge_seconds := 0.0
@@ -25,6 +28,7 @@ var _consumed := false
 var _last_hit: Dictionary = {}
 var _fusion_origin := Vector2.ZERO
 var _fusion_heading := Vector2.RIGHT
+var _trail: CPUParticles2D
 
 
 func _ready() -> void:
@@ -51,6 +55,7 @@ func setup_wave(owner: Node, heading: Vector2, seconds: float, multiplier: float
 	damage = maxi(1, int(round(float(base_damage) * multiplier)))
 	global_position = (owner as Node2D).global_position + Vector2.from_angle(orbit_angle) * ORBIT_RADIUS
 	_set_visual()
+	_setup_trail()
 	_enforce_cap()
 
 
@@ -75,6 +80,9 @@ func _physics_process(delta: float) -> void:
 		return
 	if kind == PURPLE:
 		_update_fusion_glide()
+		_update_trail_direction()
+		if _age >= PURPLE_GLIDE_SECONDS and _trail != null:
+			_trail.emitting = false
 		_touch_enemies()
 		_touch_projectiles()
 		if _age >= 0.8:
@@ -82,6 +90,7 @@ func _physics_process(delta: float) -> void:
 		return
 	orbit_angle = wrapf(orbit_angle + orbit_speed * delta, 0.0, TAU)
 	global_position = (source as Node2D).global_position + Vector2.from_angle(orbit_angle) * ORBIT_RADIUS
+	_update_trail_direction()
 	_apply_field(delta)
 	_touch_enemies()
 	_touch_projectiles()
@@ -201,6 +210,7 @@ func setup_fusion(blue: GravityWaveOrb, red: GravityWaveOrb, position: Vector2) 
 	explosion_damage = maxi(blue.explosion_damage, red.explosion_damage)
 	has_area_behavior = blue.has_area_behavior or red.has_area_behavior
 	_set_visual()
+	_setup_trail()
 
 
 func _update_fusion_glide() -> void:
@@ -210,6 +220,8 @@ func _update_fusion_glide() -> void:
 
 
 func _fade_after_fusion() -> void:
+	if _trail != null:
+		_trail.emitting = false
 	var visual := get_node_or_null("Visual") as Sprite2D
 	if visual == null:
 		queue_free()
@@ -316,6 +328,43 @@ func _set_visual() -> void:
 	sprite.texture = BLUE_TEXTURE if kind == BLUE else (RED_TEXTURE if kind == RED else PURPLE_TEXTURE)
 	sprite.scale = Vector2.ONE * (radius * 2.0 / float(maxi(sprite.texture.get_width(), sprite.texture.get_height())))
 	sprite.modulate = Color.WHITE
+
+
+func _setup_trail() -> void:
+	if _trail == null:
+		_trail = CPUParticles2D.new()
+		_trail.name = "TrailParticles"
+		_trail.local_coords = false
+		_trail.show_behind_parent = true
+		_trail.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		var pixel := Image.create(2, 2, false, Image.FORMAT_RGBA8)
+		pixel.fill(Color.WHITE)
+		_trail.texture = ImageTexture.create_from_image(pixel)
+		add_child(_trail)
+	var tint := TRAIL_BLUE if kind == BLUE else (TRAIL_RED if kind == RED else TRAIL_PURPLE)
+	var fade := Gradient.new()
+	fade.set_color(0, tint)
+	fade.set_color(1, Color(tint.r, tint.g, tint.b, 0.0))
+	_trail.color_ramp = fade
+	_trail.amount = 9 if kind == BLUE else (12 if kind == RED else 18)
+	_trail.lifetime = 0.35 if kind != PURPLE else 0.28
+	_trail.speed_scale = 1.0
+	_trail.spread = 20.0 if kind != PURPLE else 12.0
+	_trail.initial_velocity_min = 18.0 if kind == BLUE else (30.0 if kind == RED else 50.0)
+	_trail.initial_velocity_max = 38.0 if kind == BLUE else (55.0 if kind == RED else 75.0)
+	_trail.gravity = Vector2.ZERO
+	_trail.emitting = true
+	_update_trail_direction()
+
+
+func _update_trail_direction() -> void:
+	if _trail == null or not is_instance_valid(source):
+		return
+	if kind == PURPLE:
+		_trail.direction = -_fusion_heading
+	else:
+		var radial := (global_position - (source as Node2D).global_position).normalized()
+		_trail.direction = -radial if kind == BLUE else radial
 
 
 func _sync_visual() -> void:

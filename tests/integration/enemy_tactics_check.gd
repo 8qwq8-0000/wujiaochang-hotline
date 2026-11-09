@@ -39,6 +39,9 @@ func run() -> void:
 
 	var player := CharacterBody2D.new()
 	player.add_to_group("player")
+	var health := HealthComponent.new()
+	health.name = "HealthComponent"
+	player.add_child(health)
 	player.position = Vector2(100, 260)
 	player.velocity = Vector2(80, 0)
 	room.add_child(player)

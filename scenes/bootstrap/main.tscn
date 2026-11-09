@@ -23,6 +23,8 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/pause_settings_menu.tscn" id="21"]
 [ext_resource type="Script" path="res://scripts/ui/persona_rest_flow.gd" id="22"]
 [ext_resource type="Script" path="res://scripts/presentation/combat_feedback_manager.gd" id="75"]
+[ext_resource type="Script" path="res://scripts/presentation/cyberpsychosis_screen.gd" id="76"]
+[ext_resource type="AudioStream" path="res://assets/audio/music/combat/cyberpsychosis_intro_17s.ogg" id="77"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_hits/service_pistol_hit_01.wav" id="23_pistol_hit_01"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_hits/service_pistol_hit_02.wav" id="24_pistol_hit_02"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/combat/weapon_hits/service_pistol_hit_03.wav" id="25_pistol_hit_03"]
@@ -91,6 +93,10 @@ script = ExtResource("4")
 [node name="CombatFeedbackManager" type="Node" parent="."]
 script = ExtResource("75")
 
+[node name="CyberpsychosisScreen" type="CanvasLayer" parent="."]
+layer = 10
+script = ExtResource("76")
+
 [node name="AudioCueManager" type="Node" parent="." unique_id=1278085769]
 script = ExtResource("5")
 perfect_guard_sound = ExtResource("12")
@@ -128,6 +134,7 @@ heavy_metal_hit_sounds = Array[AudioStream]([ExtResource("39_heavy_metal_01"), E
 script = ExtResource("7")
 regular_tracks = Array[AudioStream]([ExtResource("8"), ExtResource("9")])
 boss_phase_tracks = Array[AudioStream]([ExtResource("10"), ExtResource("11")])
+cyberpsychosis_insert = ExtResource("77")
 
 [node name="CombatHUD" parent="." unique_id=1310232417 instance=ExtResource("3")]
 

@@ -15,6 +15,7 @@ const KILL_FEEDBACK_DELAY_USEC := 45_000
 const KILL_CHAIN_TIMEOUT_USEC := 1_650_000
 const KILL_CHAIN_MAX_STAGE := 5
 const PLAYER_HURT_PRIORITY_USEC := 180_000
+const CAMERA_SHAKE_INTERVAL_USEC := 60_000_000
 
 var _slow_window_started_usec := 0
 var _slow_until_usec := 0
@@ -25,6 +26,7 @@ var _kill_chain_count := 0
 var _kill_chain_deadline_usec := 0
 var _pending_kill: Dictionary = {}
 var _last_player_hurt_usec := -1_000_000
+var _last_camera_shake_usec := -CAMERA_SHAKE_INTERVAL_USEC
 var _bound_player_ids: Dictionary = {}
 var _death_cleanup_at_usec := 0
 var _feedback_groups: Dictionary = {}
@@ -109,7 +111,7 @@ func _on_damage_resolved(result: DamageResult) -> void:
 			_hold_visual(result.packet.source, hold_seconds)
 	var reaction_strength := 1.0 if strong_event else (0.82 if calamity_flame else (0.72 if weapon_id == &"scattergun" else 0.48))
 	_play_reactions(result, direction, reaction_strength)
-	_request_camera_shake(direction, reaction_strength * (0.85 if target_is_player else 0.42))
+	_request_camera_shake(direction, reaction_strength * (0.85 if target_is_player else 0.27))
 	if qualifies_kill:
 		_register_player_kill(result)
 
@@ -198,7 +200,7 @@ func _emit_pending_kill() -> void:
 	elif not offscreen and not suppressed:
 		if weapon_id == &"calamity_flame":
 			_request_global_slow(0.065)
-		_request_camera_shake(Vector2.ZERO, 0.12 + 0.045 * stage)
+		_request_camera_shake(Vector2.ZERO, 0.08 + 0.025 * stage)
 	kill_chain_feedback.emit(position, stage, weapon_id, offscreen, boss_final, suppressed)
 	_pending_kill.clear()
 
@@ -260,13 +262,13 @@ func _on_combat_moment_requested(kind: StringName, _world_position: Vector2) -> 
 func _on_weapon_cue_requested(weapon_id: StringName, cue: StringName, _world_position: Vector2) -> void:
 	if cue != &"fire" and cue != &"swing":
 		return
-	var strength := 0.14
+	var strength := 0.08
 	if weapon_id == &"scattergun":
-		strength = 0.34
+		strength = 0.22
 	elif weapon_id == &"calamity_flame":
-		strength = 0.3
+		strength = 0.2
 	elif weapon_id == &"rail_cannon":
-		strength = 0.62
+		strength = 0.48
 		_request_global_slow(0.055)
 	_request_camera_shake(Vector2.ZERO, strength)
 	var player := get_tree().get_first_node_in_group(&"player")
@@ -327,8 +329,13 @@ func _visual_for(actor: Variant) -> Node:
 
 func _request_camera_shake(direction: Vector2, strength: float) -> void:
 	var player := get_tree().get_first_node_in_group(&"player")
-	if is_instance_valid(player) and player.has_method("add_camera_trauma"):
-		player.add_camera_trauma(direction, strength)
+	if not is_instance_valid(player) or not player.has_method("add_camera_trauma"):
+		return
+	var now := Time.get_ticks_usec()
+	if now - _last_camera_shake_usec < CAMERA_SHAKE_INTERVAL_USEC:
+		return
+	_last_camera_shake_usec = now
+	player.add_camera_trauma(direction, strength)
 
 
 func _request_camera_zoom(strength: float) -> void:

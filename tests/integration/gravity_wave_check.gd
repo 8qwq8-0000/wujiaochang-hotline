@@ -17,6 +17,7 @@ func _run() -> void:
 	assert(item != null)
 	var weapon := ComponentRolls.weapon(item)
 	assert(weapon != null and weapon.id == &"gravity_wave" and weapon.trigger_mode == WeaponComponentData.TriggerMode.CHARGE)
+	assert(weapon.display_name == "湮灭")
 	for tier in [1, 2, 3]:
 		var tier_item := ComponentRolls.create("gravity_wave", tier, RandomNumberGenerator.new())
 		assert(ComponentRolls.quality(tier_item) == tier)
@@ -28,6 +29,8 @@ func _run() -> void:
 	room.add_child(blue)
 	blue.setup_wave(player, Vector2.RIGHT, 4.9)
 	assert(blue.kind == GravityWaveOrb.BLUE)
+	var blue_trail := blue.get_node("TrailParticles") as CPUParticles2D
+	assert(blue_trail != null and blue_trail.emitting and blue_trail.direction == Vector2.LEFT)
 	assert(blue.radius > 47.0 and blue.radius < 48.0)
 	assert(blue.lifetime == 20.0)
 	var hostile := (load("res://scenes/combat/projectile.tscn") as PackedScene).instantiate() as CombatProjectile
@@ -41,6 +44,9 @@ func _run() -> void:
 	room.add_child(red)
 	red.setup_wave(player, Vector2.RIGHT, 10.0)
 	assert(red.kind == GravityWaveOrb.RED)
+	var red_trail := red.get_node("TrailParticles") as CPUParticles2D
+	assert(red_trail != null and red_trail.emitting and red_trail.direction == Vector2.RIGHT)
+	assert(red_trail.color_ramp.get_color(0) != blue_trail.color_ramp.get_color(0))
 	assert(red.damage == 3)
 	assert(red.lifetime == 10.0)
 	red._check_fusion()
@@ -51,6 +57,9 @@ func _run() -> void:
 		if orb is GravityWaveOrb and orb.kind == GravityWaveOrb.PURPLE:
 			purple = orb
 	assert(purple != null)
+	var purple_trail := purple.get_node("TrailParticles") as CPUParticles2D
+	assert(purple_trail != null and purple_trail.emitting)
+	assert(purple_trail.color_ramp.get_color(0) != red_trail.color_ramp.get_color(0))
 	assert(purple.damage == 4)
 	assert(purple.blast_radius > 350.0)
 	assert(purple.radius == 48.0)
@@ -58,6 +67,7 @@ func _run() -> void:
 	var fusion_position := purple.global_position
 	purple._physics_process(GravityWaveOrb.PURPLE_GLIDE_SECONDS)
 	assert(purple.global_position.distance_to(fusion_position + Vector2.DOWN * GravityWaveOrb.PURPLE_GLIDE_DISTANCE) < 0.01)
+	assert(not purple_trail.emitting)
 	var stopped_position := purple.global_position
 	purple._physics_process(0.1)
 	assert(purple.global_position.distance_to(stopped_position) < 0.01)

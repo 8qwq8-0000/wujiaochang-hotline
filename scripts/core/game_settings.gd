@@ -25,9 +25,11 @@ var test_tools: CanvasLayer
 
 
 func _ready() -> void:
-	test_tools = load("res://scripts/ui/test_mode_panel.gd").new()
-	test_tools.name = "TestTools"
-	add_child(test_tools)
+	# Keep test commands out of public release builds.
+	if OS.has_feature("editor") or OS.has_feature("debug"):
+		test_tools = load("res://scripts/ui/test_mode_panel.gd").new()
+		test_tools.name = "TestTools"
+		add_child(test_tools)
 	# Headless tests use deterministic defaults and do not require user://.
 	if DisplayServer.get_name() == "headless":
 		return

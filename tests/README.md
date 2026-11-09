@@ -1,3 +1,22 @@
+# 发布回归入口
+
+发布测试先运行自动检查，再进行人工整局和目标设备验收。快速集用于每次提交，候选集用于准备各平台发布包；两者的固定入口与历史排除原因见 [`release_manifest.json`](release_manifest.json)。候选集目前聚焦核心流程、两种结局、存档、回路与手机共用逻辑，**不是全部集成脚本已通过的证明**。新增或修复功能时，应将有意义的检查纳入对应档位。过时夹具不能静默计入通过数。
+
+```sh
+python tools/run_release_checks.py fast --godot <Godot-4.7.2-可执行文件>
+python tools/run_release_checks.py candidate --godot <Godot-4.7.2-可执行文件>
+```
+
+也可通过 `GODOT_BIN` 指定引擎；`--list` 只列清单。每个入口单独运行，结果与完整日志写入被 Git 忽略的 `build/test-reports/`，JSON 报告含提交号、执行时间和失败项。持续检查在提交或合并请求时运行快速集；候选集可手动触发。退出时已有资源清理诊断不能替代退出码和断言结果，也不算已修复。
+
+团队测试包中，F8 控制台保留按钮并支持 `help`、`jump`、`give`、`build`、`seed`、`clear`、`win`、`status`、`capture`、`report`、`replay`；输入 `help <指令>` 查看参数，上下键调用历史，Tab 补全指令。`seed` 作用于下一次跳关。`capture` 与 `report` 输出到隔离的 `user://test-reports/`，报告包含平台、引擎、当前状态和指令记录；在新测试会话输入 `replay <报告文件名.json>` 可重放其中成功执行的场景与构筑指令。手机测试包用触屏按钮打开；正式发布包不创建测试控制台。
+
+自动检查全绿后，测试成员从新档自然游玩，覆盖教学、仓库、撤离、死亡、跨层、两种结局和重启读档。F8 只用于复现问题。未参与开发的同学独立试玩，记录卡住步骤和求助。每个平台用实际安装包在代表设备上核查画面、声音、触控或键鼠、稳定性和性能；问题修复后重跑受影响自动检查及人工路径。四个平台可分别通过、分别发布，不能以开发环境结果替代平台验收。
+
+每次平台验收记录提交号、安装包、设备与系统、执行人、测试日期、完整游玩结果、首次试玩卡点、性能观察、缺陷编号和复验结果。候选集报告必须对应同一提交；正式包还需现场确认 F8 与手机测试入口不可用。核心流程、存档或性能缺陷未关闭的平台保持待发布，其他平台可以继续独立验收。自动化只能证明脚本覆盖的行为，真实手感与设备表现须由测试成员签收。
+
+`release_build_gate_check.gd` 用于检查 `GameSettings` 是否按构建特性创建测试控制台。编辑器侧已运行通过；正式包的执行方式和结果要在后续实际构建时验证。本轮按约定不生成正式包。
+
 手机操作文案：`mobile_control_prompts_check.gd` 检查电脑操作词转换、桌面原文保留、重复适配稳定性和手机点按/拖动射击说明。
 
 手机背包布局：`mobile_inventory_panel_check.gd` 在窄横屏实际窗口中检查关闭按钮、安全区、完整底部丢弃区、装备区滑动、避免滑动误换装、原生长按拖弃及 Tab 兼容。
@@ -36,6 +55,8 @@ iOS 适配：`godot --headless --path . --script res://tests/integration/ios_mob
 
 背包拖放：旧 `inventory_drag_check.gd` 保留 v1.4 主副武器/机动回归记录，不再作为当前义体回路验收证据。现行义体入库与回路配置由 `cyberware_circuit_runtime_check.gd` 和 `cyberware_circuit_ui_check.gd` 覆盖。
 
+旧 `inventory_check.gd`、`weapon_switch_check.gd`、`first_weapon_pickup_check.gd` 仍按已取消的战斗换装限制和旧背包容量断言，已在候选清单中排除；当前换装与拾取应以现行单元检查、自然游玩和后续重写夹具验收。
+
 放置 `test_*.gd` 测试脚本。优先覆盖：
 
 - 组件词条继承与最高值合并
@@ -73,9 +94,7 @@ godot --headless --path . --script res://tests/integration/restart_room_check.gd
 组件和敌人检查也可独立运行：
 
 ```sh
-godot --headless --path . --script res://tests/integration/inventory_check.gd
 godot --headless --path . --script res://tests/integration/enemy_loot_check.gd
-godot --headless --path . --script res://tests/integration/playthrough_check.gd
 ```
 
 Week 1 队友房间已作为正式“仓库出击”和“继续下一层”场景启用。专项检查：`godot --headless --path . --script res://tests/integration/week1_room_check.gd`，覆盖 F6 单独运行与 Main 容器加载、实际敌人数同步、真实 E 拾取、敌人掉落、清场换装、撤离出口和 R 重开；不应输出 SKIP。仓库与撤离检查另验证正式路径确实加载该场景。
