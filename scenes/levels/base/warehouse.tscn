@@ -130,7 +130,7 @@ shape = SubResource("WallVertical")
 
 [node name="Chest" type="Area2D" parent="." unique_id=493334881]
 self_modulate = Color(1, 1, 1, 0)
-position = Vector2(193, 136)
+position = Vector2(298, 92)
 collision_layer = 32
 collision_mask = 0
 script = ExtResource("3")
@@ -337,7 +337,7 @@ texture = SubResource("Art_terminal")
 
 [node name="ParryTraining" type="Area2D" parent="." unique_id=1264935420]
 self_modulate = Color(1, 1, 1, 0)
-position = Vector2(288, 92)
+position = Vector2(418, 92)
 collision_layer = 32
 collision_mask = 0
 script = ExtResource("3")

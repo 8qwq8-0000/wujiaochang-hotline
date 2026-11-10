@@ -92,8 +92,15 @@ func run_checks() -> void:
 	var center_before := player.camera.get_screen_center_position()
 	check(top_before == -144, "ordinary floor retains north skyline allowance")
 	check(floor_scene.get_node("ShrineSkyline").position == mission.room.position, "independent area owns its own skyline")
-	door.receive_projectile_hit(packet)
-	check(door.state == ChannelHiddenDoor.State.SEALED and door.hits_received == 2, "second hit keeps door closed")
+	var piercing_shot: CombatProjectile = load("res://scenes/combat/projectile.tscn").instantiate()
+	piercing_shot.setup(player, CombatFaction.Id.PLAYER, Vector2.RIGHT, 1, 420)
+	piercing_shot.circuit_pierce_remaining = 1
+	floor_scene.add_child(piercing_shot)
+	piercing_shot.global_position = door.global_position + Vector2(-20, 0)
+	for _frame in 5:
+		await physics_frame
+	check(door.state == ChannelHiddenDoor.State.SEALED and door.hits_received == 2, "piercing projectile damages the sealed door exactly once")
+	check(is_instance_valid(piercing_shot) and piercing_shot.circuit_pierce_remaining == 0 and piercing_shot.global_position.x > door.global_position.x, "projectile still penetrates the door")
 	check(door.get("_impact_remaining") > 0.0, "hit starts visual damage animation")
 	check(door.get("_shape").position == Vector2.ZERO, "visual recoil does not move collision")
 	await capture("00-door-damage")
