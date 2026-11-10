@@ -1,0 +1,64 @@
+name: Game regression checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: Test profile
+        required: true
+        type: choice
+        options:
+          - fast
+          - candidate
+
+jobs:
+  checks:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Download pinned Godot 4.7.2 editors
+        shell: pwsh
+        run: |
+          $baseUrl = 'https://github.com/godotengine/godot-builds/releases/download/4.7.2-stable'
+          $archive = Join-Path $env:RUNNER_TEMP 'godot-mono.zip'
+          $destination = Join-Path $env:RUNNER_TEMP 'godot-mono'
+          Invoke-WebRequest "$baseUrl/Godot_v4.7.2-stable_mono_win64.zip" -OutFile $archive
+          Expand-Archive -LiteralPath $archive -DestinationPath $destination
+          $binary = Get-ChildItem -LiteralPath $destination -Filter 'Godot_v4.7.2-stable_mono_win64_console.exe' -Recurse | Select-Object -First 1
+          if ($null -eq $binary) { throw 'Godot Mono executable is missing from the archive' }
+          "GODOT_BIN=$($binary.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+          $archive = Join-Path $env:RUNNER_TEMP 'godot-standard.zip'
+          $destination = Join-Path $env:RUNNER_TEMP 'godot-standard'
+          Invoke-WebRequest "$baseUrl/Godot_v4.7.2-stable_win64.exe.zip" -OutFile $archive
+          Expand-Archive -LiteralPath $archive -DestinationPath $destination
+          $binary = Get-ChildItem -LiteralPath $destination -Filter 'Godot_v4.7.2-stable_win64_console.exe' -Recurse | Select-Object -First 1
+          if ($null -eq $binary) { throw 'Godot standard executable is missing from the archive' }
+          "GODOT_IMPORT_BIN=$($binary.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Run regression profile
+        shell: pwsh
+        run: |
+          $profile = '${{ inputs.profile }}'
+          if ([string]::IsNullOrWhiteSpace($profile)) { $profile = 'fast' }
+          # The Mono editor can finish importing but hang on exit on a clean Windows runner.
+          # The standard editor shares its resource cache with the Mono test runner.
+          python -c "import os, subprocess, sys; result = subprocess.run([os.environ['GODOT_IMPORT_BIN'], '--headless', '--path', '.', '--import'], timeout=600); sys.exit(result.returncode)"
+          if ($LASTEXITCODE -ne 0) { throw 'Godot resource import failed' }
+          python tools/run_release_checks.py $profile
+          if ($LASTEXITCODE -ne 0) { throw 'Game regression checks failed' }
+      - name: Preserve check reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: game-check-results
+          path: build/test-reports/
+          if-no-files-found: ignore

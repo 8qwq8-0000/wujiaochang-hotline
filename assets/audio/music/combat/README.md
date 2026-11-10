@@ -6,7 +6,10 @@
 | `combat_regular_02.ogg` | 普通战斗轮播 2 | `战斗曲2.wav` | 196.743 秒 |
 | `combat_boss_phase_01.ogg` | BOSS 第一阶段 | `BOSS曲阶段一.wav` | 76.185 秒 |
 | `combat_boss_phase_02.ogg` | BOSS 第二阶段 | `BOSS战斗曲阶段二.wav` | 195.721 秒 |
+| `cyberpsychosis_intro_17s.ogg` | 150 次义体模块触发时的一次性插曲 | `20261109-1337-26.8140439.mp4` 前 17 秒 | 17.000 秒 |
 
-2026-10-15 使用 FFmpeg 转为 44.1 kHz、stereo OGG Vorbis，并将峰值统一留在约 -7 dB，符合《素材制作基线》的长音乐规范。普通战斗由 `CombatMusicController` 自动轮播；BOSS 房间在阶段变化时调用 `start_boss_phase(1)` 或 `start_boss_phase(2)`，战斗结束调用 `end_boss_music()`。
+2026-10-15 使用 FFmpeg 转为 44.1 kHz、stereo OGG Vorbis，并将峰值统一留在约 -7 dB，符合《素材制作基线》的长音乐规范。普通战斗由 `CombatMusicController` 自动轮播；BOSS 房间在阶段变化时调用 `start_boss_phase(1)` 或 `start_boss_phase(2)`。清房和击败 BOSS 后继续播放当前曲，离开关卡或死亡时停止。
 
 四个原始文件由项目成员放入仓库，但来源、作者、生成工具及商用许可尚未登记。开发期可作内部占位；许可确认前不得用于公开构建。
+
+癫狂插曲于 2026-11-09 从项目根目录 MP4 的音轨单独导出，保留原 MP4。导出格式为 44.1 kHz、stereo OGG Vorbis，结尾 0.35 秒淡出；原素材峰值约 -7.3 dB。一分钟内触发 150 个义体模块后播放一次，顶峰画面与插曲同步；原关卡曲继续计时并暂时降低音量。插曲结束后开始 30 秒冷却。

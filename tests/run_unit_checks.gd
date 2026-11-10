@@ -8,7 +8,7 @@ func run() -> void:
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--suite="):
 			requested_suite = argument.trim_prefix("--suite=")
-	for path in ["test_component_rolls", "test_combat_core", "test_mobility", "test_cyberware_circuit", "test_floor_assembler", "test_player_scene", "test_weapon_scenes", "test_projectile_scene", "test_combat_music", "test_combat_audio", "test_combat_notice_queue", "test_afterimage_vfx", "test_procedural_vfx", "test_enemy_navigation", "test_enemy_tactical_brain", "test_enemy_combat_upgrade", "test_cyber_ui", "test_rooftop_boss"]:
+	for path in ["test_component_rolls", "test_combat_core", "test_mobility", "test_cyberware_circuit", "test_cyberpsychosis_screen", "test_floor_assembler", "test_player_scene", "test_weapon_scenes", "test_projectile_scene", "test_combat_music", "test_combat_audio", "test_combat_notice_queue", "test_afterimage_vfx", "test_procedural_vfx", "test_enemy_navigation", "test_enemy_tactical_brain", "test_enemy_combat_upgrade", "test_cyber_ui", "test_rooftop_boss"]:
 		if not requested_suite.is_empty() and path != requested_suite:
 			continue
 		suites.append(load("res://tests/" + path + ".gd").new())

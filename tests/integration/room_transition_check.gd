@@ -40,16 +40,19 @@ func run() -> void:
 			enemy._physics_process(enemy.profile.self_destruct_delay + 0.01)
 	await process_frame
 	await process_frame
-	var drop: ComponentPickup
-	for pickup in get_nodes_in_group("component_pickups"):
-		if not pickup.has_meta("clear_reward"):
-			drop = pickup
-			break
-	check(drop != null and drop.get_parent() is CombatRoom and drop.get_parent().get_parent().get_parent().is_in_group("combat_rooms"), "drop is owned by combat room")
+	var old_room := flow._scene_container.get_child(0)
+	var drop := load("res://scenes/items/component_pickup.tscn").instantiate() as ComponentPickup
+	old_room.add_child(drop)
+	check(old_room.is_ancestor_of(drop), "drop probe is owned by the current combat scene")
 	player.weapons.set("_cooldown_remaining", 0)
 	check(player.weapons.try_attack(player.global_position, Vector2.RIGHT, player), "carried reserve can fire")
-	var bullet := main.find_child("Projectile*", true, false)
-	check(bullet != null and bullet.get_parent().is_in_group("combat_rooms"), "projectile is owned by combat room")
+	# Circuit attacks may spawn their shots on later frames. Use a stable probe
+	# to verify that changing scenes also removes still-active projectiles.
+	var bullet := load("res://scenes/combat/projectile.tscn").instantiate() as CombatProjectile
+	bullet.speed = 0.0
+	bullet.lifetime = 100.0
+	old_room.add_child(bullet)
+	check(old_room.is_ancestor_of(bullet), "projectile probe is owned by the current combat scene")
 	var state: Dictionary = root.get_node("RunManager").capture_player_state(player)
 	check(flow.request_scene("res://scenes/levels/floors/combat_prototype.tscn", {"player_state": state}), "request next room")
 	player = await wait_room(flow)

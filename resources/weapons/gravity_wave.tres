@@ -6,7 +6,7 @@
 [resource]
 script = ExtResource("1")
 id = &"gravity_wave"
-display_name = "引力波"
+display_name = "湮灭"
 view_scene = ExtResource("2")
 attack_kind = 1
 trigger_mode = 2

@@ -12,6 +12,23 @@ const PERSONA_PORTRAITS := {
 	&"rock_vigilante": preload("res://assets/art/ui/start_menu/persona_johnny_ghost.png"),
 }
 const CIRCUIT_LAB := "res://scenes/debug/cyberware_circuit_lab.tscn"
+const COMMAND_HELP := {
+	"help": "help [指令]  查看指令列表或参数说明",
+	"jump": "jump <lab|warehouse|floor1|floor2|floor3|boss|channel|channel_core|channel_boss>  跳转并保留测试配装",
+	"give": "give <物品ID> [品质1-3]  领取一件正式物品",
+	"build": "build <人格ID> <等级1-3> <逐级天赋ID...>  应用一套完整天赋",
+	"seed": "seed <整数>  设置下一次跳关所用的随机种子",
+	"clear": "clear  清理当前普通楼层",
+	"win": "win  击败当前 Boss",
+	"status": "status  显示关卡、种子、生命和回路槽位",
+	"report": "report  导出本次测试的指令和状态记录",
+	"capture": "capture  保存当前游戏画面并加入测试报告",
+	"replay": "replay <报告文件名.json>  在新测试会话中重放成功的场景指令",
+}
+const JUMP_TARGETS := {
+	"lab": -2, "warehouse": -1, "floor1": 0, "floor2": 1,
+	"floor3": 2, "boss": 3,
+}
 
 var enabled := false
 var _ending := false
@@ -20,7 +37,16 @@ var _owns_pause := false
 var _original_difficulty := 1
 var _overlay: ColorRect
 var _badge: Button
+var _launcher: Button
 var _message: Label
+var _feedback_scroll: ScrollContainer
+var _command_input: LineEdit
+var _command_hint: Label
+var _command_history: Array[String] = []
+var _command_results: Array[Dictionary] = []
+var _history_cursor := 0
+var _queued_seed := 0
+var _last_capture := ""
 var _items: OptionButton
 var _quality: OptionButton
 var _persona: OptionButton
@@ -48,6 +74,8 @@ func set_enabled(value: bool) -> bool:
 		_original_difficulty = int(get_parent().difficulty)
 		enabled = true
 		_badge.show()
+		if _launcher != null:
+			_launcher.hide()
 		return true
 	_ending = true
 	call_deferred("_end_session")
@@ -69,6 +97,8 @@ func _end_session() -> void:
 	enabled = false
 	_ending = false
 	_badge.hide()
+	if _launcher != null:
+		_launcher.show()
 	get_tree().paused = false
 
 
@@ -97,6 +127,7 @@ func open_panel() -> void:
 	get_tree().paused = true
 	_overlay.show()
 	_message.text = "测试数据不写入正式存档。选择操作后，即可收起面板继续试玩。"
+	_feedback_scroll.custom_minimum_size.y = 24
 	_sync_persona()
 	_items.grab_focus()
 
@@ -238,6 +269,8 @@ func _jump_to(floor_index: int, destination: String, with_core := false, with_du
 	var run := get_node("/root/RunManager")
 	var old_run := _run_snapshot(run)
 	run.begin_run()
+	if _queued_seed != 0:
+		run.run_seed = _queued_seed
 	run.floor_index = maxi(floor_index, 0)
 	run.persistent_run = floor_index >= 0
 	if core_route:
@@ -267,6 +300,8 @@ func _jump_to(floor_index: int, destination: String, with_core := false, with_du
 			break
 	_busy = false
 	var success := not flow._is_loading and flow._scene_container.get_child_count() > 0 and flow._scene_container.get_child(0).scene_file_path == destination
+	if success:
+		_queued_seed = 0
 	if not success:
 		if is_instance_valid(player):
 			player.import_run_state(original_player)
@@ -389,6 +424,21 @@ func _build_ui() -> void:
 	_badge.pressed.connect(open_panel)
 	add_child(_badge)
 	_badge.hide()
+	if OS.has_feature("mobile"):
+		_launcher = Button.new()
+		_launcher.text = "测试工具"
+		_launcher.tooltip_text = "打开隔离测试控制台"
+		_launcher.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+		_launcher.offset_left = -112
+		_launcher.offset_right = -8
+		_launcher.offset_top = 4
+		_launcher.offset_bottom = 28
+		_launcher.theme = theme
+		_launcher.pressed.connect(func() -> void:
+			if set_enabled(true):
+				open_panel()
+		)
+		add_child(_launcher)
 	_overlay = ColorRect.new()
 	_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_overlay.color = Color("09131f")
@@ -502,14 +552,32 @@ func _build_ui() -> void:
 		talents.add_child(choices)
 		_talents.append(choices)
 	_refresh_talents()
+	var command_row := HBoxContainer.new()
+	command_row.add_theme_constant_override("separation", 5)
+	column.add_child(command_row)
+	_command_input = LineEdit.new()
+	_command_input.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_command_input.placeholder_text = "输入测试指令；help 查看用法"
+	_command_input.text_submitted.connect(_on_command_submitted)
+	_command_input.text_changed.connect(_on_command_changed)
+	_command_input.gui_input.connect(_on_command_input_event)
+	command_row.add_child(_command_input)
+	_button(command_row, "执行", func() -> void: _on_command_submitted(_command_input.text), true)
+	_command_hint = _label(column, "help · jump · give · build · seed · clear · win · status · capture · report · replay", SOFT_INK)
+	_command_hint.add_theme_font_size_override("font_size", 10)
 	var feedback := PanelContainer.new()
 	feedback.add_theme_stylebox_override("panel", _panel_box(Color("102830"), Color("265058"), 6))
 	column.add_child(feedback)
 	_message = Label.new()
+	_feedback_scroll = ScrollContainer.new()
+	_feedback_scroll.custom_minimum_size.y = 24
+	_feedback_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	feedback.add_child(_feedback_scroll)
 	_message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_message.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_message.add_theme_font_size_override("font_size", 11)
 	_message.add_theme_color_override("font_color", ACCENT)
-	feedback.add_child(_message)
+	_feedback_scroll.add_child(_message)
 	var footer := HBoxContainer.new()
 	footer.add_theme_constant_override("separation", 8)
 	column.add_child(footer)
@@ -631,3 +699,207 @@ func _on_codex_jump(with_core: bool) -> void:
 func _on_channel_boss_jump() -> void:
 	var success := await jump_to_channel_boss()
 	_message.text = "已进入二结局 Boss，按 Enter 继续剧情" if success else "请先空出一格背包，或等待加载结束后重试"
+
+
+func _on_command_changed(value: String) -> void:
+	var command := value.strip_edges().get_slice(" ", 0).to_lower()
+	if COMMAND_HELP.has(command):
+		_command_hint.text = COMMAND_HELP[command]
+		return
+	var matches: PackedStringArray = []
+	for name in COMMAND_HELP:
+		if String(name).begins_with(command):
+			matches.append(name)
+	_command_hint.text = "可用指令：" + ", ".join(matches) if not matches.is_empty() else "输入 help 查看全部指令"
+
+
+func _on_command_input_event(event: InputEvent) -> void:
+	if not event is InputEventKey or not event.pressed or event.echo:
+		return
+	if event.keycode == KEY_UP and not _command_history.is_empty():
+		_history_cursor = maxi(_history_cursor - 1, 0)
+		_command_input.text = _command_history[_history_cursor]
+		_command_input.caret_column = _command_input.text.length()
+		_command_input.accept_event()
+	elif event.keycode == KEY_DOWN and not _command_history.is_empty():
+		_history_cursor = mini(_history_cursor + 1, _command_history.size())
+		_command_input.text = _command_history[_history_cursor] if _history_cursor < _command_history.size() else ""
+		_command_input.caret_column = _command_input.text.length()
+		_command_input.accept_event()
+	elif event.keycode == KEY_TAB:
+		var prefix := _command_input.text.strip_edges().to_lower()
+		for name in COMMAND_HELP:
+			if String(name).begins_with(prefix):
+				_command_input.text = name + " "
+				_command_input.caret_column = _command_input.text.length()
+				_command_input.accept_event()
+				break
+
+
+func _on_command_submitted(value: String) -> void:
+	var line := value.strip_edges()
+	if line.is_empty():
+		return
+	_command_input.editable = false
+	var result: Dictionary = await run_command(line)
+	_command_input.editable = true
+	_command_input.clear()
+	_message.text = ("✓ " if result.ok else "✕ ") + String(result.message)
+	_feedback_scroll.custom_minimum_size.y = 66 if String(result.message).contains("\n") else 24
+	_command_input.grab_focus()
+
+
+func _command_result(ok: bool, message: String) -> Dictionary:
+	return {"ok": ok, "message": message}
+
+
+func _test_state() -> Dictionary:
+	var run := get_node("/root/RunManager")
+	var player := _player()
+	var scene_path := ""
+	var flow := _flow()
+	if flow != null and flow._scene_container.get_child_count() > 0:
+		scene_path = flow._scene_container.get_child(0).scene_file_path
+	return {
+		"scene": scene_path,
+		"floor": run.floor_index,
+		"seed": run.run_seed,
+		"health": player.health.current_health if player != null else 0,
+		"max_health": player.health.max_health if player != null else 0,
+		"slots": player.cyberware.circuit.slot_capacity if player != null else 0,
+		"player_state": player.export_run_state() if player != null else {},
+	}
+
+
+func run_command(line: String) -> Dictionary:
+	if not enabled or _ending or _busy:
+		return _command_result(false, "请先进入可用的测试会话")
+	var parts := line.strip_edges().split(" ", false)
+	if parts.is_empty():
+		return _command_result(false, "请输入指令；help 查看用法")
+	var command := parts[0].to_lower()
+	var result: Dictionary
+	match command:
+		"help":
+			if parts.size() == 2 and COMMAND_HELP.has(parts[1]):
+				result = _command_result(true, COMMAND_HELP[parts[1]])
+			elif parts.size() == 1:
+				var lines: PackedStringArray = []
+				for name in COMMAND_HELP:
+					lines.append(COMMAND_HELP[name])
+				result = _command_result(true, "\n".join(lines))
+			else:
+				result = _command_result(false, "未知指令；输入 help 查看列表")
+		"jump":
+			if parts.size() != 2:
+				result = _command_result(false, COMMAND_HELP["jump"])
+			elif JUMP_TARGETS.has(parts[1]):
+				result = _command_result(await jump_to(JUMP_TARGETS[parts[1]]), "跳转成功：" + parts[1])
+			elif parts[1] == "channel" or parts[1] == "channel_core":
+				result = _command_result(await jump_to_codex(parts[1] == "channel_core"), "通道跳转完成")
+			elif parts[1] == "channel_boss":
+				result = _command_result(await jump_to_channel_boss(), "二结局 Boss 跳转完成")
+			else:
+				result = _command_result(false, COMMAND_HELP["jump"])
+		"give":
+			if parts.size() < 2 or parts.size() > 3 or not _item_ids.has(parts[1]) or (parts.size() == 3 and not parts[2].is_valid_int()):
+				result = _command_result(false, COMMAND_HELP["give"])
+			else:
+				var quality := int(parts[2]) if parts.size() == 3 else 1
+				result = _command_result(quality >= 1 and quality <= 3 and grant_item(parts[1], quality), "领取：" + parts[1])
+		"build":
+			if parts.size() < 4 or not parts[2].is_valid_int() or parts.size() != int(parts[2]) + 3:
+				result = _command_result(false, COMMAND_HELP["build"])
+			else:
+				var choices: Array[StringName] = []
+				for index in range(3, parts.size()):
+					choices.append(StringName(parts[index]))
+				result = _command_result(apply_talents(StringName(parts[1]), int(parts[2]), choices), "人格构筑已应用")
+		"seed":
+			if parts.size() != 2 or not parts[1].is_valid_int() or int(parts[1]) == 0:
+				result = _command_result(false, COMMAND_HELP["seed"])
+			else:
+				_queued_seed = int(parts[1])
+				result = _command_result(true, "下一次跳关种子：%d" % _queued_seed)
+		"clear":
+			result = _command_result(parts.size() == 1 and clear_area(), "普通楼层已清理")
+		"win":
+			result = _command_result(parts.size() == 1 and defeat_boss(), "Boss 已击败")
+		"status":
+			var state := _test_state()
+			result = _command_result(parts.size() == 1, "关卡 %s · 第 %d 层 · 种子 %d · 生命 %d/%d · %d 槽" % [state.scene, state.floor + 1, state.seed, state.health, state.max_health, state.slots])
+		"capture":
+			result = await _capture_test_screen() if parts.size() == 1 else _command_result(false, COMMAND_HELP["capture"])
+		"replay":
+			result = await _replay_test_report(parts[1]) if parts.size() == 2 else _command_result(false, COMMAND_HELP["replay"])
+		"report":
+			result = _export_test_report() if parts.size() == 1 else _command_result(false, COMMAND_HELP["report"])
+		_:
+			result = _command_result(false, "未知指令；输入 help 查看列表")
+	_command_history.append(line.strip_edges())
+	_history_cursor = _command_history.size()
+	_command_results.append({"command": line.strip_edges(), "ok": result.ok, "message": result.message})
+	return result
+
+
+func _report_folder() -> String:
+	return ProjectSettings.globalize_path("user://test-reports")
+
+
+func _capture_test_screen() -> Dictionary:
+	if DirAccess.make_dir_recursive_absolute(_report_folder()) != OK:
+		return _command_result(false, "无法创建测试报告目录")
+	var was_visible := _overlay.visible
+	_overlay.hide()
+	await RenderingServer.frame_post_draw
+	var path := _report_folder().path_join("capture-%d.png" % Time.get_ticks_msec())
+	var error := get_viewport().get_texture().get_image().save_png(path)
+	if was_visible:
+		_overlay.show()
+	if error != OK:
+		return _command_result(false, "截图保存失败")
+	_last_capture = path
+	return _command_result(true, "截图已保存：" + path)
+
+
+func _export_test_report() -> Dictionary:
+	if DirAccess.make_dir_recursive_absolute(_report_folder()) != OK:
+		return _command_result(false, "无法创建测试报告目录")
+	var path := _report_folder().path_join("report-%d.json" % Time.get_ticks_msec())
+	var report := {
+		"created": Time.get_datetime_string_from_system(true),
+		"platform": OS.get_name(),
+		"godot": Engine.get_version_info().string,
+		"state": _test_state(),
+		"commands": _command_results.duplicate(true),
+		"screenshot": _last_capture,
+	}
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	if file == null:
+		return _command_result(false, "报告写入失败")
+	file.store_string(JSON.stringify(report, "  "))
+	file.close()
+	return _command_result(true, "报告已保存：" + path)
+
+
+func _replay_test_report(filename: String) -> Dictionary:
+	if not filename.begins_with("report-") or filename.get_file() != filename or filename.contains("\\") or not filename.ends_with(".json"):
+		return _command_result(false, COMMAND_HELP["replay"])
+	var path := _report_folder().path_join(filename)
+	if not FileAccess.file_exists(path):
+		return _command_result(false, "找不到测试报告：" + filename)
+	var report: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if not report is Dictionary or not report.get("commands", null) is Array:
+		return _command_result(false, "测试报告格式无效")
+	var replayed := 0
+	for entry in report.commands:
+		if not entry is Dictionary or not bool(entry.get("ok", false)):
+			continue
+		var source := String(entry.get("command", ""))
+		if source.get_slice(" ", 0) not in ["seed", "jump", "give", "build", "clear", "win"]:
+			continue
+		var outcome: Dictionary = await run_command(source)
+		if not outcome.ok:
+			return _command_result(false, "重放在第 %d 条指令失败：%s" % [replayed + 1, source])
+		replayed += 1
+	return _command_result(true, "已重放 %d 条场景指令" % replayed)

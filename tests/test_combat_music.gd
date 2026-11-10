@@ -21,6 +21,7 @@ func test_main_registers_all_combat_tracks() -> void:
 	assert_true(music != null)
 	assert_eq(music.regular_tracks.size(), 2)
 	assert_eq(music.boss_phase_tracks.size(), 2)
+	assert_eq(music.cyberpsychosis_insert.resource_path, "res://assets/audio/music/combat/cyberpsychosis_intro_17s.ogg")
 	for index in EXPECTED_REGULAR.size():
 		assert_eq(music.regular_tracks[index].resource_path, EXPECTED_REGULAR[index])
 	for index in EXPECTED_BOSS.size():

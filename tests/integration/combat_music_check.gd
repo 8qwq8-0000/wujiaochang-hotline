@@ -36,6 +36,10 @@ func run_checks() -> void:
 	check(music.get_current_track_path().ends_with("combat_regular_01.ogg"), "regular playlist starts at track 1")
 	check(root.get_node("SoundManager").is_music_playing(music.regular_tracks[0]), "regular track reaches SoundManager")
 	check(AudioServer.get_bus_index("Music") >= 0, "Music audio bus is available")
+	run_manager.set_mandatory_enemy_count(0)
+	await process_frame
+	check(music.get_playback_mode() == CombatMusicController.PlaybackMode.REGULAR, "cleared room keeps regular music")
+	check(root.get_node("SoundManager").is_music_playing(music.regular_tracks[0]), "regular track continues after room clear")
 
 	music.start_boss_phase(1)
 	await process_frame
@@ -53,8 +57,12 @@ func run_checks() -> void:
 
 	music.end_boss_music()
 	await process_frame
-	check(music.get_playback_mode() == CombatMusicController.PlaybackMode.SILENT, "cleared boss combat stops music")
-	check(music.get_current_track_path().is_empty(), "stopped music clears the active track")
+	check(music.get_playback_mode() == CombatMusicController.PlaybackMode.BOSS, "cleared boss keeps phase music")
+	check(music.get_current_track_path().ends_with("combat_boss_phase_02.ogg"), "boss phase track continues after defeat")
+	music.stop_combat_music()
+	await process_frame
+	check(music.get_playback_mode() == CombatMusicController.PlaybackMode.SILENT, "explicit stop ends the playlist")
+	check(music.get_current_track_path().is_empty(), "explicit stop clears the active track")
 
 	music.queue_free()
 	await process_frame

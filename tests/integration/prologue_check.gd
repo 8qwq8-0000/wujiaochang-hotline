@@ -311,7 +311,7 @@ func run() -> void:
 	check(room.player.weapons.try_attack(attack.origin, Vector2.LEFT, room.player), "combat fire submits a circuit attack")
 	await frames(48)
 	check(not paused and room.player.is_input_enabled() and room.step == HotlinePrologue.Step.WAVE and room.get("_pending_step") < 0, "circuit attack never blocks the lesson")
-	check(not combat_hud.get("_heat_meter").visible and "能量" in String(combat_hud.get_circuit_hud_snapshot().energy), "production HUD shows energy without a heat meter")
+	check(not combat_hud.get("_heat_meter").visible and combat_hud.get("_circuit_hud").visible and float(combat_hud.get_circuit_hud_snapshot().energy_ratio) > 0.0, "production HUD shows the energy bar without a heat meter")
 	await shoot_at(room, room.bomb)
 	await frames(35)
 	check(room.bomb.broken and is_instance_valid(room.bomb.patch) and room.bomb.patch.explosion_count == 1, "wave bomb is destroyed by actual pistol fire and explodes")
