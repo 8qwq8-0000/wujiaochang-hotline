@@ -40,7 +40,9 @@ jobs:
         run: |
           $profile = '${{ inputs.profile }}'
           if ([string]::IsNullOrWhiteSpace($profile)) { $profile = 'fast' }
-          & $env:GODOT_BIN --headless --path . --import
+          # A clean Windows runner can finish importing but leave --import alive.
+          # Bound the editor startup so CI reports the failing stage promptly.
+          python -c "import os, subprocess, sys; result = subprocess.run([os.environ['GODOT_BIN'], '--headless', '--path', '.', '--editor', '--quit'], timeout=600); sys.exit(result.returncode)"
           if ($LASTEXITCODE -ne 0) { throw 'Godot resource import failed' }
           python tools/run_release_checks.py $profile
           if ($LASTEXITCODE -ne 0) { throw 'Game regression checks failed' }
