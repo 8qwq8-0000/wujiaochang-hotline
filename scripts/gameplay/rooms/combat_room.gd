@@ -131,11 +131,10 @@ func configure_stage(index: int, total: int) -> void:
 
 
 func activate() -> void:
-	if active or cleared:
-		return
-	active = true
-	if not ambush_managed:
-		spawner.spawn_all()
+	if not active and not cleared:
+		active = true
+		if not ambush_managed:
+			spawner.spawn_all()
 	_configure_player_camera_if_inside()
 
 

@@ -29,6 +29,12 @@ const JUMP_TARGETS := {
 	"lab": -2, "warehouse": -1, "floor1": 0, "floor2": 1,
 	"floor3": 2, "boss": 3,
 }
+const EQUIPMENT_CATEGORIES := {
+	"weapon": "武器",
+	"cyberware": "义体",
+	"defense": "防御",
+	"insurance": "保险核心",
+}
 
 var enabled := false
 var _ending := false
@@ -47,8 +53,10 @@ var _command_results: Array[Dictionary] = []
 var _history_cursor := 0
 var _queued_seed := 0
 var _last_capture := ""
+var _equipment_category: OptionButton
 var _items: OptionButton
 var _quality: OptionButton
+var _grant_button: Button
 var _persona: OptionButton
 var _level: OptionButton
 var _talents: Array[OptionButton] = []
@@ -339,14 +347,15 @@ func clear_area() -> bool:
 	for room in assembler.generated_rooms:
 		room.activate()
 	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if scene.is_ancestor_of(enemy) and enemy is EnemyController and not enemy.health.is_dead():
+		if enemy is EnemyController and scene.is_ancestor_of(enemy):
 			_finish_enemy(enemy)
 	return true
 
 
 func _finish_enemy(enemy: EnemyController) -> void:
 	# Instant clear also finalizes self-destruct heavies while the panel is paused.
-	enemy.health.set_current_health(0)
+	if not enemy.health.is_dead():
+		enemy.health.set_current_health(0)
 	enemy._finalize_defeat()
 
 
@@ -498,30 +507,33 @@ func _build_ui() -> void:
 	loadout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	loadout.add_theme_constant_override("separation", 8)
 	content.add_child(loadout)
-	var equipment := _card(loadout, "02  装备补给", "领取后按 Tab 配装")
+	var equipment := _card(loadout, "02  装备补给", "先选分类，领取后按 Tab 配装")
+	_equipment_category = OptionButton.new()
+	for slot: String in EQUIPMENT_CATEGORIES:
+		_equipment_category.add_item(EQUIPMENT_CATEGORIES[slot])
+		_equipment_category.set_item_metadata(_equipment_category.item_count - 1, slot)
+	_equipment_category.item_selected.connect(_refresh_equipment_items)
+	equipment.add_child(_equipment_category)
 	var equipment_row := HBoxContainer.new()
 	equipment_row.add_theme_constant_override("separation", 5)
 	equipment.add_child(equipment_row)
 	_items = OptionButton.new()
 	_items.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_items.fit_to_longest_item = false
+	_items.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_style_image_options(_items)
 	for id: String in ComponentInventory.PROTOTYPES.data:
 		var prototype: Dictionary = ComponentInventory.PROTOTYPES.data[id]
-		if bool(prototype.get("debug_only", false)) or bool(prototype.get("bound", false)) or id in ["baton", "initial_baton", "wheel"] or str(prototype.get("slot", "")) not in ["weapon", "cyberware", "defense", "insurance"]:
+		if bool(prototype.get("debug_only", false)) or bool(prototype.get("bound", false)) or id in ["baton", "initial_baton", "wheel"] or str(prototype.get("slot", "")) not in EQUIPMENT_CATEGORIES:
 			continue
 		_item_ids.append(id)
-		var item := ComponentRolls.make_item(id)
-		_items.add_icon_item(item.get_texture(), item.get_title())
-		_items.get_popup().set_item_icon_max_width(_items.item_count - 1, 24)
-	_items.item_selected.connect(func(_index: int) -> void: _sync_quality())
 	equipment_row.add_child(_items)
 	_quality = OptionButton.new()
 	for text in ["制式", "改良", "原型"]:
 		_quality.add_item(text)
 	equipment_row.add_child(_quality)
-	_sync_quality()
-	_button(equipment_row, "领取", _on_grant, true)
+	_grant_button = _button(equipment_row, "领取", _on_grant, true)
+	_refresh_equipment_items(_equipment_category.selected)
 	var talents := _card(loadout, "03  人格与天赋", "直接应用，无需饮料")
 	var persona_row := HBoxContainer.new()
 	persona_row.add_theme_constant_override("separation", 5)
@@ -667,12 +679,31 @@ func _refresh_talents() -> void:
 	_sync_talent_tooltips()
 
 
+func _refresh_equipment_items(category_index: int) -> void:
+	var slot: String = _equipment_category.get_item_metadata(category_index)
+	_items.clear()
+	for id in _item_ids:
+		if str(ComponentInventory.PROTOTYPES.data[id].get("slot", "")) != slot:
+			continue
+		var item := ComponentRolls.make_item(id)
+		_items.add_icon_item(item.get_texture(), item.get_title())
+		var index := _items.item_count - 1
+		_items.set_item_metadata(index, id)
+		_items.get_popup().set_item_icon_max_width(index, 24)
+	var has_items := _items.item_count > 0
+	_items.disabled = not has_items
+	_grant_button.disabled = not has_items
+	_quality.disabled = not has_items or slot not in ["weapon", "defense"]
+	if _quality.disabled:
+		_quality.select(0)
+
+
 func _on_grant() -> void:
-	_message.text = ControlPrompts.adapt("已领取，关闭面板后按 Tab 配装") if grant_item(_item_ids[_items.selected], _quality.selected + 1) else "领取失败：请进入游戏，检查背包空间或保险核心是否重复"
-
-
-func _sync_quality() -> void:
-	_quality.disabled = str(ComponentInventory.PROTOTYPES.data[_item_ids[_items.selected]].get("slot", "")) not in ["weapon", "defense"]
+	if _items.selected < 0:
+		return
+	var id: String = _items.get_selected_metadata()
+	var quality := 1 if _quality.disabled else _quality.selected + 1
+	_message.text = ControlPrompts.adapt("已领取，关闭面板后按 Tab 配装") if grant_item(id, quality) else "领取失败：请进入游戏，检查背包空间或保险核心是否重复"
 
 
 func _on_apply_talents() -> void:

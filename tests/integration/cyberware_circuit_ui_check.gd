@@ -195,6 +195,16 @@ func _test_runtime_pointer_and_snapshot_edit() -> void:
 	check("执行中" in String(hud_state.status) and is_equal_approx(float(hud_state.energy_ratio), 0.82), "HUD exposes execution state and a proportional energy strip")
 	var hud_rect: Rect2 = hud_state.rect
 	check(Rect2(Vector2.ZERO, Vector2(640, 360)).encloses(hud_rect), "right-bottom circuit HUD stays inside 640 by 360")
+	var health_meter: Control = hud.get("_health_meter")
+	var energy_rail: Control = hud.get("_circuit_energy_bar").get_node("EnergyRail")
+	for hud_scale in [1.0, 1.5]:
+		hud.set_hud_scale(hud_scale)
+		var energy_rect := energy_rail.get_global_rect()
+		var health_rect := health_meter.get_global_rect()
+		check(energy_rect.position.y > health_rect.end.y and energy_rect.position.x < health_rect.end.x, "energy rail sits below durability at scale %.1f" % hud_scale)
+		var slots_rect: Rect2 = hud.get_circuit_hud_snapshot().rect
+		check(slots_rect.position.x > 320 and slots_rect.position.y > 180, "circuit slots remain at the bottom right at scale %.1f" % hud_scale)
+	hud.set_hud_scale(1.0)
 	await _capture("cyberware-circuit-hud-640x360.png")
 
 	var editor = hud.get_circuit_editor()
