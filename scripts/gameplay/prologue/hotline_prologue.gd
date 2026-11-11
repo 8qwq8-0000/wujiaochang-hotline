@@ -1,7 +1,7 @@
 class_name HotlinePrologue
 extends Node2D
 
-enum Step { BRIEFING, DODGE, PARRY, GUN_PICKUP, EQUIP, SUPPLIES, WAVE, RECOVER, CODEX, SYNTHESIZE, MINI_BOSS, TRANSFER }
+enum Step { BRIEFING, DODGE, PARRY, GUN_PICKUP, EQUIP, WAVE, RECOVER, CODEX, CIRCUIT, SYNTHESIZE, MINI_BOSS, TRANSFER }
 
 const WAREHOUSE := "res://scenes/levels/base/warehouse.tscn"
 const ENEMY := preload("res://scenes/actors/enemies/enemy.tscn")
@@ -12,11 +12,9 @@ const MOVE_SPEED_SCALE := 0.8
 const PROJECTILE_SPEED_SCALE := 0.85
 const CODEX_POINT := Vector2(1140, 190)
 const FORGE_POINT := Vector2(1250, 174)
-const BUFF_POINT := Vector2(708, 152)
-const BOMB_SCENE := preload("res://scenes/environment/fuel_barrel.tscn")
-const BUFF_SCENE := preload("res://scenes/environment/power_box.tscn")
-const CYAN := Color("75e8df")
-const AMBER := Color("f3c579")
+const WAVE_REWARDS := ["pistol", "smart_fire", "armor", "explosive_magazine", "tactical_coprocessor"]
+const ACCENT := CyberUITheme.ACCENT
+const AMBER := CyberUITheme.ACCENT_LIGHT
 
 var step: Step = Step.BRIEFING
 var targets: Array[EnemyController] = []
@@ -25,7 +23,6 @@ var gun_pickup: ComponentPickup
 var _gun_drop_point := Vector2(594, 196)
 var panel: CanvasLayer
 var dialogue_completed := false
-var _inventory_opened := false
 var _codex_actor: Area2D
 var _forge_actor: Area2D
 var _boss_status: Label
@@ -34,10 +31,6 @@ var mini_boss: EnemyController
 var chest: Inventory
 var upgrade_panel: CanvasLayer
 var last_synthesis_result: InventoryItem
-var bomb: FuelBarrel
-var boss_bomb: FuelBarrel
-var boss_buff_box: PowerBox
-var buff_box: PowerBox
 var cleared := false
 var _synthesis_done := false
 var _line_age := 0.0
@@ -66,6 +59,10 @@ var _dialogue: Label
 var _skip_progress: ColorRect
 var _skip_button: Button
 var _target_marker: Label
+var _circuit_lesson_button: Button
+var _circuit_lesson_hint: Label
+var _circuit_lesson_complete := false
+var _circuit_feedback_remaining := 0.0
 var _flow: SceneContainerManager
 var _radio: AudioStreamPlayer
 
@@ -103,9 +100,9 @@ func _ready() -> void:
 	player.inventory.secondary_weapon_slot.clear()
 	player.inventory.set("_has_picked_up_weapon", true)
 	player.inventory._apply_equipment()
-	player.inventory.panel.get("_overlay").visibility_changed.connect(_on_inventory_visibility)
 	player.health.fatal_damage_interceptor = _prevent_tutorial_death
 	player.health.damaged.connect(_on_player_damaged)
+	player.cyberware.module_triggered.connect(_on_tutorial_module_triggered)
 	_hud = get_tree().current_scene.get_node_or_null("CombatHUD") as CanvasLayer
 	if _hud != null:
 		_hud_process_mode = _hud.process_mode
@@ -119,11 +116,11 @@ func _ready() -> void:
 	panel = preload("res://scripts/ui/codex_dialogue_panel.gd").new()
 	panel.player = player
 	panel.location_text = "Codex · 接入通道合成师"
+	panel.completion_text = "排列义体 [E]"
 	panel.lines.assign([
-		"你就是刚接上线的那位吧？我是 Codex。你带来的这些装备刚好能用，要不要试试旁边的合成台？",
-		"武器和防具都可以用两件同类型、同品质的来合成。想保留外形的放主体槽，另一件放材料槽。确认后会消耗原来的两件，成品回到主体的位置。",
-		"义体也能合，不过要用不同模块，最多凑四种，相同模块不能重复合。你现在这件可以先装上试试，等捡到别的模块再来找我。",
-		"你手里和背包里各有一把手枪，正好能试一次。合成会提升品质、获得更好的词条，基础伤害还是原来的数值。台子给你打开了，合好按 Esc 回来，咱们再往前走。",
+		"我是 Codex。刚才捡到的智能火控、爆裂弹匣和战术协处理器，都是可以装进回路的义体。先把智能火控接上，我带你试一遍。",
+		"回路从左往右执行。第一格放开火感应器，第二格放智能火控。你扣下扳机时，感应器会把信号交给后面的火控，让子弹追踪敌人。",
+		"我帮你打开排列面板。先点槽 2，再从义体库选择智能火控。其余两件也留给你试搭，留意各自的说明和耗能。排好后关闭面板，我再教你合成装备。",
 	])
 	panel.completed.connect(_on_codex_completed)
 	add_child(panel)
@@ -183,7 +180,7 @@ func _wall(rect: Rect2) -> StaticBody2D:
 	return body
 
 
-func _label(value: String, font_size := 12, color := Color("ebf1f3")) -> Label:
+func _label(value: String, font_size := 12, color := CyberUITheme.HIGHLIGHT) -> Label:
 	var label := Label.new()
 	label.text = ControlPrompts.adapt(value)
 	label.add_theme_font_override("font", CyberUITheme.FONT)
@@ -213,13 +210,13 @@ func _build_ui() -> void:
 	_skip_button.button_up.connect(func() -> void: _skip_mouse = false)
 	_layout.add_child(_skip_button)
 	_skip_track = ColorRect.new()
-	_skip_track.color = Color("1b3039")
+	_skip_track.color = CyberUITheme.SURFACE
 	_skip_track.position = Vector2(460, 36)
 	_skip_track.size = Vector2(166, 3)
 	_skip_track.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_layout.add_child(_skip_track)
 	_skip_progress = ColorRect.new()
-	_skip_progress.color = CYAN
+	_skip_progress.color = ACCENT
 	_skip_progress.position = Vector2(460, 36)
 	_skip_progress.size = Vector2(0, 3)
 	_skip_progress.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -228,7 +225,7 @@ func _build_ui() -> void:
 	var panel := _dialogue_panel
 	panel.title = "HOTLINE / 公共频道                 Enter 继续"
 	panel.gui_input.connect(_on_radio_click)
-	panel.accent_color = CYAN
+	panel.accent_color = ACCENT
 	panel.position = Vector2(14, 279)
 	panel.size = Vector2(612, 70)
 	_layout.add_child(panel)
@@ -238,7 +235,7 @@ func _build_ui() -> void:
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_theme_constant_override("separation", 2)
 	panel.add_child(column)
-	_speaker = _label("", 11, CYAN)
+	_speaker = _label("", 11, ACCENT)
 	column.add_child(_speaker)
 	_dialogue = _label("", 13)
 	_dialogue.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -259,6 +256,19 @@ func _build_ui() -> void:
 	_intro_continue.focus_mode = Control.FOCUS_NONE
 	_intro_continue.pressed.connect(_advance_intro)
 	_layout.add_child(_intro_continue)
+	_circuit_lesson_button = Button.new()
+	_circuit_lesson_button.text = "配置义体" if OS.has_feature("mobile") else "配置义体 [C]"
+	_circuit_lesson_button.position = Vector2(14, 63)
+	_circuit_lesson_button.size = Vector2(104, 24)
+	_circuit_lesson_button.focus_mode = Control.FOCUS_NONE
+	CyberDialoguePanel.style_button(_circuit_lesson_button)
+	_circuit_lesson_button.pressed.connect(_open_circuit_lesson)
+	_layout.add_child(_circuit_lesson_button)
+	_circuit_lesson_button.hide()
+	_circuit_lesson_hint = _label("", 11, AMBER)
+	_circuit_lesson_hint.position = Vector2(124, 68)
+	_layout.add_child(_circuit_lesson_hint)
+	_circuit_lesson_hint.hide()
 	for control in [_skip_button, _skip_track, _skip_progress]:
 		_layout.move_child(control, _layout.get_child_count() - 1)
 
@@ -290,13 +300,13 @@ func _set_step(value: Step) -> void:
 		["01 / 突进冲撞击杀", "WASD＋空格突进 · 避开攻击并撞向敌人", Vector2(280, 194), "空格 / 突进撞击敌人"],
 		["02 / 空手盾反击杀", "鼠标朝向来弹 · 命中前按右键，将子弹弹回击杀敌人", Vector2(574, 194), "右键 / 盾反击杀哨兵"],
 		["03 / 拾取掉落手枪", "靠近敌人掉落的手枪，按 E 放入背包", Vector2(594, 196), "E / 拾取手枪"],
-		["04 / 打开背包装备武器", "按 Tab 打开背包 · 点击手枪或拖到武器槽 · Tab 关闭", Vector2(640, 194), "Tab / 装备手枪"],
-		["08 / 领取战斗增益", "靠近入口的增益箱按 E · 领取后开始战斗", BUFF_POINT, "E / 领取攻速增益"],
-		["09 / 使用手枪清除敌人", "点击左键射击 · 炸药箱可引爆，增益箱按 E 使用", Vector2(900, 194), "消灭三名敌人 / 留意环境箱"],
-		["10 / 回收战利品", "按 E 拾取手枪、义体和防弹背心", Vector2(948, 194), "E / 回收三件装备"],
-		["11 / 与 Codex 交谈", "前方维修站已出现 · 靠近 Codex 按 E，听取合成说明", CODEX_POINT, "E / 与 Codex 对话"],
-		["12 / 合成装备", "两件同品质手枪放入主体和材料槽 · 确认合成", FORGE_POINT, "E / 打开合成台"],
-		["13 / 击败中继守卫", "使用武器、盾反和突进突破最后封锁", Vector2(1850, 194), "小 Boss / 中继守卫"],
+		["04 / 打开背包装备武器", "按 Tab 打开背包 · 点击手枪或拖到武器槽 · Tab 关闭", Vector2(640, 194), "Tab / 打开背包装备手枪"],
+		["05 / 使用手枪清除敌人", "瞄准敌人，点击左键射击", Vector2(900, 194), "消灭三名敌人"],
+		["06 / 回收战利品", "按 E 拾取三件义体、手枪和防弹背心", Vector2(948, 194), "E / 回收五件战利品"],
+		["07 / 找到 Codex", "靠近 Codex 按 E，向她学习义体排列", CODEX_POINT, "E / 与 Codex 对话"],
+		["08 / 排列义体", "开火感应器放槽 1，智能火控放槽 2 · 排好后关闭面板", CODEX_POINT, "C / 排列义体"],
+		["09 / 合成装备", "两件同品质手枪放入主体和材料槽 · 确认合成", FORGE_POINT, "E / 打开合成台"],
+		["10 / 击败中继守卫", "使用武器、盾反和突进突破最后封锁", Vector2(1850, 194), "小 Boss / 中继守卫"],
 		["序章完成 / 准备传送", "接线员正在接通仓库……", Vector2(1850, 194), "传送至仓库"],
 	]
 	var definition: Array = objectives[int(step)]
@@ -334,43 +344,35 @@ func _set_step(value: Step) -> void:
 			_target_marker.position = _gun_drop_point + Vector2(-85, 34)
 			_say("接线员", "漂亮，真弹回去了！你看，它还掉了一把手枪。走近按 E，就能把枪捡起来。")
 		Step.EQUIP:
-			player.inventory.set_process_input(true)
 			_say("接线员", "这下有枪用了！按 Tab 打开背包，点一下刚捡的手枪就能装上，拖到武器槽也可以。装好再按 Tab 回来，我们一起试试。")
-		Step.SUPPLIES:
-			_clear_projectiles()
-			bomb = BOMB_SCENE.instantiate() as FuelBarrel
-			bomb.position = Vector2(880, 138)
-			add_child(bomb)
-			buff_box = BUFF_SCENE.instantiate() as PowerBox
-			buff_box.buff_choice = 1
-			buff_box.position = BUFF_POINT
-			add_child(buff_box)
-			_say("接线员", "前面还有几个敌人，不过旁边的箱子能帮上忙。炸药箱挨枪就会爆炸，还会留下一片火。等敌人靠近时引爆就很合适，自己可别站得太近。")
-			_say("接线员", "近处这个是增益箱，走近按 E 就能领。里面是攻速增益，能让你在本区域射得更快。拿好以后，我就帮你打开前面的门。")
 		Step.WAVE:
+			_clear_projectiles()
 			for index in 3:
 				var enemy := _spawn_enemy(Vector2(842 + index * 70, 166 + (index % 2) * 52), index == 1)
 				if index == 0:
 					enemy.health.fatal_damage_interceptor = _require_pistol_finish
-				enemy.defeated.connect(_on_wave_defeated.bind(["pistol", "smart_fire", "armor"][index]))
-			_say("接线员", "门开了！试试刚装好的枪。鼠标瞄准，点左键启动回路，执行完才会发射。右下角能看到能量，旁边的炸药箱也能派上用场。")
+				enemy.defeated.connect(_on_wave_defeated.bind(index))
+			_say("接线员", "试试刚装好的枪。鼠标瞄准，点左键启动回路，执行完才会发射。耐久下面那条是回路能量。")
 		Step.RECOVER:
 			_clear_targets()
-			_say("接线员", "打得不错！地上那把手枪，还有义体和防弹背心，都能带走。靠近按 E 收进背包吧，前面的 Codex 正好能帮我们处理这些装备。")
+			_say("接线员", "靠近战利品按 E。这次有三件义体，还有手枪和背心。捡好后往前走，找到 Codex，她会带你排列义体、合成装备。")
 		Step.CODEX:
 			_codex_actor = _make_service("codex", CODEX_POINT)
 			_forge_actor = _make_service("forge", FORGE_POINT)
-			_say("接线员", "看见前面那位了吗？她就是 Codex，旁边是合成台。走近按 E 和她聊聊，刚才捡的装备，说不定能合出点好东西。")
+			_say("接线员", "Codex 就在前面的维修站。靠近她按 E，聊聊刚捡到的义体。")
+		Step.CIRCUIT:
+			_dialogue_panel.hide()
+			_open_circuit_lesson.call_deferred()
 		Step.SYNTHESIZE:
 			_dialogue_panel.hide()
+			panel.lines.assign([
+				"接好了。刚才这两格的顺序，就是先接收开火信号，再给子弹加上追踪。剩下的义体可以之后慢慢试，能量够不够也要留意。",
+				"再看看装备。你手里和背包里各有一把手枪，正好可以合成。把想保留的那把放进主体槽，另一把放材料槽。两件必须同类型、同品质。",
+				"确认合成会消耗这两把枪，提升品质并获得更好的词条，基础伤害还是原来的数值。成品会回到主体原来的位置。合成台给你打开，完成后按 Esc 回来。",
+			])
+			panel.completion_text = "打开合成台 [E]"
+			panel.open(true)
 		Step.MINI_BOSS:
-			boss_bomb = BOMB_SCENE.instantiate() as FuelBarrel
-			boss_bomb.position = Vector2(1790, 138)
-			add_child(boss_bomb)
-			boss_buff_box = BUFF_SCENE.instantiate() as PowerBox
-			boss_buff_box.position = Vector2(1530, 138)
-			boss_buff_box.buff_choice = 2
-			add_child(boss_buff_box)
 			mini_boss = ENEMY.instantiate() as EnemyController
 			mini_boss.profile = preload("res://resources/enemies/heavy_anchor.tres").duplicate(true)
 			mini_boss.profile.max_health = 12
@@ -381,7 +383,7 @@ func _set_step(value: Step) -> void:
 			mini_boss.sprite.scale *= 1.35
 			targets.append(mini_boss)
 			_say("接线员", "合好了？接下来就是最后的中继守卫了。它有护盾和屏障，出手前会有预警。我们刚学的枪、盾反和冲刺都能用上。过了这里，就是仓库。")
-			_say("接线员", "入口还有个增益箱，这次会加快能量恢复，并替换刚才的攻速增益。上边也有个炸药箱，找准机会再引爆吧。")
+			_say("接线员", "刚才那套义体正好能用上。鼠标瞄准，点左键开火，看看子弹会不会追着守卫走。耐久下面那条是回路能量，见底了就缓一缓，等它回上来。")
 		Step.TRANSFER:
 			_clear_targets()
 			_transfer_remaining = STEP_TRANSITION_SECONDS
@@ -437,13 +439,10 @@ func _drop_item(id: String, point: Vector2) -> ComponentPickup:
 	return pickup
 
 
-func _on_wave_defeated(enemy: EnemyController, _mandatory: bool, id: String) -> void:
-	recovery_pickups.append(_drop_item(id, enemy.position))
-
-
-func _on_inventory_visibility() -> void:
-	if step == Step.EQUIP and player.inventory.is_open:
-		_inventory_opened = true
+func _on_wave_defeated(enemy: EnemyController, _mandatory: bool, index: int) -> void:
+	for reward_index in range(index, WAVE_REWARDS.size(), 3):
+		var offset := Vector2(-18 if reward_index < 3 else 18, 0)
+		recovery_pickups.append(_drop_item(WAVE_REWARDS[reward_index], enemy.position + offset))
 
 
 func _on_codex_visibility() -> void:
@@ -480,7 +479,7 @@ func _make_service(action: String, point: Vector2) -> Area2D:
 		sprite.scale = Vector2(76, 54) / sprite.texture.get_size()
 		sprite.position.y = -20
 		area.add_child(sprite)
-	var label := _label("Codex [E]" if action == "codex" else "合成台 [E]", 11, CYAN)
+	var label := _label("Codex [E]" if action == "codex" else "合成台 [E]", 11, ACCENT)
 	label.position = Vector2(-50, 24)
 	area.add_child(label)
 	add_child(area)
@@ -488,7 +487,11 @@ func _make_service(action: String, point: Vector2) -> Area2D:
 
 
 func use_service(action: String) -> void:
-	if step not in [Step.CODEX, Step.SYNTHESIZE]:
+	if step not in [Step.CODEX, Step.CIRCUIT, Step.SYNTHESIZE]:
+		return
+	if step == Step.CIRCUIT:
+		if action == "codex":
+			_open_circuit_lesson()
 		return
 	if not dialogue_completed:
 		if action == "forge":
@@ -501,9 +504,62 @@ func use_service(action: String) -> void:
 
 
 func _on_codex_completed() -> void:
-	dialogue_completed = true
-	_set_step(Step.SYNTHESIZE)
-	upgrade_panel.call_deferred("open")
+	if step == Step.CODEX:
+		_set_step(Step.CIRCUIT)
+	elif step == Step.SYNTHESIZE:
+		dialogue_completed = true
+		upgrade_panel.call_deferred("open")
+
+
+func _open_circuit_lesson() -> void:
+	if is_instance_valid(_hud) and not get_tree().paused:
+		_hud.get_circuit_editor().set_open(true)
+
+
+func _on_tutorial_module_triggered(module_id: StringName) -> void:
+	if step != Step.MINI_BOSS or module_id != CyberwareController.SMART_FIRE or _circuit_lesson_complete or not _has_tutorial_circuit():
+		return
+	_circuit_lesson_complete = true
+	_circuit_feedback_remaining = 3.0
+
+
+func _has_tutorial_starter() -> bool:
+	var slots := player.cyberware.circuit.get_slots()
+	return not slots.is_empty() and slots[0] == String(CyberwareController.COMBAT_SYNAPSE_SENSOR)
+
+
+func _has_tutorial_circuit() -> bool:
+	var slots := player.cyberware.circuit.get_slots()
+	return slots.size() >= 2 and _has_tutorial_starter() and slots[1] == String(CyberwareController.SMART_FIRE)
+
+
+func _update_circuit_lesson(delta: float) -> void:
+	var lesson_available := step in [Step.CIRCUIT, Step.MINI_BOSS]
+	var configured := lesson_available and not _circuit_lesson_complete and _has_tutorial_circuit()
+	if is_instance_valid(_hud):
+		var editor: CyberwareCircuitPanel = _hud.get_circuit_editor()
+		var editor_hint := ""
+		if lesson_available and not _circuit_lesson_complete:
+			if configured:
+				editor_hint = "接好了，关掉面板就能去试枪。"
+			elif _has_tutorial_starter():
+				editor_hint = "点槽 2，再点左边的智能火控。"
+			else:
+				editor_hint = "先点槽 1，把开火感应器装回去。"
+		editor.set_tutorial_hint(editor_hint)
+	var show_lesson := lesson_available and not get_tree().paused and is_instance_valid(_hud)
+	_circuit_lesson_button.visible = show_lesson and not configured and not _circuit_lesson_complete
+	_circuit_lesson_hint.visible = show_lesson and (not _circuit_lesson_complete or _circuit_feedback_remaining > 0.0)
+	if not show_lesson:
+		return
+	_circuit_lesson_hint.position.x = 124.0 if _circuit_lesson_button.visible else 14.0
+	if _circuit_lesson_complete:
+		_circuit_lesson_hint.text = "Codex：接上了！这发子弹会追附近的敌人。"
+		_circuit_feedback_remaining = maxf(0.0, _circuit_feedback_remaining - delta)
+	elif configured:
+		_circuit_lesson_hint.text = "Codex：接好了，关闭面板后继续学合成。" if step == Step.CIRCUIT else ControlPrompts.adapt("Codex：瞄准守卫，点击左键射击，试试刚接的火控。")
+	else:
+		_circuit_lesson_hint.text = "开火感应器 → 智能火控"
 
 
 func owns_synthesis_item(item: InventoryItem) -> bool:
@@ -567,7 +623,7 @@ func _next_dialogue() -> void:
 	_intro_continue.text = ("一起出发" if _dialogue_queue.is_empty() else "继续") + (" [轻触屏幕]" if OS.has_feature("mobile") else " [Enter]")
 	var interrupted := String(line.speaker).contains("大肥鱼")
 	_speaker.modulate = Color.WHITE
-	_speaker.add_theme_color_override("font_color", AMBER if interrupted else CYAN)
+	_speaker.add_theme_color_override("font_color", AMBER if interrupted else ACCENT)
 	_dialogue_panel.set_channel(interrupted)
 	_intro_backdrop.interrupted = interrupted
 
@@ -650,6 +706,7 @@ func _process(delta: float) -> void:
 	camera.position = Vector2(clampf(player.position.x, 320, 1952), 180)
 	if _pending_step < 0 and not get_tree().paused:
 		_tick_step(delta)
+	_update_circuit_lesson(delta)
 	if step == Step.MINI_BOSS and is_instance_valid(mini_boss):
 		_boss_status.text = "中继守卫  %d / %d" % [mini_boss.health.current_health, mini_boss.health.max_health]
 		_boss_meter.size = Vector2(166.0 * mini_boss.health.current_health / mini_boss.health.max_health, 4)
@@ -670,10 +727,7 @@ func _tick_step(delta: float) -> void:
 			if not is_instance_valid(gun_pickup) or gun_pickup.get("_picked"):
 				_request_step(Step.EQUIP)
 		Step.EQUIP:
-			if _inventory_opened and not player.inventory.is_open and player.weapons.get_current_weapon() != null:
-				_request_step(Step.SUPPLIES)
-		Step.SUPPLIES:
-			if buff_box.state == PowerBox.State.CLAIMED:
+			if not player.inventory.is_open and player.weapons.get_current_weapon() != null:
 				_request_step(Step.WAVE)
 		Step.WAVE:
 			if _all_targets_dead():
@@ -683,8 +737,11 @@ func _tick_step(delta: float) -> void:
 			for pickup in recovery_pickups:
 				if not is_instance_valid(pickup) or pickup.get("_picked"):
 					collected += 1
-			if collected == 3:
+			if collected == WAVE_REWARDS.size():
 				_request_step(Step.CODEX)
+		Step.CIRCUIT:
+			if _has_tutorial_circuit() and not _hud.get_circuit_editor().is_open and not player.inventory.is_open:
+				_request_step(Step.SYNTHESIZE)
 		Step.SYNTHESIZE:
 			if _synthesis_done and not upgrade_panel.is_open:
 				_request_step(Step.MINI_BOSS)
@@ -704,7 +761,12 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventKey and (event.keycode == KEY_ESCAPE or event.physical_keycode == KEY_ESCAPE):
 		if event.pressed and not event.echo and not _skip_key:
 			_skip_key = true
-			_skip_tutorial_step()
+			if player.inventory.is_open:
+				player.inventory.set_open(false)
+			elif is_instance_valid(_hud) and _hud.get_circuit_editor().is_open:
+				_hud.get_circuit_editor().set_open(false)
+			else:
+				_skip_tutorial_step()
 		elif not event.pressed:
 			_skip_key = false
 		get_viewport().set_input_as_handled()
@@ -726,8 +788,13 @@ func _input(event: InputEvent) -> void:
 		if event is InputEventMouseButton and _skip_button.get_global_rect().has_point(event.position):
 			return
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("restart_room") or event.is_action_pressed("inventory_toggle"):
-		# Inventory and run restart are introduced after the prologue.
+	elif event.is_action_pressed("inventory_toggle"):
+		# The prologue owns inventory input so actor/UI processing order cannot eat Tab.
+		if step >= Step.EQUIP and _dialogue_remaining <= 0.0 and not panel.is_open and not upgrade_panel.is_open:
+			if player.inventory.is_open or not get_tree().paused:
+				player.inventory.set_open(not player.inventory.is_open)
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("restart_room"):
 		get_viewport().set_input_as_handled()
 
 
@@ -743,12 +810,9 @@ func _interact() -> void:
 		return
 	if step in [Step.GUN_PICKUP, Step.RECOVER]:
 		player.inventory.try_pick_nearest()
-	elif step in [Step.CODEX, Step.SYNTHESIZE]:
+	elif step in [Step.CODEX, Step.CIRCUIT, Step.SYNTHESIZE]:
 		player.interactor.request_interaction(player)
-	elif step == Step.MINI_BOSS and is_instance_valid(boss_buff_box):
-		boss_buff_box.interact(player)
-	elif step in [Step.SUPPLIES, Step.WAVE] and is_instance_valid(buff_box):
-		buff_box.interact(player)
+
 
 
 func _skip_tutorial_step() -> void:
@@ -783,19 +847,15 @@ func _skip_tutorial_step() -> void:
 					player.inventory.equip(index)
 					break
 			player.position = Vector2(670, 196)
-			_set_step(Step.SUPPLIES)
-		Step.SUPPLIES:
-			buff_box.interact(player)
-			player.position = Vector2(800, 196)
 			_set_step(Step.WAVE)
 		Step.WAVE:
 			var dropped_ids: Array[String] = []
 			for pickup in recovery_pickups:
 				if is_instance_valid(pickup):
 					dropped_ids.append(pickup.component_id)
-			for id in ["pistol", "smart_fire", "armor"]:
+			for id in WAVE_REWARDS:
 				if id not in dropped_ids:
-					recovery_pickups.append(_drop_item(id, Vector2(900 + recovery_pickups.size() * 30, 196)))
+					recovery_pickups.append(_drop_item(id, Vector2(850 + recovery_pickups.size() * 28, 196)))
 			player.position = Vector2(900, 196)
 			_set_step(Step.RECOVER)
 		Step.RECOVER:
@@ -806,10 +866,9 @@ func _skip_tutorial_step() -> void:
 			player.position = Vector2(1100, 196)
 			_set_step(Step.CODEX)
 		Step.CODEX:
-			dialogue_completed = true
+			_set_step(Step.CIRCUIT)
+		Step.CIRCUIT:
 			_set_step(Step.SYNTHESIZE)
-			player.position = Vector2(1250, 218)
-			upgrade_panel.open()
 		Step.SYNTHESIZE:
 			player.position = Vector2(1500, 196)
 			_set_step(Step.MINI_BOSS)

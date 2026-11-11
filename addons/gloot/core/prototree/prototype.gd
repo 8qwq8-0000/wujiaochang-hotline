@@ -158,7 +158,15 @@ func _prototype_id_taken(prototype_id: String) -> bool:
         return _all_prototypes.has(prototype_id)
 
 
-func _clear() -> void:
-    _properties.clear()
+func _release_descendants() -> void:
+    # Children retain their inheritance ancestors. Drop the owning indexes
+    # recursively so the parent/child references cannot form a cycle.
+    for child: Prototype in _prototypes.values():
+        child._release_descendants()
     _prototypes.clear()
     _all_prototypes.clear()
+
+
+func _clear() -> void:
+    _release_descendants()
+    _properties.clear()

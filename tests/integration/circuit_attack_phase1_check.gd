@@ -54,7 +54,7 @@ func run() -> void:
 	await _test_attack_copy_cap()
 	_test_attack_order_changes_signal_shape()
 	print("Circuit attack phase one failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)
 
 
 func _test_saved_event_queue(combined: StringName) -> void:

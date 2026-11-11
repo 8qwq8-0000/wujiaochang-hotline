@@ -24,14 +24,16 @@ func run() -> void:
 	flow.fade_duration = 0
 	var player := await wait_room(flow)
 	if player == null:
-		quit(1)
+		root.get_node("GameSettings").quit_game(1)
 		return
 	player.inventory.pickup("pistol")
-	player.inventory.pickup("wheel")
+	player.inventory.pickup("armor")
 	player.inventory.pickup("scattergun")
 	player.weapons.cycle_weapon(1)
 	var before := player.inventory.export_run_state()
-	(main.find_child("FloorAssembler", true, false) as FloorAssembler).enemy_drop_chance = 0.0
+	var assembler := main.find_child("FloorAssembler", true, false) as FloorAssembler
+	assembler.enemy_drop_chance = 0.0
+	assembler.cyberware_drop_chance = 1.0
 	var enemies := get_nodes_in_group("enemies")
 	for enemy in enemies:
 		enemy.health.apply_damage(enemy.health.max_health, DamagePacket.new())
@@ -64,4 +66,4 @@ func run() -> void:
 	main.queue_free()
 	await process_frame
 	print("Room transition failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

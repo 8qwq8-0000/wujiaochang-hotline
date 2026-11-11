@@ -45,4 +45,4 @@ func run() -> void:
 	await process_frame
 	DirAccess.remove_absolute(SAVE)
 	print("Inventory trash-drop failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

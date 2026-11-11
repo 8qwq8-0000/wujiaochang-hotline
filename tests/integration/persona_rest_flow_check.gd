@@ -57,7 +57,7 @@ func run_checks() -> void:
 	if rest == null:
 		main.queue_free()
 		await process_frame
-		quit(1)
+		root.get_node("GameSettings").quit_game(1)
 		return
 	var player := get_first_node_in_group("player") as PlayerController
 	check(paused and not player.is_input_enabled(), "rest pauses combat and disables player input")
@@ -153,4 +153,4 @@ func run_checks() -> void:
 	main.queue_free()
 	await process_frame
 	print("Persona rest flow failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

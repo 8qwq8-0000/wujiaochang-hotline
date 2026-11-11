@@ -148,6 +148,9 @@ func _physics_process(delta: float) -> void:
 	query.exclude = excluded
 	var wall_hit := get_world_2d().direct_space_state.intersect_ray(query)
 	if not wall_hit.is_empty():
+		# A shot that penetrates the hidden door still counts as an impact.
+		if wall_hit.collider.has_method("receive_projectile_hit"):
+			wall_hit.collider.receive_projectile_hit(_make_damage_packet())
 		if circuit_pierce_remaining != 0:
 			if circuit_pierce_remaining > 0:
 				circuit_pierce_remaining -= 1
@@ -159,10 +162,7 @@ func _physics_process(delta: float) -> void:
 			return
 		global_position = wall_hit.position
 		_resolved = true
-		# Door leaves are world-blocking StaticBody2Ds. Notify their owning door
-		# before consuming the impact; ordinary walls still just stop the shot.
-		if wall_hit.collider.has_method("receive_projectile_hit"):
-			wall_hit.collider.receive_projectile_hit(_make_damage_packet())
+		# Automatic door leaves forward impacts to the owning door.
 		var door: AutomaticDoor = wall_hit.collider.get_parent() as AutomaticDoor
 		if door != null:
 			door.receive_hit(_make_damage_packet())

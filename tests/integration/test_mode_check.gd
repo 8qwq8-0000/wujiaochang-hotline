@@ -44,7 +44,7 @@ func run_checks() -> void:
 	var warehouse := await wait_room()
 	check(warehouse != null, "warehouse loads")
 	if warehouse == null:
-		quit(1)
+		root.get_node("GameSettings").quit_game(1)
 		return
 	var original: Dictionary = store.get_profile()
 	var original_bytes := FileAccess.get_file_as_bytes(SAVE)
@@ -76,7 +76,30 @@ func run_checks() -> void:
 	check(tools.enabled and not tools._overlay.visible and not paused, "Esc resumes play while retaining the isolated test session")
 	tools._badge.pressed.emit()
 	check(tools._overlay.visible and paused, "badge reopens the paused test panel")
-	check(tools.grant_item("rail_cannon", 3), "prototype weapon can be granted")
+	var categories: OptionButton = tools._equipment_category
+	var equipment: OptionButton = tools._items
+	check(categories.get_selected_metadata() == "weapon", "equipment supply defaults to weapons")
+	var listed_ids: Array[String] = []
+	for category_index in categories.item_count:
+		categories.select(category_index)
+		categories.item_selected.emit(category_index)
+		var slot: String = categories.get_selected_metadata()
+		check(equipment.item_count > 0 and equipment.selected == 0, "equipment category selects its first item: %s" % slot)
+		check(tools._quality.disabled == (slot not in ["weapon", "defense"]), "equipment category enables applicable quality selection: %s" % slot)
+		for index in equipment.item_count:
+			var id: String = equipment.get_item_metadata(index)
+			check(ComponentInventory.PROTOTYPES.data[id].get("slot") == slot and id not in listed_ids, "equipment appears once in its own category: %s" % id)
+			listed_ids.append(id)
+	check(listed_ids.size() == tools._item_ids.size(), "equipment categories expose all grantable items")
+	categories.select(0)
+	categories.item_selected.emit(0)
+	for index in equipment.item_count:
+		if equipment.get_item_metadata(index) == "rail_cannon":
+			equipment.select(index)
+			break
+	tools._quality.select(2)
+	tools._grant_button.pressed.emit()
+	check(tools._message.text.begins_with("已领取"), "equipment button grants the selected weapon")
 	check(ComponentRolls.quality(warehouse.player.inventory.secondary_weapon_slot.get_item()) == 3, "granted weapon retains requested quality")
 	# The merged control panel must expose the main branch's advanced modules,
 	# and granting them must still use the real inventory with isolated saves.
@@ -129,10 +152,36 @@ func run_checks() -> void:
 		check(root.get_node("RunManager").floor_index == index, "floor scaling index matches jump")
 		check(not paused, "jump bypasses mandatory persona rest without leaving pause stuck")
 		check(player.talent_core.core_level == 3 and player.inventory.secondary_weapon_slot.get_item() != null, "jump preserves testing build")
+		var assembler: FloorAssembler = floor.get_node("FloorAssembler")
+		if index == 0:
+			var packet := DamagePacket.new()
+			packet.source_faction = CombatFaction.Id.PLAYER
+			var waiting_for_explosion := false
+			for enemy in assembler.generated_rooms[0].get_node("Enemies").get_children():
+				if enemy is EnemyController and enemy.mandatory and enemy.profile.self_destruct_enabled:
+					enemy.health.apply_damage(enemy.health.max_health, packet)
+					waiting_for_explosion = enemy.state == EnemyController.State.SELF_DESTRUCT
+					break
+			check(waiting_for_explosion, "first area has a defeated heavy waiting to self-destruct")
 		tools.open_panel()
 		check(tools.clear_area(), "one-click clear accepts floor")
-		check(floor.get_node("FloorAssembler")._rooms_remaining == 0, "clear includes inactive combat areas")
+		check(assembler._rooms_remaining == 0, "clear includes inactive combat areas")
 		check(root.get_node("RunManager").mandatory_enemies_remaining == 0, "floor objectives cleared normally")
+		if index == 0:
+			var corridor := assembler.passages[0]
+			check(corridor.unlocked, "clear opens the passage even with a pending self-destruct")
+			tools.close_panel()
+			player.global_position = corridor.global_position - Vector2(12.0, 0.0)
+			player.set_physics_process(true)
+			Input.action_press("move_right")
+			for frame in 120:
+				await physics_frame
+				if assembler.active_area_index == 1:
+					break
+			Input.action_release("move_right")
+			check(assembler.active_area_index == 1 and corridor.return_sealed, "player can walk from area one into area two after F8 clear")
+			var second_room: CombatRoom = assembler.generated_rooms[1]
+			check(player.camera.limit_left == floori(second_room.global_position.x) and player.camera.limit_right == ceili(second_room.global_position.x + CombatRoom.ROOM_SIZE.x), "camera switches to area two even though F8 already activated and cleared it")
 	check(await tools.jump_to(-1), "test warehouse jump works")
 	warehouse = await wait_room()
 	check(warehouse.player.talent_core.core_level == 3 and warehouse.player.inventory.secondary_weapon_slot.get_item() != null, "warehouse jump preserves test build")
@@ -169,10 +218,18 @@ func run_checks() -> void:
 	var arena := await wait_room() as RooftopBossArena
 	check(arena != null and arena.phase == RooftopBossArena.Phase.MINIONS, "Boss starts in its normal opening phase")
 	arena.player.set_physics_process(false)
+	var opening_guards := arena.get_node("Enemies")
+	check(opening_guards.get_child_count() == 2, "both opening wings are present before the shortcut")
+	var left_wing := opening_guards.get_child(0) as WingGuard
+	left_wing._fire_slash(2)
+	var wing_slash := opening_guards.get_child(2) as WingSlashProjectile
+	check(is_instance_valid(wing_slash), "opening wing launches an actual slash")
 	tools.open_panel()
 	check(tools.defeat_boss(), "quick Boss win bypasses awakening immunity")
 	check(arena.phase == RooftopBossArena.Phase.CLEARED and arena.boss.health.is_dead(), "Boss defeat updates actual state")
 	check(root.get_node("RunManager").mandatory_enemies_remaining == 0, "Boss victory clears remaining guards")
+	await process_frame
+	check(opening_guards.get_child_count() == 0 and not is_instance_valid(wing_slash), "quick victory removes both opening wings and their lingering slash")
 	check(await tools.jump_to(3), "Boss can be restarted after quick victory")
 	arena = await wait_room() as RooftopBossArena
 	arena.attack_loop_enabled = false
@@ -182,9 +239,29 @@ func run_checks() -> void:
 	check(arena.boss.health.guard_link_active, "second-phase shield is active")
 	tools.open_panel()
 	check(tools.defeat_boss() and arena.phase == RooftopBossArena.Phase.CLEARED, "quick victory also handles shielded second phase")
+	await process_frame
+	arena._spawn_support_guards()
+	check(arena.get_node("SupportEnemies").get_child_count() == 0, "quick victory removes the fused wing and blocks delayed respawns")
 	tools.close_panel()
 	var record_count: int = store.get_legacy_drinks().size()
 	var extraction := main.get_node("ExtractionFlow")
+	arena.player.set_physics_process(false)
+	var exit_point := arena.exit_elevator.global_position
+	arena.player.global_position = exit_point - Vector2(0, 100)
+	for frame in 4:
+		await physics_frame
+	arena.player.global_position = exit_point
+	for frame in 4:
+		await physics_frame
+	check(extraction.get("_overlay").visible, "walking into the rooftop exit opens victory choices")
+	arena.player.global_position = exit_point + Vector2(0, 24)
+	for frame in 4:
+		await physics_frame
+	check(extraction.get("_overlay").visible, "the victory dialogue stays open below the rooftop exit")
+	arena.player.global_position = exit_point + Vector2(100, 24)
+	for frame in 4:
+		await physics_frame
+	check(not extraction.get("_overlay").visible, "leaving the enlarged rooftop exit closes the dialogue")
 	extraction.complete_victory()
 	check(extraction._settled and store.get_legacy_drinks().size() == record_count + 1, "test victory can exercise settlement and records")
 	check(FileAccess.get_file_as_bytes(SAVE) == original_bytes, "test victory cannot write a formal record")
@@ -227,4 +304,4 @@ func run_checks() -> void:
 	await process_frame
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE))
 	print("Test mode checks: ", checks, "; failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

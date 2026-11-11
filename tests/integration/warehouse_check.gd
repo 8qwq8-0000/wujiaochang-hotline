@@ -48,7 +48,7 @@ func run_checks() -> void:
 	var room := await wait_scene(main)
 	check(room != null and room.is_in_group("warehouse"), "project entry opens warehouse")
 	if room == null:
-		quit(1)
+		root.get_node("GameSettings").quit_game(1)
 		return
 	var player: PlayerController = room.player
 	player.set_physics_process(false)
@@ -197,4 +197,4 @@ func run_checks() -> void:
 	DirAccess.remove_absolute(TEST_PATH)
 	DirAccess.remove_absolute(corrupt_path)
 	print("Warehouse checks: ", checks, "; failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

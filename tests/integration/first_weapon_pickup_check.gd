@@ -18,9 +18,9 @@ func run() -> void:
 		var malformed := InventoryItem.new()
 		check(not inv.pickup("pistol", malformed), "pickup rejects missing prototype without crashing")
 		root.get_node("RunManager").set_mandatory_enemy_count(1)
-		check(not inv.can_change_equipment(), "manual battle equipment remains locked")
+		check(inv.can_change_equipment(), "living player may change equipment during a paused battle")
 		if scenario == 2:
-			var old := InventoryItem.new(ComponentInventory.PROTOTYPES, "baton")
+			var old := ComponentRolls.create_issued_pistol()
 			inv.secondary_weapon_slot.equip(old)
 			check(inv.pickup("pistol"), "occupied reserve sends first weapon into bag")
 			check(inv.secondary_weapon_slot.get_item() == old and inv.backpack.get_item_count() == 1, "existing reserve is not replaced")
@@ -30,7 +30,7 @@ func run() -> void:
 		else:
 			if scenario == 1:
 				for index in 6:
-					check(inv.pickup("wheel"), "fill six spare cells")
+					check(inv.pickup("armor"), "fill six spare cells")
 			var count := inv.backpack.get_item_count()
 			var active := player.weapons.current_index
 			var pickup: ComponentPickup = load("res://scenes/items/component_pickup.tscn").instantiate()
@@ -46,11 +46,14 @@ func run() -> void:
 			check(player.weapons.get_current_weapon().id == &"service_pistol", "reserve is immediately usable")
 			if scenario == 0:
 				check(inv.pickup("scattergun") and inv.backpack.get_item_count() == 1, "later weapon occupies spare cell")
-				check(not inv.equip(0, 1), "manual replacement is still locked")
+				inv.set_open(true)
+				check(paused and inv.equip(0, 1), "manual replacement works inside the paused backpack")
+				check(inv.secondary_weapon_slot.get_item().get_prototype().get_prototype_id() == "scattergun" and inv.backpack.get_item_count() == 1, "manual replacement keeps the old reserve as one spare item")
+				inv.set_open(false)
 			else:
 				check(not inv.pickup("scattergun"), "later weapon cannot bypass full bag")
 		scene.queue_free()
 		await process_frame
 		await process_frame
 	print("First weapon pickup failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

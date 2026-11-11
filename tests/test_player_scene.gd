@@ -107,7 +107,7 @@ func test_confirmed_weapon_heat_capacities_ignore_natural_cooling() -> void:
 	var pistol: WeaponComponentData = load("res://resources/weapons/service_pistol.tres")
 	var scattergun: WeaponComponentData = load("res://resources/weapons/scattergun.tres")
 	var baton: WeaponComponentData = load("res://resources/weapons/baton.tres")
-	var heat := HeatComponent.new()
+	var heat := track(HeatComponent.new()) as HeatComponent
 	for shot in 5:
 		assert_true(heat.try_add_heat(pistol.heat_per_attack))
 	assert_false(heat.is_overheated)

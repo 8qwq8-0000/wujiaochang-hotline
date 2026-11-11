@@ -30,7 +30,7 @@ size = Vector2(16, 600)
 size = Vector2(918, 16)
 
 [sub_resource type="RectangleShape2D" id="ElevatorShape"]
-size = Vector2(50, 34)
+size = Vector2(112, 96)
 
 [node name="RooftopBossArena" type="Node2D" unique_id=2095464680 groups=["combat_rooms"]]
 script = ExtResource("1_arena")
@@ -180,6 +180,7 @@ script = ExtResource("10_exit")
 show_exit_art = false
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="ExitElevator" unique_id=1925263417]
+position = Vector2(0, 8)
 shape = SubResource("ElevatorShape")
 
 [node name="Label" type="Label" parent="ExitElevator" unique_id=403013678]

@@ -137,12 +137,17 @@ func run_checks() -> void:
 	player.heat.dissipation_per_second = 0.0
 	player.heat.set_heat(70.0)
 	player.heat.is_overheated = true
+	player.cyberware.circuit.set_energy(17.0)
+	player.weapons.set("_cooldown_remaining", 0.35)
 	var before_failed_deposit := player.export_run_state()
+	var live_bag_before := player.inventory.backpack.get_items().duplicate()
 	var disk_before_failure := FileAccess.get_file_as_string(SAVE_PATH)
 	store.save_path = "user://missing-codex-deposit-folder/storage.json"
 	check(not storage.transfer(bag_weapon, true), "save failure rejects the deposit")
 	check(player.export_run_state() == before_failed_deposit and storage.chest.get_item_count() == 1, "save failure restores equipped gear and backpack identities")
 	check(player.heat.current_heat == 70.0 and player.heat.is_overheated, "failed deposit preserves carried heat and overheat state")
+	check(is_equal_approx(player.cyberware.circuit.current_energy, 17.0) and is_equal_approx(player.weapons.get("_cooldown_remaining"), 0.35), "failed deposit preserves current circuit energy and weapon cooldown")
+	check(player.inventory.backpack.get_items() == live_bag_before and player.inventory.backpack.has_item(bag_weapon), "failed deposit preserves the same live backpack item instances")
 	store.save_path = SAVE_PATH
 	check(FileAccess.get_file_as_string(SAVE_PATH) == disk_before_failure, "failed deposit does not change the original save")
 	for item in player.inventory.backpack.get_items():
@@ -181,4 +186,4 @@ func run_checks() -> void:
 	paused = false
 	DirAccess.remove_absolute(SAVE_PATH)
 	print("Codex supplies checks: ", checks, "; failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

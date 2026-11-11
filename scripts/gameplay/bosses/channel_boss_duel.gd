@@ -116,6 +116,7 @@ func start_combat() -> void:
 	arena.boss.body_sprite.hide()
 	arena.boss.glow_sprite.hide()
 	stage = Stage.ACTIVE
+	EnemyEncounterRecorder.watch(arena.boss, "rooftop_whale_goddess_channel", false)
 	arena.player.camera.zoom = Vector2.ONE * 0.6
 	arena.player.camera.position = Vector2.ZERO
 	arena.player.camera.reset_smoothing()

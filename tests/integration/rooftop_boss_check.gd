@@ -18,10 +18,18 @@ func hit(amount: int) -> DamagePacket:
 	return packet
 
 func run() -> void:
+	var store := root.get_node("WarehouseStore")
+	check(store.begin_test_session() and store.create_new_profile(), "encounters use an isolated test profile")
+	root.get_node("RunManager").persistent_run = true
 	var arena: RooftopBossArena = load("res://scenes/levels/bosses/rooftop_boss_arena.tscn").instantiate()
 	arena.attack_loop_enabled = false
 	root.add_child(arena)
 	await process_frame
+	for frame in 20:
+		await physics_frame
+	var opening_entries: Array = store.get_codex().enemies
+	check("rooftop_whale_goddess" in opening_entries and "wing_guard_rook" in opening_entries and "wing_guard_bishop" in opening_entries, "ordinary route records the statue and both opening wings")
+	check(not "rooftop_whale_goddess_channel" in opening_entries and not "wing_guard_queen" in opening_entries, "undiscovered forms remain locked")
 	var room_art := arena.get_node("RoomArt") as Sprite2D
 	check(room_art.texture.resource_path.ends_with("rooftop_server_chapel_base.png") and room_art.position == Vector2(640, 450) and room_art.scale.is_equal_approx(Vector2(1.333333, 1.666667)), "original chapel architecture remains beneath separate floor")
 	check(room_art.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR, "chapel art uses smooth filtering")
@@ -94,6 +102,9 @@ func run() -> void:
 	check(arena.player.camera.zoom.is_equal_approx(Vector2.ONE * 0.8), "second phase opens wider view")
 	var queen := arena.get_node("SupportEnemies").get_child(0) as WingGuard
 	queen.set_active(false)
+	for frame in 20:
+		await physics_frame
+	check("wing_guard_queen" in store.get_codex().enemies, "the fused wing unlocks after appearing")
 	check(queen.kind == WingGuard.Kind.QUEEN and queen.health.max_health == 35, "fused queen has 35 health")
 	var landing := queen._queen_landing_cell(Vector2i(2, 3), Vector2i(17, 10))
 	check(landing.x == 2 or landing.y == 3 or absi(landing.x - 2) == absi(landing.y - 3), "queen landing follows a legal rook or bishop line")
@@ -109,4 +120,4 @@ func run() -> void:
 	arena.queue_free()
 	await process_frame
 	print("Rooftop boss checks: ", checks, "; failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

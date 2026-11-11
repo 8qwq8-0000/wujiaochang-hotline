@@ -50,23 +50,21 @@ func transfer(item: InventoryItem, deposit: bool) -> bool:
 		panel.show_message("绑定武器不能寄存。")
 		return false
 	var profile: Dictionary = store.get_profile()
-	var before := player.export_run_state()
-	var chest_before := chest.serialize()
 	var id := String(item.get_property("instance_id", ""))
 	var safe_loadout: Dictionary = profile.loadout.duplicate(true)
 	_remove_stored_weapon(safe_loadout, id)
+	if not chest.can_add_item(item):
+		panel.show_message("寄存未完成，武器已保留。")
+		return false
+	var saved_items: Array = []
+	for stored in chest.get_items():
+		saved_items.append(stored.serialize())
+	saved_items.append(item.serialize())
+	# Commit before moving the live instance. A failed write must preserve
+	# inventory references, circuit queues and the player's transient state.
 	_mutating = true
-	var moved := inv.move_to_storage(item, chest)
-	if moved:
-		var saved_items: Array = []
-		for stored in chest.get_items():
-			saved_items.append(stored.serialize())
-		# Save only the chest and the existing safe loadout. Never persist the
-		# rest of the current run's inventory, cyberware, health or persona.
-		if not store.commit(saved_items, safe_loadout):
-			player.import_run_state(before)
-			chest.deserialize(chest_before)
-			moved = false
+	var saved: bool = store.commit(saved_items, safe_loadout)
+	var moved := saved and inv.move_to_storage(item, chest)
 	if moved:
 		get_node("/root/RunManager").set_player_state(player.export_run_state())
 		panel.show_message("武器已安全寄存 · 死亡后仍保留 · 回仓库可取出")

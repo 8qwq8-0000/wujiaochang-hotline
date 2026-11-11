@@ -35,13 +35,13 @@ func _ready() -> void:
 	_speaker = Label.new()
 	_speaker.add_theme_font_override("font", CyberUITheme.FONT)
 	_speaker.add_theme_font_size_override("font_size", 11)
-	_speaker.add_theme_color_override("font_color", Color("75e8df"))
+	_speaker.add_theme_color_override("font_color", CyberUITheme.ACCENT)
 	_speaker.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_child(_speaker)
 	_text = Label.new()
 	_text.add_theme_font_override("font", CyberUITheme.FONT)
 	_text.add_theme_font_size_override("font_size", 13)
-	_text.add_theme_color_override("font_color", Color("ebf1f3"))
+	_text.add_theme_color_override("font_color", CyberUITheme.HIGHLIGHT)
 	_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_child(_text)

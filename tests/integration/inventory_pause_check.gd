@@ -26,7 +26,7 @@ func run() -> void:
 		await process_frame
 	var player := get_first_node_in_group("player") as PlayerController
 	if player == null:
-		quit(1)
+		root.get_node("GameSettings").quit_game(1)
 		return
 	var inventory := player.get_node("ComponentInventory") as ComponentInventory
 	var enemy := get_first_node_in_group("enemies") as EnemyController
@@ -96,4 +96,4 @@ func run() -> void:
 		await process_frame
 		check(not paused, "scene removal releases pause")
 	print("Inventory pause failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

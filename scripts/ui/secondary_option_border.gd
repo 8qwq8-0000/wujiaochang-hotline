@@ -14,6 +14,15 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var button := get_parent() as BaseButton
 	if button != null:
+		button.custom_minimum_size.y = maxf(button.custom_minimum_size.y, 22.0)
+		# This control owns the cut-corner outline, including its layout clearance.
+		var padding := StyleBoxEmpty.new()
+		padding.content_margin_left = 7
+		padding.content_margin_right = 7
+		padding.content_margin_top = 4
+		padding.content_margin_bottom = 4
+		for state in [&"normal", &"hover", &"pressed", &"focus", &"disabled"]:
+			button.add_theme_stylebox_override(state, padding)
 		button.mouse_entered.connect(queue_redraw)
 		button.mouse_exited.connect(queue_redraw)
 		button.focus_entered.connect(queue_redraw)

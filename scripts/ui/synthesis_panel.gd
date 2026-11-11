@@ -1,8 +1,8 @@
 extends CanvasLayer
 
 const DRAG := preload("res://scripts/ui/synthesis_drag_button.gd")
-const CYAN := Color("e6e1d8")
-const GOLD := Color("e7ac62")
+const INK := CyberUITheme.HIGHLIGHT
+const GOLD := CyberUITheme.ACCENT
 var heading_text := "Codex 装备工坊"
 var empty_text := "没有可合成的装备\n出击收集后再来找 Codex"
 var room: Node2D
@@ -21,9 +21,9 @@ var _message: Label
 var _target := 0
 var _filter := "all"
 
-func _style(fill: String, border: Color = Color("344550")) -> StyleBoxFlat:
+func _style(fill: Color, border: Color = CyberUITheme.BORDER) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(fill)
+	style.bg_color = fill
 	style.border_color = border
 	style.set_border_width_all(1)
 	style.set_corner_radius_all(0)
@@ -46,7 +46,7 @@ func _ready() -> void:
 	_overlay = PanelContainer.new()
 	_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_overlay.theme = CyberUITheme.create_os_theme()
-	_overlay.add_theme_stylebox_override("panel", _style("20262a"))
+	_overlay.add_theme_stylebox_override("panel", _style(CyberUITheme.PANEL))
 	add_child(_overlay)
 	CyberUITheme.add_os_frame(_overlay)
 	var margin := MarginContainer.new()
@@ -58,7 +58,7 @@ func _ready() -> void:
 	margin.add_child(column)
 	var header := HBoxContainer.new()
 	column.add_child(header)
-	var title := _label(heading_text, 21, CYAN)
+	var title := _label(heading_text, 21, INK)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
 	var close_button := Button.new()
@@ -66,7 +66,10 @@ func _ready() -> void:
 	close_button.add_theme_font_size_override("font_size", 12)
 	close_button.pressed.connect(close)
 	header.add_child(close_button)
-	column.add_child(_label("武器与防御装备升级；事件义体可兼并监听。", 11, Color("a6b9c4")))
+	var workshop_note := "武器与防御装备升级；义体在回路面板排列。"
+	if is_instance_valid(room) and room.has_method("synthesize_event_starters"):
+		workshop_note = "武器与防御装备升级；事件启动器可兼并监听。"
+	column.add_child(_label(workshop_note, 11, CyberUITheme.MUTED))
 	var body := HBoxContainer.new()
 	body.add_theme_constant_override("separation", 12)
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -74,7 +77,7 @@ func _ready() -> void:
 	var catalog := VBoxContainer.new()
 	catalog.custom_minimum_size.x = 235
 	body.add_child(catalog)
-	catalog.add_child(_label("可用装备", 15, CYAN))
+	catalog.add_child(_label("可用装备", 15, INK))
 	var filters := HBoxContainer.new()
 	catalog.add_child(filters)
 	for option in [{"id": "all", "title": "全部"}, {"id": "weapon", "title": "武器"}, {"id": "defense", "title": "防御"}]:
@@ -122,7 +125,7 @@ func _ready() -> void:
 		clear_button.pressed.connect(func() -> void: select_material(index, null))
 		column_slot.add_child(clear_button)
 	var result := PanelContainer.new()
-	result.add_theme_stylebox_override("panel", _style("172833", Color("52706c")))
+	result.add_theme_stylebox_override("panel", _style(CyberUITheme.BACKGROUND, CyberUITheme.BORDER))
 	result.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	forge.add_child(result)
 	_preview = RichTextLabel.new()
@@ -149,7 +152,7 @@ func _ready() -> void:
 	_event_merge_button.text = "兼并事件"
 	_event_merge_button.pressed.connect(_merge_event_starters)
 	forge.add_child(_event_merge_button)
-	_message = _label("", 11, Color("a6b9c4"))
+	_message = _label("", 11, CyberUITheme.MUTED)
 	_message.custom_minimum_size.y = 30
 	_message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(_message)
@@ -197,6 +200,11 @@ func show_message(text: String) -> void:
 func _refresh_event_starters() -> void:
 	if _event_subject == null or not is_instance_valid(room):
 		return
+	var supports_event_merge := room.has_method("synthesize_event_starters")
+	_event_subject.get_parent().visible = supports_event_merge
+	_event_merge_button.visible = supports_event_merge
+	if not supports_event_merge:
+		return
 	_event_subject.clear()
 	_event_material.clear()
 	var cyberware: CyberwareController = room.player.cyberware
@@ -216,6 +224,9 @@ func _refresh_event_starters() -> void:
 
 
 func _merge_event_starters() -> void:
+	if not is_instance_valid(room) or not room.has_method("synthesize_event_starters"):
+		show_message("事件启动器请前往 Codex 通道兼并。")
+		return
 	if _event_subject.selected < 0 or _event_material.selected < 0:
 		return
 	var subject_id := StringName(_event_subject.get_item_metadata(_event_subject.selected))
@@ -264,7 +275,7 @@ func _add_item(item: InventoryItem, location: String) -> void:
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	button.custom_minimum_size = Vector2(225, 45)
-	button.add_theme_stylebox_override("normal", _style("1c303e", CYAN if item in _materials else Color("344550")))
+	button.add_theme_stylebox_override("normal", _style(CyberUITheme.SURFACE, GOLD if item in _materials else CyberUITheme.BORDER))
 	button.tooltip_text = ComponentRolls.describe(item) + "\n点击放入当前槽位，也可以直接拖到主体或材料槽。"
 	button.pressed.connect(func() -> void: select_material(_target, item))
 	_list.add_child(button)
@@ -285,31 +296,15 @@ func _refresh_preview() -> void:
 		_material_buttons[index].text = ("主体" if index == 0 else "材料") + "\n" + (ComponentRolls.title(item) if item != null else "点击或拖入")
 		ComponentRolls.apply_quality_color(_material_buttons[index], item)
 		_material_buttons[index].tooltip_text = ComponentRolls.describe(item) if item != null else "从左侧选择装备"
-		_material_buttons[index].add_theme_stylebox_override("normal", _style("223744", CYAN if _target == index else Color("52706c")))
+		_material_buttons[index].add_theme_stylebox_override("normal", _style(CyberUITheme.SURFACE.lerp(GOLD, 0.1), GOLD if _target == index else CyberUITheme.BORDER))
 	var a: InventoryItem = _materials[0]
 	var b: InventoryItem = _materials[1]
 	_synthesis_button.disabled = not ComponentRolls.compatible(a, b)
 	if a == null:
-		_preview.text = "[color=#e6bc73][b]合成预览[/b][/color]\n\n先选择主体\n武器和防具可以升级，义体可以复合"
+		_preview.text = "[color=#f3c579][b]合成预览[/b][/color]\n\n先选择主体\n同类型、同品质的武器或防具可以升级"
 		return
 	if a.get_property("slot") == "cyberware":
-		var modules := ComponentRolls.cyberware_modules(a)
-		if b == null:
-			_preview.text = "[color=#8de3da][b]%s[/b][/color]\n\n选择一件包含不同模块的义体" % ComponentRolls.cyberware_title(modules)
-			return
-		if b.get_property("slot") != "cyberware":
-			_preview.text = "[color=#efad8c]类型不匹配[/color]\n\n义体只能与义体复合"
-			return
-		var overlap_error := ComponentRolls.cyberware_overlap_error(a, b)
-		if not overlap_error.is_empty():
-			_preview.text = "[color=#efad8c][b]义体模块重复[/b][/color]\n\n" + overlap_error
-			show_message(overlap_error)
-			return
-		for module_id in ComponentRolls.cyberware_modules(b):
-			if module_id not in modules:
-				modules.append(module_id)
-		modules.sort()
-		_preview.text = "[color=#8de3da][b]%s[/b][/color]\n\n%s\n\n复合后不能拆分，但成品仍可整体装卸。" % [ComponentRolls.cyberware_title(modules), "\n".join(modules)]
+		_preview.text = "[color=#efad8c]此处不支持普通义体合成[/color]\n\n义体请在回路面板排列。监听不同事件的启动器可以在 Codex 通道兼并。"
 		return
 	var tier := mini(ComponentRolls.synthesis_quality(a) + 1, 3)
 	var id := a.get_prototype().get_prototype_id()
@@ -349,7 +344,7 @@ func _synthesize() -> void:
 		_target = 0
 		refresh()
 		_material_buttons[0].grab_focus()
-		_preview.text = "[color=#8de3da][b]升级完成[/b][/color]\n" + "[color=#" + ComponentRolls.quality_color(result).to_html(false) + "]" + ComponentRolls.describe(result) + "[/color]\n\n已回到主体原位置"
+		_preview.text = "[color=#f3c579][b]升级完成[/b][/color]\n" + "[color=#" + ComponentRolls.quality_color(result).to_html(false) + "]" + ComponentRolls.describe(result) + "[/color]\n\n已回到主体原位置"
 
 func _exit_tree() -> void:
 	if _owns_pause:

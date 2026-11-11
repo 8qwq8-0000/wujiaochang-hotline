@@ -331,6 +331,8 @@ func _normalize_profile(value: Dictionary) -> Dictionary:
 		normalized["codex"] = {"personas": [], "semantic_leaks": []}
 	if not normalized.codex.has("enemies"):
 		normalized.codex["enemies"] = []
+	else:
+		normalized.codex.enemies.erase("sentry_turret")
 	if not normalized.has("legacy_drinks"):
 		normalized["legacy_drinks"] = []
 	return normalized

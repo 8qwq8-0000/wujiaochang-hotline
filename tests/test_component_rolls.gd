@@ -88,6 +88,23 @@ func test_ordinary_cyberware_fusion_is_disabled() -> void:
 	assert_true(ComponentRolls.fuse(smart, explosive, rng) == null)
 
 
+func test_military_supply_rolls_only_military_and_forbidden_modules() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 76321
+	var grades := {}
+	for index in 100:
+		var item := ComponentRolls.guaranteed_cyberware_drop(1, rng, {}, CyberwareData.Grade.MILITARY)
+		var modules := ComponentRolls.cyberware_modules(item)
+		if modules.size() != 1:
+			assert_eq(modules.size(), 1)
+			return
+		var data := load(ComponentRolls.cyberware_resource_path(modules[0])) as CyberwareData
+		grades[data.grade] = true
+	assert_eq(grades.size(), 2)
+	assert_true(grades.has(CyberwareData.Grade.MILITARY))
+	assert_true(grades.has(CyberwareData.Grade.FORBIDDEN))
+
+
 func test_event_starter_drop_group_has_two_starter_weights() -> void:
 	var candidates := ComponentRolls._cyberware_drop_candidates({})
 	var total := 0
@@ -161,3 +178,22 @@ func test_forged_event_starter_is_excluded_from_duplicate_drops() -> void:
 	assert_false(candidates.has("combat_synapse_sensor"))
 	assert_false(candidates.has("combat_synapse_sensor_hit"))
 	assert_true(candidates.has("combat_synapse_sensor_dash"))
+
+
+func test_prototype_tree_releases_nested_inheritance_references() -> void:
+	var tree := ProtoTree.new()
+	var root := tree.get_root()
+	root.set_property("inherited", 7)
+	var parent := tree.create_prototype("parent")
+	var child := parent.inherit("child")
+	var root_ref: WeakRef = weakref(root)
+	var parent_ref: WeakRef = weakref(parent)
+	var child_ref: WeakRef = weakref(child)
+	tree = null
+	assert_eq(child.get_property("inherited"), 7)
+	root = null
+	parent = null
+	child = null
+	assert_true(root_ref.get_ref() == null)
+	assert_true(parent_ref.get_ref() == null)
+	assert_true(child_ref.get_ref() == null)

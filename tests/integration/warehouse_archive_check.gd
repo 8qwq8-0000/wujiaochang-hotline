@@ -26,6 +26,9 @@ func run() -> void:
 	var old: Dictionary = store.get_profile()
 	old.codex.erase("enemies")
 	check(store._valid_profile(old) and store._normalize_profile(old).codex.enemies.is_empty(), "old v1 profiles remain compatible and start locked")
+	var with_turret := old.duplicate(true)
+	with_turret.codex.enemies = ["sentry_turret", "melee_pressure"]
+	check(store._valid_profile(with_turret) and store._normalize_profile(with_turret).codex.enemies == ["melee_pressure"], "old turret records are dropped")
 	var invalid := old.duplicate(true)
 	invalid.codex.enemies = [123]
 	check(not store._valid_profile(invalid), "invalid encounter data rejected")
@@ -78,15 +81,17 @@ func run() -> void:
 	turret.position = Vector2(240, 100)
 	world.add_child(turret)
 	turret.set_physics_process(false)
-	var boss: Node2D = load("res://scenes/actors/bosses/rooftop_whale_goddess.tscn").instantiate()
-	boss.position = Vector2(320, 100)
-	world.add_child(boss)
+	var wing: WingGuard = load("res://scenes/actors/bosses/wing_guard.tscn").instantiate()
+	wing.kind = WingGuard.Kind.QUEEN
+	wing.active = false
+	wing.position = Vector2(320, 100)
+	world.add_child(wing)
 	await tick()
-	check("sentry_turret" in store.get_codex().enemies, "actual turret encounter is recorded in test memory")
-	check("rooftop_whale_goddess" in store.get_codex().enemies, "actual boss encounter is recorded in test memory")
+	check(not store.record_enemy_encounter("sentry_turret") and not "sentry_turret" in store.get_codex().enemies, "turrets do not unlock catalog entries")
+	check("wing_guard_queen" in store.get_codex().enemies, "actual fused wing encounter is recorded in test memory")
 	check(FileAccess.get_file_as_string(TEST_PATH) == raw, "test encounter does not touch formal file")
 	store.end_test_session()
-	check(not "sentry_turret" in store.get_codex().enemies, "test discoveries discarded on exit")
+	check(not "wing_guard_queen" in store.get_codex().enemies, "test discoveries discarded on exit")
 	var good_path: String = store.save_path
 	store.save_path = "user://missing-archive-directory/save.json"
 	check(not store.record_enemy_encounter("signal_amplifier") and not "signal_amplifier" in store.get_codex().enemies, "failed save rolls back discovery")
@@ -174,7 +179,7 @@ func run() -> void:
 		check(panel._list.get_parent().scroll_vertical > 0, "selected enemy scrolls into view")
 		await RenderingServer.frame_post_draw
 		get_root().get_texture().get_image().save_png("/tmp/hotline-archive-enemies.png")
-		panel._select_entry(6)
+		panel._select_entry(8)
 		await process_frame
 		await RenderingServer.frame_post_draw
 		get_root().get_texture().get_image().save_png("/tmp/hotline-archive-boss.png")
@@ -184,4 +189,4 @@ func run() -> void:
 	await process_frame
 	DirAccess.remove_absolute(TEST_PATH)
 	print("Warehouse archive checks: %d; failures: %d" % [checks, failures])
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

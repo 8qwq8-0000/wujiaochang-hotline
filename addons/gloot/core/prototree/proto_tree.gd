@@ -9,6 +9,11 @@ const _Utils = preload("res://addons/gloot/core/utils.gd")
 var _root := Prototype.new("ROOT")
 
 
+func _notification(what: int) -> void:
+    if what == NOTIFICATION_PREDELETE:
+        _root._release_descendants()
+
+
 ## Returns the root prototype.
 func get_root() -> Prototype:
     return _root

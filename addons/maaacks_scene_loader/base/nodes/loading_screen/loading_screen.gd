@@ -158,7 +158,7 @@ func _reload_main_scene_or_quit() -> void:
 	var err = get_tree().change_scene_to_file(ProjectSettings.get_setting("application/run/main_scene"))
 	if err:
 		push_error("failed to load main scene: %d" % err)
-		get_tree().quit()
+		get_node("/root/GameSettings").quit_game(1)
 
 func _on_error_message_confirmed() -> void:
 	_reload_main_scene_or_quit()

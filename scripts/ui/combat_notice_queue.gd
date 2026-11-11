@@ -14,7 +14,7 @@ var _logical_time := 0.0
 
 func _ready() -> void:
 	if not tutorial_text.is_empty():
-		_add_entry(CombatNotice.new(TUTORIAL_ID, tutorial_text, CyberUITheme.PHOSPHOR, CombatNotice.Priority.LOW, 0.0, 3600.0), true)
+		_add_entry(CombatNotice.new(TUTORIAL_ID, tutorial_text, CyberUITheme.ACCENT, CombatNotice.Priority.LOW, 0.0, 3600.0), true)
 	set_process(true)
 
 

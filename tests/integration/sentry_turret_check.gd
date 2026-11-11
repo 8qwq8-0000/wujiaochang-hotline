@@ -51,6 +51,9 @@ func run() -> void:
 	player.heat.set_physics_process(false)
 	player.health.configure_max_health(100)
 	check(turret.get_node("CollisionShape2D").shape.size.is_equal_approx(Vector2(86.4, 86.4)), "turret solid footprint follows ten percent size reduction")
+	var ordinary_shot := preload("res://scenes/combat/projectile.tscn").instantiate()
+	var ordinary_visual_scale: Vector2 = ordinary_shot.get_node("Visual").scale
+	ordinary_shot.free()
 	for index in 8:
 		var heading := Vector2.from_angle(index * PI / 4)
 		player.position = turret.position + heading * 220
@@ -68,6 +71,7 @@ func run() -> void:
 			check(is_equal_approx(separation.length(), 14.4) and absf(separation.dot(heading)) < 0.01, "muzzle separation follows the smaller artwork")
 			check(shots[0].source == turret and shots[0].faction == CombatFaction.Id.ENEMY and shots[0].reflectable, "turret uses normal reflectable enemy projectiles")
 		for shot in shots:
+			check(shot.get_node("Visual").scale.is_equal_approx(ordinary_visual_scale), "turret bullet keeps the normal projectile visual scale")
 			shot.queue_free()
 		await settle()
 	# Use real simultaneous turret projectiles and the real guard clock.

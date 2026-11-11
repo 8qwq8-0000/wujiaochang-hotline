@@ -121,7 +121,7 @@ func _show_empty(parent: Control, title: String, hint: String) -> void:
 	column.alignment = BoxContainer.ALIGNMENT_CENTER
 	panel.add_child(column)
 	_label(column, "[  +  ]  " + title, 12, CyberUITheme.MUTED)
-	_label(column, hint, 10, Color("587b66"))
+	_label(column, hint, 10, CyberUITheme.MUTED)
 
 func open() -> void:
 	if is_open or (room.get("upgrade_panel") != null and room.upgrade_panel.is_open) or room.player.inventory.is_open or room.player.health.is_dead():
@@ -208,10 +208,10 @@ func _add_item(parent: Control, item: InventoryItem, prefix: String, deposit: bo
 		button.add_theme_color_override(state, Color.TRANSPARENT)
 	button.disabled = deposit and bool(item.get_property("bound", false))
 	var quality := ComponentRolls.quality_color(item)
-	button.add_theme_stylebox_override("normal", _box(Color("10251c"), Color("284e36")))
-	button.add_theme_stylebox_override("hover", _box(Color("193b29"), CyberUITheme.PHOSPHOR))
-	button.add_theme_stylebox_override("pressed", _box(Color("244d33"), CyberUITheme.HIGHLIGHT))
-	button.add_theme_stylebox_override("disabled", _box(Color("0d1b15"), Color("203b2b")))
+	button.add_theme_stylebox_override("normal", _box(CyberUITheme.SURFACE, CyberUITheme.BORDER))
+	button.add_theme_stylebox_override("hover", _box(Color(CyberUITheme.ACCENT, 0.15), CyberUITheme.ACCENT))
+	button.add_theme_stylebox_override("pressed", _box(Color(CyberUITheme.ACCENT, 0.24), CyberUITheme.HIGHLIGHT))
+	button.add_theme_stylebox_override("disabled", _box(CyberUITheme.BACKGROUND, Color(CyberUITheme.BORDER, 0.45)))
 	parent.add_child(button)
 	var inset := MarginContainer.new()
 	inset.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -223,7 +223,7 @@ func _add_item(parent: Control, item: InventoryItem, prefix: String, deposit: bo
 	inset.add_child(row)
 	var icon_panel := PanelContainer.new()
 	icon_panel.custom_minimum_size = Vector2(36, 36)
-	icon_panel.add_theme_stylebox_override("panel", _box(Color("06100b"), Color(quality, 0.4), 4))
+	icon_panel.add_theme_stylebox_override("panel", _box(CyberUITheme.BACKGROUND, Color(quality, 0.4), 4))
 	row.add_child(icon_panel)
 	var icon := TextureRect.new()
 	icon.texture = item.get_texture()
@@ -240,7 +240,7 @@ func _add_item(parent: Control, item: InventoryItem, prefix: String, deposit: bo
 	_label(words, category + ("（已绑定）" if button.disabled else ""), 10, CyberUITheme.MUTED)
 	var title := _label(words, ComponentRolls.title(item), 12, quality)
 	title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	var action := _label(row, "锁定" if button.disabled else ("存入 >" if deposit else "取出 >"), 10, CyberUITheme.MUTED if button.disabled else CyberUITheme.PHOSPHOR)
+	var action := _label(row, "锁定" if button.disabled else ("存入 >" if deposit else "取出 >"), 10, CyberUITheme.MUTED if button.disabled else CyberUITheme.ACCENT)
 	action.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_ignore_pointer(inset)
 	var details := ComponentRolls.describe(item).replace("\n", "；")

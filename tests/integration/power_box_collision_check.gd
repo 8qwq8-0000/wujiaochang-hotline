@@ -59,4 +59,4 @@ func run_checks() -> void:
 	room.queue_free()
 	await process_frame
 	print("Power-box collision checks: ", checks, "; failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

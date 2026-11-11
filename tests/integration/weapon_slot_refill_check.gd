@@ -20,7 +20,7 @@ func run_checks() -> void:
 	await process_frame
 	var player := get_first_node_in_group("player") as PlayerController
 	if player == null:
-		quit(1)
+		root.get_node("GameSettings").quit_game(1)
 		return
 	player.set_physics_process(false)
 	var inventory := player.inventory
@@ -57,4 +57,4 @@ func run_checks() -> void:
 	scene.queue_free()
 	await process_frame
 	print("Weapon slot refill failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

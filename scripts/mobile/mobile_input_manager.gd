@@ -290,13 +290,13 @@ func _build_controls() -> void:
 	_apply_joystick_theme()
 	_root.add_child(_joystick)
 	_controls.move = _joystick
-	_add_action_button("attack", &"attack", Color("58d8e8"), true, true)
-	_add_action_button("guard", &"guard", Color("f1c75b"), true)
-	_add_action_button("dash", &"mobility_ability", Color("d45bff"))
-	_add_action_button("interact", &"interact", Color("7cf29a"))
-	_add_action_button("weapon", &"weapon_switch", Color("ff8f62"))
-	_add_action_button("inventory", &"inventory_toggle", Color("79a9ff"))
-	_add_action_button("pause", &"pause", Color("a8b7c8"))
+	_add_action_button("attack", &"attack", CyberUITheme.ACCENT, true, true)
+	_add_action_button("guard", &"guard", CyberUITheme.ACCENT, true)
+	_add_action_button("dash", &"mobility_ability", CyberUITheme.ACCENT)
+	_add_action_button("interact", &"interact", CyberUITheme.ACCENT)
+	_add_action_button("weapon", &"weapon_switch", CyberUITheme.ACCENT)
+	_add_action_button("inventory", &"inventory_toggle", CyberUITheme.ACCENT)
+	_add_action_button("pause", &"pause", CyberUITheme.ACCENT)
 	_indicator = TARGET_INDICATOR.new()
 	_indicator.name = "TargetIndicator"
 	_root.add_child(_indicator)
@@ -324,13 +324,13 @@ func _add_action_button(
 
 func _apply_joystick_theme() -> void:
 	var base := StyleBoxFlat.new()
-	base.bg_color = Color(0.025, 0.045, 0.08, 0.58)
-	base.border_color = Color(0.25, 0.82, 0.9, 0.88)
+	base.bg_color = Color(CyberUITheme.BACKGROUND, 0.58)
+	base.border_color = Color(CyberUITheme.ACCENT, 0.88)
 	base.set_border_width_all(2)
 	base.set_corner_radius_all(64)
 	var tip := StyleBoxFlat.new()
-	tip.bg_color = Color(0.25, 0.86, 0.94, 0.55)
-	tip.border_color = Color(0.75, 0.96, 1.0, 0.95)
+	tip.bg_color = Color(CyberUITheme.ACCENT, 0.55)
+	tip.border_color = Color(CyberUITheme.ACCENT_LIGHT, 0.95)
 	tip.set_border_width_all(2)
 	tip.set_corner_radius_all(40)
 	_joystick.add_theme_stylebox_override("normal_joystick", base)
@@ -563,7 +563,7 @@ func _build_tutorial() -> void:
 	_tutorial = ColorRect.new()
 	_tutorial.process_mode = Node.PROCESS_MODE_ALWAYS
 	_tutorial.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_tutorial.color = Color(0.01, 0.02, 0.04, 0.9)
+	_tutorial.color = Color(CyberUITheme.BACKGROUND, 0.9)
 	_tutorial.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(_tutorial)
 	var center := CenterContainer.new()

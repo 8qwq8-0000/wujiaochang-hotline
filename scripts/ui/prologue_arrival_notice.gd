@@ -20,7 +20,7 @@ func _ready() -> void:
 	add_child(_layout)
 	var panel := CyberDialoguePanel.new()
 	panel.title = "接线员 / 仓库已接通"
-	panel.accent_color = Color("75e8df")
+	panel.accent_color = CyberUITheme.ACCENT
 	panel.set_channel(false)
 	panel.size = Vector2(544, 206)
 	_layout.add_child(panel)
@@ -31,7 +31,7 @@ func _ready() -> void:
 	text.text = ControlPrompts.adapt(MESSAGE)
 	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	text.add_theme_font_size_override("font_size", 15)
-	text.add_theme_color_override("font_color", Color("ebf1f3"))
+	text.add_theme_color_override("font_color", CyberUITheme.HIGHLIGHT)
 	column.add_child(text)
 	var button := Button.new()
 	button.text = "轻触屏幕开始休整" if OS.has_feature("mobile") else "开始休整 [Enter]"

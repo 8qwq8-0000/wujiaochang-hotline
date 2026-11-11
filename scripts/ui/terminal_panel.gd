@@ -6,7 +6,7 @@ extends MarginContainer
 	set(value):
 		title = value
 		queue_redraw()
-@export var accent_color := CyberUITheme.PHOSPHOR :
+@export var accent_color := CyberUITheme.ACCENT :
 	set(value):
 		accent_color = value
 		queue_redraw()

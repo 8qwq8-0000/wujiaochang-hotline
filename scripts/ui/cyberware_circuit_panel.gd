@@ -98,6 +98,7 @@ var _tooltip_panel: PanelContainer
 var _tooltip_label: Label
 var _preview: Label
 var _message: Label
+var _tutorial_hint: Label
 
 
 func _ready() -> void:
@@ -173,6 +174,12 @@ func set_open(value: bool) -> void:
 func select_slot(index: int) -> void:
 	_selected_slot = index if index >= 0 and is_instance_valid(player) and index < player.cyberware.circuit.slot_capacity else -1
 	_refresh_slots()
+
+
+func set_tutorial_hint(text: String) -> void:
+	if _tutorial_hint.text != text:
+		_tutorial_hint.text = text
+		_tutorial_hint.visible = not text.is_empty()
 
 
 func move_selected(offset: int) -> bool:
@@ -348,6 +355,11 @@ func _build_ui() -> void:
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.add_theme_font_size_override("font_size", 14)
 	header.add_child(title)
+	_tutorial_hint = Label.new()
+	_tutorial_hint.add_theme_font_size_override("font_size", 11)
+	_tutorial_hint.add_theme_color_override("font_color", CyberUITheme.WARNING)
+	header.add_child(_tutorial_hint)
+	_tutorial_hint.hide()
 	var close := Button.new()
 	close.text = "关闭"
 	close.custom_minimum_size = Vector2(70, 24)

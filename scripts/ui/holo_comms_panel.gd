@@ -4,7 +4,7 @@ extends Control
 const COLLAPSED_SIZE := Vector2(72.0, 72.0)
 const EXPANDED_SIZE := Vector2(304.0, 72.0)
 
-var accent_color := Color("55d9ff")
+var accent_color := CyberUITheme.ACCENT
 var _portrait: TextureRect
 var _name_label: Label
 var _dialogue_label: Label
@@ -113,8 +113,8 @@ func _build_contents() -> void:
 	_dialogue_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_dialogue_label.max_lines_visible = 2
 	_dialogue_label.add_theme_font_size_override("font_size", 13)
-	_dialogue_label.add_theme_color_override("font_color", Color("e9f8f4"))
-	_dialogue_label.add_theme_color_override("font_outline_color", Color("071017"))
+	_dialogue_label.add_theme_color_override("font_color", CyberUITheme.HIGHLIGHT)
+	_dialogue_label.add_theme_color_override("font_outline_color", CyberUITheme.BACKGROUND)
 	_dialogue_label.add_theme_constant_override("outline_size", 2)
 	_dialogue_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_text_root.add_child(_dialogue_label)
@@ -130,7 +130,7 @@ func _draw() -> void:
 		Vector2(size.x, cut), Vector2(size.x, size.y - cut), Vector2(size.x - cut, size.y),
 		Vector2(cut, size.y), Vector2(0.0, size.y - cut), Vector2(0.0, cut),
 	])
-	draw_colored_polygon(points, Color("071017", 0.82))
+	draw_colored_polygon(points, Color(CyberUITheme.BACKGROUND, 0.82))
 	draw_polyline(points, frame_color, 1.0, false)
 	draw_line(Vector2(71.0, 5.0), Vector2(71.0, 67.0), Color(frame_color, 0.8), 1.0)
 	if _expanded:

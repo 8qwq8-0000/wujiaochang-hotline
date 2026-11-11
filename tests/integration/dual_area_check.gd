@@ -54,7 +54,7 @@ func run_checks() -> void:
 	var player := get_first_node_in_group("player") as PlayerController
 	check(player != null, "main loads a player")
 	if player == null:
-		quit(1)
+		root.get_node("GameSettings").quit_game(1)
 		return
 	player.set_physics_process(false)
 	player.heat.set_physics_process(false)
@@ -166,4 +166,4 @@ func run_checks() -> void:
 	await process_frame
 	print("Dual area checks: ", checks, "; failures: ", failures)
 	DirAccess.remove_absolute("user://bc_dual_area_check.json")
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

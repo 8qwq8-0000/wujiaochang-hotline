@@ -27,7 +27,11 @@ func run() -> void:
 		var point := EncounterPropPlacement.choose_barrel_position(enemies,blockers,doors,Vector2(62,290),seed,Vector2(110,110))
 		var repeat := EncounterPropPlacement.choose_barrel_position(enemies,blockers,doors,Vector2(62,290),seed,Vector2(110,110))
 		check(point == repeat, "same seed replays barrel position")
-		check(point.x < 398 and point.distance_to(enemies[0]) <= 92 and point.distance_to(enemies[1]) <= 92 and point.distance_to(enemies[2]) <= 92, "barrel favors all three clustered enemies rather than isolated pair")
+		var reaches_cluster := true
+		for target: Vector2 in enemies.slice(0, 3):
+			var distance := ((point - target) / EncounterPropPlacement.BLAST_PROJECTION).length()
+			reaches_cluster = reaches_cluster and distance <= 92.0
+		check(point.x < 398 and reaches_cluster, "barrel favors all three clustered enemies rather than isolated pair")
 		positions[point] = true
 	check(positions.size() > 20, "different seeds vary positions around the same group")
 	var empty: Array[Vector2] = []
@@ -96,4 +100,4 @@ func run() -> void:
 	check(open_layout.covers[2].size.x < 45 and open_layout.covers[2].size.y < 36, "central machine footprint shrinks to preserve dodge space")
 	check(open_layout.doors.all(func(door: Vector4) -> bool: return door.w >= 75), "all workshop doorways widened to at least 75 pixels")
 	print("Encounter barrel checks: ",checks,"; failures: ",failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

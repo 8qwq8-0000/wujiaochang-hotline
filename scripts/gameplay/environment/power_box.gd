@@ -12,6 +12,8 @@ var state := State.READY
 var discharge_count := 0
 var prompt: Label
 var _buff_feedback: Node2D
+var _terminal_reward: CyberwareData
+@onready var _terminal_module: Sprite2D = $TerminalModule
 
 func _ready() -> void:
 	add_to_group("power_boxes")
@@ -73,20 +75,39 @@ func interact(actor: Node2D) -> void:
 	queue_redraw()
 
 
+func _prepare_terminal_reward(actor: PlayerController) -> void:
+	if _terminal_reward != null:
+		return
+	var module_id := actor.cyberware.roll_terminal_module()
+	if module_id.is_empty():
+		return
+	_terminal_reward = actor.cyberware.circuit.get_definition(module_id)
+	if _terminal_reward == null:
+		return
+	var icons := CyberwareCircuitPanel.MODULE_ICONS
+	_terminal_module.texture = icons.get(module_id, icons[&"combat_synapse_sensor"])
+	_terminal_module.visible = true
+
+
+func _terminal_reward_label() -> String:
+	var grade := "禁忌" if _terminal_reward.grade == CyberwareData.Grade.FORBIDDEN else "军规"
+	return "%s · %s" % [grade, _terminal_reward.display_name]
+
+
 func _claim_circuit_terminal(actor: PlayerController) -> void:
-	var first_sync := state == State.READY
-	var module_id := actor.cyberware.claim_terminal_module() if first_sync else StringName()
-	state = State.CLAIMED
-	$ActiveSigil.refresh()
-	queue_redraw()
-	var events := get_node_or_null("/root/CombatEvents")
-	if first_sync and events != null:
-		if module_id.is_empty():
-			events.publish_message("义体终端已接入", Color("8fffe4"))
-		else:
-			var data := load(ComponentRolls.cyberware_resource_path(module_id)) as CyberwareData
-			var title := data.display_name if data != null else String(module_id)
-			events.publish_message("获得义体：%s" % title, Color("8fffe4"))
+	if state == State.READY:
+		_prepare_terminal_reward(actor)
+		if _terminal_reward != null:
+			state = State.CLAIMED
+			var stored := actor.cyberware.store_circuit_modules(PackedStringArray([String(_terminal_reward.module_id)]))
+			if stored.is_empty():
+				state = State.READY
+			else:
+				_terminal_module.hide()
+				$ActiveSigil.refresh()
+				var events := get_node_or_null("/root/CombatEvents")
+				if events != null:
+					events.publish_message("获得义体：%s" % _terminal_reward_label(), Color("8fffe4"))
 	var hud := get_tree().get_first_node_in_group(&"combat_hud")
 	if hud != null:
 		var editor: CyberwareCircuitPanel = hud.get_circuit_editor()
@@ -155,7 +176,16 @@ func _process(_delta: float) -> void:
 	prompt.visible = not is_instance_valid(_buff_feedback) and player != null and not player.health.is_dead() and player.global_position.distance_to(global_position) <= 96
 	if state == State.READY:
 		if is_circuit_terminal():
-			prompt.text = ControlPrompts.adapt("E 接入义体终端") if scope_room().get("cleared") == true else "清场后接入义体终端"
+			var room := scope_room()
+			if _terminal_reward == null and player != null and EnvironmentArea.for_actor(player) == room:
+				_prepare_terminal_reward(player)
+			var cleared: bool = room.get("cleared") == true
+			if not cleared:
+				prompt.text = "清场后可免费领取义体"
+			elif _terminal_reward != null:
+				prompt.text = ControlPrompts.adapt("E 免费领取 %s" % _terminal_reward_label())
+			else:
+				prompt.text = ControlPrompts.adapt("E 打开义体终端")
 		else:
 			prompt.text = "本区域已清场" if scope_room().get("cleared") == true else ControlPrompts.adapt("E 领取区域增益")
 	elif state == State.CLAIMED:

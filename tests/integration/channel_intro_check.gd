@@ -112,4 +112,4 @@ func run_checks() -> void:
 	paused = false
 	DirAccess.remove_absolute(TEST_PATH)
 	print("Channel intro checks: ", checks, "; failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

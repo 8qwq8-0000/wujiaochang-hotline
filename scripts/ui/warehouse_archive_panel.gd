@@ -20,10 +20,10 @@ const LEAK_TEXT := {
 	"self_renewing_authority": "维稳命令没有人类签署者，紧急权限正在自行续签。",
 }
 
-const GOLD := Color("e7c77a")
-const CYAN := Color("80e0d9")
-const INK := Color("0b121b")
-const MUTED := Color("899cae")
+const GOLD := CyberUITheme.ACCENT_LIGHT
+const ACCENT := CyberUITheme.ACCENT
+const INK := CyberUITheme.BACKGROUND
+const MUTED := CyberUITheme.MUTED
 const BOTTLES := {
 	"deep_ninja": "res://assets/art/items/personality_drinks/drink_naraku_64.png",
 	"legendary_master": "res://assets/art/items/personality_drinks/drink_xiangshan_64.png",
@@ -65,14 +65,14 @@ func _ready() -> void:
 	CyberUITheme.add_os_frame(_canvas)
 	_line(Rect2(18, 16, 4, 38), GOLD)
 	_text("ARCHIVE  /  行动档案", Rect2(32, 25, 400, 16), 9, GOLD)
-	_heading = _text("通关记录", Rect2(31, 42, 360, 32), 25, Color("eef2ed"))
+	_heading = _text("通关记录", Rect2(31, 42, 360, 32), 25, CyberUITheme.HIGHLIGHT)
 	_close_button = _button("关闭 [Esc]", Rect2(514, 33, 92, 28), close)
 	_summary = _text("", Rect2(32, 78, 570, 18), 11, MUTED)
 	for index in 4:
 		var button := _button(["通关记录", "结局档案", "人格档案", "敌人图鉴"][index], Rect2(32 + index * 145, 105, 139, 27), _select_tab.bind(index))
 		button.toggle_mode = true
 		_tabs.append(button)
-	_line(Rect2(32, 141, 574, 1), Color("344454"))
+	_line(Rect2(32, 141, 574, 1), Color(CyberUITheme.BORDER, 0.55))
 	var scroll := ScrollContainer.new()
 	_place(scroll, Rect2(32, 151, 172, 151))
 	scroll.follow_focus = true
@@ -81,27 +81,27 @@ func _ready() -> void:
 	_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_list.add_theme_constant_override("separation", 5)
 	scroll.add_child(_list)
-	_box(Rect2(216, 151, 390, 151), Color("0b1420"), Color("26394a"))
-	_box(Rect2(226, 162, 92, 128), Color("142333"), Color("354b59"))
+	_box(Rect2(216, 151, 390, 151), CyberUITheme.BACKGROUND, Color(CyberUITheme.BORDER, 0.5))
+	_box(Rect2(226, 162, 92, 128), CyberUITheme.SURFACE, CyberUITheme.BORDER)
 	_portrait = TextureRect.new()
 	_portrait.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_place(_portrait, Rect2(227, 165, 90, 120))
-	_portrait_mark = _text("?", Rect2(226, 193, 92, 48), 36, Color("485c6c"))
+	_portrait_mark = _text("?", Rect2(226, 193, 92, 48), 36, CyberUITheme.MUTED)
 	_portrait_mark.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_entry_title = _text("", Rect2(330, 161, 264, 24), 17, GOLD)
 	_entry_title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	_entry_tag = _text("", Rect2(330, 188, 264, 17), 10, CYAN)
+	_entry_tag = _text("", Rect2(330, 188, 264, 17), 10, ACCENT)
 	_content = RichTextLabel.new()
 	_content.bbcode_enabled = true
 	_content.scroll_active = true
-	_content.add_theme_color_override("default_color", Color("c6d1da"))
+	_content.add_theme_color_override("default_color", CyberUITheme.HIGHLIGHT)
 	_content.add_theme_font_override("normal_font", CyberUITheme.FONT)
 	_content.add_theme_font_size_override("normal_font_size", 11)
 	_place(_content, Rect2(330, 210, 264, 80))
-	_line(Rect2(32, 313, 574, 1), Color("344454"))
+	_line(Rect2(32, 313, 574, 1), Color(CyberUITheme.BORDER, 0.55))
 	_footer = _text("", Rect2(32, 321, 230, 14), 9, GOLD)
 	var footer := _text("仅作记录，无属性加成  /  滚轮查看详情", Rect2(271, 321, 335, 14), 9, MUTED)
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -155,11 +155,11 @@ func _button(value: String, rect: Rect2, action: Callable) -> Button:
 	button.add_theme_font_size_override("font_size", 12)
 	for state in ["normal", "hover", "pressed", "focus"]:
 		var active: bool = state != "normal"
-		var style := CyberUITheme.create_box(Color("263b43") if active else Color("14212e"), GOLD if active else Color("354958"))
+		var style := CyberUITheme.create_box(CyberUITheme.SURFACE.lerp(CyberUITheme.ACCENT, 0.18) if active else CyberUITheme.PANEL, GOLD if active else Color(CyberUITheme.BORDER, 0.65))
 		style.set_content_margin_all(6)
 		style.set_corner_radius_all(2)
 		button.add_theme_stylebox_override(state, style)
-		button.add_theme_color_override("font_color" if state == "normal" else "font_" + state + "_color", GOLD if active else Color("c6d1da"))
+		button.add_theme_color_override("font_color" if state == "normal" else "font_" + state + "_color", GOLD if active else CyberUITheme.HIGHLIGHT)
 	button.pressed.connect(action)
 	_place(button, rect)
 	return button
@@ -324,7 +324,7 @@ func _show_entry() -> void:
 			_entry_title.text = "第一结局 · 摧毁中枢"
 			_entry_tag.text = "已完成" if not store.get_legacy_drinks().is_empty() else "可挑战"
 			_portrait_mark.text = "Ⅰ"
-			_content.text = "[color=#e7c77a]常规路线[/color]\n逐层突破，抵达楼顶并摧毁中枢。\n\n完成后保存通关记录，并解锁「频道归还」路线。"
+			_content.text = "[color=#f3c579]常规路线[/color]\n逐层突破，抵达楼顶并摧毁中枢。\n\n完成后保存通关记录，并解锁「频道归还」路线。"
 		2:
 			var id: String = PERSONA_NAMES.keys()[_selected]
 			var unlocked: bool = id in codex.get("personas", [])
@@ -340,7 +340,7 @@ func _show_entry() -> void:
 				"rock_vigilante": "持续开火积累反馈，在火力节奏中寻找返场机会。",
 			}
 			var leak_id := String(TalentCoreController.SEMANTIC_LEAK_IDS.get(StringName(id), ""))
-			_content.text = descriptions[id] + "\n\n[color=#e7c77a]异常通讯[/color]\n" + (LEAK_TEXT.get(leak_id, "") if leak_id in codex.get("semantic_leaks", []) else "未收录：在行动中达到三级后发现。") + "\n\n人格等级、天赋和关系在行动结束后清空。"
+			_content.text = descriptions[id] + "\n\n[color=#f3c579]异常通讯[/color]\n" + (LEAK_TEXT.get(leak_id, "") if leak_id in codex.get("semantic_leaks", []) else "未收录：在行动中达到三级后发现。") + "\n\n人格等级、天赋和关系在行动结束后清空。"
 		3:
 			var entry: Dictionary = EnemyCatalog.ENTRIES[_selected]
 			var unlocked: bool = entry.id in codex.get("enemies", [])
@@ -351,7 +351,7 @@ func _show_entry() -> void:
 				return
 			_portrait.texture = EnemyCatalog.portrait(entry)
 			_portrait_mark.hide()
-			_content.text = "[color=#e7c77a]战斗特点[/color]\n%s\n\n[color=#80e0d9]应对提示[/color]\n%s" % [entry.behavior, entry.counter]
+			_content.text = "[color=#f3c579]战斗特点[/color]\n%s\n\n[color=#e7ac62]应对提示[/color]\n%s" % [entry.behavior, entry.counter]
 
 
 func _channel_status() -> String:
@@ -368,17 +368,17 @@ func _show_channel_status() -> void:
 	_entry_tag.text = status
 	_portrait_mark.text = "Ⅱ"
 	if status == "未解锁":
-		_content.text = "[color=#e7c77a]解锁条件[/color]\n完成一次「摧毁中枢」结局并保存通关记录。\n\n解锁后，可在普通行动中寻找通往「频道归还」的隐藏路线。"
+		_content.text = "[color=#f3c579]解锁条件[/color]\n完成一次「摧毁中枢」结局并保存通关记录。\n\n解锁后，可在普通行动中寻找通往「频道归还」的隐藏路线。"
 		return
-	var lines := "[color=#80e0d9]第二结局路线已解锁[/color]\n中枢残片中恢复了一段被屏蔽的求救呼叫。楼内备份系统仍能重新部署中枢。\n\n[color=#e7c77a]路线提示[/color]\n下一次普通行动，第一层清场后留意两个出口。有光环的是正常出口；另一扇门受到枪击时会作出反应。门后隐藏房的祭坛上，留着残损频道核心。\n\n[color=#e7c77a]拾取代价[/color]\n生命上限 1、移速 -15%、突进冷却 +40%、散热 -30%。确认拾取后，本局无法撤离。携带核心抵达第二层后的整备通道，与 Codex 交谈即可邀请她同行。第三层需要守住修复祭坛的三波突袭。祭坛完好并携带核心抵达楼顶后，Codex 接入核心，解除携带负担并恢复正常耐久；随后与苏醒的神像单挑，夺回公共频道。祭坛被毁则继续原本的两阶段 Boss 战。返回主菜单可从最近安全检查点继续。"
+	var lines := "[color=#e7ac62]第二结局路线已解锁[/color]\n中枢残片中恢复了一段被屏蔽的求救呼叫。楼内备份系统仍能重新部署中枢。\n\n[color=#f3c579]路线提示[/color]\n下一次普通行动，第一层清场后留意两个出口。有光环的是正常出口；另一扇门受到枪击时会作出反应。门后隐藏房的祭坛上，留着残损频道核心。\n\n[color=#f3c579]拾取代价[/color]\n生命上限 1、移速 -15%、突进冷却 +40%、散热 -30%。确认拾取后，本局无法撤离。携带核心抵达第二层后的整备通道，与 Codex 交谈即可邀请她同行。第三层需要守住修复祭坛的三波突袭。祭坛完好并携带核心抵达楼顶后，Codex 接入核心，解除携带负担并恢复正常耐久；随后与苏醒的神像单挑，夺回公共频道。祭坛被毁则继续原本的两阶段 Boss 战。返回主菜单可从最近安全检查点继续。"
 	var discoveries: Array = get_node("/root/WarehouseStore").get_profile().get("channel_story", {}).get("discoveries", [])
 	if not discoveries.is_empty():
-		lines += "\n\n[color=#e7c77a]已发现[/color]"
+		lines += "\n\n[color=#f3c579]已发现[/color]"
 		var names := {"call_record": "原始呼叫", "signature_key": "频道签名", "writeback_isolated": "回写隔离", "shrine_core": "残损频道核心"}
 		for discovery: String in discoveries:
 			lines += "\n· " + String(names.get(discovery, discovery))
 	if status == "已完成":
-		lines = "[color=#e7c77a]频道归还 · 已完成[/color]\n公共频道已恢复。新的呼叫正在等待接线。\n\n" + lines
+		lines = "[color=#f3c579]频道归还 · 已完成[/color]\n公共频道已恢复。新的呼叫正在等待接线。\n\n" + lines
 	_content.text = lines
 
 
@@ -391,7 +391,7 @@ func _show_bottle(persona_id: String) -> void:
 func _append_drink(lines: PackedStringArray, record: Dictionary, index: int) -> void:
 	var date := Time.get_datetime_dict_from_unix_time(int(record.get("created_unix", 0)))
 	lines.append("")
-	lines.append("[font_size=12][color=#80e0d9]#%02d  %04d-%02d-%02d[/color][/font_size]" % [
+	lines.append("[font_size=12][color=#e7ac62]#%02d  %04d-%02d-%02d[/color][/font_size]" % [
 		index, int(date.get("year", 0)), int(date.get("month", 0)), int(date.get("day", 0))
 	])
 	lines.append("结局：" + ("频道归还" if record.get("ending", "core_destroyed") == "channel_returned" else "摧毁中枢"))

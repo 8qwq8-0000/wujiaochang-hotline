@@ -8,7 +8,7 @@ const DIRECTION_DEADZONE := 0.18
 
 var action_name: StringName
 var caption := ""
-var accent := Color("55d7e8")
+var accent := CyberUITheme.ACCENT
 var supports_direction := false
 var joystick_style := false
 var defer_action_until_drag := false
@@ -210,7 +210,7 @@ func _refresh_caption() -> void:
 func _draw() -> void:
 	var radius := maxf(minf(size.x, size.y) * 0.5 - 2.0, 2.0)
 	var center := size * 0.5
-	var fill := Color(0.025, 0.045, 0.08, 0.72)
+	var fill := Color(CyberUITheme.BACKGROUND, 0.72)
 	if _pressed:
 		fill = Color(accent, 0.4)
 	elif editing:

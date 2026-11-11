@@ -42,16 +42,16 @@ func _ready() -> void:
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), CyberUITheme.BACKGROUND)
 	for x in range(0, int(size.x) + 1, 16):
-		draw_line(Vector2(x, 0), Vector2(x, size.y), Color(CyberUITheme.DIM_GREEN, 0.09), 1.0)
+		draw_line(Vector2(x, 0), Vector2(x, size.y), Color(CyberUITheme.BORDER, 0.09), 1.0)
 	for y in range(0, int(size.y) + 1, 16):
-		draw_line(Vector2(0, y), Vector2(size.x, y), Color(CyberUITheme.DIM_GREEN, 0.09), 1.0)
+		draw_line(Vector2(0, y), Vector2(size.x, y), Color(CyberUITheme.BORDER, 0.09), 1.0)
 	if _workspace == Workspace.COMBAT:
 		var center := size * 0.5
-		draw_arc(center, 8.0, 0.0, TAU, 16, CyberUITheme.PHOSPHOR, 1.0)
+		draw_arc(center, 8.0, 0.0, TAU, 16, CyberUITheme.ACCENT, 1.0)
 		for direction in [Vector2.LEFT, Vector2.RIGHT, Vector2.UP, Vector2.DOWN]:
-			draw_line(center + direction * 11.0, center + direction * 17.0, CyberUITheme.PHOSPHOR, 1.0)
-		draw_line(Vector2(center.x - 42.0, center.y - 32.0), Vector2(center.x - 30.0, center.y - 32.0), Color(CyberUITheme.PHOSPHOR, 0.55), 1.0)
-		draw_line(Vector2(center.x + 30.0, center.y - 32.0), Vector2(center.x + 42.0, center.y - 32.0), Color(CyberUITheme.PHOSPHOR, 0.55), 1.0)
+			draw_line(center + direction * 11.0, center + direction * 17.0, CyberUITheme.ACCENT, 1.0)
+		draw_line(Vector2(center.x - 42.0, center.y - 32.0), Vector2(center.x - 30.0, center.y - 32.0), Color(CyberUITheme.ACCENT, 0.55), 1.0)
+		draw_line(Vector2(center.x + 30.0, center.y - 32.0), Vector2(center.x + 42.0, center.y - 32.0), Color(CyberUITheme.ACCENT, 0.55), 1.0)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -112,7 +112,7 @@ func _build_header() -> void:
 
 
 func _build_footer() -> void:
-	var footer := _make_panel(self, "[1] 战斗  [2] 设置  [3] CRT强度  [G] 事件故障", Rect2(126, 333, 388, 22), CyberUITheme.DIM_GREEN)
+	var footer := _make_panel(self, "[1] 战斗  [2] 设置  [3] CRT强度  [G] 事件故障", Rect2(126, 333, 388, 22), CyberUITheme.BORDER)
 	footer.name = "CommandFooter"
 
 
@@ -121,7 +121,7 @@ func _build_combat_workspace() -> void:
 	var status_stack := VBoxContainer.new()
 	status_stack.add_theme_constant_override("separation", 2)
 	status.add_child(status_stack)
-	status_stack.add_child(_meter("耐久", 3, 4, 4, CyberUITheme.PHOSPHOR))
+	status_stack.add_child(_meter("耐久", 3, 4, 4, CyberUITheme.ACCENT))
 	status_stack.add_child(_meter("接管", 2, 3, 3, CyberUITheme.HIGHLIGHT))
 	var circuit := Label.new()
 	circuit.text = "断路保险就绪"
@@ -142,7 +142,7 @@ func _build_combat_workspace() -> void:
 	var mobility_name := Label.new()
 	mobility_name.text = "四足套件就绪"
 	mobility_stack.add_child(mobility_name)
-	mobility_stack.add_child(_meter("充能", 8, 10, 10, CyberUITheme.PHOSPHOR))
+	mobility_stack.add_child(_meter("充能", 8, 10, 10, CyberUITheme.ACCENT))
 
 	var weapons := _make_panel(_combat_workspace, "火控", Rect2(427, 220, 205, 108))
 	var weapon_stack := VBoxContainer.new()
@@ -155,7 +155,7 @@ func _build_combat_workspace() -> void:
 	var slot_b := Label.new()
 	slot_b.text = "  副武器  警棍"
 	weapon_stack.add_child(slot_b)
-	weapon_stack.add_child(_meter("能量", 18, 80, 10, CyberUITheme.PHOSPHOR))
+	weapon_stack.add_child(_meter("能量", 18, 80, 10, CyberUITheme.ACCENT))
 
 	var notices := VBoxContainer.new()
 	notices.name = "NoticeStack"
@@ -163,7 +163,7 @@ func _build_combat_workspace() -> void:
 	notices.size = Vector2(204, 129)
 	notices.add_theme_constant_override("separation", 3)
 	_combat_workspace.add_child(notices)
-	notices.add_child(_notice("接线员", "保持移动，火控链路正常。", CyberUITheme.PHOSPHOR))
+	notices.add_child(_notice("接线员", "保持移动，火控链路正常。", CyberUITheme.ACCENT))
 	notices.add_child(_notice("警报", "同房间敌人已响应。", CyberUITheme.WARNING))
 	notices.add_child(_notice("格挡", "完美格挡：反射完成。", CyberUITheme.HIGHLIGHT))
 
@@ -239,7 +239,7 @@ func _play_boot_sequence() -> void:
 	tween.tween_callback(skip_boot)
 
 
-func _make_panel(parent: Control, title_text: String, rect: Rect2, color: Color = CyberUITheme.PHOSPHOR) -> TerminalPanel:
+func _make_panel(parent: Control, title_text: String, rect: Rect2, color: Color = CyberUITheme.ACCENT) -> TerminalPanel:
 	var panel := TerminalPanel.new()
 	panel.title = title_text
 	panel.accent_color = color

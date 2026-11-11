@@ -60,7 +60,7 @@ func test_arena_authors_phase_one_and_phase_two_contract() -> void:
 	assert_eq(boss_glow.z_index, boss_body.z_index)
 	assert_true(boss_body.z_index > arena.get_node("Player").z_index + player_guard.z_index)
 	assert_true(boss_body.z_index < arena.get_node("AttackTelegraph").z_index)
-	assert_eq(arena.get_node("Player").position, Vector2(640.0, 810.0))
+	assert_eq(arena.get_node("Player").position, RooftopBossArena.ROOM_SIZE * Vector2(0.5, 0.9))
 	assert_eq(arena.get_node("EnemySpawnPoints").get_child_count(), 3)
 	assert_eq(arena.get_node("SupportSpawnPoints").get_child_count(), 5)
 	assert_false(arena.get_node("SupportSpawner").auto_spawn)

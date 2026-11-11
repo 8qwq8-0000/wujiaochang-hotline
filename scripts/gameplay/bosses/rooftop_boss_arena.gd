@@ -398,7 +398,7 @@ func _on_opening_wing_defeated(_wing: WingGuard) -> void:
 
 
 func _spawn_support_guards() -> void:
-	if is_instance_valid(_queen):
+	if phase == Phase.CLEARED or is_instance_valid(_queen):
 		return
 	boss.health.begin_guard_link()
 	boss.hurt_box.set_deferred("monitorable", false)
@@ -431,8 +431,8 @@ func _clear_support_guards() -> void:
 
 
 func _clear_hostile_projectiles() -> void:
-	for child in get_children():
-		if child is CombatProjectile and child.faction == CombatFaction.Id.ENEMY:
+	for child in get_children() + $Enemies.get_children() + $SupportEnemies.get_children():
+		if child is WingSlashProjectile or (child is CombatProjectile and child.faction == CombatFaction.Id.ENEMY):
 			child.set_physics_process(false)
 			child.queue_free()
 
@@ -502,6 +502,10 @@ func _on_boss_defeated() -> void:
 	_stop_summons()
 	_clear_summoned_enemies()
 	telegraph.clear()
+	for guard in $Enemies.get_children():
+		if guard is WingGuard:
+			guard.set_active(false)
+			guard.queue_free()
 	_clear_support_guards()
 	_clear_hostile_projectiles()
 	_set_phase(Phase.CLEARED)
@@ -621,6 +625,7 @@ func _resolve_ending_route() -> void:
 		add_child(channel_duel)
 		return
 	else:
+		EnemyEncounterRecorder.watch(boss, "rooftop_whale_goddess", false)
 		_spawn_opening_wings()
 		_summon_rng.randomize()
 		_start_summons()

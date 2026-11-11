@@ -17,7 +17,7 @@ func run() -> void:
 			break
 		await process_frame
 	if player == null:
-		quit(1)
+		root.get_node("GameSettings").quit_game(1)
 		return
 	player.set_physics_process(false)
 	for enemy in get_nodes_in_group("enemies"):
@@ -26,8 +26,17 @@ func run() -> void:
 	check(inv.backpack.get_item_count() == 0, "new run has no free bag items")
 	check(inv.pickup("pistol") and inv.secondary_weapon_slot.get_item() != null, "first weapon fills reserve")
 	check(inv.pickup("scattergun"), "later weapon enters bag")
-	check(not inv.equip(0), "combat blocks manual equipment")
-	check(not inv.unequip("weapon_secondary"), "combat blocks unequip")
+	var primary := inv.weapon_slot.get_item()
+	var reserve := inv.secondary_weapon_slot.get_item()
+	var scattergun := inv.backpack.get_items()[0]
+	inv.set_open(true)
+	check(paused and inv.can_change_equipment(), "combat backpack pauses the world and allows equipment changes")
+	check(inv.equip(0) and inv.weapon_slot.get_item() == scattergun and inv.backpack.has_item(primary), "combat swap preserves the equipped and backpack item instances")
+	check(inv.unequip("weapon_secondary") and inv.backpack.has_item(reserve), "combat unequip moves the reserve into the backpack")
+	check(inv.equip(inv.backpack.get_item_index(reserve), 1), "reserve weapon can be restored during the same paused session")
+	check(inv.equip(inv.backpack.get_item_index(primary)), "primary weapon can be restored without duplicating either item")
+	inv.set_open(false)
+	check(not paused and inv.backpack.get_item_count() == 1 and inv.backpack.has_item(scattergun), "closing combat backpack resumes with one original spare weapon")
 	var enemies := get_nodes_in_group("enemies")
 	for enemy in enemies:
 		enemy.health.apply_damage(enemy.health.max_health, DamagePacket.new())
@@ -44,6 +53,8 @@ func run() -> void:
 	for index in 5:
 		check(inv.pickup("baton"), "fill spare capacity")
 	check(inv.backpack.get_item_count() == 6, "full bag contains six spare items")
+	for item in inv.backpack.get_items():
+		check(item.get_prototype().get_prototype_id() == "pistol", "legacy baton pickup stores its canonical pistol instance")
 	var pickup: ComponentPickup = load("res://scenes/items/component_pickup.tscn").instantiate()
 	scene.add_child(pickup)
 	pickup.global_position = player.global_position
@@ -60,4 +71,4 @@ func run() -> void:
 	print("Inventory integration failures: ", failures)
 	scene.queue_free()
 	await process_frame
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

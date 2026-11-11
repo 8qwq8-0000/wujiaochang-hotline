@@ -237,13 +237,13 @@ func try_enemy_drop(enemy: EnemyController, room: CombatRoom, death_position: Ve
 	var floor_number: int = run.floor_index + 1 if run != null else 1
 	if equipment_hit:
 		var equipment := ComponentRolls.floor_equipment_drop(floor_number, _loot_rng)
-		_spawn_enemy_drop.call_deferred(room, _reserve_drop_position(room, death_position), equipment, enemy.get_instance_id())
+		_spawn_enemy_drop.call_deferred(room, death_position, equipment, enemy.get_instance_id())
 		room.reward_count += 1
 	if cyberware_hit:
 		var cyberware := ComponentRolls.guaranteed_cyberware_drop(floor_number, _loot_rng, owned_counts)
 		for module_id in ComponentRolls.cyberware_modules(cyberware):
 			_dropped_cyberware_counts[module_id] = int(_dropped_cyberware_counts.get(module_id, 0)) + 1
-		_spawn_enemy_drop.call_deferred(room, _reserve_drop_position(room, death_position), cyberware, enemy.get_instance_id())
+		_spawn_enemy_drop.call_deferred(room, death_position, cyberware, enemy.get_instance_id())
 		room.reward_count += 1
 
 
@@ -330,8 +330,24 @@ func _on_entity_defeated(entity: Node) -> void:
 
 
 func _spawn_enemy_drop(room: CombatRoom, death_position: Vector2, item: InventoryItem, enemy_id: int) -> void:
-	if not is_instance_valid(room):
+	if not is_instance_valid(room) or room.is_queued_for_deletion() or not room.is_inside_tree():
 		return
+	var navigation := room.get_node_or_null("NavigationRegion2D") as NavigationRegion2D
+	if navigation != null and navigation.navigation_polygon != null:
+		# A new floor can receive kills before its navigation update is synced.
+		# Wait for this region, since the shared map may still contain the old floor.
+		var entry := room.to_global(EncounterPropPlacement.ENTRY * CombatRoom.ROOM_SCALE)
+		while is_instance_valid(room) and room.is_inside_tree() and not room.is_queued_for_deletion():
+			var map := navigation.get_navigation_map()
+			if navigation.enabled and NavigationServer2D.map_get_closest_point_owner(map, entry) == navigation.get_rid():
+				var entry_target := entry + Vector2(8.0, 0.0)
+				var path := NavigationServer2D.map_get_path(map, entry, entry_target, true)
+				if path.size() > 1 and path[-1].distance_to(entry_target) <= 16.0:
+					break
+			await get_tree().physics_frame
+	if not is_instance_valid(room) or room.is_queued_for_deletion() or not room.is_inside_tree():
+		return
+	death_position = _reserve_drop_position(room, death_position)
 	for index in range(_pending_drop_positions.size() - 1, -1, -1):
 		var pending: Dictionary = _pending_drop_positions[index]
 		if int(pending.room_id) == room.get_instance_id() and Vector2(pending.position) == death_position:

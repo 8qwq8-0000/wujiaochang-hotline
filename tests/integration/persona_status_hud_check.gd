@@ -115,7 +115,7 @@ func run() -> void:
 	room.queue_free()
 	await process_frame
 	print("Persona status HUD checks: ", checks, "; failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)
 
 func capture(label: String, hud: Node) -> void:
 	if not "--capture-persona-status" in OS.get_cmdline_user_args():

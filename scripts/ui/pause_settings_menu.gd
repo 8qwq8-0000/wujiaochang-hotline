@@ -187,7 +187,7 @@ func _fit_shell() -> void:
 func _build_main_page() -> VBoxContainer:
 	var page := VBoxContainer.new()
 	page.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	page.add_theme_constant_override("separation", 16)
+	page.add_theme_constant_override("separation", 10)
 	var title := Label.new()
 	title.text = "暂停"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -271,6 +271,7 @@ func _build_settings_page() -> VBoxContainer:
 		var nav_button := Button.new()
 		nav_button.text = ["显示", "视觉反馈", "音频", "输入与触控"][index]
 		nav_button.alignment = HORIZONTAL_ALIGNMENT_CENTER
+		nav_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		nav_button.flat = true
 		nav_button.pressed.connect(_select_settings_tab.bind(index))
 		_add_secondary_option_border(nav_button)

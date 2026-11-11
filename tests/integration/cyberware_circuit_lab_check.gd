@@ -26,7 +26,7 @@ func run() -> void:
 	check(lab.has_method("get_training_enemies") and lab.has_method("reset_circuit"), "circuit lab scene loads its gameplay script")
 	if not lab.has_method("get_training_enemies") or not lab.has_method("reset_circuit"):
 		print("Cyberware circuit lab failures: ", failures)
-		quit(1)
+		root.get_node("GameSettings").quit_game(1)
 		return
 	player = lab.get_node("Player") as PlayerController
 	player.set_physics_process(false)
@@ -39,7 +39,7 @@ func run() -> void:
 	_test_resets_and_targets()
 
 	print("Cyberware circuit lab failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)
 
 
 func _test_test_mode_entry() -> void:
