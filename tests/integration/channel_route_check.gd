@@ -178,7 +178,7 @@ func run_checks() -> void:
 	var arena := await wait_scene() as RooftopBossArena
 	check(arena != null and run.floor_index == 3, "third floor reaches rooftop")
 	if arena == null:
-		quit(1)
+		root.get_node("GameSettings").quit_game(1)
 		return
 	check(store.get_channel_checkpoint().floor == 3, "rooftop checkpoint saved")
 	arena.attack_loop_enabled = false
@@ -224,4 +224,4 @@ func run_checks() -> void:
 	paused = false
 	DirAccess.remove_absolute(TEST_PATH)
 	print("Channel route checks: ", checks, "; failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

@@ -84,4 +84,4 @@ func run() -> void:
 	check(load("res://resources/enemies/heavy_anchor.tres").max_health == 3, "shield source profile unchanged")
 	check(is_equal_approx(load("res://resources/enemies/melee_pressure.tres").move_speed, 100.0), "shared melee speed unchanged after higher floors")
 	print("Floor difficulty checks: ", checks, "; failures: ", failures)
-	quit(1 if failures else 0)
+	root.get_node("GameSettings").quit_game(1 if failures else 0)

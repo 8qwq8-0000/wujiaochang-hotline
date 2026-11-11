@@ -47,6 +47,7 @@ var arena: RooftopBossArena
 var skill: StringName = &"echo"
 var elapsed := 0.0
 var resolved := false
+var _release_announced := false
 var wave_contact := false
 var previous_radius := 0.0
 var tail_angle := 0.0
@@ -90,6 +91,10 @@ func _physics_process(delta: float) -> void:
 		queue_free()
 		return
 	elapsed += delta
+	if not _release_announced and (skill == &"protect" or elapsed >= _warning_time()):
+		_release_announced = true
+		if arena.presentation != null:
+			arena.presentation.release(skill, global_position)
 	if skill == &"halo":
 		if not resolved and elapsed >= HALO_WARNING and elapsed <= HALO_WARNING + HALO_TAIL and contains_impact(arena.player.global_position):
 			resolved = true

@@ -40,4 +40,4 @@ func run() -> void:
 	label.queue_free()
 	await process_frame
 	print("Chinese font coverage: ", characters.size(), " unique characters across two fonts; failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

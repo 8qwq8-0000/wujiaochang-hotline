@@ -375,4 +375,4 @@ func run_checks() -> void:
 	arena.queue_free()
 	await process_frame
 	print("Persona combat failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

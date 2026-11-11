@@ -55,6 +55,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Godot resource import failed' }
           python tools/run_release_checks.py $profile
           if ($LASTEXITCODE -ne 0) { throw 'Game regression checks failed' }
+          python tools/check_shutdown.py --output build/test-reports/shutdown
+          if ($LASTEXITCODE -ne 0) { throw 'Game shutdown checks failed' }
       - name: Preserve check reports
         if: always()
         uses: actions/upload-artifact@v4

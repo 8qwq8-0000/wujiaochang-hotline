@@ -143,4 +143,4 @@ func run() -> void:
 	await process_frame
 	await process_frame
 	print("Shield barrier checks: ", checks, "; failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

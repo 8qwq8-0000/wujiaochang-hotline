@@ -9,6 +9,11 @@ var validation_regex := RegEx.create_from_string(r"[^\w]")
 
 var undo := UndoRedo.new()
 
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE and is_instance_valid(undo):
+		undo.free()
+
+
 #region INITIAL SETUP
 
 func _ready() -> void:

@@ -86,4 +86,4 @@ func run() -> void:
 	room.queue_free()
 	await process_frame
 	print("Enemy tactics failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

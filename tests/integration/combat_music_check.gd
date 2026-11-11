@@ -67,4 +67,4 @@ func run_checks() -> void:
 	music.queue_free()
 	await process_frame
 	print("Combat music failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

@@ -33,7 +33,7 @@ func run() -> void:
 	await _test_world_stop()
 	await _test_penetration()
 	print("New cyberware failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)
 
 
 func _configure(ids: PackedStringArray) -> void:

@@ -26,6 +26,8 @@ func run() -> void:
 		settings.quit_game(1)
 		return
 	var main: Node = load("res://scenes/bootstrap/main.tscn").instantiate()
+	if mode in ["boss", "channel"]:
+		main.get_node("SceneFlow").initial_scene = "res://scenes/levels/bosses/rooftop_boss_arena.tscn"
 	root.add_child(main)
 	current_scene = main
 	if mode != "loading":
@@ -37,6 +39,13 @@ func run() -> void:
 			push_error("Shutdown check: combat scene never became ready")
 			settings.quit_game(1)
 			return
+	if mode in ["boss", "channel"]:
+		var room: RooftopBossArena = main.get_node("SceneContainer").get_child(0)
+		room.boss.activate_immediately()
+		room.boss.channel_form = mode == "channel"
+		room.presentation.cast(&"halo", room.boss.global_position, 0.96)
+		room.presentation.release(&"halo", room.boss.global_position)
+		room.presentation.moment(&"phase")
 	if mode == "paused":
 		var player: PlayerController = get_first_node_in_group("player")
 		player.inventory.set_open(true)

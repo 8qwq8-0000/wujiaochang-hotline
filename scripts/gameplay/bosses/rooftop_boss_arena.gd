@@ -48,6 +48,7 @@ var _summon_progress := 0.0
 var _summon_rng := RandomNumberGenerator.new()
 var route_dialogue: ChannelDialogue
 var channel_duel: ChannelBossDuel
+var presentation: BossCombatPresentation
 
 
 func _enter_tree() -> void:
@@ -56,6 +57,9 @@ func _enter_tree() -> void:
 
 
 func _ready() -> void:
+	presentation = preload("res://scripts/presentation/boss_combat_presentation.gd").new()
+	presentation.name = "BossPresentation"
+	add_child(presentation)
 	var run := get_node("/root/RunManager")
 	if not run.channel_resume.is_empty():
 		player.import_run_state(run.get_player_state())
@@ -148,6 +152,7 @@ func _on_minions_cleared() -> void:
 	_publish_combat_moment(&"boss_phase")
 	player.set_physics_process(false)
 	room_lighting.begin_awakening()
+	presentation.moment(&"awakening")
 	_push_camera_to_altar()
 	await boss.begin_awakening()
 	if phase != Phase.AWAKENING or player.health.is_dead():
@@ -177,6 +182,7 @@ func _run_attack_loop(generation: int) -> void:
 		var point_count := counts.x
 		var lane_count := counts.y
 		var struck_this_round := false
+		presentation.cast(&"echo", boss.global_position - Vector2(0, 78), 0.55)
 		telegraph.show_echo(boss.global_position, 0.55)
 		boss.play_echo_probe()
 		room_lighting.pulse_echo()
@@ -184,11 +190,13 @@ func _run_attack_loop(generation: int) -> void:
 		if not _attack_is_current(generation): return
 		for index in point_count:
 			var cell := _grid_cell(player.global_position)
+			presentation.cast(&"lightning", boss.global_position - Vector2(0, 78), 0.7)
 			telegraph.show_thunder([cell], 0.7)
 			await get_tree().create_timer(0.7, false).timeout
 			if not _attack_is_current(generation): return
 			telegraph.show_thunder([cell], 0.15, true)
 			_show_lightning_at(cell)
+			presentation.release(&"lightning", cell)
 			$LightningAudio.play()
 			if not struck_this_round and player.global_position.distance_to(cell) <= 24.0:
 				_damage_player(cell, &"electric")
@@ -198,6 +206,7 @@ func _run_attack_loop(generation: int) -> void:
 		for index in lane_count:
 			var snapshot := _grid_cell(player.global_position)
 			var lane := _thunder_lane(snapshot, index % 2 == 0, index / 2)
+			presentation.cast(&"lightning", boss.global_position - Vector2(0, 78), 0.7)
 			telegraph.show_thunder(lane, 0.7)
 			await get_tree().create_timer(0.7, false).timeout
 			if not _attack_is_current(generation): return
@@ -208,6 +217,8 @@ func _run_attack_loop(generation: int) -> void:
 					$LightningAudio.play()
 				telegraph.show_thunder([cell], 0.08, true)
 				_show_lightning_at(cell)
+				if cell_index == 0:
+					presentation.release(&"lightning", cell)
 				if not struck_this_round and player.global_position.distance_to(cell) <= 24.0:
 					_damage_player(cell, &"electric")
 					struck_this_round = true
@@ -551,6 +562,8 @@ func _publish_notice(id: StringName, text: String, color: Color, seconds: float)
 
 
 func _publish_combat_moment(kind: StringName) -> void:
+	if kind == &"boss_phase" and presentation != null:
+		presentation.moment(&"phase")
 	var events := get_node_or_null("/root/CombatEvents")
 	if events != null:
 		events.publish_combat_moment(kind, boss.global_position)

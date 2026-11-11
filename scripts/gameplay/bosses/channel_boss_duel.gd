@@ -86,6 +86,7 @@ func begin_awakening() -> void:
 	arena.boss.state = RooftopWhaleGoddess.State.AWAKENING
 	arena.boss.glow_sprite.show()
 	arena.room_lighting.begin_awakening()
+	arena.presentation.moment(&"awakening")
 	arena._publish_notice(&"channel_core_connected", "频道核心已接入，携带负担解除，耐久恢复", Color("75e8df"), 2.4)
 
 
@@ -146,6 +147,8 @@ func cast_attack(index: int) -> void:
 	next_echo = ECHO_FIRST_MARK if index == 0 else -1.0
 	pulse_pending = index == 2
 	attacks_started[index] += 1
+	var warning: float = [ECHO_FIRST_MARK + ChannelBossEffect.ECHO_WARNING, ChannelBossEffect.HALO_WARNING, PROTECT_RELEASE, 0.7][index]
+	arena.presentation.cast(cast_skill, arena.boss.global_position - Vector2(0, 80), warning)
 	next_skill = (index + 1) % 4
 	if index == 0:
 		visual.play_cast(cast_skill, ECHO_FIRST_MARK + ChannelBossEffect.ECHO_WARNING, ECHO_INTERVAL)
@@ -184,6 +187,7 @@ func _cast_tail() -> void:
 	var effect := spawn_effect(cast_skill, origin)
 	effect.tail_angle = Vector2.DOWN.angle() if aim.is_zero_approx() else aim.angle()
 	visual.play_tail(aim.x)
+	arena.presentation.cast(&"tail", origin, ChannelBossEffect.TAIL_WARNING)
 
 
 func clear_effects() -> void:
@@ -269,6 +273,7 @@ func _physics_process(delta: float) -> void:
 				lightning_struck = true
 				arena.telegraph.show_thunder([lightning_cell], 0.15, true)
 				arena._show_lightning_at(lightning_cell)
+				arena.presentation.release(&"lightning", lightning_cell)
 				arena.get_node("LightningAudio").play()
 				if arena.player.global_position.distance_to(lightning_cell) <= 24.0:
 					arena._damage_player(lightning_cell, &"electric")
