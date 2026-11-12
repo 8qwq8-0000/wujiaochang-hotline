@@ -61,7 +61,7 @@ func run_checks() -> void:
 	var warehouse := await wait_room(flow)
 	check(warehouse != null and warehouse.is_in_group("warehouse"), "fresh journey opens the warehouse")
 	if warehouse == null:
-		quit(1)
+		root.get_node("GameSettings").quit_game(1)
 		return
 	check(warehouse.depart(), "warehouse departure starts a persistent action")
 	var room: Node = warehouse
@@ -71,7 +71,7 @@ func run_checks() -> void:
 		room = await wait_room(flow, room)
 		check(room != null and room.has_node("FloorAssembler") and run.floor_index == floor_index, "production route reaches floor %d" % (floor_index + 1))
 		if room == null:
-			quit(1)
+			root.get_node("GameSettings").quit_game(1)
 			return
 		await choose_rest(main, room.get_node("Player"))
 		await preload("res://tests/integration/combat_test_flow.gd").clear_floor(self)
@@ -81,7 +81,7 @@ func run_checks() -> void:
 			var passage := await wait_room(flow, room)
 			check(passage != null and passage.is_in_group("intermission"), "second floor leads through the Codex passage")
 			if passage == null:
-				quit(1)
+				root.get_node("GameSettings").quit_game(1)
 				return
 			passage.talk_to_codex()
 			while passage.panel.is_open:
@@ -92,7 +92,7 @@ func run_checks() -> void:
 	var arena := await wait_room(flow, room) as RooftopBossArena
 	check(arena != null and run.floor_index == 3, "third floor leads to the production rooftop")
 	if arena == null:
-		quit(1)
+		root.get_node("GameSettings").quit_game(1)
 		return
 	var packet := DamagePacket.new()
 	packet.source_faction = CombatFaction.Id.PLAYER
@@ -116,4 +116,4 @@ func run_checks() -> void:
 	await process_frame
 	DirAccess.remove_absolute(save_path)
 	print("Release journey checks: ", checks, "; failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

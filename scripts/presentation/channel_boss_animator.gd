@@ -4,7 +4,7 @@ extends AnimatedSprite2D
 const FRAMES := preload("res://assets/art/characters/bosses/rooftop_whale_goddess/channel_returned_v1/frames.tres")
 const TAIL_SHADER := preload("res://shaders/channel_boss_tail.gdshader")
 const FRAME_CELL := Vector2(384, 512)
-const HIT_TIME := 0.18
+const HIT_TIME := 0.12
 const IDLE := &"idle"
 const HALO_POSES := [-0.74, -0.40, 0.0, 0.10, 0.26, 0.46, 0.64]
 const PROTECT_POSES := [-0.54, -0.34, -0.14, 0.0, 0.11, 0.28, 0.45]
@@ -14,6 +14,8 @@ var _glide := 0.0
 var _hover_phase := 0.0
 var _idle_clock := 0.0
 var _hit_flash := 0.0
+var _impact_hold := 0.0
+var _hit_recoil := Vector2.ZERO
 var _cast: StringName
 var _cast_clock := 0.0
 var _first_release := 0.0
@@ -46,6 +48,8 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	_impact_hold = maxf(_impact_hold - delta, 0.0)
+	_hit_recoil = _hit_recoil.lerp(Vector2.ZERO, 1.0 - exp(-delta * 28.0))
 	if _recovering:
 		update_cast(_cast_clock + delta)
 		if _cast_clock >= _first_release + 2.0 * _echo_interval + 0.20:
@@ -56,14 +60,14 @@ func _process(delta: float) -> void:
 	_idle_clock = fposmod(_idle_clock + delta * lerpf(4.2, 6.2, motion), 8.0)
 	_hit_flash = maxf(_hit_flash - delta, 0.0)
 	var hover_weight := 1.0 if _cast == &"" else 0.45
-	position.y = sin(_hover_phase) * (2.0 + motion) * hover_weight + _release * 2.0
+	position = Vector2(0, sin(_hover_phase) * (2.0 + motion) * hover_weight + _release * 2.0) + _hit_recoil
 	rotation = _glide * 0.032
 	if _cast == &"tail":
 		var stroke := _tail_stroke(_cast_clock - _first_release)
 		rotation += _tail_side * 0.047 * stroke
 		_tail_material.set_shader_parameter(&"stroke", stroke)
 	var cast_color := Color(1.20, 1.09, 0.87) if _cast == &"halo" else Color(0.85, 1.11, 1.18)
-	var tint := Color.WHITE.lerp(cast_color, _release).lerp(Color(1.34, 0.83, 0.74), _hit_flash / HIT_TIME)
+	var tint := Color.WHITE.lerp(cast_color, _release).lerp(Color(1.42, 1.32, 1.13), _hit_flash / HIT_TIME)
 	self_modulate = Color(tint, 0.0) if _cast == &"tail" else tint
 	_tail_rig.self_modulate = tint
 	if _cast == &"":
@@ -113,6 +117,9 @@ func _tail_stroke(since_release: float) -> float:
 
 
 func update_cast(clock: float) -> void:
+	# Hold the pose only; the duel still owns the unchanged release/damage clock.
+	if _impact_hold > 0.0:
+		return
 	_cast_clock = clock
 	var pose := 0
 	var since_release := clock - _first_release
@@ -164,8 +171,13 @@ func _resume_idle() -> void:
 	set_frame_and_progress(int(_idle_clock), 0.0)
 
 
-func flash_hit(_amount: int, _packet: DamagePacket) -> void:
+func flash_hit(_amount: int, packet: DamagePacket) -> void:
 	_hit_flash = HIT_TIME
+	var heavy := packet != null and packet.weapon_id in [&"rail_cannon", &"gravity_wave"]
+	if packet != null and is_instance_valid(packet.source):
+		_hit_recoil = (global_position - packet.source.global_position).normalized() * (3.0 if heavy else 1.2)
+	if heavy:
+		_impact_hold = 0.035
 
 
 func freeze(defeated: bool) -> void:

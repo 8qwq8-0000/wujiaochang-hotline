@@ -46,7 +46,7 @@ func _run_checks() -> void:
 	current_scene = main
 	var player := await _wait_for_battle()
 	if player == null:
-		quit(1)
+		root.get_node("GameSettings").quit_game(1)
 		return
 	var run_manager := root.get_node("RunManager")
 	var initial_enemy_count: int = get_nodes_in_group("enemies").size()
@@ -81,7 +81,7 @@ func _run_checks() -> void:
 		_press_restart()
 		player = await _wait_for_battle(old_scene)
 		if player == null:
-			quit(1)
+			root.get_node("GameSettings").quit_game(1)
 			return
 		_check(not is_instance_valid(old_scene), "Old scene must be freed")
 		_check(not is_instance_valid(projectile), "Old projectiles must be freed")
@@ -104,4 +104,4 @@ func _run_checks() -> void:
 	current_scene.queue_free()
 	await process_frame
 	DirAccess.remove_absolute("user://bc_restart_room_check.json")
-	quit(0 if _failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if _failures == 0 else 1)

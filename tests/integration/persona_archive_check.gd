@@ -66,4 +66,4 @@ func run_checks() -> void:
 	await process_frame
 	DirAccess.remove_absolute(TEST_PATH)
 	print("Persona archive checks: ", checks, "; failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

@@ -199,14 +199,14 @@ func _make_slot(parent: Control, location: String, index: int = -1) -> Button:
 	button.add_theme_font_size_override("font_size", 12)
 	button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	var normal := StyleBoxFlat.new()
-	normal.bg_color = Color("23364a")
+	normal.bg_color = CyberUITheme.SURFACE
 	normal.set_corner_radius_all(4)
 	normal.set_border_width_all(1)
-	normal.border_color = Color("3c5971")
+	normal.border_color = CyberUITheme.BORDER
 	button.add_theme_stylebox_override("normal", normal)
 	var hover := normal.duplicate() as StyleBoxFlat
-	hover.bg_color = Color("365671")
-	hover.border_color = Color("8eacbd")
+	hover.bg_color = CyberUITheme.SURFACE.lerp(CyberUITheme.ACCENT, 0.18)
+	hover.border_color = CyberUITheme.ACCENT
 	button.add_theme_stylebox_override("hover", hover)
 	parent.add_child(button)
 	return button

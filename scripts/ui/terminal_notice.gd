@@ -21,7 +21,7 @@ func _ready() -> void:
 	_refresh_message()
 
 
-func set_notice(next_title: String, next_message: String, color: Color = CyberUITheme.PHOSPHOR) -> void:
+func set_notice(next_title: String, next_message: String, color: Color = CyberUITheme.ACCENT) -> void:
 	title = next_title
 	accent_color = color
 	message = next_message

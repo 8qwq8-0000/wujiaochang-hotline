@@ -32,6 +32,12 @@ func run() -> void:
 	for button in (menu.get("_menu_page") as VBoxContainer).find_children("*", "Button", true, false):
 		has_return_to_menu = has_return_to_menu or button.text == "返回主菜单"
 	check(has_return_to_menu, "pause menu exposes a return-to-main-menu action")
+	for frame in 3:
+		await process_frame
+	for button in (menu.get("_menu_page") as VBoxContainer).find_children("*", "Button", true, false):
+		if button.visible and button.has_node("SecondaryBorder"):
+			var border := button.get_node("SecondaryBorder") as Control
+			check(border.is_visible_in_tree() and border.size.y >= 22.0 and border.size.is_equal_approx(button.size), "pause action outline has drawable height and matches its button")
 	menu._show_settings_page()
 	await process_frame
 	var settings_page := menu.get("_settings_page") as VBoxContainer
@@ -39,6 +45,11 @@ func run() -> void:
 	var settings_scroll := scroll_nodes[0] as ScrollContainer if not scroll_nodes.is_empty() else null
 	check(settings_page.size.y > 200.0 and settings_scroll != null and settings_scroll.size.y > 100.0, "settings page receives usable height instead of clipping its options")
 	check(menu.get("_resolution").is_visible_in_tree(), "resolution control is actually visible after opening settings")
+	for button in menu.get("_settings_nav_buttons"):
+		var border: Control = button.get_node("SecondaryBorder")
+		check(border.size.y >= 22.0 and border.size.is_equal_approx(button.size), "all settings navigation outlines have usable dimensions")
+	var resolution := menu.get("_resolution") as OptionButton
+	check((resolution.get_theme_stylebox("normal") as StyleBoxFlat).border_width_left > 0, "settings dropdown has a visible resting outline")
 	check((menu.get("_crt_strength") as OptionButton).item_count == 3, "settings expose Off, Low and Standard CRT levels")
 	menu._on_feedback_preview_pressed()
 	await process_frame
@@ -74,4 +85,4 @@ func run() -> void:
 	menu.queue_free()
 	await process_frame
 	print("Settings menu failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

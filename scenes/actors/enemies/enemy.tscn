@@ -4,7 +4,7 @@
 [ext_resource type="Script" uid="uid://dvf0vif2eetq2" path="res://scripts/gameplay/combat/health_component.gd" id="2"]
 [ext_resource type="Script" uid="uid://bsn70jo45ko2r" path="res://scripts/gameplay/combat/hurt_box.gd" id="3"]
 [ext_resource type="Script" uid="uid://iekd5ex3oxsj" path="res://scripts/gameplay/player/status_component.gd" id="4_status"]
-[ext_resource type="SpriteFrames" uid="uid://cmih6brtqw6u5" path="res://assets/art/characters/enemies/animated/melee_frames.tres" id="default_frames"]
+[ext_resource type="SpriteFrames" uid="uid://qwv6rbffkjgc" path="res://assets/art/characters/enemies/animated/melee_frames.tres" id="default_frames"]
 [ext_resource type="Script" uid="uid://84q3belpfev7" path="res://scripts/presentation/enemy_sprite_animator.gd" id="enemy_visuals"]
 [ext_resource type="Script" uid="uid://l0hycqi8fyxu" path="res://scripts/presentation/status_indicator.gd" id="status_indicator"]
 

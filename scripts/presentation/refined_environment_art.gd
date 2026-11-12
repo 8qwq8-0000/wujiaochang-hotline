@@ -10,6 +10,7 @@ var _owner: Node2D
 var _state := -99
 var _pose := 0.0
 static var _textures: Dictionary = {}
+const SUPPLY_STATION := preload("res://assets/art/environment/refined/circuit_supply_station.svg")
 const ROOT := "res://assets/art/environment/refined/"
 # Opaque silhouette bounds measured once from the source PNGs. Ignore faint
 # alpha speckles in their wide transparent margins without altering the images.
@@ -37,7 +38,7 @@ func _ready() -> void:
 	if _owner == null:
 		return
 	_owner.self_modulate = Color(1, 1, 1, 0)
-	if kind == "door":
+	if kind == "door" or (kind == "power" and (_owner as PowerBox).is_circuit_terminal()):
 		texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	if kind == "exit":
 		var label := _owner.get_node_or_null("Label") as Label
@@ -75,6 +76,10 @@ func _draw() -> void:
 	var tint := Color.WHITE
 	match kind:
 		"power":
+			if (_owner as PowerBox).is_circuit_terminal():
+				var cabinet_tint := Color(0.27, 0.30, 0.33) if _state == PowerBox.State.BROKEN else Color.WHITE
+				draw_texture_rect(SUPPLY_STATION, Rect2(-30, -23, 60, 54), false, cabinet_tint)
+				return
 			filename = "charging_terminal.png"
 			if _state != 0:
 				tint = Color(0.50, 0.65, 0.57) if _state == 1 else Color(0.27, 0.30, 0.33)

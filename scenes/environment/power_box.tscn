@@ -33,3 +33,9 @@ draw_size = Vector2(57.6, 57.6)
 
 [node name="ActiveSigil" type="Node2D" parent="." unique_id=1376831921]
 script = ExtResource("sigil")
+
+[node name="TerminalModule" type="Sprite2D" parent="."]
+visible = false
+texture_filter = 1
+position = Vector2(0, -14)
+scale = Vector2(0.34375, 0.34375)

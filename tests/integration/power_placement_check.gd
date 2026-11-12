@@ -48,25 +48,31 @@ func run() -> void:
 			check_placement(layout, point)
 			seen[point] = true
 			check(point == EncounterPropPlacement.choose_power_position(layout, seed_value), "same seed reproduces station placement")
-		check(seen.size() > 32, "%s varies placement across seeds" % id)
-		var runtime_seen := {}
+		var onward_door := Vector2(layout.room_size.x - 16, layout.room_size.y * 0.5)
+		var nearest := INF
+		var farthest := 0.0
+		for point in seen:
+			nearest = minf(nearest, point.distance_to(onward_door))
+			farthest = maxf(farthest, point.distance_to(onward_door))
+		check(farthest < 220, "%s station stays near the onward door" % id)
+		check(farthest <= nearest + 32.01, "%s stations cluster beside the onward door" % id)
 		for seed_value in 8:
 			manager.begin_run(seed_value + 400)
 			var room: CombatRoom = load("res://scenes/levels/rooms/variants/" + id + ".tscn").instantiate()
-			room.configure_stage(0, 2)
+			room.configure_stage(seed_value % 2, 2)
 			root.add_child(room)
 			current_scene = room
 			var point: Vector2 = room.get_node("PowerBox").position
 			check_placement(room.layout, point)
-			runtime_seen[point] = true
+			var target := Vector2(CombatRoom.ROOM_SIZE.x - 16, CombatRoom.ROOM_SIZE.y * 0.5) if room.area_index == 0 else room.exit_elevator.position
+			check(point.distance_to(target) < 220, "real station stays beside its passage or final elevator")
 			check(room.find_children("*", "PowerBox", true, false).size() == 1, "room keeps exactly one station")
 			for barrel in room.find_children("*", "FuelBarrel", true, false):
 				check(point.distance_to(barrel.position) >= 48, "random bomb boxes clear station")
 			room.queue_free()
 			await process_frame
 			await physics_frame
-		check(runtime_seen.size() > 1, "real room generation randomizes station")
 		check(source.power_position == authored_power, "runtime placement preserves authored resource")
 	DirAccess.remove_absolute(store.save_path)
 	print("Power placement checks: ", checks, "; failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

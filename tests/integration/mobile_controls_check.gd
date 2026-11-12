@@ -17,7 +17,7 @@ func run() -> void:
 	var mobile_input := root.get_node_or_null("MobileInput")
 	check(mobile_input != null, "mobile input autoload is registered")
 	if mobile_input == null:
-		quit(1)
+		root.get_node("GameSettings").quit_game(1)
 		return
 	await process_frame
 	check(bool(ProjectSettings.get_setting("input_devices/pointing/emulate_mouse_from_touch", false)), "touch can operate ordinary menu Buttons")
@@ -151,4 +151,4 @@ func run() -> void:
 	menu.queue_free()
 	await process_frame
 	print("Mobile controls failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

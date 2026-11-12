@@ -2,7 +2,7 @@ class_name SceneContainerManager
 extends Node
 
 ## Maaack Scene Loader 保留给菜单与整棵 SceneTree 切换。
-## 本节点复用相同的 ResourceLoader 线程加载方式，只替换 SceneContainer 的内容，
+## 本节点只替换 SceneContainer 的内容，
 ## 因而 RunManager、HUD、VFX 与音频管理器不会随楼层销毁。
 signal load_started(scene_path: String)
 signal load_progress_changed(progress: float)
@@ -17,7 +17,6 @@ signal load_failed(scene_path: String, error: String)
 var _requested_path := ""
 var _pending_payload: Dictionary = {}
 var _is_loading := false
-var _request_serial := 0
 
 @onready var _scene_container: Node = get_node(scene_container_path)
 @onready var _fade_rect: ColorRect = get_node_or_null(fade_rect_path)
@@ -42,40 +41,29 @@ func request_scene(scene_path: String, payload: Dictionary = {}) -> bool:
 		load_failed.emit(scene_path, "暂时无法进入目标区域")
 		return false
 	_is_loading = true
-	_request_serial += 1
 	_requested_path = scene_path
 	_pending_payload = payload.duplicate(true)
-	var error := ResourceLoader.load_threaded_request(scene_path, "PackedScene")
-	if error != OK:
-		_finish_with_error("暂时无法进入目标区域", "threaded load request failed: %s" % error_string(error))
-		return false
 	load_started.emit(scene_path)
 	set_process(true)
 	return true
 
 
 func _process(_delta: float) -> void:
-	if not _is_loading:
-		set_process(false)
-		return
-	var progress: Array = []
-	var status := ResourceLoader.load_threaded_get_status(_requested_path, progress)
-	if not progress.is_empty():
-		load_progress_changed.emit(float(progress[0]))
-	match status:
-		ResourceLoader.THREAD_LOAD_LOADED:
-			set_process(false)
-			_swap_loaded_scene()
-		ResourceLoader.THREAD_LOAD_FAILED, ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
-			_finish_with_error("暂时无法进入目标区域", "threaded load failed with status %d" % status)
+	set_process(false)
+	if _is_loading:
+		_swap_loaded_scene()
 
 
 func _swap_loaded_scene() -> void:
-	var resource := ResourceLoader.load_threaded_get(_requested_path)
+	await _fade_to(1.0)
+	# Godot 4.7 threaded loading leaks internal LoadTokens on shutdown.
+	# Load behind the fade until godotengine/godot#121025 is available.
+	var resource := ResourceLoader.load(_requested_path, "PackedScene")
 	if not resource is PackedScene:
 		_finish_with_error("暂时无法进入目标区域", "loaded resource is not a PackedScene")
+		await _fade_to(0.0)
 		return
-	await _fade_to(1.0)
+	load_progress_changed.emit(1.0)
 	for child in _scene_container.get_children():
 		child.queue_free()
 	await get_tree().process_frame

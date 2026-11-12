@@ -42,17 +42,21 @@
     "tests/integration/mobile_dialogue_check.gd",
     "tests/integration/ios_mobile_check.gd",
     "tests/integration/settings_menu_check.gd",
-    "tests/integration/chinese_font_check.gd"
+    "tests/integration/chinese_font_check.gd",
+    "tests/integration/synthesis_npc_check.gd",
+    "tests/integration/inventory_check.gd",
+    "tests/integration/weapon_switch_check.gd",
+    "tests/integration/first_weapon_pickup_check.gd",
+    "tests/integration/enemy_drop_navigation_check.gd",
+    "tests/integration/loot_synthesis_loop_check.gd",
+    "tests/integration/boss_presentation_check.gd",
+    "tests/integration/shutdown_check.gd"
   ],
   "historical_exclusions": {
     "tests/integration/component_progression_check.gd": "References removed mobility API",
     "tests/integration/cyberware_check.gd": "Asserts removed independent cyberware slot and fusion rules",
     "tests/integration/mobility_and_discard_check.gd": "References removed mobility slot",
-    "tests/integration/synthesis_npc_check.gd": "Known obsolete warehouse and backpack fixture failures",
     "tests/integration/playthrough_check.gd": "Uses removed mobility API and obsolete combat/loadout assumptions",
-    "tests/integration/inventory_check.gd": "Asserts retired combat equipment rules and old backpack capacity; indexes missing item after failure",
-    "tests/integration/weapon_switch_check.gd": "Asserts retired combat equip and heat rules; old fixture can index missing backpack items",
-    "tests/integration/first_weapon_pickup_check.gd": "Asserts retired combat equipment lock and six-cell bag assumptions",
     "tests/integration/combat_audio_check.gd": "References removed mobility API; audio coverage remains in current unit checks"
   }
 }

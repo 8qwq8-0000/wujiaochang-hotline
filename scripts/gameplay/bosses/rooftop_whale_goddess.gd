@@ -32,7 +32,6 @@ var channel_form := false
 
 func _ready() -> void:
 	add_to_group("bosses")
-	EnemyEncounterRecorder.watch(self, "rooftop_whale_goddess")
 	halo_segments_remaining = halo_segment_count
 	body_sprite.texture = dormant_texture
 	glow_sprite.visible = false

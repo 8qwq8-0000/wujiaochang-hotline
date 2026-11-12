@@ -24,7 +24,6 @@ var _flash := 0.0
 
 func _ready() -> void:
 	add_to_group("sentry_turrets")
-	EnemyEncounterRecorder.watch(self, "sentry_turret")
 	health.died.connect(_on_destroyed)
 	var room := get_parent()
 	if room.has_signal("room_cleared"):
@@ -86,8 +85,8 @@ func fire_volley(heading: Vector2) -> Array[CombatProjectile]:
 			continue
 		var shot := PROJECTILE.instantiate() as CombatProjectile
 		shot.position = get_parent().to_local(origin)
-		shot.setup(self, CombatFaction.Id.ENEMY, forward, damage, projectile_speed)
 		get_parent().add_child(shot)
+		shot.setup(self, CombatFaction.Id.ENEMY, forward, damage, projectile_speed)
 		_projectiles.append(shot)
 		shots.append(shot)
 	volleys_fired += 1

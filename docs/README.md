@@ -27,7 +27,7 @@
 | 开始游戏与仓库 | [主菜单](technical/启动界面与角色确认实施说明.md)、[储物箱](technical/仓库储物箱实施说明.md)、[摆放指南](technical/仓库物品摆放指南.md) |
 | 战斗与装备 | [战斗框架](technical/战斗基础框架实施说明.md)、[武器](technical/武器场景实施说明.md)、[固有突进与旧义体实施](technical/固有突进与义体迁移实施说明.md)、[新义体回路规格](design/义体回路玩法规格.md)、[首个可玩版本蓝图](technical/义体回路首个可玩版本实施蓝图.md)、[防御组件](technical/防御组件实施说明.md) |
 | 背包与结算 | [组件与掉落](technical/组件背包与掉落实施说明.md)、[黑匣](technical/黑匣与死亡保护实施说明.md)、[撤离](technical/撤离结算实施说明.md) |
-| 合成与训练 | [品质与合成](technical/品质词条合成与正式掉落实施说明.md)、[Codex 通道](technical/Codex通道合成实施说明.md)、[盾反训练](technical/盾反训练营与连续完美反馈.md) |
+| 合成与盾反 | [品质与合成](technical/品质词条合成与正式掉落实施说明.md)、[Codex 通道](technical/Codex通道合成实施说明.md)、[连续盾反反馈](technical/盾反训练营与连续完美反馈.md) |
 | 地图与 Boss | [双区域流程](technical/双战斗区域实施说明.md)、[四种普通地图](technical/普通战斗地图扩展说明.md)、[楼顶 Boss](technical/楼顶Boss战斗实施说明.md) |
 | 敌人 | [警戒](technical/敌人警戒实施说明.md)、[战术 AI](technical/敌人战术AI实施说明.md)、[盾兵屏障](technical/盾兵屏障技能接入验收.md) |
 | 环境与表现 | [配电箱](technical/导电与配电箱实施说明.md)、[炸弹箱](technical/浸油引燃与燃料桶实施说明.md)、[2.5D 场景](technical/战斗场景2.5D美术接入.md)、[打击反馈](technical/打击反馈实现说明.md) |

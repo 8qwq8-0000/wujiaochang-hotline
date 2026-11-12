@@ -47,6 +47,15 @@ func run() -> void:
 	check(replacement.get_prototype().get_prototype_id()=="pistol" and ComponentRolls.affixes(replacement).is_empty(),"no weapons grants the same plain pistol")
 	room._ensure_fallback_weapon()
 	check(inv.weapon_slot.get_item()==replacement,"repeated fallback does not duplicate pistol")
+	for retired in ["baton", "initial_baton"]:
+		var legacy_pickup := load("res://scenes/items/component_pickup.tscn").instantiate() as ComponentPickup
+		legacy_pickup.component_id = retired
+		room.add_child(legacy_pickup)
+		legacy_pickup.global_position = room.player.global_position
+		var item := legacy_pickup.rolled_item
+		check(legacy_pickup.try_pickup(inv), "legacy scene pickup is accepted under its canonical pistol ID")
+		check(inv.item_location(item) != "" and item.get_prototype().get_prototype_id() == "pistol", "legacy pickup preserves the actual rolled pistol instance")
+		check(not legacy_pickup.try_pickup(inv), "legacy scene pickup cannot be collected twice")
 	var rng:=RandomNumberGenerator.new()
 	rng.seed=42
 	var old_drop_found:=false
@@ -59,4 +68,4 @@ func run() -> void:
 	await process_frame
 	DirAccess.remove_absolute(store.save_path)
 	print("Issued pistol checks: ",checks,"; failures: ",failures)
-	quit(0 if failures==0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures==0 else 1)

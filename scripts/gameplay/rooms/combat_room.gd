@@ -46,7 +46,8 @@ func _ready() -> void:
 			_place_sentries()
 		var run := get_node_or_null("/root/RunManager")
 		var seed_value: int = (run.run_seed if run != null else 1) + 104729 * (run.floor_index + 1 if run != null else 1) + area_index * 97 + hash(layout.id)
-		layout.power_position = EncounterPropPlacement.choose_power_position(layout, seed_value)
+		var onward_door := Vector2(ROOM_SIZE.x - 16, ROOM_SIZE.y * 0.5) if sequence_managed and area_index < area_total - 1 else exit_elevator.position
+		layout.power_position = EncounterPropPlacement.choose_power_position(layout, seed_value, onward_door)
 		_add_small_obstacles()
 		_apply_layout()
 	_place_signal_emitter()
@@ -131,11 +132,10 @@ func configure_stage(index: int, total: int) -> void:
 
 
 func activate() -> void:
-	if active or cleared:
-		return
-	active = true
-	if not ambush_managed:
-		spawner.spawn_all()
+	if not active and not cleared:
+		active = true
+		if not ambush_managed:
+			spawner.spawn_all()
 	_configure_player_camera_if_inside()
 
 

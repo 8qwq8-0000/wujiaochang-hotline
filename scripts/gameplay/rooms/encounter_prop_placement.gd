@@ -1,6 +1,7 @@
 class_name EncounterPropPlacement
 extends RefCounted
 
+const BLAST_PROJECTION := Vector2(1.0, FuelPatch.DEFAULT_GROUND_DEPTH_RATIO)
 const BLAST_REACH := 92.0 # Leave a margin inside FuelPatch's 96 px explosion.
 const CLEARANCE := 22.0
 const POWER_CLEARANCE := 32.0 # Half the 64 px terminal artwork.
@@ -10,7 +11,9 @@ const EXIT := Vector2(592, 180)
 const ELEVATOR_EXIT := Vector2(606, 280)
 
 
-static func choose_power_position(layout: CombatLayoutData, seed_value: int) -> Vector2:
+static func choose_power_position(
+	layout: CombatLayoutData, seed_value: int, exit_position := Vector2.INF,
+) -> Vector2:
 	if layout.power_spawn_zones.is_empty():
 		return layout.power_position
 	var blockers: Array[Rect2] = []
@@ -48,9 +51,18 @@ static func choose_power_position(layout: CombatLayoutData, seed_value: int) -> 
 	if candidates.is_empty():
 		push_error("No safe power station position in eligible zones: %s" % layout.id)
 		return layout.power_position
+	# Place the reward beside the onward door, keeping the safe approach clear.
+	var anchor := exit_position if exit_position.is_finite() else Vector2(layout.room_size.x - 16, layout.room_size.y * 0.5)
+	var nearest_distance := INF
+	for point in candidates:
+		nearest_distance = minf(nearest_distance, point.distance_to(anchor))
+	var door_candidates: Array[Vector2] = []
+	for point in candidates:
+		if point.distance_to(anchor) <= nearest_distance + 32:
+			door_candidates.append(point)
 	var random := RandomNumberGenerator.new()
 	random.seed = seed_value
-	return candidates[random.randi_range(0, candidates.size() - 1)]
+	return door_candidates[random.randi_range(0, door_candidates.size() - 1)]
 
 static func power_footprint(point: Vector2) -> Rect2:
 	# Upright artwork extends above the actual floor collision shape.
@@ -66,7 +78,7 @@ static func choose_barrel_position(enemies: Array[Vector2], blockers: Array[Rect
 	anchors.append_array(enemies)
 	for index in enemies.size():
 		for other in range(index + 1, enemies.size()):
-			if enemies[index].distance_to(enemies[other]) <= BLAST_REACH * 2:
+			if ((enemies[index] - enemies[other]) / BLAST_PROJECTION).length() <= BLAST_REACH * 2:
 				anchors.append((enemies[index] + enemies[other]) * 0.5)
 	var candidates: Array[Vector2] = []
 	for anchor in anchors:
@@ -89,7 +101,7 @@ static func choose_barrel_position(enemies: Array[Vector2], blockers: Array[Rect
 		var count := 0
 		var distance := 0.0
 		for enemy in enemies:
-			var separation := point.distance_to(enemy)
+			var separation := ((point - enemy) / BLAST_PROJECTION).length()
 			if separation <= BLAST_REACH and clear_segment(point, enemy, sight_blockers):
 				count += 1
 				distance += separation

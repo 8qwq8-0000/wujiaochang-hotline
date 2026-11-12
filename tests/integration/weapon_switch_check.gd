@@ -60,8 +60,11 @@ func run() -> void:
 	await process_frame
 	check(player.weapons.current_index == 1, "scroll switches to carried reserve")
 	check(inventory.pickup("scattergun"), "pickup new weapon")
-	check(not inventory.equip(0, 1), "combat blocks replacing carried weapons")
-	check(not inventory.unequip("weapon_secondary"), "combat blocks unequipping reserve")
+	inventory.set_open(true)
+	check(paused and inventory.equip(0, 1), "combat backpack allows replacing carried weapons")
+	check(inventory.unequip("weapon_secondary"), "combat backpack allows unequipping reserve when space remains")
+	check(inventory.equip(1, 1), "combat reserve can be restored from the same backpack instance")
+	inventory.set_open(false)
 	root.get_node("RunManager").set_mandatory_enemy_count(0)
 	for index in 5:
 		inventory.pickup("baton")
@@ -88,4 +91,4 @@ func run() -> void:
 	print("Two-weapon switch failures: ", failures)
 	scene.queue_free()
 	await process_frame
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

@@ -86,7 +86,7 @@ func run_checks() -> void:
 	arena = await wait_scene() as RooftopBossArena
 	check(arena != null and arena.channel_duel != null, "production room selects second-ending duel")
 	if arena == null or arena.channel_duel == null:
-		quit(1)
+		root.get_node("GameSettings").quit_game(1)
 		return
 	duel = arena.channel_duel
 	var player := arena.player
@@ -138,6 +138,8 @@ func run_checks() -> void:
 	bullet.position = arena.boss.position + Vector2(0, 65)
 	arena.add_child(bullet)
 	await frames(16)
+	var encounters: Array = store.get_codex().enemies
+	check("rooftop_whale_goddess_channel" in encounters and not "rooftop_whale_goddess" in encounters, "second-ending combat unlocks only its own boss form")
 	check(arena.boss.health.current_health == life - 1, "real player projectile damages floating boss")
 	await capture("02-active-duel")
 	# All three casts run their actual runtime scheduling, without automatic repeats.
@@ -332,4 +334,4 @@ func run_checks() -> void:
 	store.end_test_session()
 	check(store.get_profile() == formal, "test restores formal profile without changes")
 	print("Channel boss duel checks: ", checks, "; failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

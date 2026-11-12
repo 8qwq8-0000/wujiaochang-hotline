@@ -65,7 +65,7 @@ func run_checks() -> void:
 	var main := await wait_main()
 	check(main != null, "continue game creates playable main")
 	if main == null:
-		quit(1)
+		root.get_node("GameSettings").quit_game(1)
 		return
 	var floor_scene: Node = main.get_node("SceneContainer").get_child(0)
 	check(not floor_scene.is_in_group("warehouse") and floor_scene.has_node("ChannelMission"), "continue resumes action instead of bypassing lock through warehouse")
@@ -160,4 +160,4 @@ func run_checks() -> void:
 	paused = false
 	DirAccess.remove_absolute(TEST_PATH)
 	print("Channel recovery checks: ", checks, "; failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

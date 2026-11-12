@@ -114,10 +114,24 @@ func run_checks() -> void:
 	check(danger.state == PowerBox.State.READY and danger.discharge_count == 0 and arcs.is_empty(), "attacks never discharge the circuit terminal")
 	check(player.health.current_health == 3 and target.health.current_health == 8, "station attacks do not cause surrounding blast damage")
 	var terminal_library_before := player.cyberware.circuit.get_library_counts()
-	danger.interact(player)
+	var displayed := danger.get_node("TerminalModule") as Sprite2D
+	var reward: CyberwareData = danger.get("_terminal_reward")
+	check(displayed.visible and displayed.texture != null, "terminal visibly displays the free module")
+	check(reward != null and reward.grade >= CyberwareData.Grade.MILITARY, "terminal reward is at least military grade")
+	room.cleared = false
+	for frame in 3:
+		await physics_frame
+	await press_e()
+	check(danger.state == PowerBox.State.READY and player.cyberware.circuit.get_library_counts() == terminal_library_before, "terminal reward is locked before clear")
+	room.cleared = true
+	await press_e()
 	check(danger.state == PowerBox.State.CLAIMED and danger.get_node("ActiveSigil").visible and danger.collision_layer == 32, "terminal remains powered and interactive after its first sync")
-	check(player.cyberware.circuit.get_library_counts() != terminal_library_before, "first terminal sync grants one random cyberware")
 	var terminal_library_after := player.cyberware.circuit.get_library_counts()
+	var expected_library := terminal_library_before.duplicate()
+	if reward != null:
+		expected_library[reward.module_id] = int(expected_library.get(reward.module_id, 0)) + 1
+	check(reward != null and terminal_library_after == expected_library, "E grants exactly the displayed module once")
+	check(not displayed.visible, "claimed module disappears from the tray")
 	var circuit_editor = hud.get_circuit_editor()
 	check(circuit_editor.is_open, "terminal opens the circuit editor")
 	circuit_editor.set_open(false)
@@ -191,7 +205,7 @@ func run_checks() -> void:
 	other_room.queue_free()
 	await process_frame
 	print("Power-box checks: ",checks,"; failures: ",failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)
 
 func check_popup(box: PowerBox, id: StringName) -> void:
 	var feedback := box.get_node_or_null("ChargingBuffFeedback") as Node2D

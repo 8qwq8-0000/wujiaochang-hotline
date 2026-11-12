@@ -305,8 +305,13 @@ static func floor_equipment_drop(floor_number: int, rng: RandomNumberGenerator) 
 	return create("pistol", tier, rng)
 
 
-static func guaranteed_cyberware_drop(_floor_number: int, rng: RandomNumberGenerator, owned_counts: Dictionary = {}) -> InventoryItem:
-	var candidates := _cyberware_drop_candidates(owned_counts)
+static func guaranteed_cyberware_drop(
+	_floor_number: int, rng: RandomNumberGenerator, owned_counts: Dictionary = {},
+	minimum_grade: CyberwareData.Grade = CyberwareData.Grade.STARTER,
+) -> InventoryItem:
+	var candidates := _cyberware_drop_candidates(owned_counts, minimum_grade)
+	if candidates.is_empty():
+		return null
 	var total_weight := 0
 	for weight in candidates.values():
 		total_weight += int(weight)
@@ -318,14 +323,20 @@ static func guaranteed_cyberware_drop(_floor_number: int, rng: RandomNumberGener
 	return create("smart_fire", 1, rng)
 
 
-static func _cyberware_drop_candidates(owned_counts: Dictionary) -> Dictionary:
+static func _cyberware_drop_candidates(
+	owned_counts: Dictionary, minimum_grade: CyberwareData.Grade = CyberwareData.Grade.STARTER,
+) -> Dictionary:
 	var candidates := {}
 	for id in _cyberware_grades():
 		if id in EVENT_STARTER_DROPS:
 			continue
 		var grade := int(_cyberware_grade_cache[id])
+		if grade < minimum_grade:
+			continue
 		var owned := maxi(int(owned_counts.get(StringName(id), owned_counts.get(id, 0))), 0)
 		candidates[id] = maxi(1, int(CYBERWARE_GRADE_WEIGHTS[grade]) * 5 / (owned * 3 + 1))
+	if minimum_grade > CyberwareData.Grade.STARTER:
+		return candidates
 	var missing := []
 	var owned_mask := 0
 	for raw_id in owned_counts:

@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="108" viewBox="0 0 120 108" shape-rendering="crispEdges">
+  <defs>
+    <linearGradient id="metal" x2="0" y2="1"><stop stop-color="#566476"/><stop offset=".48" stop-color="#384353"/><stop offset="1" stop-color="#242e3b"/></linearGradient>
+    <linearGradient id="deck" x2="0" y2="1"><stop stop-color="#566477"/><stop offset="1" stop-color="#303d4c"/></linearGradient>
+    <linearGradient id="front" x2="0" y2="1"><stop stop-color="#435066"/><stop offset="1" stop-color="#283443"/></linearGradient>
+  </defs>
+  <!-- Ground contact, rubber feet and the stepped silhouette. -->
+  <ellipse cx="60" cy="99" rx="58" ry="8" fill="#0b131c" opacity=".55"/>
+  <path fill="#0b131e" d="M16 7h87l11 17 4 23-4 12v35l-7 10H89v-5H31v5H12L6 95V59L2 47l4-23z"/>
+  <path fill="#283443" d="M13 92h18v10H14zm76 0h18v10H89z"/>
+  <path fill="#627084" d="M14 95h14v2H14zm78 0h13v2H92z"/>
+  <!-- Rear equipment rail, cable sockets and a small diagnostic display. -->
+  <path fill="#111d29" d="M16 7V2h20v9h48V4h18v9l9 17H9z"/>
+  <path fill="#4e5d70" d="M18 2h16v9H18zm68 2h14v11H86z"/>
+  <path fill="#8793a3" d="M18 2h16v1H18zm68 2h14v1H86z"/>
+  <path fill="#18232d" d="M21 5h10v4H21zm68 2h8v5h-8z"/>
+  <path fill="#40bfc4" d="M22 6h7v1h-7zm69 2h2v2h-2zm4 0h1v2h-1z"/>
+  <!-- Chassis top, inset tray and bevels. -->
+  <path fill="#69768a" d="M16 12h87l9 17-6 25H14L8 29z"/>
+  <path fill="url(#deck)" d="M18 14h82l9 16-6 21H17l-6-21z"/>
+  <path fill="#8c98a8" d="M18 14h82v1H18z"/>
+  <path fill="#202c39" d="M39 19h42l7 7-3 19H36l-4-19z"/>
+  <path fill="#788799" d="M40 19h40l2 2H38zm-4 24h49l-1 3H37z"/>
+  <path fill="#0c1d28" d="M40 23h39l5 5-2 12H39l-3-12z"/>
+  <path fill="#293f4c" d="M42 25h34l5 4-2 9H42l-3-9z"/>
+  <path fill="#536e7a" d="M41 27h2v9h-2zm35 0h2v9h-2z"/>
+  <path fill="#4ce4de" d="M37 28h2v7h-2zm44 0h2v7h-2z"/>
+  <path fill="#79d8cf" opacity=".6" d="M44 40h28v1H44z"/>
+  <!-- Recessed left vent, amber meter and right touch console. -->
+  <path fill="#1a2531" d="M18 22h12l3 20H20z"/>
+  <path fill="#66798b" d="M20 24h9v1h-9zm1 3h8v1h-8zm0 3h9v1h-9zm0 3h9v1h-9zm1 3h9v1h-9zm0 3h9v1h-9z"/>
+  <path fill="#17212d" d="M87 26h14l-2 17H86z"/>
+  <path fill="#607489" d="M89 28h10l-1 7h-9z"/>
+  <path fill="#102f3a" d="M90 29h8v5h-8z"/>
+  <path fill="#5ad7d4" d="M91 30h5v1h-5zm0 2h3v1h-3z"/>
+  <path fill="#94a3b2" d="M89 38h3v2h-3zm5 0h3v2h-3z"/>
+  <path fill="#161e28" d="M20 16h12v4H20z"/>
+  <path fill="#d4a25b" d="M22 17h2v2h-2zm3 0h2v2h-2zm3 0h2v2h-2z"/>
+  <!-- Tray lip and the weathered warning strip. -->
+  <path fill="#17222e" d="M14 46h92v12H14z"/>
+  <path fill="#718091" d="M17 47h87v2H17z"/>
+  <path fill="#d3ad60" d="M24 50h8l-4 6h-8zm15 0h8l-4 6h-8zm15 0h8l-4 6h-8zm15 0h8l-4 6h-8zm15 0h8l-4 6h-8zm15 0h4v2l-3 4h-5z"/>
+  <path fill="#f0d08c" d="M24 50h8v1h-8zm30 0h8v1h-8zm30 0h8v1h-8z"/>
+  <path fill="#36414c" d="M40 52h2v1h-2zm33 3h3v1h-3zm15-4h2v1h-2z"/>
+  <!-- Front fascia with recessed doors, panel seams and machined handles. -->
+  <path fill="url(#front)" d="M14 58h92v38H14z"/>
+  <path fill="#8190a3" d="M17 59h86v1H17z"/>
+  <path fill="#121e2b" d="M33 63h53v30H33z"/>
+  <path fill="#4e6075" d="M35 65h23v26H35zm26 0h23v26H61z"/>
+  <path fill="#3b4c60" d="M36 66h21v24H36zm26 0h21v24H62z"/>
+  <path fill="#8290a2" d="M36 66h21v1H36zm26 0h21v1H62z"/>
+  <path fill="#182635" d="M53 69h3v12h-3zm10 0h3v12h-3z"/>
+  <path fill="#a1aebc" d="M54 70h1v8h-1zm10 0h1v8h-1z"/>
+  <path fill="#17232f" d="M38 80h11v2H38zm0 5h11v2H38zm32-5h11v2H70zm0 5h11v2H70z"/>
+  <path fill="#607388" d="M38 82h11v1H38zm0 5h11v1H38zm32-5h11v1H70zm0 5h11v1H70z"/>
+  <!-- Side service bays and tiny serial plates. -->
+  <path fill="#121f2c" d="M18 64h12v26H18zm71 0h13v26H89z"/>
+  <path fill="#5f7186" d="M19 65h10v1H19zm71 0h11v1H90z"/>
+  <path fill="#1a3944" d="M20 68h8v5h-8zm72 0h8v5h-8z"/>
+  <path fill="#4bd6d2" d="M21 69h6v2h-6zm72 0h6v2h-6z"/>
+  <path fill="#b3f7e6" d="M21 69h2v1h-2zm72 0h2v1h-2z"/>
+  <path fill="#8290a1" d="M20 77h3v1h-3zm5 0h3v1h-3zm67 0h3v1h-3zm5 0h2v1h-2z"/>
+  <path fill="#a48b60" d="M21 83h6v3h-6zm71 0h7v3h-7z"/>
+  <path fill="#39434c" d="M22 84h3v1h-3zm71 0h4v1h-4z"/>
+  <!-- Reinforced shoulders and layered corner rails. -->
+  <path fill="#263240" d="M7 24h9l-3 17 6 13-2 39H9L6 87V57L2 47zm98 0h8l5 23-4 10v30l-4 6h-8l-2-39 7-13z"/>
+  <path fill="url(#metal)" d="M8 25h6l-3 17 5 11-1 36h-5l-2-4V56L5 46zm98 0h5l4 21-3 10v29l-3 4h-5l-1-36 6-11z"/>
+  <path fill="#9aa6b5" d="M8 25h6v2H9L6 45H5zm98 0h5l1 3h-6zM9 62h2v21H9zm100 0h2v21h-2z"/>
+  <path fill="#17212d" d="M7 46h7l3 7-3 7H8l-3-7zm100 0h6l3 7-3 7h-7l-3-7z"/>
+  <path fill="#68798c" d="M7 48h6l2 5-2 5H8l-2-5zm101 0h4l2 5-2 5h-5l-2-5z"/>
+  <path fill="#6ff0e5" d="M9 50h2v6H9zm100 0h2v6h-2z"/>
+  <path fill="#baf9ec" d="M9 50h1v3H9zm100 0h1v3h-1z"/>
+  <!-- Fasteners, edge wear and lower structural rail. -->
+  <g fill="#121c28"><path d="M17 16h3v3h-3zm81 0h3v3h-3zM20 60h3v3h-3zm77 0h3v3h-3zM18 91h3v3h-3zm81 0h3v3h-3z"/></g>
+  <g fill="#8b99a7"><path d="M18 16h1v1h-1zm81 0h1v1h-1zM21 60h1v1h-1zm77 0h1v1h-1zM19 91h1v1h-1zm81 0h1v1h-1z"/></g>
+  <path fill="#131f2c" d="M24 94h73v5H24z"/>
+  <path fill="#536478" d="M27 95h66v1H27z"/>
+  <path fill="#8996a4" opacity=".65" d="M31 15h4v1h-4zm54 1h3v1h-3zM38 68h3v1h-3zm39 22h4v1h-4zM10 85h2v2h-2zm97-25h2v2h-2z"/>
+</svg>

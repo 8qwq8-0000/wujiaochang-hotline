@@ -8,6 +8,7 @@ signal attack_finished
 
 enum Kind { ROOK, BISHOP, QUEEN }
 
+const ENCOUNTER_IDS := ["wing_guard_rook", "wing_guard_bishop", "wing_guard_queen"]
 const GRID_MAX := BossFloorGeometry.GRID_MAX
 const SLASH_SCENE := preload("res://scripts/gameplay/bosses/wing_slash_projectile.gd")
 const ATTACK_WARNING := 0.55
@@ -71,6 +72,7 @@ func _ready() -> void:
 	player = get_node_or_null(player_path) as PlayerController
 	_idle_texture = load(ART[kind])
 	body.texture = _idle_texture
+	EnemyEncounterRecorder.watch(self, ENCOUNTER_IDS[kind], false)
 	health.health_changed.connect(func(current: int, maximum: int, _delta: int) -> void:
 		health_changed.emit(current, maximum)
 		queue_redraw())

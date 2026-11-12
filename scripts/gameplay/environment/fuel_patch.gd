@@ -1,9 +1,11 @@
 class_name FuelPatch
 extends Area2D
 
+const DEFAULT_GROUND_DEPTH_RATIO := 0.55
+
 @export var radius := 64.0
 @export var explosion_radius := 96.0
-@export_range(0.1, 1.0, 0.01) var ground_depth_ratio := 0.55
+@export_range(0.1, 1.0, 0.01) var ground_depth_ratio := DEFAULT_GROUND_DEPTH_RATIO
 var burning := false
 var is_bomb_hazard := false
 var remaining := 8.0

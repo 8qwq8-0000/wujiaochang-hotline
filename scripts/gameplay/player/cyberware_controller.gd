@@ -372,18 +372,16 @@ func ensure_default_starter() -> bool:
 	return changed
 
 
-func claim_terminal_module() -> StringName:
+func roll_terminal_module() -> StringName:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	var run := get_node_or_null("/root/RunManager")
 	var floor_number: int = run.floor_index + 1 if run != null else 1
-	var rolled := ComponentRolls.guaranteed_cyberware_drop(floor_number, rng, circuit.get_library_counts())
+	var rolled := ComponentRolls.guaranteed_cyberware_drop(
+		floor_number, rng, circuit.get_library_counts(), CyberwareData.Grade.MILITARY
+	)
 	var modules := ComponentRolls.cyberware_modules(rolled)
-	if modules.is_empty():
-		return StringName()
-	var selected := StringName(modules[0])
-	store_circuit_modules(PackedStringArray([String(selected)]))
-	return selected
+	return StringName(modules[0]) if not modules.is_empty() else &""
 
 
 func set_circuit_slots(module_ids: PackedStringArray) -> Dictionary:

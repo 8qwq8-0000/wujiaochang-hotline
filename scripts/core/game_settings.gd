@@ -21,10 +21,13 @@ var difficulty: Difficulty = Difficulty.STANDARD
 var high_pressure_alert := false
 var continuous_precharge := false
 var elemental_reactions_enabled := false
+var _quitting := false
 var test_tools: CanvasLayer
 
 
 func _ready() -> void:
+	get_tree().auto_accept_quit = false
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	# Keep test commands out of public release builds.
 	if OS.has_feature("editor") or OS.has_feature("debug"):
 		test_tools = load("res://scripts/ui/test_mode_panel.gd").new()
@@ -103,3 +106,29 @@ func are_elemental_reactions_enabled() -> bool:
 	# The shipped game keeps the deferred reaction system disabled for this UI pass.
 	# Headless regression scenes can still exercise the preserved implementation.
 	return elemental_reactions_enabled or DisplayServer.get_name() == "headless"
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		quit_game()
+
+
+func quit_game(exit_code: int = 0) -> void:
+	if _quitting:
+		return
+	_quitting = true
+	var tree := get_tree()
+	# Prevent gameplay, UI callbacks and music transitions from restarting audio.
+	for child in tree.root.find_children("*", "Node", true, false):
+		if child != self:
+			child.process_mode = Node.PROCESS_MODE_DISABLED
+	for kind in ["AudioStreamPlayer", "AudioStreamPlayer2D", "AudioStreamPlayer3D"]:
+		for player in tree.root.find_children("*", kind, true, false):
+			player.stop()
+			player.stream = null
+	# AudioServer releases playback references on its next mix/update, before
+	# SceneTree teardown destroys resources and the scripting VM.
+	var deadline := Time.get_ticks_msec() + 100
+	while Time.get_ticks_msec() < deadline:
+		await tree.process_frame
+	tree.quit(exit_code)

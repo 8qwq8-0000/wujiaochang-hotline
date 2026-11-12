@@ -56,7 +56,7 @@ func _set_layout(settlement: bool) -> void:
 func _build_panel() -> void:
 	_shade = ColorRect.new()
 	_shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_shade.color = Color(0.01, 0.025, 0.02, 0.72)
+	_shade.color = Color(CyberUITheme.BACKGROUND, 0.72)
 	_shade.hide()
 	add_child(_shade)
 	_overlay = TerminalPanel.new()
@@ -76,7 +76,7 @@ func _build_panel() -> void:
 	column.add_child(_title)
 	_divider = HSeparator.new()
 	var rule := StyleBoxLine.new()
-	rule.color = CyberUITheme.DIM_GREEN
+	rule.color = CyberUITheme.BORDER
 	rule.thickness = 1
 	_divider.add_theme_stylebox_override("separator", rule)
 	_divider.hide()
@@ -333,6 +333,7 @@ func _add_button(text: String, action: Callable) -> void:
 	var button := Button.new()
 	button.text = text
 	button.custom_minimum_size = Vector2(112, 26)
+	CyberDialoguePanel.style_button(button)
 	button.pressed.connect(action)
 	_buttons.add_child(button)
 

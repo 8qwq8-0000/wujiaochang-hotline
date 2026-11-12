@@ -156,4 +156,4 @@ func run() -> void:
 		await settle()
 	print("Room layout checks: ", checks, "; failures: ", failures)
 	DirAccess.remove_absolute("user://bc_room_layouts_check.json")
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

@@ -116,7 +116,7 @@ func run() -> void:
 	var room := await warehouse()
 	check(room != null, "first game enters warehouse")
 	if room == null:
-		quit(1)
+		root.get_node("GameSettings").quit_game(1)
 		return
 	room.player.set_physics_process(false)
 	check(root.get_node("GameSettings").high_pressure_alert, "new high-pressure save applies difficulty")
@@ -206,4 +206,4 @@ func run() -> void:
 	for path in backups():
 		DirAccess.remove_absolute(path)
 	print("Start menu checks: ", checks, "; failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

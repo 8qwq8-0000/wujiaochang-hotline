@@ -18,4 +18,4 @@ func run() -> void:
 		suite._free_tracked()
 
 	suites.clear()
-	quit(0 if int(result.get("failed", 0)) == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if int(result.get("failed", 0)) == 0 else 1)

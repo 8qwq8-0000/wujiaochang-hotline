@@ -118,4 +118,4 @@ func run() -> void:
 	await frames()
 	store.end_test_session()
 	print("Mobile inventory panel checks: %d; failures: %d" % [checks, failures])
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

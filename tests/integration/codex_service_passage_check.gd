@@ -82,7 +82,7 @@ func run_checks() -> void:
 	var passage := await wait_scene(flow)
 	check(passage.scene_file_path == PASSAGE_PATH and run.floor_index == 1, "floor two continue enters service passage once without advancing floor")
 	if passage.scene_file_path != PASSAGE_PATH:
-		quit(1)
+		root.get_node("GameSettings").quit_game(1)
 		return
 	player = passage.player
 	player.set_physics_process(false)
@@ -156,4 +156,4 @@ func run_checks() -> void:
 	paused = false
 	DirAccess.remove_absolute(SAVE_PATH)
 	print("Codex passage checks: ", checks, "; failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

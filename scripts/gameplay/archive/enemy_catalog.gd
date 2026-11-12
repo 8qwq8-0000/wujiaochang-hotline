@@ -8,8 +8,11 @@ const ENTRIES := [
 	{"id": "heavy_anchor", "name": "重装盾兵", "tag": "重装 / 屏障", "profile": "heavy_anchor", "behavior": "展开正面屏障推进，承受更多伤害；倒下后还会短暂蓄能自爆。", "counter": "绕至侧后方，利用屏障冷却攻击；击倒后及时远离残骸。"},
 	{"id": "freight_lane_marksman", "name": "货运线哨兵", "tag": "警戒 / 长射程", "profile": "freight_lane_marksman", "behavior": "沿货运通道巡逻，以较长射程覆盖通道和开阔地带。", "counter": "沿掩体接近，避开通道中线；看清射击前摇后再穿过火线。"},
 	{"id": "signal_amplifier", "name": "传令兵", "tag": "支援 / 信号源", "profile": "signal_amplifier", "behavior": "传递增援信号，在场时为其他敌人提供加速与减伤支援。", "counter": "优先锁定并击破信号源，再处理受其支援的敌群。"},
-	{"id": "sentry_turret", "name": "警戒炮台", "tag": "设施 / 双排弹幕", "image": "res://assets/art/environment/turrets/sentry_turret_down_v1.png", "behavior": "固定驻守、转向瞄准，短暂预警后发射双排弹幕。", "counter": "利用转向间隙换位，借墙体遮挡弹道，避免停留在锁定方向。"},
-	{"id": "rooftop_whale_goddess", "name": "鲸鱼女神 · DS 中枢", "tag": "首领 / 守卫联结", "image": "res://assets/art/characters/bosses/rooftop_whale_goddess/rooftop_boss_dormant.png", "behavior": "守卫清除后苏醒，以预警区域发动攻击，并与支援守卫联结。", "counter": "先处理守卫，观察地面预警并及时离开；联结阶段通过击败守卫削弱神像。"},
+	{"id": "wing_guard_rook", "name": "左翼卫", "tag": "首领 / 直线突进", "image": "res://assets/art/characters/bosses/wing_guards/left_rook_guard.png", "behavior": "沿横竖格线移动，锁定与玩家对齐的路线后突进劈砍。", "counter": "离开被锁定的行列，等突进结束后反击；近身劈砍可以盾反。"},
+	{"id": "wing_guard_bishop", "name": "右翼卫", "tag": "首领 / 斜向激光", "image": "res://assets/art/characters/bosses/wing_guards/right_bishop_guard.png", "behavior": "沿对角线跳跃，在斜线上锁定并发射激光。", "counter": "横向或纵向离开预警线，等光束消失再穿过。"},
+	{"id": "wing_guard_queen", "name": "合翼卫", "tag": "首领 / 米字激光", "image": "res://assets/art/characters/bosses/wing_guards/fused_queen_guard.png", "behavior": "由左右翼卫的核心融合而成，会发射米字激光，跳跃落地时放出扇形刀气。", "counter": "站到激光束之间的空格，避开落点。每对合翼卫造成 7 点伤害，神像失去 1 格耐久。"},
+	{"id": "rooftop_whale_goddess", "name": "鲸鱼女神 · DS 中枢", "tag": "首领 / 守卫联结", "image": "res://assets/art/characters/bosses/rooftop_whale_goddess/rooftop_boss_dormant_large.png", "behavior": "左右翼卫被击碎后苏醒，发动回声定位和落雷。合翼卫存活时，神像免疫直接伤害。", "counter": "留意落雷预警，先击败合翼卫解除联结，再打掉神像最后 1 格耐久。"},
+	{"id": "rooftop_whale_goddess_channel", "name": "鲸鱼女神 · 频道归还", "tag": "首领 / 楼顶单挑", "image": "res://assets/art/characters/bosses/rooftop_whale_goddess/channel_returned_v1/idle.png", "behavior": "神像苏醒后用回声定位、光带与震波封锁走位。", "counter": "避开回声落点与光带，必要时用突进穿过震波。"},
 ]
 
 

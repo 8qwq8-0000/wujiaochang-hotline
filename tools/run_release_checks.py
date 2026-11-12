@@ -95,10 +95,14 @@ def main() -> int:
             exit_code = 124
         log_path = output / (Path(name).stem + ".log")
         log_path.write_text(output_text, encoding="utf-8")
+        diagnostics = [line for line in output_text.splitlines()
+                       if line.startswith(("ERROR:", "SCRIPT ERROR:"))
+                       or any(token in line for token in ("ObjectDB instance", "Leaked instance:", "still in use at exit", "RID allocations"))]
         result = {
             "check": name,
-            "status": "timeout" if timed_out else ("passed" if exit_code == 0 else "failed"),
+            "status": "timeout" if timed_out else ("passed" if exit_code == 0 and not diagnostics else "failed"),
             "exit_code": exit_code,
+            "diagnostics": diagnostics,
             "log": str(log_path.relative_to(ROOT) if log_path.is_relative_to(ROOT) else log_path).replace("\\", "/"),
         }
         results.append(result)

@@ -3,9 +3,11 @@ extends CanvasLayer
 const CIRCUIT_PANEL := preload("res://scripts/ui/cyberware_circuit_panel.gd")
 const CIRCUIT_CARD := preload("res://scripts/ui/cyberware_circuit_card.gd")
 const CIRCUIT_DROP_ZONE := preload("res://scripts/ui/cyberware_circuit_drop_zone.gd")
-const DURABILITY_BASE := preload("res://assets/art/ui/os_hud/durability_base_v1.png")
 const DURABILITY_FILLED := preload("res://assets/art/ui/os_hud/durability_gem_filled_v2.png")
 const DURABILITY_EMPTY := preload("res://assets/art/ui/os_hud/durability_gem_empty_v2.png")
+const ARMOR_GEM_SHADER := preload("res://shaders/ui/armor_gem.gdshader")
+const DURABILITY_ORIGIN := Vector2(14.0, 9.0)
+const DURABILITY_CELL_SIZE := Vector2(39.0, 39.0)
 const HEAT_HOT := preload("res://assets/art/ui/os_hud/heat_fin_hot_v2.png")
 const HEAT_COLD := preload("res://assets/art/ui/os_hud/heat_fin_cold_v2.png")
 const CIRCUIT_RAIL := preload("res://assets/art/ui/os_hud/energy_bus_backbone_v1.png")
@@ -55,12 +57,13 @@ const CYBERWARE_ICONS := {
 	&"fission_core": preload("res://assets/art/items/equipment_v1/fission_core_64.png"),
 	&"penetration_booster": preload("res://assets/art/items/equipment_v1/penetration_booster_64.png"),
 }
-const EQUIPMENT_TINT := Color(0.8, 0.95, 1.0, 0.65)
-const EQUIPMENT_COOLDOWN_TINT := Color(0.18, 0.22, 0.32, 0.55)
+const EQUIPMENT_TINT := Color(CyberUITheme.HIGHLIGHT, 0.65)
+const EQUIPMENT_COOLDOWN_TINT := Color(CyberUITheme.SURFACE, 0.55)
 const CYBERWARE_ICON_SIZE := 36.0
 const CYBERWARE_ICON_GAP := 4.0
 const CIRCUIT_SLOT_WIDTH := 52.0
 const CIRCUIT_SLOT_STRIDE := 52.0
+const CIRCUIT_ENERGY_WIDTH := 248.0
 const CIRCUIT_HUD_WIDTH := 32.0 + CIRCUIT_SLOT_STRIDE * CyberwareCircuitState.SLOT_COUNT
 const CIRCUIT_HUD_HEIGHT := 78.0
 const CONNECT_SOUND := preload("res://assets/audio/ui/hotline_connect.wav")
@@ -104,6 +107,8 @@ var _circuit_tooltip_label: Label
 var _circuit_last_slots := PackedStringArray()
 var _circuit_pointer: Label
 var _circuit_energy_label: Label
+var _circuit_energy_bar: Control
+var _circuit_energy_track: ColorRect
 var _circuit_energy_fill: ColorRect
 var _circuit_payload_icon: Label
 var _circuit_queue_label: Label
@@ -181,16 +186,18 @@ func _process(delta: float) -> void:
 			_bind_player(_player)
 	if not is_instance_valid(_player):
 		return
-	_update_circuit_runtime_hud()
 	var health_state := _player.get_health_state()
 	_health_meter.segments = int(health_state.maximum)
 	_health_meter.set_meter(float(health_state.current), float(health_state.maximum))
 	var defense := _player.get_node("DefenseComponent") as DefenseComponent
-	_armor_meter.visible = defense.capacity() > 0
+	var armor_capacity := defense.capacity()
+	var gem_stride := _health_meter.texture_cell_size.x + _health_meter.cell_gap
+	_armor_meter.visible = armor_capacity > 0
 	if _armor_meter.visible:
-		_armor_meter.position = Vector2(14.0 + float(_health_meter.segments) * 41.0, 18.0)
-		_armor_meter.segments = defense.capacity()
-		_armor_meter.set_meter(defense.charges(), defense.capacity())
+		_armor_meter.position = DURABILITY_ORIGIN + Vector2(gem_stride * _health_meter.segments, 0.0)
+		_armor_meter.segments = armor_capacity
+		_armor_meter.set_meter(defense.charges(), armor_capacity)
+	_update_circuit_runtime_hud()
 	_update_circuit_status()
 	if int(health_state.current) == 1 and not _circuit_protection_active:
 		_health_meter.meter_color = CyberUITheme.DANGER
@@ -275,20 +282,10 @@ func _build_minimal_hud() -> void:
 	_top_left.scale = Vector2.ONE * 0.5
 	_top_left.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	overlay.add_child(_top_left)
-	var durability_line := TextureRect.new()
-	durability_line.name = "DurabilityLine"
-	durability_line.texture = DURABILITY_BASE
-	durability_line.position = Vector2(5, 2)
-	durability_line.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	durability_line.stretch_mode = TextureRect.STRETCH_SCALE
-	durability_line.size = Vector2(160, 68)
-	durability_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_top_left.add_child(durability_line)
-	durability_line.size = Vector2(160, 68)
 
 	_health_meter = SegmentMeter.new()
 	_health_meter.name = "HealthLights"
-	_health_meter.position = Vector2(14.0, 9.0)
+	_health_meter.position = DURABILITY_ORIGIN
 	_health_meter.size = Vector2(162.0, 39.0)
 	_health_meter.custom_minimum_size = _health_meter.size
 	_health_meter.caption = "耐久"
@@ -298,7 +295,7 @@ func _build_minimal_hud() -> void:
 	_health_meter.square_segments = true
 	_health_meter.filled_texture = DURABILITY_FILLED
 	_health_meter.empty_texture = DURABILITY_EMPTY
-	_health_meter.texture_cell_size = Vector2(39, 39)
+	_health_meter.texture_cell_size = DURABILITY_CELL_SIZE
 	_health_meter.cell_gap = 2.0
 	_health_meter.empty_alpha = 0.08
 	_health_meter.show_loss_trail = true
@@ -306,13 +303,17 @@ func _build_minimal_hud() -> void:
 
 	_armor_meter = SegmentMeter.new()
 	_armor_meter.name = "ArmorLights"
-	_armor_meter.size = Vector2(36, 20)
+	_armor_meter.size = Vector2(2.0 * DURABILITY_CELL_SIZE.x + _health_meter.cell_gap, DURABILITY_CELL_SIZE.y)
 	_armor_meter.custom_minimum_size = _armor_meter.size
 	_armor_meter.show_caption = false
 	_armor_meter.show_numeric = false
-	_armor_meter.square_segments = true
-	_armor_meter.meter_color = Color("70b7ff")
-	_armor_meter.empty_alpha = 0.08
+	_armor_meter.filled_texture = DURABILITY_FILLED
+	_armor_meter.empty_texture = DURABILITY_EMPTY
+	_armor_meter.texture_cell_size = DURABILITY_CELL_SIZE
+	_armor_meter.cell_gap = _health_meter.cell_gap
+	var armor_material := ShaderMaterial.new()
+	armor_material.shader = ARMOR_GEM_SHADER
+	_armor_meter.material = armor_material
 	_armor_meter.hide()
 	_top_left.add_child(_armor_meter)
 
@@ -414,6 +415,9 @@ func _build_minimal_hud() -> void:
 	_circuit_editor.name = "CyberwareCircuitEditor"
 	add_child(_circuit_editor)
 	_circuit_value = Label.new()
+	_circuit_value.name = "InsuranceState"
+	_circuit_value.hide()
+	add_child(_circuit_value)
 	_apply_hud_scale(_saved_hud_scale())
 
 
@@ -453,40 +457,7 @@ func _build_equipment_preview() -> void:
 	card_atlas.atlas = CIRCUIT_CARD_SOURCE
 	card_atlas.region = Rect2(35, 35, 1184, 1184)
 	_circuit_card_texture = card_atlas
-	var rail := TextureRect.new()
-	rail.name = "EnergyRail"
-	var rail_crop := AtlasTexture.new()
-	rail_crop.atlas = CIRCUIT_RAIL
-	rail_crop.region = Rect2(0, 260, 2172, 160)
-	rail.texture = rail_crop
-	rail.position = Vector2(0, 50)
-	rail.modulate = Color(1.55, 1.45, 1.25)
-	rail.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	rail.stretch_mode = TextureRect.STRETCH_SCALE
-	rail.size = Vector2(CIRCUIT_HUD_WIDTH, 20)
-	rail.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_circuit_hud.add_child(rail)
-	rail.size = Vector2(CIRCUIT_HUD_WIDTH, 20)
-	_circuit_energy_label = Label.new()
-	_circuit_energy_label.position = Vector2(5, 2)
-	_circuit_energy_label.size = Vector2(126, 18)
-	_circuit_energy_label.add_theme_font_size_override("font_size", 10)
-	_circuit_energy_label.add_theme_color_override("font_color", CyberUITheme.PHOSPHOR)
-	_circuit_energy_label.hide()
-	_circuit_hud.add_child(_circuit_energy_label)
-	var energy_track := ColorRect.new()
-	energy_track.name = "EnergyTrack"
-	energy_track.position = Vector2(6, 64)
-	energy_track.size = Vector2(CIRCUIT_HUD_WIDTH - 14.0, 2)
-	energy_track.color = Color(CyberUITheme.WARNING, 0.22)
-	energy_track.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_circuit_hud.add_child(energy_track)
-	_circuit_energy_fill = ColorRect.new()
-	_circuit_energy_fill.position = energy_track.position
-	_circuit_energy_fill.size = energy_track.size
-	_circuit_energy_fill.color = CyberUITheme.WARNING
-	_circuit_energy_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_circuit_hud.add_child(_circuit_energy_fill)
+	_build_circuit_energy_bar()
 	_circuit_payload_icon = Label.new()
 	_circuit_payload_icon.name = "WeaponPayloadReady"
 	_circuit_payload_icon.text = "◆"
@@ -581,6 +552,47 @@ func _build_equipment_preview() -> void:
 	_circuit_tooltip_panel.hide()
 
 
+func _build_circuit_energy_bar() -> void:
+	_circuit_energy_bar = Control.new()
+	_circuit_energy_bar.name = "CircuitEnergyBar"
+	_circuit_energy_bar.position = Vector2(5.0, 52.0)
+	_circuit_energy_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_top_left.add_child(_circuit_energy_bar)
+	var rail := TextureRect.new()
+	rail.name = "EnergyRail"
+	var rail_crop := AtlasTexture.new()
+	rail_crop.atlas = CIRCUIT_RAIL
+	rail_crop.region = Rect2(0, 260, 2172, 160)
+	rail.texture = rail_crop
+	rail.position = Vector2.ZERO
+	rail.modulate = Color(1.55, 1.45, 1.25)
+	rail.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rail.stretch_mode = TextureRect.STRETCH_SCALE
+	rail.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_circuit_energy_bar.add_child(rail)
+	rail.size = Vector2(CIRCUIT_ENERGY_WIDTH, 20)
+	_circuit_energy_label = Label.new()
+	_circuit_energy_label.position = Vector2(CIRCUIT_ENERGY_WIDTH + 4.0, 1.0)
+	_circuit_energy_label.size = Vector2(126, 18)
+	_circuit_energy_label.add_theme_font_size_override("font_size", 10)
+	_circuit_energy_label.add_theme_color_override("font_color", CyberUITheme.ACCENT)
+	_circuit_energy_label.hide()
+	_circuit_energy_bar.add_child(_circuit_energy_label)
+	_circuit_energy_track = ColorRect.new()
+	_circuit_energy_track.name = "EnergyTrack"
+	_circuit_energy_track.position = Vector2(6, 14)
+	_circuit_energy_track.size = Vector2(CIRCUIT_ENERGY_WIDTH - 14.0, 2)
+	_circuit_energy_track.color = Color(CyberUITheme.WARNING, 0.22)
+	_circuit_energy_track.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_circuit_energy_bar.add_child(_circuit_energy_track)
+	_circuit_energy_fill = ColorRect.new()
+	_circuit_energy_fill.position = _circuit_energy_track.position
+	_circuit_energy_fill.size = _circuit_energy_track.size
+	_circuit_energy_fill.color = CyberUITheme.WARNING
+	_circuit_energy_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_circuit_energy_bar.add_child(_circuit_energy_fill)
+
+
 func _refresh_cyberware_preview(modules: PackedStringArray) -> void:
 	_legacy_cyberware_modules = modules.duplicate()
 	for icon in _cyberware_preview.get_children():
@@ -634,8 +646,6 @@ func _refresh_circuit_capacity() -> void:
 	_circuit_hud.position.x = -width * 0.5
 	_circuit_hud.size.x = width
 	_circuit_config_hint.position.x = _circuit_hud.position.x - _circuit_config_hint.size.x - 2.0
-	(_circuit_hud.get_node("EnergyRail") as TextureRect).size.x = width
-	(_circuit_hud.get_node("EnergyTrack") as ColorRect).size.x = width - 14.0
 	_circuit_payload_icon.position.x = width - 26.0
 	(_circuit_hud.get_node("CircuitCardRow") as HBoxContainer).size.x = width - 24.0
 	_circuit_drop_zone.size.x = CIRCUIT_SLOT_STRIDE * _player.cyberware.circuit.slot_capacity + 16.0
@@ -856,7 +866,7 @@ func _update_circuit_runtime_hud() -> void:
 	_circuit_energy_label.add_theme_color_override("font_color", CyberUITheme.DANGER)
 	_circuit_energy_label.tooltip_text = "预计净耗 %.0f" % float(_player.cyberware.compile_circuit_plan().get("net_energy", 0.0))
 	var energy_ratio := clampf(circuit.current_energy / maxf(circuit.maximum_energy, 1.0), 0.0, 1.0)
-	var track_width := 32.0 + CIRCUIT_SLOT_STRIDE * circuit.slot_capacity - 14.0
+	var track_width := _circuit_energy_track.size.x
 	_circuit_energy_fill.size.x = track_width * (clampf(-circuit.current_energy / 100.0, 0.0, 1.0) if circuit.current_energy < 0.0 else energy_ratio)
 	_circuit_energy_fill.position.x = 6.0 + track_width - _circuit_energy_fill.size.x if circuit.current_energy < 0.0 else 6.0
 	_circuit_energy_fill.color = CyberUITheme.DANGER if circuit.current_energy < 0.0 or energy_ratio < 0.25 else CyberUITheme.WARNING
@@ -919,7 +929,7 @@ func get_circuit_hud_snapshot() -> Dictionary:
 		"energy": _circuit_energy_label.text if _circuit_energy_label != null else "",
 		"queues": _circuit_queue_label.text if _circuit_queue_label != null else "",
 		"status": _circuit_status_label.text if _circuit_status_label != null else "",
-		"energy_ratio": _circuit_energy_fill.size.x / maxf(_circuit_hud.size.x - 14.0, 1.0) if _circuit_energy_fill != null else 0.0,
+		"energy_ratio": _circuit_energy_fill.size.x / maxf(_circuit_energy_track.size.x, 1.0) if _circuit_energy_fill != null else 0.0,
 	}
 
 
@@ -1139,10 +1149,10 @@ func _on_player_health_changed(_current: int, _maximum: int, delta: int) -> void
 		return
 	if _health_meter_tween != null and _health_meter_tween.is_valid():
 		_health_meter_tween.kill()
-	_health_meter.position = Vector2(2.0, -1.0)
+	_health_meter.position = DURABILITY_ORIGIN + Vector2(2.0, -1.0)
 	_health_meter_tween = create_tween().set_ignore_time_scale(true)
-	_health_meter_tween.tween_property(_health_meter, "position", Vector2(-2.0, 1.0), 0.035)
-	_health_meter_tween.tween_property(_health_meter, "position", Vector2.ZERO, 0.055)
+	_health_meter_tween.tween_property(_health_meter, "position", DURABILITY_ORIGIN + Vector2(-2.0, 1.0), 0.035)
+	_health_meter_tween.tween_property(_health_meter, "position", DURABILITY_ORIGIN, 0.055)
 
 
 func _on_cyberware_triggered(module_id: StringName) -> void:

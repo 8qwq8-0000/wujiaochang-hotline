@@ -34,13 +34,13 @@ func _ready() -> void:
 	speaker.text = "接线员"
 	speaker.add_theme_font_override("font", CyberUITheme.FONT)
 	speaker.add_theme_font_size_override("font_size", 11)
-	speaker.add_theme_color_override("font_color", Color("75e8df"))
+	speaker.add_theme_color_override("font_color", CyberUITheme.ACCENT)
 	speaker.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_child(speaker)
 	_text = Label.new()
 	_text.add_theme_font_override("font", CyberUITheme.FONT)
 	_text.add_theme_font_size_override("font_size", 13)
-	_text.add_theme_color_override("font_color", Color("ebf1f3"))
+	_text.add_theme_color_override("font_color", CyberUITheme.HIGHLIGHT)
 	_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_child(_text)

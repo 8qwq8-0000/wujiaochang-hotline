@@ -29,6 +29,12 @@ const JUMP_TARGETS := {
 	"lab": -2, "warehouse": -1, "floor1": 0, "floor2": 1,
 	"floor3": 2, "boss": 3,
 }
+const EQUIPMENT_CATEGORIES := {
+	"weapon": "武器",
+	"cyberware": "义体",
+	"defense": "防御",
+	"insurance": "保险核心",
+}
 
 var enabled := false
 var _ending := false
@@ -47,8 +53,10 @@ var _command_results: Array[Dictionary] = []
 var _history_cursor := 0
 var _queued_seed := 0
 var _last_capture := ""
+var _equipment_category: OptionButton
 var _items: OptionButton
 var _quality: OptionButton
+var _grant_button: Button
 var _persona: OptionButton
 var _level: OptionButton
 var _talents: Array[OptionButton] = []
@@ -339,14 +347,15 @@ func clear_area() -> bool:
 	for room in assembler.generated_rooms:
 		room.activate()
 	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if scene.is_ancestor_of(enemy) and enemy is EnemyController and not enemy.health.is_dead():
+		if enemy is EnemyController and scene.is_ancestor_of(enemy):
 			_finish_enemy(enemy)
 	return true
 
 
 func _finish_enemy(enemy: EnemyController) -> void:
 	# Instant clear also finalizes self-destruct heavies while the panel is paused.
-	enemy.health.set_current_health(0)
+	if not enemy.health.is_dead():
+		enemy.health.set_current_health(0)
 	enemy._finalize_defeat()
 
 
@@ -364,15 +373,15 @@ func defeat_boss() -> bool:
 	arena.boss.health.set_current_health(0)
 	arena.boss.health.died.emit(packet)
 	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if arena.is_ancestor_of(enemy) and enemy is EnemyController and not enemy.health.is_dead():
+		if arena.is_ancestor_of(enemy) and enemy is EnemyController and not enemy.is_queued_for_deletion():
 			_finish_enemy(enemy)
 	return true
 
 
-const INK := Color("dce8f2")
-const SOFT_INK := Color("8299af")
-const ACCENT := Color("61d9d0")
-const LINE := Color("2a4055")
+const INK := CyberUITheme.HIGHLIGHT
+const SOFT_INK := CyberUITheme.MUTED
+const ACCENT := CyberUITheme.ACCENT
+const LINE := CyberUITheme.BORDER
 
 
 func _panel_box(fill: Color, border: Color, padding := 8) -> StyleBoxFlat:
@@ -394,16 +403,16 @@ func _test_theme() -> Theme:
 		theme.set_color("font_pressed_color", type_name, ACCENT)
 		theme.set_color("font_disabled_color", type_name, Color(SOFT_INK, 0.45))
 	for type_name in [&"Button", &"OptionButton"]:
-		theme.set_stylebox("normal", type_name, _panel_box(Color("172a3b"), LINE, 5))
-		theme.set_stylebox("hover", type_name, _panel_box(Color("213d50"), ACCENT, 5))
-		theme.set_stylebox("pressed", type_name, _panel_box(Color("1b494e"), ACCENT, 5))
-		theme.set_stylebox("disabled", type_name, _panel_box(Color("101d2b"), Color("203144"), 5))
+		theme.set_stylebox("normal", type_name, _panel_box(CyberUITheme.SURFACE, LINE, 5))
+		theme.set_stylebox("hover", type_name, _panel_box(CyberUITheme.SURFACE.lerp(ACCENT, 0.12), ACCENT, 5))
+		theme.set_stylebox("pressed", type_name, _panel_box(CyberUITheme.SURFACE.lerp(ACCENT, 0.22), ACCENT, 5))
+		theme.set_stylebox("disabled", type_name, _panel_box(CyberUITheme.BACKGROUND, Color(LINE, 0.45), 5))
 		theme.set_stylebox("focus", type_name, _panel_box(Color.TRANSPARENT, ACCENT, 5))
-	theme.set_stylebox("panel", "PopupMenu", _panel_box(Color("122334"), LINE))
-	theme.set_stylebox("hover", "PopupMenu", _panel_box(Color("244653"), ACCENT, 4))
+	theme.set_stylebox("panel", "PopupMenu", _panel_box(CyberUITheme.PANEL, LINE))
+	theme.set_stylebox("hover", "PopupMenu", _panel_box(CyberUITheme.SURFACE.lerp(ACCENT, 0.18), ACCENT, 4))
 	theme.set_constant("v_separation", "PopupMenu", 8)
 	theme.set_stylebox("separator", "HSeparator", _panel_box(LINE, LINE, 0))
-	theme.set_stylebox("scroll", "VScrollBar", _panel_box(Color("0c1824"), Color("0c1824"), 2))
+	theme.set_stylebox("scroll", "VScrollBar", _panel_box(CyberUITheme.BACKGROUND, CyberUITheme.BACKGROUND, 2))
 	theme.set_stylebox("grabber", "VScrollBar", _panel_box(LINE, LINE, 2))
 	theme.set_stylebox("grabber_highlight", "VScrollBar", _panel_box(ACCENT, ACCENT, 2))
 	theme.set_stylebox("grabber_pressed", "VScrollBar", _panel_box(ACCENT, ACCENT, 2))
@@ -441,7 +450,7 @@ func _build_ui() -> void:
 		add_child(_launcher)
 	_overlay = ColorRect.new()
 	_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_overlay.color = Color("09131f")
+	_overlay.color = CyberUITheme.BACKGROUND
 	_overlay.theme = theme
 	add_child(_overlay)
 	CyberUITheme.add_os_frame(_overlay)
@@ -498,30 +507,33 @@ func _build_ui() -> void:
 	loadout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	loadout.add_theme_constant_override("separation", 8)
 	content.add_child(loadout)
-	var equipment := _card(loadout, "02  装备补给", "领取后按 Tab 配装")
+	var equipment := _card(loadout, "02  装备补给", "先选分类，领取后按 Tab 配装")
+	_equipment_category = OptionButton.new()
+	for slot: String in EQUIPMENT_CATEGORIES:
+		_equipment_category.add_item(EQUIPMENT_CATEGORIES[slot])
+		_equipment_category.set_item_metadata(_equipment_category.item_count - 1, slot)
+	_equipment_category.item_selected.connect(_refresh_equipment_items)
+	equipment.add_child(_equipment_category)
 	var equipment_row := HBoxContainer.new()
 	equipment_row.add_theme_constant_override("separation", 5)
 	equipment.add_child(equipment_row)
 	_items = OptionButton.new()
 	_items.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_items.fit_to_longest_item = false
+	_items.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_style_image_options(_items)
 	for id: String in ComponentInventory.PROTOTYPES.data:
 		var prototype: Dictionary = ComponentInventory.PROTOTYPES.data[id]
-		if bool(prototype.get("debug_only", false)) or bool(prototype.get("bound", false)) or id in ["baton", "initial_baton", "wheel"] or str(prototype.get("slot", "")) not in ["weapon", "cyberware", "defense", "insurance"]:
+		if bool(prototype.get("debug_only", false)) or bool(prototype.get("bound", false)) or id in ["baton", "initial_baton", "wheel"] or str(prototype.get("slot", "")) not in EQUIPMENT_CATEGORIES:
 			continue
 		_item_ids.append(id)
-		var item := ComponentRolls.make_item(id)
-		_items.add_icon_item(item.get_texture(), item.get_title())
-		_items.get_popup().set_item_icon_max_width(_items.item_count - 1, 24)
-	_items.item_selected.connect(func(_index: int) -> void: _sync_quality())
 	equipment_row.add_child(_items)
 	_quality = OptionButton.new()
 	for text in ["制式", "改良", "原型"]:
 		_quality.add_item(text)
 	equipment_row.add_child(_quality)
-	_sync_quality()
-	_button(equipment_row, "领取", _on_grant, true)
+	_grant_button = _button(equipment_row, "领取", _on_grant, true)
+	_refresh_equipment_items(_equipment_category.selected)
 	var talents := _card(loadout, "03  人格与天赋", "直接应用，无需饮料")
 	var persona_row := HBoxContainer.new()
 	persona_row.add_theme_constant_override("separation", 5)
@@ -566,7 +578,7 @@ func _build_ui() -> void:
 	_command_hint = _label(column, "help · jump · give · build · seed · clear · win · status · capture · report · replay", SOFT_INK)
 	_command_hint.add_theme_font_size_override("font_size", 10)
 	var feedback := PanelContainer.new()
-	feedback.add_theme_stylebox_override("panel", _panel_box(Color("102830"), Color("265058"), 6))
+	feedback.add_theme_stylebox_override("panel", _panel_box(CyberUITheme.SURFACE, LINE, 6))
 	column.add_child(feedback)
 	_message = Label.new()
 	_feedback_scroll = ScrollContainer.new()
@@ -594,7 +606,7 @@ func _build_ui() -> void:
 func _card(parent: Node, title: String, subtitle: String) -> VBoxContainer:
 	var panel := PanelContainer.new()
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.add_theme_stylebox_override("panel", _panel_box(Color("101f2e"), LINE, 7))
+	panel.add_theme_stylebox_override("panel", _panel_box(CyberUITheme.PANEL, LINE, 7))
 	parent.add_child(panel)
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 4)
@@ -618,8 +630,8 @@ func _button(parent: Node, text: String, action: Callable, primary := false) -> 
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.custom_minimum_size.y = 24
 	if primary:
-		button.add_theme_stylebox_override("normal", _panel_box(Color("20464c"), Color("3b7e80"), 5))
-		button.add_theme_color_override("font_color", Color("b7f4e9"))
+		button.add_theme_stylebox_override("normal", _panel_box(CyberUITheme.SURFACE.lerp(ACCENT, 0.18), ACCENT, 5))
+		button.add_theme_color_override("font_color", CyberUITheme.ACCENT_LIGHT)
 	button.pressed.connect(action)
 	parent.add_child(button)
 	return button
@@ -667,12 +679,31 @@ func _refresh_talents() -> void:
 	_sync_talent_tooltips()
 
 
+func _refresh_equipment_items(category_index: int) -> void:
+	var slot: String = _equipment_category.get_item_metadata(category_index)
+	_items.clear()
+	for id in _item_ids:
+		if str(ComponentInventory.PROTOTYPES.data[id].get("slot", "")) != slot:
+			continue
+		var item := ComponentRolls.make_item(id)
+		_items.add_icon_item(item.get_texture(), item.get_title())
+		var index := _items.item_count - 1
+		_items.set_item_metadata(index, id)
+		_items.get_popup().set_item_icon_max_width(index, 24)
+	var has_items := _items.item_count > 0
+	_items.disabled = not has_items
+	_grant_button.disabled = not has_items
+	_quality.disabled = not has_items or slot not in ["weapon", "defense"]
+	if _quality.disabled:
+		_quality.select(0)
+
+
 func _on_grant() -> void:
-	_message.text = ControlPrompts.adapt("已领取，关闭面板后按 Tab 配装") if grant_item(_item_ids[_items.selected], _quality.selected + 1) else "领取失败：请进入游戏，检查背包空间或保险核心是否重复"
-
-
-func _sync_quality() -> void:
-	_quality.disabled = str(ComponentInventory.PROTOTYPES.data[_item_ids[_items.selected]].get("slot", "")) not in ["weapon", "defense"]
+	if _items.selected < 0:
+		return
+	var id: String = _items.get_selected_metadata()
+	var quality := 1 if _quality.disabled else _quality.selected + 1
+	_message.text = ControlPrompts.adapt("已领取，关闭面板后按 Tab 配装") if grant_item(id, quality) else "领取失败：请进入游戏，检查背包空间或保险核心是否重复"
 
 
 func _on_apply_talents() -> void:

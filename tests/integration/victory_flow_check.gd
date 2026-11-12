@@ -38,7 +38,7 @@ func run_checks() -> void:
 	var floor := await wait_scene(flow)
 	check(floor != null, "initial combat floor loads")
 	if floor == null:
-		quit(1)
+		root.get_node("GameSettings").quit_game(1)
 		return
 	var run := root.get_node("RunManager")
 	run.begin_run(88421)
@@ -53,7 +53,7 @@ func run_checks() -> void:
 	check(arena != null and arena.scene_file_path == "res://scenes/levels/bosses/rooftop_boss_arena.tscn", "continuing after floor three loads rooftop boss")
 	check(run.floor_index == 3 and run.persistent_run, "rooftop is the fourth and final run stage")
 	if arena == null:
-		quit(1)
+		root.get_node("GameSettings").quit_game(1)
 		return
 	arena._set_phase(RooftopBossArena.Phase.CLEARED)
 	arena.exit_elevator.set_enabled(true)
@@ -88,4 +88,4 @@ func run_checks() -> void:
 	paused = false
 	DirAccess.remove_absolute(TEST_PATH)
 	print("Victory flow checks: ", checks, "; failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

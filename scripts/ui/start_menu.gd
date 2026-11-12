@@ -11,10 +11,10 @@ const PERSONA_NARAKU := preload("res://assets/art/ui/start_menu/persona_naraku_g
 const PERSONA_XIANGSHAN := preload("res://assets/art/ui/start_menu/persona_xiangshan_ghost.png")
 const PERSONA_JOHNNY := preload("res://assets/art/ui/start_menu/persona_johnny_ghost.png")
 const SETTINGS_MENU_SCENE := preload("res://scenes/ui/pause_settings_menu.tscn")
-const MUTED := Color("8b9fae")
-const LIGHT := Color("ebf1f3")
+const MUTED := CyberUITheme.MUTED
+const LIGHT := CyberUITheme.HIGHLIGHT
 const CYAN := Color("75e8df")
-const AMBER := Color("f3c579")
+const AMBER := CyberUITheme.ACCENT
 const POSTER_RED := Color("ff334d")
 const POSTER_ORANGE := Color("ff8a00")
 const POSTER_YELLOW := Color("ffe600")
@@ -53,7 +53,7 @@ func _ready() -> void:
 	_canvas.size = Vector2(1280, 720)
 	add_child(_canvas)
 	var background := ColorRect.new()
-	background.color = Color("0b131d")
+	background.color = CyberUITheme.BACKGROUND
 	background.size = Vector2(1280, 720)
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_canvas.add_child(background)
@@ -65,7 +65,7 @@ func _ready() -> void:
 	var light := TextureRect.new()
 	var glow := GradientTexture2D.new()
 	var gradient := Gradient.new()
-	gradient.colors = PackedColorArray([Color(0.12, 0.35, 0.36, 0.23), Color(0.03, 0.07, 0.09, 0.0)])
+	gradient.colors = PackedColorArray([Color(AMBER, 0.12), Color(CyberUITheme.BACKGROUND, 0.0)])
 	glow.gradient = gradient
 	glow.width = 512
 	glow.height = 512
@@ -325,13 +325,14 @@ func _button(value: String, rect: Rect2, action: Callable, primary := false) -> 
 	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
 		var highlighted: bool = state in ["hover", "focus", "pressed"]
 		var style := StyleBoxFlat.new()
-		style.bg_color = Color(0.25, 0.75, 0.7, 0.04) if highlighted else Color.TRANSPARENT
-		style.border_color = CYAN
-		style.border_width_left = 2 if highlighted else 0
+		style.bg_color = Color(AMBER, 0.04) if highlighted else Color.TRANSPARENT
+		style.border_color = AMBER if highlighted else Color(MUTED, 0.65)
+		style.set_border_width_all(1)
+		style.border_width_left = 2 if highlighted else 1
 		style.content_margin_left = 20
 		button.add_theme_stylebox_override(state, style)
-		button.add_theme_color_override("font_" + state + "_color" if state != "normal" else "font_color", CYAN if highlighted or primary else LIGHT)
-	button.add_theme_color_override("font_disabled_color", Color("465460"))
+		button.add_theme_color_override("font_" + state + "_color" if state != "normal" else "font_color", AMBER if highlighted or primary else LIGHT)
+	button.add_theme_color_override("font_disabled_color", Color(MUTED, 0.55))
 	button.pressed.connect(action)
 	place(button, rect, _content)
 	if primary:
@@ -348,18 +349,19 @@ func _home_button(value: String, rect: Rect2, action: Callable, primary := false
 	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
 		var highlighted: bool = state in ["hover", "focus", "pressed"]
 		var style := StyleBoxFlat.new()
-		style.bg_color = CYAN if highlighted else Color(0.015, 0.02, 0.025, 0.7)
+		style.bg_color = AMBER if highlighted else Color(0.015, 0.02, 0.025, 0.7)
 		style.border_color = Color("0b1114") if highlighted else Color(0.95, 0.95, 0.9, 0.62)
+		style.set_border_width_all(1)
 		style.border_width_left = 9 if highlighted else 4
-		style.border_width_bottom = 2 if highlighted else 0
+		style.border_width_bottom = 2 if highlighted else 1
 		style.content_margin_left = 20
 		style.content_margin_right = 16
 		button.add_theme_stylebox_override(state, style)
 		var color := Color("111318") if highlighted else LIGHT
 		if state == "disabled":
-			color = Color("657078")
+			color = Color(MUTED, 0.65)
 		button.add_theme_color_override("font_" + state + "_color" if state != "normal" else "font_color", color)
-	button.add_theme_color_override("font_disabled_color", Color("657078"))
+	button.add_theme_color_override("font_disabled_color", Color(MUTED, 0.65))
 	button.pressed.connect(action)
 	place(button, rect, _content)
 	if primary:
@@ -368,7 +370,7 @@ func _home_button(value: String, rect: Rect2, action: Callable, primary := false
 
 
 func _home_title() -> void:
-	var edition := _label("WUJIAOCHANG HOTLINE", 14, CYAN)
+	var edition := _label("WUJIAOCHANG HOTLINE", 14, AMBER)
 	edition.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.9))
 	edition.add_theme_constant_override("shadow_offset_x", 2)
 	edition.add_theme_constant_override("shadow_offset_y", 2)
@@ -388,7 +390,7 @@ func _home_title() -> void:
 	signal_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	place(signal_bar, Rect2(2, 166, 320, 8), _content)
 	var signal_tip := ColorRect.new()
-	signal_tip.color = CYAN
+	signal_tip.color = AMBER
 	signal_tip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	place(signal_tip, Rect2(330, 166, 76, 8), _content)
 
@@ -426,7 +428,7 @@ func show_home() -> void:
 	_continue.disabled = not exists or not valid
 	var new_game := _home_button("开始新存档", Rect2(0, 360, 392, 58), show_difficulty)
 	_settings_button = _home_button("设置", Rect2(0, 428, 392, 58), _open_settings)
-	_home_button("退出游戏", Rect2(0, 496, 392, 58), func() -> void: get_tree().quit())
+	_home_button("退出游戏", Rect2(0, 496, 392, 58), func() -> void: get_node("/root/GameSettings").quit_game())
 	var summary := "暂无存档"
 	if exists and valid:
 		var profile: Dictionary = store.get_profile()

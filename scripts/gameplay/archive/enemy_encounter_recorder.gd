@@ -3,13 +3,15 @@ extends Node
 
 var enemy_id := ""
 var _cooldown := 0.0
+var _requires_line_of_sight := true
 
 
-static func watch(actor: Node2D, identity: String) -> void:
+static func watch(actor: Node2D, identity: String, requires_line_of_sight := true) -> void:
 	if not EnemyCatalog.contains(identity):
 		return
 	var recorder := EnemyEncounterRecorder.new()
 	recorder.enemy_id = identity
+	recorder._requires_line_of_sight = requires_line_of_sight
 	actor.add_child(recorder)
 
 
@@ -45,12 +47,13 @@ func _physics_process(delta: float) -> void:
 		return
 	if EnvironmentArea.for_actor(actor) != EnvironmentArea.for_actor(player):
 		return
-	var screen_position := actor.get_global_transform_with_canvas().origin
-	if not actor.get_viewport_rect().has_point(screen_position):
-		return
-	var ray := PhysicsRayQueryParameters2D.create(player.global_position, actor.global_position, 1)
-	if not actor.get_world_2d().direct_space_state.intersect_ray(ray).is_empty():
-		return
+	if _requires_line_of_sight:
+		var screen_position := actor.get_global_transform_with_canvas().origin
+		if not actor.get_viewport_rect().has_point(screen_position):
+			return
+		var ray := PhysicsRayQueryParameters2D.create(player.global_position, actor.global_position, 1)
+		if not actor.get_world_2d().direct_space_state.intersect_ray(ray).is_empty():
+			return
 	# Uses the store's atomic writer and test-session isolation. Retry failures.
 	if store.record_enemy_encounter(enemy_id):
 		queue_free()

@@ -30,4 +30,4 @@ func run() -> void:
 		check(ControlPrompts.adapt(mobile, true) == mobile, "adapting an already adapted prompt is stable")
 	check(ControlPrompts.adapt("鼠标瞄准，点左键开火", true).contains("自动瞄准") and ControlPrompts.adapt("鼠标瞄准，点左键开火", true).contains("手动瞄准"), "mobile shooting explains both tap auto-aim and drag manual aiming")
 	print("Mobile control prompts checks: %d; failures: %d" % [checks, failures])
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

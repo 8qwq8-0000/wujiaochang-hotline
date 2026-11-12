@@ -108,7 +108,7 @@ func run() -> void:
 	check(is_equal_approx(circuit.current_energy, -15.0), "started round keeps credit after frenzy ends")
 	check(not player.cyberware.submit_weapon_fire(Vector2.RIGHT, player.weapons.get_current_weapon()), "new round cannot borrow after frenzy")
 	print("Circuit energy phase two failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)
 
 
 func _projectile_count(world: Node2D) -> int:

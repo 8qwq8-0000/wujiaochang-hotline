@@ -72,4 +72,4 @@ func _run() -> void:
 	purple._physics_process(0.1)
 	assert(purple.global_position.distance_to(stopped_position) < 0.01)
 	print("gravity_wave_check: passed")
-	quit(0)
+	root.get_node("GameSettings").quit_game(0)

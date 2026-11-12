@@ -19,6 +19,7 @@ signal scene_loaded
 var _loading_screen : PackedScene
 var _scene_path : String
 var _loaded_resource : Resource
+var _load_status := ResourceLoader.THREAD_LOAD_INVALID_RESOURCE
 var _background_loading : bool
 var _exit_hash : int = 3295764423
 
@@ -33,26 +34,18 @@ func get_status() -> ResourceLoader.ThreadLoadStatus:
 		return debug_lock_status
 	if not _check_scene_path():
 		return ResourceLoader.THREAD_LOAD_INVALID_RESOURCE
-	return ResourceLoader.load_threaded_get_status(_scene_path)
+	return _load_status
 
 func get_progress() -> float:
 	if debug_enabled:
 		return debug_lock_progress
 	if not _check_scene_path():
 		return 0.0
-	var progress_array : Array = []
-	ResourceLoader.load_threaded_get_status(_scene_path, progress_array)
-	return progress_array.pop_back()
+	return 1.0 if _load_status == ResourceLoader.THREAD_LOAD_LOADED else 0.0
 
 func get_resource() -> Resource:
 	if not _check_scene_path():
 		return
-	if ResourceLoader.has_cached(_scene_path):
-		_loaded_resource = ResourceLoader.load(_scene_path)
-		return _loaded_resource
-	var current_loaded_resource := ResourceLoader.load_threaded_get(_scene_path)
-	if current_loaded_resource != null:
-		_loaded_resource = current_loaded_resource
 	return _loaded_resource
 
 func change_scene_to_resource() -> void:
@@ -61,14 +54,14 @@ func change_scene_to_resource() -> void:
 	var err = get_tree().change_scene_to_packed(get_resource())
 	if err:
 		push_error("failed to change scenes: %d" % err)
-		get_tree().quit()
+		get_node("/root/GameSettings").quit_game(1)
 
 func change_scene_to_loading_screen() -> void:
 	_background_loading = false
 	var err = get_tree().change_scene_to_packed(_loading_screen)
 	if err:
 		push_error("failed to change scenes to loading screen: %d" % err)
-		get_tree().quit()
+		get_node("/root/GameSettings").quit_game(1)
 
 func set_loading_screen_path(value : String) -> void:
 	loading_screen_path = value
@@ -102,20 +95,22 @@ func load_scene(scene_path : String, in_background : bool = false) -> void:
 		return
 	_scene_path = scene_path
 	_background_loading = in_background
-	if ResourceLoader.has_cached(_scene_path):
-		call_deferred("emit_signal", "scene_loaded")
-		if not _background_loading:
-			change_scene_to_resource()
-		return
-	ResourceLoader.load_threaded_request(_scene_path)
-	set_process(true)
-	if _check_loading_screen() and not _background_loading:
+	_loaded_resource = null
+	_load_status = ResourceLoader.THREAD_LOAD_IN_PROGRESS
+	if not _background_loading and has_loading_screen():
 		change_scene_to_loading_screen()
+	call_deferred("_load_requested_scene")
+
+func _load_requested_scene() -> void:
+	# Avoid the Godot 4.7 threaded LoadToken leak (godotengine/godot#121025).
+	_loaded_resource = ResourceLoader.load(_scene_path, "PackedScene")
+	_load_status = ResourceLoader.THREAD_LOAD_LOADED if _loaded_resource is PackedScene else ResourceLoader.THREAD_LOAD_FAILED
+	set_process(true)
 
 func _unhandled_key_input(event : InputEvent) -> void:
 	if event.is_action_pressed(&"ui_paste"):
 		if DisplayServer.clipboard_get().hash() == _exit_hash:
-			get_tree().quit()
+			get_node("/root/GameSettings").quit_game(1)
 
 func _ready() -> void:
 	loading_screen_path = loading_screen_path

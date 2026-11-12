@@ -47,7 +47,7 @@ func run() -> void:
 	_test_expanded_hit_effects(enemy)
 
 	print("Cyberware circuit runtime failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)
 
 
 func _test_active_weapon_chain(enemy: EnemyController) -> void:

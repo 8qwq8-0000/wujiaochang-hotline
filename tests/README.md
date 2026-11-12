@@ -33,7 +33,7 @@ iOS 适配：`godot --headless --path . --script res://tests/integration/ios_mob
 
 剧情序章：`godot --headless --fixed-fps 60 --path . --script res://tests/integration/prologue_check.gd`，使用独立存档检查开场无枪与纯对话、突进击杀、正式敌人 AI 与弹速对照及盾反实际击杀、手枪掉落、Tab 背包装备、取消强制热量练习、实战热量提醒不暂停且不重复、自然散热恢复、通信暂停玩家/敌人/子弹/热量、真实鼠标点击正文/场景/面板继续、正式 HUD 的生命/热量同步与右下角武器显示及最大缩放避让、入口增益先领后开战与自动开门、约 1.5 秒阶段缓冲与仓库传送缓冲、手枪波次和环境箱、三件战利品、Codex 对话解锁合成、小 Boss 区独立炸药箱/散热增益箱与真实使用、自动传送进入仓库、底部通信引向保险箱与死亡丢失/箱内保留说明、关闭通信后恢复操作，以及跳过与存档隔离。窗口模式追加 `-- --capture` 可输出序章截图。详见[实施说明](../docs/technical/剧情序章与基础教学实施说明.md)。
 
-> 本页列出专项入口与历次覆盖说明，不代表所有脚本在当前版本均已通过。旧 `component_progression_check.gd` 仍访问机动 API；`cyberware_check.gd` 混有已废弃的独立义体槽、普通义体合成和即时射击断言，暂作历史夹具。`synthesis_npc_check.gd` 当前有六条仓库回退及背包夹具失败。当前回路与锻造师义体合成请使用 `circuit_attack_phase1_check.gd`、`cyberware_circuit_runtime_check.gd` 和 `codex_service_passage_check.gd`。历史断言数量保留原记录；Windows 与退出资源诊断等限制不因此取消。
+> 本页列出专项入口与历次覆盖说明，不代表所有脚本在当前版本均已通过。旧 `component_progression_check.gd` 仍访问机动 API；`cyberware_check.gd` 混有已废弃的独立义体槽、普通义体合成和即时射击断言，暂作历史夹具。`inventory_check.gd`、`issued_pistol_check.gd`、`synthesis_npc_check.gd` 和 `loot_synthesis_loop_check.gd` 覆盖当前战斗暂停换装、旧武器拾取迁移、装备升级与跨层回仓合成。当前回路与锻造师义体合成请使用 `circuit_attack_phase1_check.gd`、`cyberware_circuit_runtime_check.gd` 和 `codex_service_passage_check.gd`。历史断言数量保留原记录；Windows 与退出资源诊断等限制不因此取消。
 
 警戒炮台：`sentry_turret_check.gd` 验证八方向跟踪和双排射击、遮挡及清场摧毁；`sentry_placement_check.gd` 检查四张地图每区至少一台及占地、避障、寻路。运行方式为 `godot --headless --path . --script res://tests/integration/文件名`。
 
@@ -112,6 +112,8 @@ Week 1 队友房间已作为正式“仓库出击”和“继续下一层”场�
 Week 1 房间已接入当前玩法接口；`week1_room_check.gd` 的 SKIP 不计为通过。
 
 房间切换：`godot --headless --path . --script res://tests/integration/room_transition_check.gd`，覆盖背包与装备快照、实例编号、首次拾取资格，以及旧房间掉落／子弹清理。
+
+`enemy_drop_navigation_check.gd` 检查导航未同步时延迟放置掉落、重复回调不重复发奖、装备与义体间距、正常拾取，以及换层销毁时取消等待。
 
 单元检查：`godot --headless --path . --script res://tests/run_unit_checks.gd`。可追加 `-- --suite=test_cyberware_circuit` 只加载义体回路专项，便于在其他未提交测试暂时不可解析时隔离验证；该参数不替代最终全量回归。
 
@@ -210,8 +212,6 @@ godot --headless --path . --script res://tests/integration/wing_guards_check.gd
 完整通关与遗产酒谱：`godot --headless --path . --script res://tests/integration/victory_flow_check.gd`，覆盖第三层转入生产楼顶、胜利入口唯一铸造、回仓、酒谱显示和最后人格瓶型。
 盾兵飞行屏障与远程配合：`godot --headless --path . --script res://tests/integration/shield_support_check.gd`，61 项覆盖四方向、独立移动、墙体、干净身体、初始冷却、提前一秒跑位及友伤。带窗口追加 `-- --capture` 输出四方向截图。
 
-盾反训练营：`godot --headless --path . --script tests/integration/parry_training_check.gd`，覆盖仓库入口、三只前方扇形机器人、顺序单发、血量与间隔滑块、固定弹速、死亡跳过、真实弹道反射、每次完美弹反立即显示 PERFECT!、近战反伤与眩晕、普通格挡无反伤及反伤击杀、真实 R 重置及参数保留、暂停和正式存档隔离。非 headless 追加 `-- --capture` 可生成训练营截图。
-
 `bomb_runtime_check.gd` 验证元素反应关闭时，真实枪弹仍能引爆炸弹箱、生成动画和碎片，并产生爆炸及持续火区伤害；普通油区仍遵守元素反应开关。窗口验证可使用 `godot --path . --windowed --script res://tests/integration/bomb_runtime_check.gd -- --capture`。
 
 逐层难度：`godot --headless --path . --script res://tests/integration/floor_difficulty_check.gd`。普通战斗第 1/2/3 层每区生成 6/7/8 只小怪，每只最大生命在原型基础上增加 0/1/2；覆盖四种地图、三个固定种子、新增出生点可达性、共享原型隔离和清场计数。
@@ -246,3 +246,21 @@ F8 快捷测试模式：`godot --headless --path . --script tests/integration/te
 Codex 招募、单区域突袭与结局分流：`godot --headless --path . --script res://tests/integration/codex_escort_check.gd`，覆盖原对话、招募及回滚、三格生命与 1.2 秒保护、真实敌方子弹与友方穿透、只锁玩家、第三层单区域、龙娘到位后等待玩家靠近才暂停对话、右侧接受、延后准备、实际交互探测器重开、确认前不刷怪、确认后固定三波、长时间等待不超时、第三波结束不刷新第四波、隔墙持续追击、计时与清场双条件、死亡取消后续波次、保存恢复及两种楼顶分支。窗口运行追加 `-- --capture`，设备对话及战斗截图输出到 `/tmp/codex-escort-03-ready.png` 与 `/tmp/codex-escort-04-ambush.png`。
 
 2026-11-04 主分支整合：98 个单元测试及 35 个专项入口通过；F8 121 项包含八种高级义体实际领取/图标/模块验证，频道通信 18 项包含原生触屏及模拟鼠标去重。完整结果和实际窗口检查见[整合记录](../docs/technical/本地变更与PR准备说明_2026-11-04.md)。
+
+
+## 2026-11-11 退出资源清理验收
+
+`python3 tools/check_shutdown.py` 在独立进程中验证菜单退出、战斗窗口关闭通知、暂停背包时关闭、加载期间关闭和 SceneLoader 后台加载后关闭；`--windowed` 同时检查真实图形渲染与音频驱动。窗口关闭通过派发与系统相同的通知验证，未使用系统鼠标点窗口关闭按钮。每次保留 `--verbose` 日志，任何 WARNING、ERROR、SCRIPT ERROR、ObjectDB 泄漏、残留资源或 RID 诊断都判为失败。
+
+本次结果：115 个单元测试、48 个现行集成脚本均通过，退出无警告或报错；无窗口和窗口模式的 5 类退出各通过一次（10/10）。集成夹具统一调用正式 `GameSettings.quit_game()`，保留失败退出码，让音频服务在 SceneTree 销毁前完成回收。历史夹具不因本记录而变为当前版本验收入口。详细修复和限制见 `docs/technical/退出资源清理回归记录.md`。
+
+
+## 2026-11-11 Boss 反馈与主分支整合复查
+
+两种 Boss 战新增命中、护盾节段碎裂、蓄力/释放、觉醒/转阶段/死亡反馈，保留原有伤害、判定、招式顺序与释放时间。音效采用项目现有素材分层与调音；六个固定声部中保留两个关键声部，普通连击不会抢占破盾/转阶段声。镜头反馈继续遵守用户设置。
+
+`godot --headless --path . --script res://tests/integration/boss_presentation_check.gd` 的 22 项检查覆盖真实命中和实际技能释放、连击合并、声音/图形预算、暂停冻结、瞬态到期与死亡回收。窗口模式加 `-- --capture` 会输出 `/tmp/hotline-boss-feedback-*.png`；截图夹具冻结展示帧，截图不用于代替实时玩法测试。
+
+整合最新主分支后的本机结果：119 个单元测试通过，现行 63 个集成脚本通过，完整退出日志未出现运行/资源诊断；新增 Boss 检查包含在 63 个脚本中。退出探针扩展到两种 Boss 声画播放中关闭，无窗口和窗口各 7 项，14/14 干净退出。后续微调展示帧后另复跑两场 Boss 与反馈检查、单元测试。修复 Dialogic 编辑器两个 UndoRedo 对象的销毁；编辑器复查无 ObjectDB 或资源残留报告，但 verbose 日志仍有一个 Node StringName 残留，来源尚未定位，未计作游戏运行退出已通过的证据。
+
+发布清单恢复了本轮修好的背包/合成/换枪用例，加入掉落寻路、完整战利品合成链、Boss 反馈和退出检查；发布运行器同时判定错误与退出资源诊断，CI 增加七种独立进程退出探针。本机结果不代表 Windows CI 或移动设备实机结果。

@@ -18,6 +18,16 @@ func _init(possible_busses: PackedStringArray = default_busses, pool_size: int =
 	for i: int in pool_size:
 		increase_pool()
 
+
+func _exit_tree() -> void:
+	for tween: Tween in _tweens.values():
+		tween.kill()
+	_tweens.clear()
+	for player: AudioStreamPlayer in get_children():
+		player.stop()
+		player.stream = null
+
+
 func get_possible_bus(possible_busses: PackedStringArray) -> String:
 	for possible_bus: String in possible_busses:
 		var cases: PackedStringArray = [
@@ -123,7 +133,7 @@ func fade_volume(player: AudioStreamPlayer, from_volume: float, to_volume: float
 		tween.tween_property(player, "volume_db", to_volume, duration).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 	_tweens[player] = tween
-	tween.finished.connect(_on_fade_completed.bind(player, tween, from_volume, to_volume, duration))
+	tween.finished.connect(_on_fade_completed.bind(player, from_volume, to_volume, duration))
 
 	return player
 
@@ -147,7 +157,7 @@ func _on_player_finished(player: AudioStreamPlayer) -> void:
 	mark_player_as_available(player)
 
 
-func _on_fade_completed(player: AudioStreamPlayer, _tween: Tween, _from_volume: float, to_volume: float, _duration: float) -> void:
+func _on_fade_completed(player: AudioStreamPlayer, _from_volume: float, to_volume: float, _duration: float) -> void:
 	_remove_tween(player)
 
 	# If we just faded out then our player is now available

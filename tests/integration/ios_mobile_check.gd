@@ -34,4 +34,4 @@ func run() -> void:
 	check(ProjectSettings.get_setting("rendering/renderer/rendering_method.mobile") == "gl_compatibility", "mobile renderer is compatible with the iOS simulator")
 	check(preset.get_value("preset.1", "platform") == "Android", "Android export remains present")
 	print("iOS mobile checks: %d; failures: %d" % [checks, failures])
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

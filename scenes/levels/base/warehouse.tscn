@@ -10,14 +10,12 @@
 [ext_resource type="PackedScene" path="res://scenes/actors/companions/dragon_visual.tscn" id="dragon_visual"]
 [ext_resource type="Texture2D" uid="uid://w46cttp8jx7u" path="res://assets/art/environment/warehouse/parts_rack_v2.png" id="art_parts_rack"]
 [ext_resource type="Texture2D" uid="uid://dyaqeq11d0uta" path="res://assets/art/environment/warehouse/terminal_v2.png" id="art_terminal"]
-[ext_resource type="Texture2D" uid="uid://0a1qhu4reypg" path="res://assets/art/environment/warehouse/training_door_v2.png" id="art_training_door"]
 [ext_resource type="Texture2D" uid="uid://bkyqt2t67fbat" path="res://assets/art/environment/warehouse/workbench_v2.png" id="art_workbench"]
 [ext_resource type="Script" uid="uid://dlua384ihlh1u" path="res://scripts/presentation/warehouse_door_sigil.gd" id="door_sigil"]
 [ext_resource type="Script" uid="uid://c1ls7u113nbfr" path="res://scripts/presentation/warehouse_foreground_art.gd" id="foreground_art"]
 [ext_resource type="Script" uid="uid://cc7c83bgiq7kp" path="res://scripts/presentation/warehouse_art.gd" id="warehouse_art"]
 
 [ext_resource type="Script" path="res://scripts/presentation/warehouse_wall_art.gd" id="wall_art"]
-[ext_resource type="Texture2D" path="res://assets/art/effects/warehouse_sigils/parry_complete.png" id="sigil_parry"]
 [ext_resource type="Texture2D" path="res://assets/art/effects/warehouse_sigils/deploy_complete.png" id="sigil_deploy"]
 
 [sub_resource type="RectangleShape2D" id="WallHorizontal"]
@@ -42,10 +40,6 @@ size = Vector2(48, 64)
 [sub_resource type="AtlasTexture" id="Art_elevator"]
 atlas = ExtResource("art_elevator")
 region = Rect2(148, 75, 652, 1717)
-
-[sub_resource type="AtlasTexture" id="Art_training_door"]
-atlas = ExtResource("art_training_door")
-region = Rect2(74, 107, 1010, 1115)
 
 [sub_resource type="AtlasTexture" id="Art_workbench"]
 atlas = ExtResource("art_workbench")
@@ -81,9 +75,6 @@ size = Vector2(44, 10)
 
 [sub_resource type="RectangleShape2D" id="TerminalFootprint"]
 size = Vector2(50, 12)
-
-[sub_resource type="RectangleShape2D" id="EntryFootprint"]
-size = Vector2(48, 12)
 
 [sub_resource type="RectangleShape2D" id="ElevatorFootprint"]
 size = Vector2(24, 72)
@@ -130,7 +121,7 @@ shape = SubResource("WallVertical")
 
 [node name="Chest" type="Area2D" parent="." unique_id=493334881]
 self_modulate = Color(1, 1, 1, 0)
-position = Vector2(193, 136)
+position = Vector2(298, 92)
 collision_layer = 32
 collision_mask = 0
 script = ExtResource("3")
@@ -335,61 +326,6 @@ texture_filter = 1
 scale = Vector2(0.048971597, 0.048971597)
 texture = SubResource("Art_terminal")
 
-[node name="ParryTraining" type="Area2D" parent="." unique_id=1264935420]
-self_modulate = Color(1, 1, 1, 0)
-position = Vector2(288, 92)
-collision_layer = 32
-collision_mask = 0
-script = ExtResource("3")
-kind = "parry_training"
-metadata/_edit_group_ = true
-
-[node name="Shape" type="CollisionShape2D" parent="ParryTraining" unique_id=156352078]
-position = Vector2(0, -30)
-shape = SubResource("DoorShape")
-
-[node name="Name" type="Label" parent="ParryTraining" unique_id=1352870628]
-z_index = 20
-offset_left = -70.0
-offset_top = -75
-offset_right = 70.0
-theme_override_colors/font_color = Color(0.72, 0.8, 0.82, 1)
-theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.08, 1)
-theme_override_constants/shadow_offset_x = 1
-theme_override_constants/shadow_offset_y = 1
-theme_override_font_sizes/font_size = 10
-text = "盾反训练营"
-horizontal_alignment = 1
-
-[node name="Prompt" type="Label" parent="ParryTraining" unique_id=677442713]
-visible = false
-z_index = 25
-offset_left = -70.0
-offset_top = 4
-offset_right = 70.0
-theme_override_colors/font_color = Color(0.72, 0.8, 0.82, 1)
-theme_override_colors/font_shadow_color = Color(0.03, 0.05, 0.08, 1)
-theme_override_constants/shadow_offset_x = 1
-theme_override_constants/shadow_offset_y = 1
-theme_override_font_sizes/font_size = 10
-text = "[E] 练习完美盾反"
-horizontal_alignment = 1
-
-[node name="Art" type="Sprite2D" parent="ParryTraining" unique_id=552890099]
-position = Vector2(0, -30)
-texture_filter = 1
-scale = Vector2(0.053465348, 0.053465348)
-texture = SubResource("Art_training_door")
-
-[node name="DoorSigil" type="Sprite2D" parent="ParryTraining" unique_id=1410721436]
-z_index = -2
-z_as_relative = false
-texture_filter = 2
-position = Vector2(0, -12)
-scale = Vector2(0.225, 0.225)
-texture = ExtResource("sigil_parry")
-script = ExtResource("door_sigil")
-
 [node name="WarehouseArt" type="Node2D" parent="." unique_id=161272953]
 z_index = -10
 texture_filter = 1
@@ -479,12 +415,6 @@ script = ExtResource("wall_art")
 [node name="Shape" type="CollisionShape2D" parent="ArchiveTerminal/Body"]
 position = Vector2(0, -6)
 shape = SubResource("TerminalFootprint")
-
-[node name="Body" type="StaticBody2D" parent="ParryTraining"]
-
-[node name="Shape" type="CollisionShape2D" parent="ParryTraining/Body"]
-position = Vector2(0, -6)
-shape = SubResource("EntryFootprint")
 
 [node name="Body" type="StaticBody2D" parent="Deploy"]
 

@@ -116,6 +116,10 @@ func _assign_instance_id(item: InventoryItem) -> void:
 	item.set_property("instance_id", "%d-%d-%d" % [get_instance_id(), Time.get_ticks_usec(), _serial])
 
 func pickup(component_id: String, rolled_item: InventoryItem = null) -> bool:
+	if component_id in ["baton", "initial_baton"]:
+		component_id = "pistol"
+	else:
+		component_id = str(ComponentRolls.LEGACY_CYBERWARE_IDS.get(component_id, component_id))
 	if player.health.is_dead() or not PROTOTYPES.data.has(component_id):
 		return false
 	if component_id == "circuit_breaker" and get_insurance_item() != null:
@@ -213,7 +217,7 @@ func _has_component(component_id: String) -> bool:
 
 func equip(index: int, weapon_position: int = 0) -> bool:
 	if not can_change_equipment():
-		_notify("战斗中不能换装，请先清场", &"full")
+		_notify("当前无法换装", &"full")
 		return false
 	var items := backpack.get_items()
 	if index < 0 or index >= items.size():
@@ -246,7 +250,7 @@ func equip(index: int, weapon_position: int = 0) -> bool:
 
 func unequip(slot_name: String) -> bool:
 	if not can_change_equipment():
-		_notify("战斗中不能换装，请先清场", &"full")
+		_notify("当前无法换装", &"full")
 		return false
 	var slot := _slot_for(slot_name)
 	if slot == null or slot.get_item() == null:

@@ -37,7 +37,7 @@ func run_checks() -> void:
 	var run: Node = root.get_node("RunManager")
 	var player := await wait_floor(flow)
 	if player == null:
-		quit(1)
+		root.get_node("GameSettings").quit_game(1)
 		return
 	ui.open_exit()
 	check(not paused, "uncleared floor cannot open exit")
@@ -56,6 +56,10 @@ func run_checks() -> void:
 	check(ui.get("_overlay").anchor_top == 1.0 and ui.get("_overlay").size.x > 300, "exit choice uses the bottom dialogue layout")
 	var exit_rect: Rect2 = ui.get("_overlay").get_global_rect()
 	check(exit_rect.encloses(ui.get("_title").get_global_rect()) and exit_rect.encloses(ui.get("_buttons").get_global_rect()), "exit title and actions stay inside the border")
+	check(ui.get("_buttons").get_child_count() == 2, "cleared floor offers both settlement choices")
+	for button in ui.get("_buttons").get_children():
+		var outline := button.get_theme_stylebox("normal") as StyleBoxFlat
+		check(outline != null and outline.border_width_left > 0 and outline.border_width_bottom > 0, "each settlement choice has its own visible outline")
 	player.global_position = exit.global_position - Vector2(100, 0)
 	for frame in 4:
 		await physics_frame
@@ -86,7 +90,7 @@ func run_checks() -> void:
 		await process_frame
 	check(paused and run.run_finished, "extraction ends run and stops world")
 	if not run.run_finished:
-		quit(1)
+		root.get_node("GameSettings").quit_game(1)
 		return
 	check(run.extraction_result.items.size() == 5, "both weapons, defense and spare bag extracted once")
 	check(run.extraction_result.player_state.inventory == before.inventory, "extraction retains equipment and bag")
@@ -118,4 +122,4 @@ func run_checks() -> void:
 	await process_frame
 	DirAccess.remove_absolute(store.save_path)
 	print("Extraction failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

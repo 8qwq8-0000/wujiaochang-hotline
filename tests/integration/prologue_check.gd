@@ -137,7 +137,7 @@ func run() -> void:
 	var room := await wait_room(PROLOGUE) as HotlinePrologue
 	check(room != null, "new save enters independent prologue")
 	if room == null:
-		quit(1)
+		root.get_node("GameSettings").quit_game(1)
 		return
 	var original := FileAccess.get_file_as_string(save_path)
 	var combat_hud := current_scene.get_node("CombatHUD")
@@ -185,7 +185,7 @@ func run() -> void:
 	await frames()
 	check(not paused and room.player.is_input_enabled(), "left click on finished dialogue text restores play")
 	if paused:
-		quit(1)
+		root.get_node("GameSettings").quit_game(1)
 		return
 	check(room.targets.size() == 1, "dash lesson starts with one native melee enemy")
 	var dodge_target := room.targets[0]
@@ -217,7 +217,7 @@ func run() -> void:
 	check(room.step == HotlinePrologue.Step.PARRY, "actual dash kill unlocks second lesson: parry")
 	check(room.player.weapons.get_current_weapon() == null, "first dash kill grants no early gun")
 	if room.step != HotlinePrologue.Step.PARRY:
-		quit(1)
+		root.get_node("GameSettings").quit_game(1)
 		return
 	# The immediately preceding kill can pause the lesson mid-dash. Let that
 	# real dash finish before freezing only player movement for deterministic aim.
@@ -262,7 +262,7 @@ func run() -> void:
 	check(native_speed, "native controller fires tutorial projectiles at speed 263.5")
 	check(room.step == HotlinePrologue.Step.GUN_PICKUP, "real reflection kills second enemy and unlocks pistol pickup")
 	if room.step != HotlinePrologue.Step.GUN_PICKUP:
-		quit(1)
+		root.get_node("GameSettings").quit_game(1)
 		return
 	check(is_instance_valid(room.gun_pickup) and room.gun_pickup.component_id == "pistol", "second enemy drops the first pistol")
 	await capture("/tmp/hotline-prologue-pistol-drop.png")
@@ -278,43 +278,36 @@ func run() -> void:
 	key(KEY_TAB, false)
 	await frames(6)
 	check(paused and room.player.inventory.is_open, "real Tab opens the normal inventory")
+	key(KEY_TAB)
+	key(KEY_TAB, false)
+	await frames()
+	check(not room.player.inventory.is_open and room.step == HotlinePrologue.Step.EQUIP, "closing an empty equipment attempt keeps the gate locked")
+	key(KEY_TAB)
+	key(KEY_TAB, false)
+	await frames()
+	check(room.player.inventory.is_open, "Tab reopens the backpack after an unfinished equipment attempt")
 	var item_button: Button = room.player.inventory.panel.get("_buttons")[0]
 	click_at(item_button.get_global_rect().get_center(), true)
 	click_at(item_button.get_global_rect().get_center(), false)
 	await frames()
 	check(room.player.weapons.get_current_weapon() != null and room.player.weapons.get_current_weapon().id == &"service_pistol", "clicking the real backpack slot equips pistol")
 	await capture("/tmp/hotline-prologue-inventory.png")
-	key(KEY_TAB)
-	key(KEY_TAB, false)
+	key(KEY_ESCAPE)
+	key(KEY_ESCAPE, false)
 	await frames()
+	check(not room.player.inventory.is_open, "Escape closes the equipped backpack without skipping the tutorial")
 	await drain_dialogue(room)
 	check(combat_hud.find_child("CurrentWeaponPreview", true, false) == null, "equipped tutorial pistol does not add a bottom-right thumbnail")
-	check(room.step == HotlinePrologue.Step.SUPPLIES and room.targets.is_empty(), "equipping pistol goes directly to crates without forced firing or cooling")
+	check(room.step == HotlinePrologue.Step.WAVE and room.targets.size() == 3 and room.get("_gates")[1].collision_layer == 0, "equipping the pistol opens the gate and starts the wave without using the buff crate")
 	check(room.player.cyberware.circuit.current_energy > 0.0, "the first battle begins with circuit energy")
-	check(is_instance_valid(room.bomb) and is_instance_valid(room.buff_box), "both real crates exist during their introduction")
-	check(room.buff_box.position.x < room.get("_gates")[1].position.x and room.buff_box.position.x < room.bomb.position.x, "buff crate sits on safe side of combat gate")
-	await capture("/tmp/hotline-prologue-supplies.png")
-	await drain_dialogue(room)
-	check(room.targets.is_empty() and not paused, "player can collect buff before battle starts")
-	room.player.position = room.buff_box.position + Vector2(0, 48)
-	await frames()
-	key(KEY_E)
-	key(KEY_E, false)
-	await frames()
-	check(room.buff_box.state == PowerBox.State.CLAIMED and is_equal_approx(room.player.weapons.attack_speed_multiplier, 1.25), "entrance buff crate changes actual attack speed")
-	await wait_transition(room)
-	check(room.step == HotlinePrologue.Step.WAVE and room.targets.size() == 3 and room.get("_gates")[1].collision_layer == 0, "claiming buff automatically opens gate and starts three-enemy wave")
-	await drain_dialogue(room)
+	check(room.find_children("*", "FuelBarrel", true, false).is_empty() and room.find_children("*", "PowerBox", true, false).is_empty(), "wave has no explosive or charging crate lesson")
 	for enemy in room.targets:
 		enemy.set_physics_process(false)
 	var attack := room.player._get_attack_transform()
 	check(room.player.weapons.try_attack(attack.origin, Vector2.LEFT, room.player), "combat fire submits a circuit attack")
 	await frames(48)
 	check(not paused and room.player.is_input_enabled() and room.step == HotlinePrologue.Step.WAVE and room.get("_pending_step") < 0, "circuit attack never blocks the lesson")
-	check(not combat_hud.get("_heat_meter").visible and combat_hud.get("_circuit_hud").visible and float(combat_hud.get_circuit_hud_snapshot().energy_ratio) > 0.0, "production HUD shows the energy bar without a heat meter")
-	await shoot_at(room, room.bomb)
-	await frames(35)
-	check(room.bomb.broken and is_instance_valid(room.bomb.patch) and room.bomb.patch.explosion_count == 1, "wave bomb is destroyed by actual pistol fire and explodes")
+	check(not combat_hud.get("_heat_meter").visible and combat_hud.get("_circuit_energy_fill").is_visible_in_tree(), "production HUD shows energy without a heat meter")
 	await capture("/tmp/hotline-prologue-wave.png")
 	var enemies: Array = room.targets.duplicate()
 	for enemy in enemies:
@@ -324,7 +317,7 @@ func run() -> void:
 			await shoot_at(room, enemy)
 	await frames(15)
 	await drain_dialogue(room)
-	check(room.step == HotlinePrologue.Step.RECOVER and room.recovery_pickups.size() == 3, "wave deaths drop three unique rewards")
+	check(room.step == HotlinePrologue.Step.RECOVER and room.recovery_pickups.size() == 5, "wave deaths drop five unique rewards")
 	var ids: Array = []
 	for pickup in room.recovery_pickups.duplicate():
 		ids.append(pickup.component_id)
@@ -337,7 +330,7 @@ func run() -> void:
 			key(KEY_E, false)
 			await frames(8)
 	ids.sort()
-	check(ids == ["armor", "pistol", "smart_fire"], "wave rewards are pistol, cyberware and bulletproof armor")
+	check(ids == ["armor", "explosive_magazine", "pistol", "smart_fire", "tactical_coprocessor"], "wave rewards include three distinct cyberware modules and synthesis equipment")
 	await drain_dialogue(room)
 	check(room.step == HotlinePrologue.Step.CODEX and room.get_node_or_null("Codex") != null and room.get_node_or_null("SynthesisTable") != null, "Codex and table appear after all loot is collected")
 	check(room.player.inventory.backpack.get_item_count() == 2 and int(room.player.cyberware.circuit.get_library_counts().get(CyberwareController.SMART_FIRE, 0)) > 0, "equipment enters the backpack and cyberware enters the circuit library")
@@ -346,8 +339,13 @@ func run() -> void:
 		for item in room.recovery_pickups:
 			if is_instance_valid(item):
 				print("Remaining pickup: ", item.component_id, " ", item.position)
-		quit(1)
+		root.get_node("GameSettings").quit_game(1)
 		return
+	check(not room.get("_circuit_lesson_button").visible, "circuit lesson waits for the Codex conversation")
+	var circuit_editor: CyberwareCircuitPanel = combat_hud.get_circuit_editor()
+	var editor_hint: Label = circuit_editor.get("_tutorial_hint")
+	for module_id in [&"smart_fire", &"explosive_magazine", &"tactical_coprocessor"]:
+		check(int(room.player.cyberware.circuit.get_library_counts().get(module_id, 0)) == 1, "each tutorial cyberware enters the circuit library once")
 	room.player.position = HotlinePrologue.FORGE_POINT + Vector2(0, 35)
 	await frames()
 	key(KEY_E)
@@ -368,11 +366,35 @@ func run() -> void:
 	key(KEY_E)
 	key(KEY_E, false)
 	await frames()
-	for index in 4:
+	for index in room.panel.lines.size():
 		key(KEY_E)
 		key(KEY_E, false)
 		await frames()
-	check(room.dialogue_completed and room.step == HotlinePrologue.Step.SYNTHESIZE and room.upgrade_panel.is_open, "completing Codex explanation unlocks actual forge")
+	check(room.step == HotlinePrologue.Step.CIRCUIT and circuit_editor.is_open and not room.upgrade_panel.is_open, "Codex first opens actual cyberware arrangement instead of the forge")
+	check(editor_hint.is_visible_in_tree() and "槽 2" in editor_hint.text and "智能火控" in editor_hint.text, "Codex points to the module and target slot")
+	key(KEY_ESCAPE)
+	key(KEY_ESCAPE, false)
+	await frames(100)
+	check(not circuit_editor.is_open and room.step == HotlinePrologue.Step.CIRCUIT, "Escape closes the editor without skipping an unfinished arrangement")
+	room.get("_circuit_lesson_button").pressed.emit()
+	check(circuit_editor.is_open, "Codex lesson can reopen the editor")
+	circuit_editor.select_slot(1)
+	for child in circuit_editor.get("_library_grid").get_children():
+		if "智能火控" in child.text:
+			child.pressed.emit()
+			break
+	await frames()
+	check(room.player.cyberware.circuit.get_slots()[1] == "smart_fire", "actual UI installs smart fire after the starter")
+	check("接好了" in editor_hint.text, "the editor confirms the correct arrangement")
+	circuit_editor.set_open(false)
+	await frames(100)
+	check(room.step == HotlinePrologue.Step.SYNTHESIZE and room.panel.is_open and not room.upgrade_panel.is_open, "after arranging Codex explains synthesis before opening the forge")
+	await capture("/tmp/hotline-prologue-codex-synthesis.png")
+	for index in room.panel.lines.size():
+		key(KEY_E)
+		key(KEY_E, false)
+		await frames()
+	check(room.dialogue_completed and room.upgrade_panel.is_open, "finishing the second Codex lesson opens the actual forge")
 	var subject := room.player.inventory.weapon_slot.get_item()
 	var material: InventoryItem
 	for item in room.player.inventory.backpack.get_items():
@@ -394,22 +416,31 @@ func run() -> void:
 	check(room.mini_boss.health.max_health == 12 and room.mini_boss.profile.barrier_enabled, "mini boss has real health, shield and attack behavior")
 	var boss := room.mini_boss
 	boss.set_physics_process(false)
-	check(is_instance_valid(room.boss_bomb) and is_instance_valid(room.boss_buff_box), "mini boss arena has a fresh explosive and buff crate")
-	room.player.position = room.boss_buff_box.position + Vector2(0, 48)
+	check(room.find_children("*", "FuelBarrel", true, false).is_empty() and room.find_children("*", "PowerBox", true, false).is_empty(), "boss arena skips explosive and charging crate lessons")
+	key(KEY_C)
+	key(KEY_C, false)
 	await frames()
-	key(KEY_E)
-	key(KEY_E, false)
+	check(circuit_editor.is_open, "C reopens the configured circuit for combat practice")
+	circuit_editor.select_slot(1)
+	for child in circuit_editor.get("_library_grid").get_children():
+		if "智能火控" in child.text:
+			child.pressed.emit()
+			break
+	var circuit_slots := room.player.cyberware.circuit.get_slots()
+	check(circuit_slots[0] == "combat_synapse_sensor" and circuit_slots[1] == "smart_fire", "smart fire follows the default fire starter")
 	await frames()
-	check(room.boss_buff_box.state == PowerBox.State.CLAIMED and is_equal_approx(room.player.cyberware.circuit.room_energy_recovery_bonus, 0.5), "boss entrance buff increases circuit energy recovery")
-	await shoot_at(room, room.boss_bomb)
-	await frames(35)
-	check(room.boss_bomb.broken and room.boss_bomb.patch.explosion_count == 1, "boss explosive can be detonated with the equipped pistol")
+	check("接好了" in editor_hint.text, "the editor confirms the exact starter and effect combination")
+	circuit_editor.set_open(false)
+	await frames()
+	check("瞄准守卫" in room.get("_circuit_lesson_hint").text and "点击左键射击" in room.get("_circuit_lesson_hint").text, "the combat prompt explains how to trigger the equipped module")
 	room.player.position = boss.position - Vector2(100, 0)
 	await capture("/tmp/hotline-prologue-miniboss.png")
 	for attempt in 20:
 		if not is_instance_valid(boss) or boss.health.is_dead():
 			break
 		await shoot_at(room, boss)
+	check(room.get("_circuit_lesson_complete"), "a real circuit shot completes the smart fire practice")
+	check(not editor_hint.visible, "the editor tutorial hint clears after practice")
 	check(not is_instance_valid(boss) or boss.health.is_dead(), "upgraded pistol can defeat mini boss")
 	if is_instance_valid(boss):
 		boss.set_physics_process(true)
@@ -425,7 +456,7 @@ func run() -> void:
 	var warehouse := await wait_room(WAREHOUSE)
 	check(warehouse != null, "finishing lessons automatically teleports to warehouse")
 	if warehouse == null:
-		quit(1)
+		root.get_node("GameSettings").quit_game(1)
 		return
 	check(get_first_node_in_group("prologue_arrival") == null, "warehouse does not reopen the old full-screen arrival confirmation")
 	var storage_guide: CanvasLayer = warehouse.get("_storage_guide")
@@ -457,6 +488,18 @@ func run() -> void:
 	check(warehouse.player.get_node("RoomBuffComponent").active_buff == &"", "practice buffs expire on transfer")
 	var normal_loadout: Dictionary = store.get_profile().loadout
 	var flow: SceneContainerManager = current_scene.get_node("SceneFlow")
+	check(flow.request_scene(PROLOGUE), "prologue reloads for the already-equipped regression")
+	room = await wait_room(PROLOGUE)
+	room.player.inventory.pickup("pistol")
+	room.player.inventory.equip(0)
+	room.get("_dialogue_queue").clear()
+	room.set("_dialogue_remaining", 0.0)
+	room._end_radio()
+	room._set_step(HotlinePrologue.Step.EQUIP)
+	await drain_dialogue(room)
+	await wait_transition(room)
+	await drain_dialogue(room)
+	check(room.step == HotlinePrologue.Step.WAVE and room.get("_gates")[1].collision_layer == 0, "an already equipped pistol opens the gate without relying on inventory-open history")
 	check(flow.request_scene(PROLOGUE), "prologue reloads for skip verification")
 	room = await wait_room(PROLOGUE)
 	key(KEY_ESCAPE)
@@ -465,14 +508,18 @@ func run() -> void:
 	await frames(100)
 	check(room.step == HotlinePrologue.Step.DODGE, "holding Escape cannot repeatedly skip stages")
 	key(KEY_ESCAPE, false)
-	for expected in [HotlinePrologue.Step.PARRY, HotlinePrologue.Step.GUN_PICKUP, HotlinePrologue.Step.EQUIP, HotlinePrologue.Step.SUPPLIES, HotlinePrologue.Step.WAVE, HotlinePrologue.Step.RECOVER, HotlinePrologue.Step.CODEX, HotlinePrologue.Step.SYNTHESIZE]:
+	for expected in [HotlinePrologue.Step.PARRY, HotlinePrologue.Step.GUN_PICKUP, HotlinePrologue.Step.EQUIP, HotlinePrologue.Step.WAVE, HotlinePrologue.Step.RECOVER, HotlinePrologue.Step.CODEX, HotlinePrologue.Step.CIRCUIT]:
 		key(KEY_ESCAPE)
 		key(KEY_ESCAPE, false)
 		await frames(3)
 		check(room.step == expected, "Escape advances to exactly one next tutorial stage")
 	check(room.player.weapons.get_current_weapon() != null and room.player.inventory.backpack.get_item_count() == 2 and int(room.player.cyberware.circuit.get_library_counts().get(CyberwareController.SMART_FIRE, 0)) > 0, "stage skips preserve the equipment needed by subsequent lessons")
-	room.upgrade_panel.close()
+	room.get("_hud").get_circuit_editor().set_open(false)
+	key(KEY_ESCAPE)
+	key(KEY_ESCAPE, false)
 	await frames()
+	check(room.step == HotlinePrologue.Step.SYNTHESIZE and room.panel.is_open, "skipping arrangement continues to the Codex synthesis lesson")
+	room.panel.close()
 	for expected in [HotlinePrologue.Step.MINI_BOSS, HotlinePrologue.Step.TRANSFER]:
 		key(KEY_ESCAPE)
 		key(KEY_ESCAPE, false)
@@ -516,4 +563,4 @@ func run() -> void:
 	await frames()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(save_path))
 	print("Prologue checks: ", checks, "; failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)

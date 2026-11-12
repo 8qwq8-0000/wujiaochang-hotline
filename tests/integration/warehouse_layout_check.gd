@@ -5,7 +5,6 @@ const SCENE_PATH := "user://warehouse-layout-roundtrip.tscn"
 const MOVABLE := {
 	"Chest": ["Art", "Body/Shape", "Shape"],
 	"Deploy": ["Art", "Shape", "DoorSigil", "Body/Shape"],
-	"ParryTraining": ["Art", "Shape", "DoorSigil", "Body/Shape"],
 	"ArchiveTerminal": ["Art", "Shape", "Body/Shape"],
 	"SynthesisNPC": ["RefinedArt", "Workbench/Art", "Workbench/Body/Shape", "Shape", "Body/Shape"],
 	"PartsRack": ["Art", "Body/Shape"],
@@ -32,8 +31,8 @@ func run() -> void:
 	root.add_child(room)
 	room.get_node("Player").set_physics_process(false)
 	await process_frame
-	check(not room.has_node("Trial") and not room.has_node("BossTest"), "retired test doors and their child colliders are removed")
-	check(not room.has_method("enter_trial") and not room.has_method("enter_boss_test"), "retired warehouse transitions are removed")
+	check(not room.has_node("Trial") and not room.has_node("BossTest") and not room.has_node("ParryTraining"), "retired test doors and their child colliders are removed")
+	check(not room.has_method("enter_trial") and not room.has_method("enter_boss_test") and not room.has_method("enter_parry_training"), "retired warehouse transitions are removed")
 	var positions: Dictionary = {}
 	var delta := Vector2(16, 8)
 	for node_name in MOVABLE:
@@ -67,4 +66,4 @@ func run() -> void:
 	DirAccess.remove_absolute(SAVE_PATH)
 	DirAccess.remove_absolute(SCENE_PATH)
 	print("Warehouse layout checks: ", checks, "; failures: ", failures)
-	quit(0 if failures == 0 else 1)
+	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)
