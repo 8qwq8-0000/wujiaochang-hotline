@@ -64,6 +64,12 @@ func run() -> void:
 	check(arena.boss.health.apply_damage(99, hit(99)) == 0, "dormant boss is protected")
 	var rook := wings[0] as WingGuard
 	var bishop := wings[1] as WingGuard
+	var rook_aim := rook.get_homing_aim_position(rook.global_position + Vector2.DOWN * 80.0)
+	var bishop_aim := bishop.get_homing_aim_position(bishop.global_position + Vector2.DOWN * 80.0)
+	check(arena.player.cyberware._acquire_target(rook_aim + Vector2.DOWN * 64.0, Vector2.UP, 12.0) == rook,
+		"homing can lock the living left wing guard at its hurtbox")
+	check(arena.player.cyberware._acquire_target(bishop_aim + Vector2.DOWN * 64.0, Vector2.UP, 12.0) == bishop,
+		"homing can lock the living right wing guard at its hurtbox")
 	rook.set_active(false)
 	bishop.set_active(false)
 	check(rook.kind == WingGuard.Kind.ROOK and rook.health.max_health == 20, "rook has 20 health")
@@ -105,18 +111,41 @@ func run() -> void:
 	for frame in 20:
 		await physics_frame
 	check("wing_guard_queen" in store.get_codex().enemies, "the fused wing unlocks after appearing")
+	var pedestal_ray := PhysicsRayQueryParameters2D.create(Vector2(640, 430), Vector2(640, 290), 1)
+	var pedestal_hit := space.intersect_ray(pedestal_ray)
+	var hurt_ray := PhysicsRayQueryParameters2D.create(Vector2(640, 430), Vector2(640, 290), 16)
+	hurt_ray.collide_with_areas = true
+	hurt_ray.collide_with_bodies = false
+	var pedestal_hurt := space.intersect_ray(hurt_ray)
+	check(not pedestal_hit.is_empty() and not pedestal_hurt.is_empty() and pedestal_hurt.collider == arena.boss.hurt_box and pedestal_hurt.position.y > pedestal_hit.position.y,
+		"shots from below reach the boss pedestal hurtbox before the solid base")
+	hurt_ray.from = Vector2(758, 430)
+	hurt_ray.to = Vector2(758, 290)
+	check(not space.intersect_ray(hurt_ray).is_empty(), "pedestal hurtbox includes lateral aiming tolerance")
 	check(queen.kind == WingGuard.Kind.QUEEN and queen.health.max_health == 35, "fused queen has 35 health")
 	var landing := queen._queen_landing_cell(Vector2i(2, 3), Vector2i(17, 10))
 	check(landing.x == 2 or landing.y == 3 or absi(landing.x - 2) == absi(landing.y - 3), "queen landing follows a legal rook or bishop line")
 	check(arena.boss.health.guard_link_active and arena.boss.health.apply_damage(99, hit(99)) == 0, "queen protects boss")
+	check(not arena.player.cyberware._is_homing_target_eligible(arena.boss), "shielded boss cannot be selected by homing")
+	check(not arena.player.cyberware._is_homing_target_eligible(queen), "inactive fused wing guard is excluded from homing")
+	queen.active = true
+	check(arena.player.cyberware._is_homing_target_eligible(queen), "active fused wing guard can be selected by homing")
+	queen.active = false
 	for segment in 5:
 		queen.health.apply_damage(6, hit(6))
 		check(arena.boss.health.current_health == 6 - segment, "partial queen damage does not reduce boss health")
 		queen.health.apply_damage(1, hit(1))
 		check(arena.boss.health.current_health == 5 - segment, "each seven queen damage removes one boss health")
 	check(not arena.boss.health.guard_link_active and arena.boss.health.current_health == 1, "queen defeat exposes final boss health")
-	arena.boss.health.apply_damage(1, hit(1))
-	check(arena.phase == RooftopBossArena.Phase.CLEARED and arena.exit_elevator.enabled, "final direct hit clears room")
+	check(arena.player.cyberware._acquire_target(Vector2(640, 430), Vector2.UP, 12.0) == arena.boss,
+		"homing locks the exposed boss through its pedestal hurtbox")
+	var finishing_shot := load("res://scenes/combat/projectile.tscn").instantiate() as CombatProjectile
+	arena.add_child(finishing_shot)
+	finishing_shot.global_position = Vector2(640, 410)
+	finishing_shot.setup(arena.player, CombatFaction.Id.PLAYER, Vector2.UP, 1, 430.0)
+	for frame in 8:
+		await physics_frame
+	check(arena.phase == RooftopBossArena.Phase.CLEARED and arena.exit_elevator.enabled, "projectile through the pedestal hurtbox clears the final boss health")
 	arena.queue_free()
 	await process_frame
 	print("Rooftop boss checks: ", checks, "; failures: ", failures)

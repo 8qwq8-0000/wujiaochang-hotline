@@ -52,6 +52,19 @@ func run_checks() -> void:
 		return
 	var player: PlayerController = room.player
 	player.set_physics_process(false)
+	var spawn_position := player.global_position
+	var walls := room.get_node("Walls")
+	var wall_cases := [
+		[Vector2(320, walls.get_node("Top").position.y + 55), Vector2.UP * 80],
+		[Vector2(320, walls.get_node("Bottom").position.y - 55), Vector2.DOWN * 80],
+		[Vector2(walls.get_node("Left").position.x + 70, 180), Vector2.LEFT * 80],
+		[Vector2(walls.get_node("Right").position.x - 70, 270), Vector2.RIGHT * 80],
+	]
+	for wall_case in wall_cases:
+		player.global_position = wall_case[0]
+		var collision := player.move_and_collide(wall_case[1], true)
+		check(collision != null and collision.get_collider() == walls, "visible warehouse wall blocks player movement from %s (collider: %s)" % [wall_case[0], collision.get_collider() if collision != null else "none"])
+	player.global_position = spawn_position
 	check(get_nodes_in_group("enemies").is_empty(), "warehouse is safe")
 	await create_timer(0.9).timeout
 	check(root.get_node("SoundManager").is_music_playing(LOBBY_MUSIC), "warehouse keeps the lobby music playing")

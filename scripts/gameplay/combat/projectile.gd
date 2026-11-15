@@ -40,6 +40,8 @@ var circuit_visual_scale := 1.0
 var _pierced_enemy_count := 0
 var _pierced_actor_ids: Dictionary = {}
 var _pierced_wall_rids: Array[RID] = []
+const WORLD_STOP_SLOWDOWN_SECONDS := 0.5
+var _world_stop_launch_elapsed := -1.0
 
 
 func _ready() -> void:
@@ -56,6 +58,11 @@ func setup(owner_node: Node, source_faction: CombatFaction.Id, heading: Vector2,
 	speed = projectile_speed
 	tint = Color(0.3, 0.9, 1.0) if faction == CombatFaction.Id.PLAYER else Color(1.0, 0.25, 0.2)
 	_sync_visual()
+
+
+func begin_world_stop_launch() -> void:
+	_world_stop_launch_elapsed = 0.0
+	process_mode = Node.PROCESS_MODE_ALWAYS
 
 
 func configure_homing(target: Node2D, turn_degrees_per_second: float) -> void:
@@ -118,16 +125,29 @@ func take_over(owner_node: Node, target: Node2D, turn_degrees_per_second: float)
 
 
 func _physics_process(delta: float) -> void:
+	var motion_delta := delta
+	if _world_stop_launch_elapsed >= 0.0:
+		var player := source as PlayerController
+		if player == null or not is_instance_valid(player) or not player.cyberware.is_world_stopped():
+			_world_stop_launch_elapsed = -1.0
+			process_mode = Node.PROCESS_MODE_INHERIT
+		else:
+			var midpoint := minf(_world_stop_launch_elapsed + delta * 0.5, WORLD_STOP_SLOWDOWN_SECONDS)
+			var remaining := 1.0 - midpoint / WORLD_STOP_SLOWDOWN_SECONDS
+			motion_delta = delta * remaining * remaining
+			_world_stop_launch_elapsed = minf(_world_stop_launch_elapsed + delta, WORLD_STOP_SLOWDOWN_SECONDS)
+			if motion_delta <= 0.0:
+				return
 	if electric_arc_enabled:
-		_electric_arc_phase = fmod(_electric_arc_phase + delta * 34.0, TAU)
+		_electric_arc_phase = fmod(_electric_arc_phase + motion_delta * 34.0, TAU)
 		queue_redraw()
 	if is_instance_valid(homing_target) and homing_turn_radians_per_second > 0.0:
-		var desired := global_position.direction_to(homing_target.global_position)
+		var desired := global_position.direction_to(homing_aim_position(homing_target, global_position))
 		if not desired.is_zero_approx():
-			var next_angle := rotate_toward(direction.angle(), desired.angle(), homing_turn_radians_per_second * delta)
+			var next_angle := rotate_toward(direction.angle(), desired.angle(), homing_turn_radians_per_second * motion_delta)
 			direction = Vector2.from_angle(next_angle)
 			_sync_visual()
-	var travel := speed * delta
+	var travel := speed * motion_delta
 	if calamity_blade and calamity_max_distance > 0.0:
 		travel = minf(travel, maxf(calamity_max_distance - _calamity_travelled, 0.0))
 	var next_position := global_position + direction * travel
@@ -156,7 +176,7 @@ func _physics_process(delta: float) -> void:
 				circuit_pierce_remaining -= 1
 			_pierced_wall_rids.append(wall_hit.rid)
 			global_position = next_position
-			lifetime -= delta
+			lifetime -= motion_delta
 			if lifetime <= 0.0:
 				queue_free()
 			return
@@ -174,9 +194,13 @@ func _physics_process(delta: float) -> void:
 		_calamity_travelled += travel
 		if _calamity_travelled >= calamity_max_distance:
 			queue_free()
-	lifetime -= delta
+	lifetime -= motion_delta
 	if lifetime <= 0.0:
 		queue_free()
+
+
+static func homing_aim_position(target: Node2D, origin: Vector2) -> Vector2:
+	return target.get_homing_aim_position(origin) if target.has_method("get_homing_aim_position") else target.global_position
 
 
 func _draw() -> void:

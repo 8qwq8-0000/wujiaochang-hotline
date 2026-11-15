@@ -355,6 +355,10 @@ func _build_settings_page() -> VBoxContainer:
 	_mute.toggled.connect(_on_mute_toggled)
 	content.add_child(_mute)
 	content = _settings_tab(tabs, "输入与触控")
+	var basic_controls := Label.new()
+	basic_controls.text = "WASD 移动   E 交互   Tab 配装   Esc 设置"
+	basic_controls.add_theme_font_size_override("font_size", 10)
+	content.add_child(basic_controls)
 	_touch_preview = CheckButton.new()
 	_touch_preview.text = "触控布局预览（Windows）"
 	_touch_preview.toggled.connect(_on_touch_preview_toggled)

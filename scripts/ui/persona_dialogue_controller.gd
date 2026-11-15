@@ -2,6 +2,7 @@ class_name PersonaDialogueController
 extends Node
 
 signal line_requested(text: String, priority: int, persona_id: StringName, queue_policy: int)
+signal boss_encountered(encounter_id: int)
 
 const TABLE_PATH := "res://data/tables/ai-dialogue-lines-v1.csv"
 const IDLE_SECONDS := 20.0
@@ -261,6 +262,17 @@ func _on_room_cleared(room: Node) -> void:
 	_idle_elapsed = 0.0
 
 
+func on_frenzy_stage_crossed(stage: int) -> void:
+	if not is_instance_valid(_player):
+		return
+	var event := {1: &"frenzy_warning", 2: &"frenzy_onset", 3: &"frenzy_peak"}.get(stage, &"") as StringName
+	var entry := _select_line(event, _player.talent_core.current_persona_id)
+	if entry.is_empty():
+		return
+	var priority := CombatCommsController.Priority.CRITICAL if stage == 3 else CombatCommsController.Priority.HIGH
+	line_requested.emit(String(entry.text), priority, _player.talent_core.current_persona_id, CombatCommsController.QueuePolicy.APPEND)
+
+
 func _scan_visible_targets() -> void:
 	if not _can_present_dialogue():
 		return
@@ -279,6 +291,8 @@ func _scan_visible_targets() -> void:
 			continue
 		if _try_event(&"boss"):
 			_spotted_boss_ids[boss.get_instance_id()] = true
+			var encounter := CombatProjectile.room_for_actor(boss)
+			boss_encountered.emit(encounter.get_instance_id() if encounter != null else boss.get_instance_id())
 
 
 func _tick_idle(delta: float) -> void:

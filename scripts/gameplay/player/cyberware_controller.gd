@@ -76,7 +76,7 @@ var _micro_rotor_attack_groups: Dictionary = {}
 var _predatory_attack_groups: Dictionary = {}
 var _predatory_dash_refresh_pending := false
 var _circuit_queues: Dictionary = {}
-var _gravity_event_serial := 0
+var _fire_event_serial := 0
 var _circuit_cooldowns := {&"active": 0.0, &"event": 0.0, &"timed": 0.0}
 var _active_circuit_round: Dictionary = {}
 var _circuit_step_remaining := 0.0
@@ -129,6 +129,7 @@ func _physics_process(delta: float) -> void:
 	circuit.advance(delta)
 	if _world_stop_remaining > 0.0:
 		_world_stop_remaining = maxf(_world_stop_remaining - delta, 0.0)
+		_tick_circuit_runtime(delta)
 		if _world_stop_remaining <= 0.0:
 			_end_world_stop()
 		return
@@ -543,9 +544,9 @@ func _submit_event_starters(event_flag: int, direction: Vector2, tags: PackedStr
 			continue
 		var cooldown_key := StringName("event_%d" % index)
 		var key := cooldown_key
-		if weapon_override != null and weapon_override.id == &"gravity_wave":
-			_gravity_event_serial += 1
-			key = StringName("event_%d_gravity_%d" % [index, _gravity_event_serial])
+		if event_flag == 1:
+			_fire_event_serial += 1
+			key = StringName("event_%d_fire_%d" % [index, _fire_event_serial])
 		var player := get_parent() as PlayerController
 		var can_queue_early := event_flag == 1 and (player.persona_combat.is_nuclear_frenzy_active() or player.persona_combat.can_queue_seamless() and has_active_round())
 		if float(_circuit_cooldowns.get(cooldown_key, 0.0)) > 0.0 and not can_queue_early:
@@ -577,6 +578,8 @@ func _submit_event_starters(event_flag: int, direction: Vector2, tags: PackedStr
 			if _event_seen.size() > 256:
 				_event_seen.erase(_event_seen.keys()[0])
 		accepted = true
+		if event_flag == 1:
+			break
 	if accepted:
 		circuit_queue_changed.emit(_circuit_queues.duplicate(true))
 	return accepted
@@ -597,6 +600,16 @@ func submit_weapon_fire(direction: Vector2, weapon: WeaponComponentData, automat
 				queued["automatic"] = true
 				_circuit_queues[key] = queued
 	return accepted
+
+
+func cancel_automatic_fire_requests() -> void:
+	var changed := false
+	for key in _circuit_queues.keys():
+		if bool((_circuit_queues[key] as Dictionary).get("automatic", false)):
+			_circuit_queues.erase(key)
+			changed = true
+	if changed:
+		circuit_queue_changed.emit(_circuit_queues.duplicate(true))
 
 
 func has_event_starter(event_flag: int) -> bool:
@@ -730,7 +743,7 @@ func _start_next_circuit_request() -> void:
 	for index in circuit.get_slots().size():
 		priority.append(StringName("event_%d" % index))
 	for queued_key in _circuit_queues:
-		if String(queued_key).contains("_gravity_"):
+		if String(queued_key).contains("_fire_"):
 			priority.append(queued_key)
 	priority.append_array([&"event", &"timed"])
 	for request_kind in priority:
@@ -776,7 +789,7 @@ func _start_next_circuit_request() -> void:
 			var weapon := player.weapons.get_current_weapon()
 			player.weapons.set_cooldown_remaining(0.0 if player.persona_combat.is_nuclear_frenzy_active() else weapon.cooldown / maxf(player.weapons.attack_speed_multiplier + player.weapons.persona_attack_speed_bonus + player.weapons.equipment_attack_speed_bonus, 0.01))
 		_circuit_queues.erase(request_kind)
-		_circuit_cooldowns[cooldown_key] = (0.5 if String(request_kind).contains("_gravity_") else 0.75) if String(request_kind).begins_with("event") else CIRCUIT_STARTER_INTERVALS[request_kind]
+		_circuit_cooldowns[cooldown_key] = (0.5 if int(request.get("gravity_room_id", 0)) > 0 else 0.75) if String(request_kind).begins_with("event") else CIRCUIT_STARTER_INTERVALS[request_kind]
 		circuit_queue_changed.emit(_circuit_queues.duplicate(true))
 		_begin_circuit_round(started_plan, request)
 		return
@@ -985,10 +998,13 @@ func _call_circuit_weapon(attack: Dictionary) -> void:
 	if player == null:
 		return
 	var request: Dictionary = _active_circuit_round.get("request", {})
-	var direction := Vector2(request.get("direction", player.aim_direction)).rotated(float(attack.get("angle_offset", 0.0)))
 	var weapon := request.get("weapon", player.weapons.get_current_weapon()) as WeaponComponentData
 	if weapon == null:
 		weapon = player.weapons.get_current_weapon()
+	var base_direction := Vector2(request.get("direction", player.aim_direction))
+	if weapon != null and weapon.attack_kind in [WeaponComponentData.AttackKind.PROJECTILE, WeaponComponentData.AttackKind.SPREAD]:
+		base_direction = player.get_live_projectile_aim_direction()
+	var direction := base_direction.rotated(float(attack.get("angle_offset", 0.0)))
 	_circuit_modifiers = (attack.get("modifiers", {}) as Dictionary).duplicate()
 	_circuit_calamity_layers = int(attack.get("calamity_layers", 0))
 	_circuit_current_pierce = int(attack.get("pierce", 0))
@@ -1218,7 +1234,7 @@ func _start_world_stop() -> void:
 		if child == self:
 			continue
 		_world_child_modes[child] = child.process_mode
-		child.process_mode = Node.PROCESS_MODE_DISABLED
+		child.process_mode = Node.PROCESS_MODE_ALWAYS if child == player.weapons else Node.PROCESS_MODE_DISABLED
 	player.process_mode = Node.PROCESS_MODE_ALWAYS
 	get_tree().paused = true
 
@@ -2148,16 +2164,19 @@ func _data(module_id: StringName) -> CyberwareData:
 func _acquire_secondary_target(origin: Vector2, primary: Node2D) -> Node2D:
 	var best: Node2D
 	var best_distance := INF
-	for candidate in get_tree().get_nodes_in_group("enemies") + get_tree().get_nodes_in_group("bosses"):
+	for candidate in get_tree().get_nodes_in_group("enemies") + get_tree().get_nodes_in_group("bosses") + get_tree().get_nodes_in_group("wing_guards"):
 		if not candidate is Node2D or candidate == primary or not is_instance_valid(candidate):
 			continue
 		var target := candidate as Node2D
+		if not _is_homing_target_eligible(target):
+			continue
 		if CombatProjectile.room_for_actor(target) != CombatProjectile.room_for_actor(get_parent()):
 			continue
-		var distance := origin.distance_squared_to(target.global_position)
+		var aim_point := CombatProjectile.homing_aim_position(target, origin)
+		var distance := origin.distance_squared_to(aim_point)
 		if distance >= best_distance:
 			continue
-		var ray := PhysicsRayQueryParameters2D.create(origin, target.global_position, 1)
+		var ray := PhysicsRayQueryParameters2D.create(origin, aim_point, 1)
 		if not target.get_world_2d().direct_space_state.intersect_ray(ray).is_empty():
 			continue
 		best = target
@@ -2171,19 +2190,22 @@ func _acquire_target(origin: Vector2, aim_direction: Vector2, half_angle_degrees
 	var heading := aim_direction.normalized()
 	if heading.is_zero_approx():
 		return null
-	for candidate in get_tree().get_nodes_in_group("enemies") + get_tree().get_nodes_in_group("bosses"):
+	for candidate in get_tree().get_nodes_in_group("enemies") + get_tree().get_nodes_in_group("bosses") + get_tree().get_nodes_in_group("wing_guards"):
 		if not candidate is Node2D or not is_instance_valid(candidate):
 			continue
 		var target := candidate as Node2D
+		if not _is_homing_target_eligible(target):
+			continue
 		if CombatProjectile.room_for_actor(target) != CombatProjectile.room_for_actor(get_parent()):
 			continue
-		var offset := target.global_position - origin
+		var aim_point := CombatProjectile.homing_aim_position(target, origin)
+		var offset := aim_point - origin
 		if offset.is_zero_approx():
 			continue
 		var angle := absf(rad_to_deg(heading.angle_to(offset.normalized())))
 		if angle > half_angle_degrees:
 			continue
-		var ray := PhysicsRayQueryParameters2D.create(origin, target.global_position, 1)
+		var ray := PhysicsRayQueryParameters2D.create(origin, aim_point, 1)
 		if not target.get_world_2d().direct_space_state.intersect_ray(ray).is_empty():
 			continue
 		var score := angle * 8.0 + offset.length() * 0.01
@@ -2191,3 +2213,11 @@ func _acquire_target(origin: Vector2, aim_direction: Vector2, half_angle_degrees
 			best_score = score
 			best = target
 	return best
+
+
+func _is_homing_target_eligible(target: Node2D) -> bool:
+	if target is WingGuard:
+		return target.active and not target.health.is_dead()
+	if target is RooftopWhaleGoddess:
+		return target.state == RooftopWhaleGoddess.State.ACTIVE and target.health.damage_enabled and not target.health.guard_link_active and not target.health.is_dead()
+	return true

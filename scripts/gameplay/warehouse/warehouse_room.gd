@@ -50,21 +50,49 @@ func _ready() -> void:
 	_play_base_music()
 	var camera := player.get_node("Camera2D") as Camera2D
 	camera.enabled = false
-	# Center the compact warehouse inside the 640×360 internal canvas.
 	var fixed_camera := Camera2D.new()
-	fixed_camera.position = Vector2(240, 148)
-	fixed_camera.zoom = Vector2(1.23, 1.23)
+	fixed_camera.position = Vector2(320, 180)
 	add_child(fixed_camera)
 	fixed_camera.make_current()
+	get_viewport().size_changed.connect(_fit_room_to_viewport)
+	_fit_room_to_viewport()
 	if not store.error_message.is_empty():
-		$Instructions.text = store.error_message
+		_show_status_error(store.error_message)
 	elif not save_loadout():
-		$Instructions.text = store.error_message
+		_show_status_error(store.error_message)
 	if store.is_channel_route_unlocked():
 		var hotline := preload("res://scripts/gameplay/channel/channel_hotline.gd").new()
 		hotline.name = "ChannelHotline"
 		add_child(hotline)
 	queue_redraw()
+
+
+func _fit_room_to_viewport() -> void:
+	var size := get_viewport_rect().size
+	var left := 320.0 - size.x * 0.5
+	var top := 180.0 - size.y * 0.5
+	var right := left + size.x
+	var bottom := top + size.y
+	var horizontal := RectangleShape2D.new()
+	horizontal.size = Vector2(size.x, 40.0)
+	var vertical := RectangleShape2D.new()
+	vertical.size = Vector2(24.0, size.y)
+	for edge in [$Walls/Top, $Walls/Bottom]:
+		edge.shape = horizontal
+	for edge in [$Walls/Left, $Walls/Right]:
+		edge.shape = vertical
+	$Walls/Top.position = Vector2(320, top + 20.0)
+	$Walls/Bottom.position = Vector2(320, bottom - 20.0)
+	$Walls/Left.position = Vector2(left + 12.0, 180)
+	$Walls/Right.position = Vector2(right - 12.0, 180)
+	$WarehouseArt.queue_redraw()
+	$WarehouseArt/WallsArt.queue_redraw()
+	$WarehouseArt/FrontParapet.queue_redraw()
+
+
+func _show_status_error(message: String) -> void:
+	$Instructions.text = message
+	$Instructions.visible = true
 
 
 func _play_base_music() -> void:
@@ -96,7 +124,7 @@ func _save_changed_loadout() -> void:
 	if _mutating or _departing:
 		return
 	if not save_loadout():
-		$Instructions.text = store.error_message
+		_show_status_error(store.error_message)
 
 
 func chest_data() -> Array:
@@ -139,7 +167,7 @@ func depart() -> bool:
 		return false
 	var flow := get_parent().get_parent().get_node_or_null("SceneFlow") as SceneContainerManager
 	if flow == null:
-		$Instructions.text = "请从项目主入口运行，再从此处出击"
+		_show_status_error("请从项目主入口运行，再从此处出击")
 		return false
 	var before := player.export_run_state()
 	var chest_before := chest.serialize()
@@ -155,19 +183,19 @@ func depart() -> bool:
 	if not store.commit(chest_data(), player.export_recovery_state()):
 		player.import_run_state(before)
 		chest.deserialize(chest_before)
-		$Instructions.text = store.error_message
+		_show_status_error(store.error_message)
 		return false
 	if not flow.request_scene(COMBAT_PATH, {"player_state": snapshot}):
 		store.commit(chest_data(), snapshot)
-		$Instructions.text = "暂时无法出击，装备仍在仓库"
+		_show_status_error("暂时无法出击，装备仍在仓库")
 		return false
 	_departing = true
 	flow.load_failed.connect(func(_path: String, _error: String) -> void:
 		_departing = false
 		if not save_loadout():
-			$Instructions.text = store.error_message
+			_show_status_error(store.error_message)
 		else:
-			$Instructions.text = "暂时无法出击，装备已恢复，请重试"
+			_show_status_error("暂时无法出击，装备已恢复，请重试")
 	, CONNECT_ONE_SHOT)
 	var run: Node = get_node("/root/RunManager")
 	run.begin_run()

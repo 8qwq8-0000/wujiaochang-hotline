@@ -30,14 +30,14 @@ func run() -> void:
 	)
 	dialogue.bind_player(player)
 	await process_frame
-	check(dialogue.get("_lines").size() == 48, "runtime loads all 48 authored dialogue rows")
+	check(dialogue.get("_lines").size() == 57, "runtime loads all 57 authored dialogue rows")
 	dialogue.get("_lines").clear()
 	dialogue._load_imported_table()
-	check(dialogue.get("_lines").size() == 48, "export-safe imported resources retain all dialogue rows")
+	check(dialogue.get("_lines").size() == 57, "export-safe imported resources retain all dialogue rows")
 	var events := {}
 	for entry in dialogue.get("_lines"):
 		events[String(entry.event)] = true
-	check(events.size() == 12 and events.has("weapon_overheated") and not events.has("low_ammo"), "dialogue table exposes all confirmed events and replaces unreachable ammo event")
+	check(events.size() == 15 and events.has("weapon_overheated") and events.has("frenzy_peak") and not events.has("low_ammo"), "dialogue table exposes all confirmed events and replaces unreachable ammo event")
 
 	player.talent_core.set_persona_level(TalentCoreController.LEGENDARY_MASTER, 1)
 	var testing := dialogue._select_line(&"low_health", TalentCoreController.LEGENDARY_MASTER)
@@ -67,6 +67,13 @@ func run() -> void:
 	dialogue._on_persona_consumed(TalentCoreController.DEEP_NINJA, 1)
 	var scripted: Array = dialogue.get("_deferred_scripted")
 	check(scripted.size() == 2 and scripted[0].persona_id == TalentCoreController.LEGENDARY_MASTER and scripted[1].persona_id == TalentCoreController.DEEP_NINJA, "persona switch queues outgoing speaker before incoming speaker")
+	emitted.clear()
+	var expected_frenzy_line := dialogue._select_line(&"frenzy_peak", player.talent_core.current_persona_id)
+	dialogue.on_frenzy_stage_crossed(3)
+	check(emitted.size() == 1 and emitted[0].text == expected_frenzy_line.text
+		and emitted[0].priority == CombatCommsController.Priority.CRITICAL
+		and emitted[0].policy == CombatCommsController.QueuePolicy.APPEND,
+		"frenzy peak queues the approved persona warning after the current message")
 
 	room.queue_free()
 	await process_frame

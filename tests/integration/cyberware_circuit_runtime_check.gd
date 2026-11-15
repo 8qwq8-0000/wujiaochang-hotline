@@ -45,6 +45,8 @@ func run() -> void:
 	_test_queue_priority()
 	_test_expanded_module_runtime(enemy)
 	_test_expanded_hit_effects(enemy)
+	_test_world_stop_scatter_fire()
+	_test_seamless_hold_during_world_stop()
 
 	print("Cyberware circuit runtime failures: ", failures)
 	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)
@@ -82,7 +84,7 @@ func _test_active_weapon_chain(enemy: EnemyController) -> void:
 	check(weapon_shots == 2 and starter_pulses == 0, "starter fires after the circuit and tactical coprocessor doubles it")
 	check(called_shot != null and called_shot.homing_target == enemy and called_shot.has_area_behavior, "same-round attack receives tracking and explosion")
 	check(called_shot != null and called_shot.status_tags.has("cyberware_chain"), "circuit weapon attacks carry the anti-recursion tag")
-	check(not player.cyberware.get_circuit_runtime_state().queues.has(&"event_0"), "generated attack does not recursively queue the fire starter")
+	check(not player.cyberware.get_circuit_runtime_state().queues.keys().any(func(key: Variant) -> bool: return String(key).contains("_fire_")), "generated attack does not recursively queue the fire starter")
 	check((player.cyberware.get_circuit_runtime_state().weapon_payload as Dictionary).is_empty(), "same-round attack leaves no pending payload")
 
 
@@ -157,7 +159,7 @@ func _test_real_event_and_timer_triggers() -> void:
 	player.weapons.reset_transient_state()
 	player.heat.set_heat(0.0)
 	check(player.weapons.try_attack(player.global_position, Vector2.RIGHT, player), "ordinary weapon attack succeeds for combat-sensor trigger")
-	check(player.cyberware.get_circuit_runtime_state().queues.has(&"event_0"), "ordinary weapon input queues the fire starter")
+	check(player.cyberware.get_circuit_runtime_state().queues.keys().any(func(key: Variant) -> bool: return String(key).begins_with("event_0_fire_")), "ordinary weapon input queues the fire starter")
 	player.cyberware.reset_transient_state()
 	_configure(["rhythm_pulser", "kill_energy_sink"])
 	player.cyberware.circuit.set_energy(100.0)
@@ -293,6 +295,135 @@ func _test_expanded_hit_effects(enemy: EnemyController) -> void:
 		var original_health := enemy.health.current_health
 		echoed_shot._on_area_entered(enemy.get_node("HurtBox"))
 		check(enemy.health.current_health < original_health, "trajectory echo can damage the original target again")
+
+
+func _test_world_stop_scatter_fire() -> void:
+	for child in world.get_children():
+		if child is CombatProjectile:
+			child.free()
+	player.cyberware.reset_transient_state()
+	_configure(["combat_synapse_sensor"])
+	var original_weapon := player.weapons.get_current_weapon()
+	player.weapons.equip_weapon(load("res://resources/weapons/scattergun.tres") as WeaponComponentData)
+	player.weapons.reset_transient_state()
+
+
+	player.cyberware.circuit.set_energy(40.0)
+	player.cyberware._start_world_stop()
+	check(paused and player.weapons.process_mode == Node.PROCESS_MODE_ALWAYS, "world stop keeps player weapon cooldown active")
+	player.cyberware._physics_process(0.25)
+	check(player.cyberware.circuit.current_energy > 40.0, "circuit energy regenerates during world stop")
+	player.cyberware.circuit.set_energy(100.0)
+	var press := InputEventAction.new()
+	press.action = &"attack"
+	press.pressed = true
+	var release := InputEventAction.new()
+	release.action = &"attack"
+	release.pressed = false
+	player._unhandled_input(press)
+	player._physics_process(0.016)
+	player._unhandled_input(release)
+	var cooldown_after_first := player.weapons.get_cooldown_remaining()
+	player.weapons._physics_process(0.95)
+	check(cooldown_after_first > 0.0 and is_zero_approx(player.weapons.get_cooldown_remaining()), "weapon cooldown continues during world stop")
+	player._unhandled_input(press)
+	player._physics_process(0.016)
+	player._unhandled_input(release)
+	var fire_queues := 0
+	for key in player.cyberware.get_circuit_runtime_state().queues:
+		if String(key).contains("_fire_"):
+			fire_queues += 1
+	check(fire_queues == 2, "one fire request is queued per scatter input")
+	for index in 6:
+		player.cyberware._physics_process(0.05)
+	var shots: Array[CombatProjectile] = []
+	for child in world.get_children():
+		if child is CombatProjectile:
+			shots.append(child as CombatProjectile)
+	check(shots.size() == 5, "first scatter request emits exactly five pellets during world stop")
+	if not shots.is_empty():
+		var shot := shots[0]
+		var start := shot.global_position
+		shot._physics_process(0.25)
+		var first_distance := shot.global_position.distance_to(start)
+		var first_lifetime := shot.lifetime
+		shot._physics_process(0.25)
+		var frozen_position := shot.global_position
+		var second_distance := frozen_position.distance_to(start) - first_distance
+		shot._physics_process(0.1)
+		check(first_distance > second_distance and second_distance > 0.0 and shot.global_position.is_equal_approx(frozen_position) and is_equal_approx(shot.lifetime, first_lifetime - second_distance / shot.speed), "new pellet slows for 0.5 seconds then freezes without aging")
+	for index in 20:
+		player.cyberware._physics_process(0.05)
+	shots.clear()
+	for child in world.get_children():
+		if child is CombatProjectile:
+			shots.append(child as CombatProjectile)
+	check(shots.size() == 10, "two scatter inputs emit ten pellets without duplicate fire events")
+	if not shots.is_empty():
+		var resumed := shots[0]
+		var frozen_position := resumed.global_position
+		resumed._physics_process(0.1)
+		check(resumed.global_position.distance_to(frozen_position) > resumed.speed * 0.09 and resumed.process_mode == Node.PROCESS_MODE_INHERIT, "frozen pellet resumes its original speed after world stop")
+	player.cyberware._end_world_stop()
+	player.weapons.equip_weapon(original_weapon)
+	player.weapons.reset_transient_state()
+
+
+func _test_seamless_hold_during_world_stop() -> void:
+	player.cyberware.reset_transient_state()
+	_configure(["combat_synapse_sensor", "world", "trajectory_echo_processor"])
+	player.talent_core.set_persona_level(TalentCoreController.ROCK_VIGILANTE, 2)
+	player.talent_core.set_persona(TalentCoreController.ROCK_VIGILANTE)
+	player.talent_core.set_talent_choice(TalentCoreController.ROCK_VIGILANTE, 2, &"seamless_switch")
+	player.persona_combat.set("_seamless_switch_window", 1.2)
+	player.weapons.reset_transient_state()
+	player.cyberware.circuit.set_energy(100.0)
+	player.cyberware._start_world_stop()
+	var press := InputEventAction.new()
+	press.action = &"attack"
+	press.pressed = true
+	var release := InputEventAction.new()
+	release.action = &"attack"
+	release.pressed = false
+	player._unhandled_input(press)
+	player._physics_process(0.016)
+	player.cyberware._physics_process(0.016)
+	check(player.cyberware.has_active_round(), "first held shot starts the fire circuit")
+	for _index in 20:
+		player._physics_process(0.016)
+	var queued_fires := 0
+	for key in player.cyberware.get_circuit_runtime_state().queues:
+		if String(key).contains("_fire_"):
+			queued_fires += 1
+	check(queued_fires == 0, "holding attack cannot bypass cooldown to flood the seamless fire queue")
+	player.weapons.set_cooldown_remaining(0.0)
+	player._physics_process(0.016)
+	player.weapons.set_cooldown_remaining(0.0)
+	player._physics_process(0.016)
+	queued_fires = 0
+	for key in player.cyberware.get_circuit_runtime_state().queues:
+		if String(key).contains("_fire_"):
+			queued_fires += 1
+	check(queued_fires == 1, "held automatic fire keeps at most one pending request")
+	player._input(release)
+	check(player.cyberware.get_circuit_runtime_state().queues.is_empty(), "releasing attack cancels the pending automatic repeat")
+	player._unhandled_input(press)
+	player._physics_process(0.016)
+	queued_fires = 0
+	for key in player.cyberware.get_circuit_runtime_state().queues:
+		if String(key).contains("_fire_"):
+			queued_fires += 1
+	check(queued_fires == 1, "a deliberate second click can prestore its own seamless fire request")
+	player._input(release)
+	var queued_after_release := queued_fires
+	for _index in 10:
+		player._physics_process(0.016)
+	queued_fires = 0
+	for key in player.cyberware.get_circuit_runtime_state().queues:
+		if String(key).contains("_fire_"):
+			queued_fires += 1
+	check(queued_fires == queued_after_release, "releasing attack submits no more fire requests")
+	player.cyberware._end_world_stop()
 
 
 func _configure(ids: Array[String]) -> void:

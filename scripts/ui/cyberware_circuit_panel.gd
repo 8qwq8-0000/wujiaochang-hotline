@@ -236,13 +236,13 @@ func install_module(module_id: StringName) -> bool:
 		return false
 	var circuit: CyberwareCircuitState = player.cyberware.circuit
 	var slots := circuit.get_slots()
-	var target := _selected_slot
+	var target := -1
+	for index in slots.size():
+		if StringName(slots[index]).is_empty():
+			target = index
+			break
 	if target < 0:
-		target = -1
-		for index in slots.size():
-			if StringName(slots[index]).is_empty():
-				target = index
-				break
+		target = _selected_slot
 	if target < 0:
 		_message.text = "%d 个槽位已满；先选择要替换的槽位。" % circuit.slot_capacity
 		return false

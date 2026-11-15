@@ -50,7 +50,14 @@ func run() -> void:
 	check(player.cyberware.circuit.slot_capacity == 3 and hud.get_circuit_editor().get_slot_button_count() == 3, "new run exposes three circuit slots")
 	var config_hint := hud.get("_circuit_config_hint") as Label
 	var circuit_hud := hud.get("_circuit_hud") as Control
-	check(config_hint != null and config_hint.text == "[C]" and config_hint.position.x + config_hint.size.x <= circuit_hud.position.x, "blinking C hint sits to the left of the circuit")
+	var energy_bar := hud.get("_circuit_energy_bar") as Control
+	var circuit_pointer := hud.get("_circuit_pointer") as Label
+	check(config_hint != null and config_hint.text == "[C]" and config_hint.position.x >= circuit_hud.position.x + circuit_hud.size.x, "blinking C hint sits to the right of the circuit")
+	check(energy_bar != null and circuit_pointer != null and circuit_hud != null
+		and is_equal_approx(energy_bar.global_position.x, circuit_hud.global_position.x)
+		and energy_bar.global_position.y + 10.0 <= (circuit_hud.get_node("CircuitCardRow") as Control).get_global_rect().position.y
+		and (circuit_hud.get_node("CircuitCardRow") as Control).get_global_rect().end.y <= circuit_pointer.global_position.y,
+		"energy rail, circuit cards, and execution pointer stack at the top left")
 	if config_hint != null:
 		var first_alpha := config_hint.modulate.a
 		hud._process(0.3)
@@ -69,6 +76,7 @@ func run() -> void:
 	await _test_drag_over_origin_clears_reflow_ghosts()
 	await _test_five_slot_drag_alignment()
 	_test_right_click_unloads_and_expanded_slots()
+	_test_default_install_uses_empty_slot()
 
 	paused = false
 	print("Cyberware circuit UI failures: ", failures)
@@ -97,6 +105,16 @@ func _configure_sample() -> void:
 	player.cyberware.set_circuit_library_counts(counts)
 	var result := player.cyberware.set_circuit_slots(PackedStringArray(ids.slice(0, 4)))
 	check(bool(result.get("ok", false)), "sample circuit configures")
+
+
+func _test_default_install_uses_empty_slot() -> void:
+	_configure_sample()
+	var editor = hud.get_circuit_editor()
+	editor.select_slot(0)
+	var first := player.cyberware.circuit.get_slots()[0]
+	check(editor.install_module(&"guard_coprocessor"), "library installation succeeds while another slot is selected")
+	var slots := player.cyberware.circuit.get_slots()
+	check(slots[0] == first and slots[4] == "guard_coprocessor", "library installation fills the first empty slot before replacing the selection")
 
 
 func _test_key_contract() -> void:
@@ -190,11 +208,16 @@ func _test_runtime_pointer_and_snapshot_edit() -> void:
 	player.cyberware._physics_process(0.0)
 	var hud_state: Dictionary = hud.get_circuit_hud_snapshot()
 	check(bool(hud_state.pointer_visible) and int(hud_state.pointer_slot) == 1, "HUD arrow points to the executing slot right of the starter")
+	var active_card := ((hud.get("_circuit_hud") as Control).get_node("CircuitCardRow") as HBoxContainer).get_child(1) as Control
+	var pointer := hud.get("_circuit_pointer") as Label
+	check(is_equal_approx(pointer.get_global_rect().get_center().x, active_card.get_global_rect().get_center().x)
+		and pointer.get_global_rect().position.y >= active_card.get_global_rect().end.y,
+		"execution pointer stays centered below its active circuit slot")
 	check("主动▶" in String(hud_state.queues), "HUD identifies the active request type")
 	check(is_equal_approx(player.cyberware.circuit.current_energy, 82.0) and not (hud.get("_circuit_energy_label") as Label).visible, "HUD energy bar follows starter and first-slot spending")
 	check("执行中" in String(hud_state.status) and is_equal_approx(float(hud_state.energy_ratio), 0.82), "HUD exposes execution state and a proportional energy strip")
 	var hud_rect: Rect2 = hud_state.rect
-	check(Rect2(Vector2.ZERO, Vector2(640, 360)).encloses(hud_rect), "right-bottom circuit HUD stays inside 640 by 360")
+	check(Rect2(Vector2.ZERO, Vector2(640, 360)).encloses(hud_rect), "top-left circuit HUD stays inside 640 by 360")
 	var health_meter: Control = hud.get("_health_meter")
 	var energy_rail: Control = hud.get("_circuit_energy_bar").get_node("EnergyRail")
 	for hud_scale in [1.0, 1.5]:
@@ -203,7 +226,9 @@ func _test_runtime_pointer_and_snapshot_edit() -> void:
 		var health_rect := health_meter.get_global_rect()
 		check(energy_rect.position.y > health_rect.end.y and energy_rect.position.x < health_rect.end.x, "energy rail sits below durability at scale %.1f" % hud_scale)
 		var slots_rect: Rect2 = hud.get_circuit_hud_snapshot().rect
-		check(slots_rect.position.x > 320 and slots_rect.position.y > 180, "circuit slots remain at the bottom right at scale %.1f" % hud_scale)
+		var card_row_rect := ((hud.get("_circuit_hud") as Control).get_node("CircuitCardRow") as Control).get_global_rect()
+		check(is_equal_approx(slots_rect.position.x, energy_rect.position.x) and card_row_rect.position.y > energy_rect.end.y and card_row_rect.position.y - energy_rect.end.y <= 3.0 * hud_scale and slots_rect.end.x < 320,
+			"circuit slots stay below the energy rail at the top left at scale %.1f" % hud_scale)
 	hud.set_hud_scale(1.0)
 	await _capture("cyberware-circuit-hud-640x360.png")
 
@@ -238,6 +263,19 @@ func _test_hud_module_cards_drag_reorder() -> void:
 	check(int(state.slot_icon_count) == 4, "installed HUD modules use icons instead of text labels: %d" % int(state.slot_icon_count))
 	check((cards[0] as Button).text.is_empty(), "HUD module card has no permanent name text")
 	check("主动神经开关" in hud._circuit_tooltip(&"active_neural_switch", 0) and "耗能" in hud._circuit_tooltip(&"active_neural_switch", 0), "hover tooltip exposes module identity and energy cost")
+	hud._show_circuit_tooltip(0)
+	await process_frame
+	var tooltip_rect := (hud.get("_circuit_tooltip_panel") as Control).get_global_rect()
+	var sequence_rect := (hud.get("_circuit_hud") as Control).get_global_rect()
+	check(tooltip_rect.position.x >= sequence_rect.end.x + 7.0, "combat tooltip opens beside the circuit without covering its cards")
+	hud._hide_circuit_tooltip()
+	(hud.get("_circuit_tooltip_panel") as Control).custom_minimum_size.x = 500.0
+	hud._show_circuit_tooltip(0)
+	tooltip_rect = (hud.get("_circuit_tooltip_panel") as Control).get_global_rect()
+	check(tooltip_rect.position.y >= (hud.get("_circuit_pointer") as Control).get_global_rect().end.y + 7.0,
+		"limited right-side space places the circuit tooltip below the cards and execution pointer")
+	hud._hide_circuit_tooltip()
+	(hud.get("_circuit_tooltip_panel") as Control).custom_minimum_size.x = 220.0
 	var drag_data: Variant = cards[0]._get_drag_data(Vector2.ZERO)
 	var drop_zone = hud.get("_circuit_drop_zone")
 	check(drag_data is Dictionary and int(drag_data.source_index) == 0, "module card starts a typed drag operation")

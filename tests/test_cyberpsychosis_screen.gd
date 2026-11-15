@@ -92,8 +92,31 @@ func test_five_distinct_enemy_kills_do_not_unlock_peak() -> void:
 		if index == 0:
 			screen._on_damage_resolved(result)
 	assert_eq(screen.get_window_counts().kills, 5)
+	assert_eq(screen.get_window_counts().points, 25)
 	assert_true(peaks.is_empty())
 	for enemy in enemies:
 		enemy.free()
 	player.free()
+	screen.free()
+
+
+func test_frenzy_events_share_weighted_window_and_boss_encounter_is_counted_once() -> void:
+	var screen := CyberpsychosisScreen.new()
+	var stages: Array[int] = []
+	screen.stage_crossed.connect(func(stage: int) -> void: stages.append(stage))
+	screen.record_boss_encounter(42)
+	screen.record_boss_encounter(42)
+	assert_eq(screen.get_frenzy_points(), 30)
+	assert_eq(stages, [1])
+	var result := DamageResult.new()
+	result.target = PlayerController.new()
+	result.outcome = DamageResult.Outcome.DAMAGED
+	result.final_damage = 2
+	screen._on_damage_resolved(result)
+	assert_eq(screen.get_frenzy_points(), 45)
+	for index in 30:
+		screen._on_module_triggered(&"smart_fire")
+	assert_eq(screen.get_frenzy_points(), 75)
+	assert_eq(stages, [1, 2])
+	(result.target as PlayerController).free()
 	screen.free()
