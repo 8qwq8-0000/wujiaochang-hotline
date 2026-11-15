@@ -43,6 +43,7 @@ var _left_handed := false
 var _haptics := true
 var _show_target_indicator := true
 var _auto_fire_enabled := true
+var _auto_fire_was_active := false
 var _layout: Dictionary = {}
 var _editing := false
 var _selected_control := ""
@@ -89,6 +90,7 @@ func _process(delta: float) -> void:
 	_root.visible = gameplay_visible or _editing
 	_editor_toolbar.visible = _editing
 	if _editing:
+		_cancel_active_auto_fire()
 		return
 	_joystick.visible = gameplay_visible
 	for control_name in _buttons:
@@ -97,15 +99,17 @@ func _process(delta: float) -> void:
 	_buttons.interact.visible = gameplay_visible and _has_available_interaction()
 	if not gameplay_visible:
 		_clear_manual_aim()
-		if _player != null:
-			_player.cyberware.cancel_automatic_fire_requests()
+		_cancel_active_auto_fire()
 		return
 	_target_refresh_remaining = maxf(_target_refresh_remaining - delta, 0.0)
 	if _target_refresh_remaining <= 0.0:
 		_target_refresh_remaining = TARGET_REFRESH_SECONDS
 		_refresh_target()
-	if not is_auto_fire_active(_player, _player.weapons.get_current_weapon()):
-		_player.cyberware.cancel_automatic_fire_requests()
+	var auto_fire_active := is_auto_fire_active(_player, _player.weapons.get_current_weapon())
+	if not auto_fire_active:
+		_cancel_active_auto_fire()
+	else:
+		_auto_fire_was_active = true
 	_indicator.target = _target
 	_indicator.manual_override = not _manual_aim.is_zero_approx()
 	_indicator.enabled = _show_target_indicator
@@ -186,8 +190,8 @@ func is_target_indicator_enabled() -> bool:
 func set_auto_fire_enabled(enabled: bool) -> void:
 	_auto_fire_enabled = enabled
 	PlayerConfig.set_config(SETTINGS_SECTION, AUTO_FIRE_SETTING, enabled)
-	if not enabled and _player != null:
-		_player.cyberware.cancel_automatic_fire_requests()
+	if not enabled:
+		_cancel_active_auto_fire()
 
 
 func is_auto_fire_enabled() -> bool:
@@ -223,6 +227,7 @@ func vibrate(kind: StringName) -> void:
 
 
 func begin_layout_edit() -> void:
+	_cancel_active_auto_fire()
 	_editing = true
 	_using_touch = true
 	_selected_control = "attack"
@@ -485,6 +490,7 @@ func _is_target_valid(candidate: Node2D) -> bool:
 
 func _on_manual_aim_changed(vector: Vector2, active: bool, source: StringName) -> void:
 	if active:
+		_cancel_active_auto_fire()
 		_manual_source = source
 		_manual_aim = vector.normalized()
 		_target = null
@@ -504,6 +510,14 @@ func is_manual_attack_active(player: PlayerController) -> bool:
 func _clear_manual_aim() -> void:
 	_manual_aim = Vector2.ZERO
 	_manual_source = &""
+
+
+func _cancel_active_auto_fire() -> void:
+	if not _auto_fire_was_active:
+		return
+	_auto_fire_was_active = false
+	if _player != null:
+		_player.cyberware.cancel_automatic_fire_requests()
 
 
 func _on_damage_resolved(result: DamageResult) -> void:

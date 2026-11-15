@@ -69,6 +69,13 @@ func run() -> void:
 	await process_frame
 	player.set_physics_process(false)
 	mobile_input.set("_player", player)
+	player.cyberware.set("_circuit_queues", {&"event_0": {"automatic": true}})
+	mobile_input.set("_auto_fire_was_active", false)
+	mobile_input._cancel_active_auto_fire()
+	check(player.cyberware.get("_circuit_queues").has(&"event_0"), "manual held-fire queue is not cancelled when mobile auto fire was inactive")
+	mobile_input.set("_auto_fire_was_active", true)
+	mobile_input._cancel_active_auto_fire()
+	check(not player.cyberware.get("_circuit_queues").has(&"event_0"), "leaving mobile auto fire cancels its pending request")
 	player.aim_direction = Vector2.RIGHT
 	var near_behind := Node2D.new()
 	near_behind.add_to_group(&"enemies")
