@@ -51,6 +51,12 @@ func run_checks() -> void:
 		root.get_node("GameSettings").quit_game(1)
 		return
 	var player: PlayerController = room.player
+	var original_size := root.size
+	root.size = Vector2i(800, 360)
+	room._fit_room_to_viewport()
+	check(is_equal_approx(room.get_node("Walls/Right").position.x - room.get_node("Deploy").position.x, 48.0), "deploy door remains attached to the resized right wall")
+	root.size = original_size
+	room._fit_room_to_viewport()
 	player.set_physics_process(false)
 	var spawn_position := player.global_position
 	var walls := room.get_node("Walls")

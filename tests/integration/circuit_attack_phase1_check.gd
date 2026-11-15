@@ -63,7 +63,13 @@ func _test_saved_event_queue(combined: StringName) -> void:
 	player.cyberware.circuit.set_energy(100.0)
 	check(player.perform_persona_attack(Vector2.RIGHT), "merged starter accepts fire before saving")
 	var saved := player.cyberware.export_circuit_state()
-	check(saved.runtime.queues.has(&"event_0") and not (saved.runtime.queues[&"event_0"] as Dictionary).has("weapon"), "queued attack exports without a Resource")
+	var has_event_queue := false
+	var event_queue_has_weapon := false
+	for key in saved.runtime.queues:
+		if String(key).begins_with("event_0"):
+			has_event_queue = true
+			event_queue_has_weapon = (saved.runtime.queues[key] as Dictionary).has("weapon")
+	check(has_event_queue and not event_queue_has_weapon, "queued attack exports without a Resource")
 	player.cyberware.reset_transient_state()
 	check(player.cyberware.import_circuit_state(saved), "merged starter and queued attack import")
 	check(player.cyberware.circuit.get_slots()[0] == String(combined), "import preserves merged starter")
