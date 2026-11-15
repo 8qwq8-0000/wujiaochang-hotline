@@ -4,6 +4,8 @@ extends CombatProjectile
 const BLUE := 0
 const RED := 1
 const PURPLE := 2
+const BLUE_CHARGE_SECONDS := 3.0
+const MAX_CHARGE_SECONDS := 6.0
 const ORBIT_RADIUS := 96.0
 const FIELD_RADIUS := 96.0
 const PURPLE_GLIDE_SECONDS := 0.38
@@ -40,18 +42,18 @@ func _ready() -> void:
 func setup_wave(owner: Node, heading: Vector2, seconds: float, multiplier: float = 1.0) -> void:
 	setup(owner, CombatFaction.Id.PLAYER, heading, 1, 0.0)
 	weapon_id = &"gravity_wave"
-	charge_seconds = clampf(seconds, 0.0, 10.0)
-	kind = RED if charge_seconds >= 5.0 else BLUE
+	charge_seconds = clampf(seconds, 0.0, MAX_CHARGE_SECONDS)
+	kind = RED if charge_seconds >= BLUE_CHARGE_SECONDS else BLUE
 	orbit_angle = heading.angle()
 	lifetime = 10.0 if kind == RED else 20.0
 	if kind == BLUE:
-		radius = lerpf(24.0, 48.0, charge_seconds / 5.0)
+		radius = lerpf(24.0, 48.0, charge_seconds / BLUE_CHARGE_SECONDS)
 		orbit_speed = TAU / 2.0
 		base_damage = 1
 	else:
 		radius = 36.0
-		orbit_speed = lerpf(TAU / 1.5, TAU / 0.75, (charge_seconds - 5.0) / 5.0)
-		base_damage = 1 if charge_seconds < 7.5 else (2 if charge_seconds < 10.0 else 3)
+		orbit_speed = lerpf(TAU / 1.5, TAU / 0.75, (charge_seconds - BLUE_CHARGE_SECONDS) / (MAX_CHARGE_SECONDS - BLUE_CHARGE_SECONDS))
+		base_damage = 1 if charge_seconds < 4.5 else (2 if charge_seconds < MAX_CHARGE_SECONDS else 3)
 	damage = maxi(1, int(round(float(base_damage) * multiplier)))
 	global_position = (owner as Node2D).global_position + Vector2.from_angle(orbit_angle) * ORBIT_RADIUS
 	_set_visual()

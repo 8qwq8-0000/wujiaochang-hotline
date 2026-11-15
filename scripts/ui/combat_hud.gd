@@ -403,6 +403,10 @@ func _build_minimal_hud() -> void:
 	_dialogue.name = "PersonaDialogueController"
 	_dialogue.line_requested.connect(_on_dialogue_line_requested)
 	add_child(_dialogue)
+	var psychosis := get_node_or_null("../CyberpsychosisScreen") as CyberpsychosisScreen
+	if psychosis != null:
+		_dialogue.boss_encountered.connect(psychosis.record_boss_encounter)
+		psychosis.stage_crossed.connect(_dialogue.on_frenzy_stage_crossed)
 
 	_operator_audio = AudioStreamPlayer.new()
 	_operator_audio.name = "HotlineConnectAudio"
@@ -425,12 +429,8 @@ func _build_equipment_preview() -> void:
 	_equipment_preview = Control.new()
 	_equipment_preview.name = "EquipmentPreview"
 	_equipment_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	overlay.add_child(_equipment_preview)
-	_equipment_preview.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	_equipment_preview.offset_left = -8.0
-	_equipment_preview.offset_right = -8.0
-	_equipment_preview.offset_top = -8.0
-	_equipment_preview.offset_bottom = -8.0
+	_equipment_preview.position = Vector2(5.0, 71.0)
+	_top_left.add_child(_equipment_preview)
 	_cyberware_preview = HBoxContainer.new()
 	_cyberware_preview.name = "EquippedCyberware"
 	_cyberware_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -438,15 +438,14 @@ func _build_equipment_preview() -> void:
 	_equipment_preview.add_child(_cyberware_preview)
 	_circuit_hud = Control.new()
 	_circuit_hud.name = "CyberwareCircuitSequence"
-	_circuit_hud.position = Vector2(-CIRCUIT_HUD_WIDTH * 0.5, -CIRCUIT_HUD_HEIGHT * 0.5 - 15.0)
+	_circuit_hud.position = Vector2.ZERO
 	_circuit_hud.size = Vector2(CIRCUIT_HUD_WIDTH, CIRCUIT_HUD_HEIGHT)
-	_circuit_hud.scale = Vector2.ONE * 0.5
 	_circuit_hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_equipment_preview.add_child(_circuit_hud)
 	_circuit_config_hint = Label.new()
 	_circuit_config_hint.name = "CircuitConfigHint"
 	_circuit_config_hint.text = "[C]"
-	_circuit_config_hint.position = Vector2(-CIRCUIT_HUD_WIDTH * 0.5 - 26.0, -40.0)
+	_circuit_config_hint.position = Vector2(CIRCUIT_HUD_WIDTH + 2.0, 24.0)
 	_circuit_config_hint.size = Vector2(24.0, 16.0)
 	_circuit_config_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_circuit_config_hint.add_theme_font_size_override("font_size", 9)
@@ -618,7 +617,7 @@ func _refresh_cyberware_preview(modules: PackedStringArray) -> void:
 		_cyberware_preview.add_child(icon)
 	var count := _cyberware_preview.get_child_count()
 	var width := count * CYBERWARE_ICON_SIZE + maxi(count - 1, 0) * CYBERWARE_ICON_GAP
-	_cyberware_preview.position = Vector2(-CIRCUIT_HUD_WIDTH * 0.5 - width - 12.0, -46.0)
+	_cyberware_preview.position = Vector2(12.0, 7.0)
 	_cyberware_preview.size = Vector2(width, 46.0)
 	var circuit_active := is_instance_valid(_player) and _has_installed_circuit_module()
 	_cyberware_preview.visible = count > 0 and not circuit_active
@@ -643,9 +642,8 @@ func _refresh_circuit_hud(_state: Dictionary = {}) -> void:
 
 func _refresh_circuit_capacity() -> void:
 	var width: float = 32.0 + CIRCUIT_SLOT_STRIDE * _player.cyberware.circuit.slot_capacity
-	_circuit_hud.position.x = -width * 0.5
 	_circuit_hud.size.x = width
-	_circuit_config_hint.position.x = _circuit_hud.position.x - _circuit_config_hint.size.x - 2.0
+	_circuit_config_hint.position.x = width + 2.0
 	_circuit_payload_icon.position.x = width - 26.0
 	(_circuit_hud.get_node("CircuitCardRow") as HBoxContainer).size.x = width - 24.0
 	_circuit_drop_zone.size.x = CIRCUIT_SLOT_STRIDE * _player.cyberware.circuit.slot_capacity + 16.0
@@ -743,12 +741,21 @@ func _show_circuit_tooltip(slot_index: int) -> void:
 	_circuit_tooltip_panel.reset_size()
 	_circuit_tooltip_panel.show()
 	var card_rect := card.get_global_rect()
+	var sequence_rect := _circuit_hud.get_global_rect()
 	var viewport_size := get_viewport().get_visible_rect().size
 	var tooltip_size := _circuit_tooltip_panel.size
-	_circuit_tooltip_panel.global_position = Vector2(
-		clampf(card_rect.get_center().x - tooltip_size.x * 0.5, 8.0, maxf(8.0, viewport_size.x - tooltip_size.x - 8.0)),
-		clampf(card_rect.position.y - tooltip_size.y - 8.0, 8.0, maxf(8.0, viewport_size.y - tooltip_size.y - 8.0))
-	)
+	var right_x := sequence_rect.end.x + 8.0
+	if right_x + tooltip_size.x + 8.0 <= viewport_size.x:
+		_circuit_tooltip_panel.global_position = Vector2(
+			right_x,
+			clampf(card_rect.get_center().y - tooltip_size.y * 0.5, 8.0, maxf(8.0, viewport_size.y - tooltip_size.y - 8.0))
+		)
+	else:
+		var below_y := maxf(sequence_rect.end.y, _circuit_pointer.get_global_rect().end.y) + 8.0
+		_circuit_tooltip_panel.global_position = Vector2(
+			clampf(card_rect.get_center().x - tooltip_size.x * 0.5, 8.0, maxf(8.0, viewport_size.x - tooltip_size.x - 8.0)),
+			below_y
+		)
 
 
 func _hide_circuit_tooltip() -> void:
@@ -1123,7 +1130,6 @@ func preview_combat_feedback() -> void:
 func _apply_hud_scale(value: float) -> void:
 	_top_left.scale = Vector2.ONE * value * 0.5
 	_persona_root.scale = Vector2.ONE * value * 0.85
-	_equipment_preview.scale = Vector2.ONE * value
 
 
 func _saved_hud_scale() -> float:

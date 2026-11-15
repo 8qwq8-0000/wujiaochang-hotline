@@ -108,12 +108,20 @@ func _process(_delta: float) -> void:
 	_update_camera_shake()
 
 
+func _input(event: InputEvent) -> void:
+	if event.is_action_released("attack"):
+		_attack_held = false
+		cyberware.cancel_automatic_fire_requests()
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if _dead or not _input_enabled or inventory.is_open or event.is_echo():
 		return
-	if cyberware.is_world_stopped():
+	var world_stopped := cyberware.is_world_stopped()
+	if world_stopped and not (event.is_action_pressed("attack") or event.is_action_released("attack")):
 		return
-	persona_combat.notify_player_input(event)
+	if not world_stopped:
+		persona_combat.notify_player_input(event)
 	if event.is_action_pressed("attack"):
 		persona_combat.cancel_hunt_followups()
 		_attack_pressed = true
@@ -125,6 +133,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_released("attack"):
 		_attack_released = true
 		_attack_held = false
+		cyberware.cancel_automatic_fire_requests()
 		_attack_release_buffer_remaining = INPUT_BUFFER_SECONDS
 		if _gravity_charging:
 			_gravity_charging = false
@@ -148,15 +157,21 @@ func _unhandled_input(event: InputEvent) -> void:
 func _physics_process(delta: float) -> void:
 	_update_aim_direction()
 	if _gravity_charging:
-		_gravity_charge_seconds = minf(_gravity_charge_seconds + delta, 10.0)
+		_gravity_charge_seconds = minf(_gravity_charge_seconds + delta, GravityWaveOrb.MAX_CHARGE_SECONDS)
 	if _gravity_charge_bar != null:
-		_gravity_charge_bar.set("progress", _gravity_charge_seconds / 10.0 if _gravity_charging else 0.0)
+		_gravity_charge_bar.set("progress", _gravity_charge_seconds / GravityWaveOrb.MAX_CHARGE_SECONDS if _gravity_charging else 0.0)
 		_gravity_charge_bar.queue_redraw()
 	if cyberware.is_world_stopped():
 		var world_input := Input.get_vector("move_left", "move_right", "move_up", "move_down") if _input_enabled else Vector2.ZERO
 		velocity = world_input * dash.config.walk_speed
 		move_and_slide()
-		visuals.update_visual(aim_direction, velocity, guard.state, guard.guard_arc_degrees)
+		weapons.update_attack_pose(global_position, aim_direction, self)
+		visuals.update_visual(aim_direction, velocity, guard.state, guard.guard_arc_degrees, weapons.get_melee_swing_angle_offset(), _logical_aim_world_position())
+		if _input_enabled and _should_attack_this_frame():
+			var attack := _get_attack_transform()
+			if weapons.try_attack(attack.origin, attack.x.normalized(), self, not _attack_pressed):
+				_consume_attack_buffer()
+		_tick_input_buffers(delta)
 		persona_combat.queue_redraw()
 		_afterimage_active_remaining = WORLD_AFTERIMAGE_INTERVAL + delta
 		if not world_input.is_zero_approx():
@@ -179,7 +194,7 @@ func _physics_process(delta: float) -> void:
 	visuals.update_visual(aim_direction, velocity, guard.state, guard.guard_arc_degrees, weapons.get_melee_swing_angle_offset(), _logical_aim_world_position())
 	if _input_enabled and (guard.can_attack() or persona_combat.can_attack_during_guard()) and dash.can_attack() and _should_attack_this_frame():
 		var attack := _get_attack_transform()
-		if weapons.try_attack(attack.origin, attack.x.normalized(), self):
+		if weapons.try_attack(attack.origin, attack.x.normalized(), self, not _attack_pressed):
 			_consume_attack_buffer()
 			_gravity_pending = false
 		elif _gravity_pending and weapons.get_cooldown_remaining() <= 0.0:
@@ -507,6 +522,14 @@ func _get_weapon_aim_direction() -> Vector2:
 	if data == null or data.attack_kind == WeaponComponentData.AttackKind.MELEE:
 		return aim_direction
 	var direction := _logical_aim_world_position() - visuals.get_weapon_mount_global_position()
+	return direction.normalized() if direction.length_squared() > 1.0 else aim_direction
+
+
+func get_live_projectile_aim_direction() -> Vector2:
+	var mobile_input := get_node_or_null("/root/MobileInput")
+	if mobile_input != null and mobile_input.is_touch_aim_active(self):
+		return mobile_input.get_aim_direction(self, aim_direction)
+	var direction := _logical_mouse_world_position() - visuals.get_weapon_mount_global_position()
 	return direction.normalized() if direction.length_squared() > 1.0 else aim_direction
 
 

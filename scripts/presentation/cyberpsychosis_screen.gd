@@ -2,6 +2,7 @@ class_name CyberpsychosisScreen
 extends CanvasLayer
 
 signal peak_started(source: StringName)
+signal stage_crossed(stage: int)
 signal music_cue_requested
 signal music_stop_requested
 
@@ -10,6 +11,9 @@ const MODULES_TO_WARNING := 30
 const MODULES_TO_ONSET := 75
 const MODULES_TO_ECHO := 120
 const MODULES_TO_PEAK := 150
+const KILL_POINTS := 5
+const DAMAGE_POINTS := 15
+const BOSS_POINTS := 30
 const ONSET_FADE_USEC := 800_000
 const PEAK_FADE_USEC := 400_000
 const PEAK_RELEASE_USEC := 600_000
@@ -20,6 +24,9 @@ const SHADER := preload("res://shaders/presentation/cyberpsychosis_screen.gdshad
 
 var _kill_times: Array[int] = []
 var _module_times: Array[int] = []
+var _frenzy_events: Array[Dictionary] = []
+var _counted_boss_encounters: Dictionary = {}
+var _reported_stage := 0
 var _counted_kills: Dictionary = {}
 var _last_action_usec := 0
 var _last_capture_usec := 0
@@ -92,6 +99,7 @@ func _process(_delta: float) -> void:
 	var now := Time.get_ticks_usec()
 	_trim_window(_kill_times, now)
 	_trim_window(_module_times, now)
+	_trim_frenzy_events(now)
 	if _cooldown_until_usec > 0 and now >= _cooldown_until_usec:
 		_cooldown_until_usec = 0
 		_cooldown_uses = 0
@@ -99,7 +107,9 @@ func _process(_delta: float) -> void:
 	for target_id in _counted_kills.keys():
 		if now - int(_counted_kills[target_id]) > WINDOW_USEC:
 			_counted_kills.erase(target_id)
-	if _module_times.size() < MODULES_TO_ONSET:
+	var frenzy_points := get_frenzy_points()
+	_reported_stage = mini(_reported_stage, _stage_for_points(frenzy_points))
+	if frenzy_points < MODULES_TO_ONSET:
 		_onset_started_usec = 0
 	var release_mix := clampf(1.0 - float(now - _peak_release_usec) / PEAK_RELEASE_USEC, 0.0, 1.0) if _peak_release_usec > 0 else 0.0
 	var visual_peak := _peak_active or release_mix > 0.0
@@ -109,10 +119,10 @@ func _process(_delta: float) -> void:
 	var cooling := _cooldown_until_usec > 0 and not _peak_active
 	var onset_mix := clampf(float(now - _onset_started_usec) / ONSET_FADE_USEC, 0.0, 1.0) if _onset_started_usec > 0 else 0.0
 	var amplified := 0.0
-	if _module_times.size() >= MODULES_TO_WARNING:
-		amplified = 0.08 + clampf(float(_module_times.size() - MODULES_TO_WARNING) / float(MODULES_TO_ONSET - MODULES_TO_WARNING), 0.0, 1.0) * 0.07
-	if _module_times.size() >= MODULES_TO_ONSET:
-		var progress := clampf(float(_module_times.size() - MODULES_TO_ONSET) / float(MODULES_TO_PEAK - MODULES_TO_ONSET), 0.0, 1.0)
+	if frenzy_points >= MODULES_TO_WARNING:
+		amplified = 0.08 + clampf(float(frenzy_points - MODULES_TO_WARNING) / float(MODULES_TO_ONSET - MODULES_TO_WARNING), 0.0, 1.0) * 0.07
+	if frenzy_points >= MODULES_TO_ONSET:
+		var progress := clampf(float(frenzy_points - MODULES_TO_ONSET) / float(MODULES_TO_PEAK - MODULES_TO_ONSET), 0.0, 1.0)
 		var stronger := minf(0.42 + progress * 0.43 + minf(_kill_times.size() / 5.0, 1.0) * 0.05 + (1.0 - _health_ratio) * 0.05, 0.94)
 		amplified = lerpf(amplified, stronger, onset_mix)
 	if cooling:
@@ -121,8 +131,8 @@ func _process(_delta: float) -> void:
 	var release := 1.0 if idle_seconds < 1.2 else exp(-(idle_seconds - 1.2) / 2.0)
 	var frenzy := clampf(amplified * release, 0.0, 0.94)
 	var echo_strength := 0.0
-	if not cooling and _module_times.size() >= MODULES_TO_ECHO:
-		echo_strength = clampf(0.16 + float(_module_times.size() - MODULES_TO_ECHO) / float(MODULES_TO_PEAK - MODULES_TO_ECHO) * 0.30, 0.0, 0.46) * release
+	if not cooling and frenzy_points >= MODULES_TO_ECHO:
+		echo_strength = clampf(0.16 + float(frenzy_points - MODULES_TO_ECHO) / float(MODULES_TO_PEAK - MODULES_TO_ECHO) * 0.30, 0.0, 0.46) * release
 	var peak_mix := 0.0
 	if _peak_active:
 		peak_mix = clampf(float(now - _peak_started_usec) / PEAK_FADE_USEC, 0.0, 1.0)
@@ -197,6 +207,8 @@ func _update_history_offsets() -> void:
 
 
 func _on_damage_resolved(result: DamageResult) -> void:
+	if result != null and result.target is PlayerController and result.outcome == DamageResult.Outcome.DAMAGED and result.final_damage > 0:
+		_add_frenzy_points(DAMAGE_POINTS, &"damage")
 	if result == null or not result.target_defeated or result.packet == null:
 		return
 	if result.packet.source_faction != CombatFaction.Id.PLAYER or not result.packet.source is PlayerController:
@@ -211,6 +223,7 @@ func _on_damage_resolved(result: DamageResult) -> void:
 	_counted_kills[target_id] = now
 	_kill_times.append(now)
 	_last_action_usec = now
+	_add_frenzy_points(KILL_POINTS, &"kill")
 
 
 func _on_node_added(node: Node) -> void:
@@ -244,10 +257,55 @@ func _on_module_triggered(_module_id: StringName) -> void:
 		return
 	_trim_window(_module_times, now)
 	_module_times.append(now)
-	if _module_times.size() == MODULES_TO_ONSET:
+	_add_frenzy_points(1, &"module")
+
+
+func record_boss_encounter(encounter_id: int) -> void:
+	if _counted_boss_encounters.has(encounter_id):
+		return
+	_counted_boss_encounters[encounter_id] = true
+	_add_frenzy_points(BOSS_POINTS, &"boss")
+
+
+func _add_frenzy_points(points: int, source: StringName) -> void:
+	var now := Time.get_ticks_usec()
+	_last_action_usec = now
+	if _peak_active or now < _cooldown_until_usec:
+		return
+	_trim_frenzy_events(now)
+	var previous_stage := _stage_for_points(get_frenzy_points())
+	_reported_stage = mini(_reported_stage, previous_stage)
+	_frenzy_events.append({"time": now, "points": points})
+	var current_points := get_frenzy_points()
+	var current_stage := _stage_for_points(current_points)
+	if current_stage > previous_stage and current_stage > _reported_stage:
+		_reported_stage = current_stage
+		stage_crossed.emit(current_stage)
+	if previous_stage < 2 and current_stage >= 2:
 		_onset_started_usec = now
-	if _module_times.size() >= MODULES_TO_PEAK:
+	if previous_stage < 3 and current_stage >= 3:
+		_peak_source = &"modules" if source == &"module" else source
 		music_cue_requested.emit()
+
+
+func _stage_for_points(points: int) -> int:
+	if points >= MODULES_TO_PEAK:
+		return 3
+	if points >= MODULES_TO_ONSET:
+		return 2
+	return 1 if points >= MODULES_TO_WARNING else 0
+
+
+func get_frenzy_points() -> int:
+	var total := 0
+	for event in _frenzy_events:
+		total += int(event.points)
+	return total
+
+
+func _trim_frenzy_events(now: int) -> void:
+	while not _frenzy_events.is_empty() and now - int(_frenzy_events[0].time) > WINDOW_USEC:
+		_frenzy_events.remove_at(0)
 
 
 func _on_music_started() -> void:
@@ -256,7 +314,6 @@ func _on_music_started() -> void:
 	_peak_active = true
 	_peak_started_usec = Time.get_ticks_usec()
 	_peak_release_usec = 0
-	_peak_source = &"modules"
 	peak_started.emit(_peak_source)
 
 
@@ -269,11 +326,16 @@ func _on_music_ended() -> void:
 	_cooldown_uses = 0
 	_module_times.clear()
 	_kill_times.clear()
+	_frenzy_events.clear()
+	_reported_stage = 0
 
 
 func _on_player_died(_packet: DamagePacket) -> void:
 	_kill_times.clear()
 	_module_times.clear()
+	_frenzy_events.clear()
+	_counted_boss_encounters.clear()
+	_reported_stage = 0
 	_counted_kills.clear()
 	_last_action_usec = 0
 	_onset_started_usec = 0
@@ -296,6 +358,9 @@ func _on_scene_loading(_scene_path: String) -> void:
 	_capture_blocked_until_usec = Time.get_ticks_usec() + 1_000_000
 	_kill_times.clear()
 	_module_times.clear()
+	_frenzy_events.clear()
+	_counted_boss_encounters.clear()
+	_reported_stage = 0
 	_counted_kills.clear()
 	_last_action_usec = 0
 	_onset_started_usec = 0
@@ -328,4 +393,4 @@ func _trim_window(times: Array[int], now: int) -> void:
 
 
 func get_window_counts() -> Dictionary:
-	return {"kills": _kill_times.size(), "modules": _module_times.size(), "peak_source": _peak_source}
+	return {"kills": _kill_times.size(), "modules": _module_times.size(), "points": get_frenzy_points(), "peak_source": _peak_source}

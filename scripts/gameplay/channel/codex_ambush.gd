@@ -182,7 +182,11 @@ func _on_remaining_changed(remaining: int) -> void:
 		# Order: original first group, original third group, original second group.
 		room.spawner._spawn_cursor = 0 if wave_number == 2 else 3
 		_prepare_nearby_spawns()
-		room.spawner.spawn_pending_wave(3)
+		if Engine.is_in_physics_frame():
+			# Enemy defeat can arrive from a projectile collision callback.
+			room.spawner.call_deferred("spawn_pending_wave", 3)
+		else:
+			room.spawner.spawn_pending_wave(3)
 	else:
 		_complete()
 	_refresh_status()

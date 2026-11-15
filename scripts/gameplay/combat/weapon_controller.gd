@@ -104,7 +104,7 @@ func update_attack_pose(origin: Vector2, _direction: Vector2, source_node: Node)
 	_perform_melee_tick(_current_weapon, origin, _swing_direction, source_node)
 
 
-func try_attack(origin: Vector2, direction: Vector2, source_node: Node) -> bool:
+func try_attack(origin: Vector2, direction: Vector2, source_node: Node, automatic_repeat: bool = false) -> bool:
 	var data := _current_weapon
 	if data == null or direction.is_zero_approx():
 		return false
@@ -113,7 +113,7 @@ func try_attack(origin: Vector2, direction: Vector2, source_node: Node) -> bool:
 		if _cooldown_remaining > 0.0:
 			return false
 		var charged := data.duplicate(true) as WeaponComponentData
-		charged.charge_seconds = clampf(pending_charge_seconds, 0.0, 10.0)
+		charged.charge_seconds = clampf(pending_charge_seconds, 0.0, GravityWaveOrb.MAX_CHARGE_SECONDS)
 		if not cyberware.submit_weapon_fire(direction, charged):
 			return false
 		last_manual_charge_seconds = charged.charge_seconds
@@ -121,9 +121,9 @@ func try_attack(origin: Vector2, direction: Vector2, source_node: Node) -> bool:
 		return true
 	if faction == CombatFaction.Id.PLAYER and cyberware != null and not cyberware.is_circuit_weapon_call_active():
 		var frenzy := (source_node as PlayerController).persona_combat.is_nuclear_frenzy_active()
-		if _cooldown_remaining > 0.0 and not frenzy and not (cyberware.has_active_round() and (source_node as PlayerController).persona_combat.can_queue_seamless()):
+		if _cooldown_remaining > 0.0 and not frenzy and not (not automatic_repeat and cyberware.has_active_round() and (source_node as PlayerController).persona_combat.can_queue_seamless()):
 			return false
-		if not cyberware.submit_weapon_fire(direction, data):
+		if not cyberware.submit_weapon_fire(direction, data, automatic_repeat):
 			return false
 		_cooldown_remaining = 0.0 if frenzy else data.cooldown / maxf(attack_speed_multiplier + persona_attack_speed_bonus + equipment_attack_speed_bonus, 0.01)
 		return true
@@ -268,7 +268,7 @@ func _perform_attack(
 func _perform_gravity_wave(data: WeaponComponentData, direction: Vector2, source_node: Node, damage_multiplier: float) -> void:
 	var orb := (load(GRAVITY_WAVE_SCENE_PATH) as PackedScene).instantiate() as GravityWaveOrb
 	CombatProjectile.room_for_actor(source_node).add_child(orb)
-	orb.setup_wave(source_node, direction, clampf(data.charge_seconds, 0.0, 10.0), damage_multiplier)
+	orb.setup_wave(source_node, direction, clampf(data.charge_seconds, 0.0, GravityWaveOrb.MAX_CHARGE_SECONDS), damage_multiplier)
 	orb.feedback_group_id = _active_feedback_group_id
 	orb.status_tags = data.status_tags.duplicate()
 	orb.status_tags.append_array(_active_status_tags)
@@ -408,6 +408,8 @@ func _perform_projectiles(
 			maxi(int(round(data.damage * damage_multiplier)), 0),
 			data.projectile_speed
 		)
+		if cyberware != null and cyberware.is_world_stopped():
+			projectile.begin_world_stop_launch()
 		projectile.weapon_id = data.id
 		projectile.damage_type = data.damage_type
 		projectile.status_tags = data.status_tags.duplicate()

@@ -69,6 +69,7 @@ func _physics_process(_delta: float) -> void:
 
 
 func _ready() -> void:
+	add_to_group("wing_guards")
 	player = get_node_or_null(player_path) as PlayerController
 	_idle_texture = load(ART[kind])
 	body.texture = _idle_texture
@@ -93,6 +94,10 @@ func set_active(value: bool) -> void:
 
 func is_attacking() -> bool:
 	return _attacking
+
+
+func get_homing_aim_position(_origin: Vector2) -> Vector2:
+	return ($HurtBox/CollisionShape2D as CollisionShape2D).global_position
 
 
 func should_ignore_damage(_packet: DamagePacket) -> bool:

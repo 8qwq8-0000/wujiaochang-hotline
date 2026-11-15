@@ -27,7 +27,7 @@ func _run() -> void:
 		assert((load("res://assets/art/projectiles/gravity_wave/%s.png" % path) as Texture2D).get_width() <= 256)
 	var blue := scene.instantiate() as GravityWaveOrb
 	room.add_child(blue)
-	blue.setup_wave(player, Vector2.RIGHT, 4.9)
+	blue.setup_wave(player, Vector2.RIGHT, 2.9)
 	assert(blue.kind == GravityWaveOrb.BLUE)
 	var blue_trail := blue.get_node("TrailParticles") as CPUParticles2D
 	assert(blue_trail != null and blue_trail.emitting and blue_trail.direction == Vector2.LEFT)
@@ -42,7 +42,7 @@ func _run() -> void:
 	assert(hostile.is_queued_for_deletion())
 	var red := scene.instantiate() as GravityWaveOrb
 	room.add_child(red)
-	red.setup_wave(player, Vector2.RIGHT, 10.0)
+	red.setup_wave(player, Vector2.RIGHT, 6.0)
 	assert(red.kind == GravityWaveOrb.RED)
 	var red_trail := red.get_node("TrailParticles") as CPUParticles2D
 	assert(red_trail != null and red_trail.emitting and red_trail.direction == Vector2.RIGHT)

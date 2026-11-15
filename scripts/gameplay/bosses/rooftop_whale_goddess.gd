@@ -107,6 +107,13 @@ func get_halo_segments_remaining() -> int:
 	return halo_segments_remaining
 
 
+func get_homing_aim_position(origin: Vector2) -> Vector2:
+	var base_shape := $HurtBox/PedestalHurtShape as CollisionShape2D
+	var rectangle := base_shape.shape as RectangleShape2D
+	var half_size := rectangle.size * 0.5 - Vector2.ONE * 4.0
+	return origin.clamp(base_shape.global_position - half_size, base_shape.global_position + half_size)
+
+
 func set_opening_guards(remaining: int, total: int) -> void:
 	opening_guards_total = maxi(total, 1)
 	opening_guards_remaining = clampi(remaining, 0, opening_guards_total)

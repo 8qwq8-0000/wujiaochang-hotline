@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://scripts/gameplay/bosses/rooftop_whale_goddess.gd" id="1_boss"]
 [ext_resource type="Texture2D" path="res://assets/art/characters/bosses/rooftop_whale_goddess/rooftop_boss_dormant_large.png" id="2_dormant"]
@@ -15,6 +15,9 @@ size = Vector2(230, 112)
 
 [sub_resource type="RectangleShape2D" id="HurtShape"]
 size = Vector2(182, 322)
+
+[sub_resource type="RectangleShape2D" id="PedestalHurtShape"]
+size = Vector2(246, 132)
 
 [node name="RooftopWhaleGoddess" type="StaticBody2D"]
 texture_filter = 2
@@ -63,3 +66,7 @@ actor_path = NodePath("..")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="HurtBox"]
 position = Vector2(0, 25)
 shape = SubResource("HurtShape")
+
+[node name="PedestalHurtShape" type="CollisionShape2D" parent="HurtBox"]
+position = Vector2(0, 160)
+shape = SubResource("PedestalHurtShape")
