@@ -392,9 +392,10 @@ static func cyberware_resource_path(module_id: StringName) -> String:
 static func cyberware_resource_paths() -> Dictionary:
 	if _cyberware_resource_paths_cache.is_empty():
 		for filename in DirAccess.get_files_at("res://resources/cyberware"):
-			if not filename.ends_with(".tres"):
+			var resource_filename := filename.trim_suffix(".remap")
+			if not resource_filename.ends_with(".tres"):
 				continue
-			var path := "res://resources/cyberware/%s" % filename
+			var path := "res://resources/cyberware/%s" % resource_filename
 			var data := load(path) as CyberwareData
 			if data != null and not data.module_id.is_empty():
 				_cyberware_resource_paths_cache[data.module_id] = path

@@ -77,10 +77,38 @@ func run() -> void:
 	await _test_five_slot_drag_alignment()
 	_test_right_click_unloads_and_expanded_slots()
 	_test_default_install_uses_empty_slot()
+	await _test_mobile_circuit_button()
 
 	paused = false
 	print("Cyberware circuit UI failures: ", failures)
 	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)
+
+
+func _test_mobile_circuit_button() -> void:
+	var mobile_input := root.get_node("MobileInput")
+	mobile_input.set_touch_preview(true)
+	mobile_input.set("_player", player)
+	mobile_input._process(0.0)
+	var button := (mobile_input.get("_buttons") as Dictionary).get("circuit_editor") as MobileActionButton
+	check(button != null and button.visible, "mobile cyberware button appears beside inventory during gameplay")
+	button._begin_press(Vector2.ZERO)
+	await process_frame
+	check(hud.get_circuit_editor().is_open, "mobile cyberware button opens the circuit editor")
+	button._end_press()
+	mobile_input._process(0.0)
+	check(not (mobile_input.get("_root") as Control).visible, "touch controls hide while the circuit editor is open")
+	check((mobile_input.get("_root") as Control).mouse_filter == Control.MOUSE_FILTER_IGNORE, "empty touch-control space passes input through")
+	var close: Button
+	for child in hud.get_circuit_editor().find_children("*", "Button", true, false):
+		if (child as Button).text == "关闭":
+			close = child as Button
+			break
+	check(close != null, "circuit editor has its own close button")
+	if close != null:
+		close.pressed.emit()
+	await process_frame
+	check(not hud.get_circuit_editor().is_open, "circuit editor close button returns to gameplay")
+	mobile_input.set_touch_preview(false)
 
 
 func _configure_sample() -> void:

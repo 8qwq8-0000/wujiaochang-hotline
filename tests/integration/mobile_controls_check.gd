@@ -22,6 +22,12 @@ func run() -> void:
 	await process_frame
 	check(bool(ProjectSettings.get_setting("input_devices/pointing/emulate_mouse_from_touch", false)), "touch can operate ordinary menu Buttons")
 	check(not bool(ProjectSettings.get_setting("application/config/quit_on_go_back", true)), "Android back is delegated to the in-game navigation handler")
+	mobile_input.set_auto_fire_enabled(false)
+	mobile_input._load_settings()
+	check(not mobile_input.is_auto_fire_enabled(), "auto fire setting persists when disabled")
+	mobile_input.set_auto_fire_enabled(true)
+	mobile_input._load_settings()
+	check(mobile_input.is_auto_fire_enabled(), "auto fire setting persists when enabled")
 
 	var joystick := mobile_input.get("_joystick") as VirtualJoystick
 	check(joystick != null, "touch controls use Godot's built-in VirtualJoystick")
@@ -36,6 +42,7 @@ func run() -> void:
 		"interact": &"interact",
 		"weapon": &"weapon_switch",
 		"inventory": &"inventory_toggle",
+		"circuit_editor": &"circuit_editor",
 		"pause": &"pause",
 	}
 	for control_name in expected:
@@ -62,6 +69,13 @@ func run() -> void:
 	await process_frame
 	player.set_physics_process(false)
 	mobile_input.set("_player", player)
+	player.cyberware.set("_circuit_queues", {&"event_0": {"automatic": true}})
+	mobile_input.set("_auto_fire_was_active", false)
+	mobile_input._cancel_active_auto_fire()
+	check(player.cyberware.get("_circuit_queues").has(&"event_0"), "manual held-fire queue is not cancelled when mobile auto fire was inactive")
+	mobile_input.set("_auto_fire_was_active", true)
+	mobile_input._cancel_active_auto_fire()
+	check(not player.cyberware.get("_circuit_queues").has(&"event_0"), "leaving mobile auto fire cancels its pending request")
 	player.aim_direction = Vector2.RIGHT
 	var near_behind := Node2D.new()
 	near_behind.add_to_group(&"enemies")

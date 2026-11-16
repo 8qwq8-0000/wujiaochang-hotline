@@ -52,6 +52,7 @@ var _touch_preview: CheckButton
 var _left_handed: CheckButton
 var _haptics: CheckButton
 var _target_indicator: CheckButton
+var _auto_fire: CheckButton
 var _edit_touch_layout: Button
 var _confirm_row: HBoxContainer
 var _confirm_label: Label
@@ -375,6 +376,11 @@ func _build_settings_page() -> VBoxContainer:
 	_target_indicator.text = "显示自动瞄准目标"
 	_target_indicator.toggled.connect(_on_target_indicator_toggled)
 	content.add_child(_target_indicator)
+	_auto_fire = CheckButton.new()
+	_auto_fire.text = "自动射击（敌人进入视线时）"
+	_auto_fire.toggled.connect(_on_auto_fire_toggled)
+	content.add_child(_auto_fire)
+	_auto_fire.visible = OS.has_feature("mobile")
 	_edit_touch_layout = Button.new()
 	_edit_touch_layout.text = "编辑触控按键布局"
 	_edit_touch_layout.pressed.connect(_on_edit_touch_layout_pressed)
@@ -554,6 +560,7 @@ func _sync_settings_controls() -> void:
 		_left_handed.set_pressed_no_signal(mobile_input.is_left_handed())
 		_haptics.set_pressed_no_signal(mobile_input.is_haptics_enabled())
 		_target_indicator.set_pressed_no_signal(mobile_input.is_target_indicator_enabled())
+		_auto_fire.set_pressed_no_signal(mobile_input.is_auto_fire_enabled())
 		_edit_touch_layout.disabled = not OS.has_feature("mobile") and not mobile_input.is_touch_preview_enabled()
 	var settings := get_node_or_null("/root/GameSettings")
 	if settings != null:
@@ -713,6 +720,12 @@ func _on_target_indicator_toggled(enabled: bool) -> void:
 	var mobile_input := get_node_or_null("/root/MobileInput")
 	if mobile_input != null:
 		mobile_input.set_target_indicator_enabled(enabled)
+
+
+func _on_auto_fire_toggled(enabled: bool) -> void:
+	var mobile_input := get_node_or_null("/root/MobileInput")
+	if mobile_input != null:
+		mobile_input.set_auto_fire_enabled(enabled)
 
 
 func _on_edit_touch_layout_pressed() -> void:

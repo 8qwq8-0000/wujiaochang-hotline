@@ -14,7 +14,7 @@ config/name="五角场热线"
 run/main_scene="res://scenes/ui/start_menu.tscn"
 config/quit_on_go_back=false
 config/features=PackedStringArray("4.7", "GL Compatibility")
-config/icon="res://icon.svg"
+config/icon="res://assets/art/ui/game_icon.png"
 
 [autoload]
 

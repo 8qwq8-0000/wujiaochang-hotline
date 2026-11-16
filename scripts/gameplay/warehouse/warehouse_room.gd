@@ -85,6 +85,7 @@ func _fit_room_to_viewport() -> void:
 	$Walls/Bottom.position = Vector2(320, bottom - 20.0)
 	$Walls/Left.position = Vector2(left + 12.0, 180)
 	$Walls/Right.position = Vector2(right - 12.0, 180)
+	$Deploy.position.x = $Walls/Right.position.x - 48.0
 	$WarehouseArt.queue_redraw()
 	$WarehouseArt/WallsArt.queue_redraw()
 	$WarehouseArt/FrontParapet.queue_redraw()

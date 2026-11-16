@@ -1,19 +1,19 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene format=3 uid="uid://bjksa3fhbanap"]
 
-[ext_resource type="Script" path="res://scripts/presentation/weapon_view.gd" id="1"]
-[ext_resource type="Texture2D" path="res://assets/art/weapons/gravity_wave/weapon.png" id="2"]
+[ext_resource type="Script" uid="uid://bpagc4l7xgsxs" path="res://scripts/presentation/weapon_view.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://c08sysbrddxw8" path="res://assets/art/weapons/gravity_wave/weapon.png" id="2"]
 
-[node name="GravityWaveView" type="Node2D"]
+[node name="GravityWaveView" type="Node2D" unique_id=1231644128]
 script = ExtResource("1")
 muzzle_socket_path = NodePath("BodyRoot/MuzzleSocket")
 
-[node name="BodyRoot" type="Node2D" parent="."]
+[node name="BodyRoot" type="Node2D" parent="." unique_id=257530436]
 
-[node name="BodySprite" type="Sprite2D" parent="BodyRoot"]
+[node name="BodySprite" type="Sprite2D" parent="BodyRoot" unique_id=1855493460]
 texture_filter = 1
 position = Vector2(18, 0)
 scale = Vector2(0.25, 0.25)
 texture = ExtResource("2")
 
-[node name="MuzzleSocket" type="Marker2D" parent="BodyRoot"]
+[node name="MuzzleSocket" type="Marker2D" parent="BodyRoot" unique_id=883190976]
 position = Vector2(39, 0)

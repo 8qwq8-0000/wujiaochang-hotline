@@ -646,6 +646,8 @@ func _should_attack_this_frame() -> bool:
 	var mobile_input := get_node_or_null("/root/MobileInput")
 	if mobile_input != null and mobile_input.is_manual_attack_active(self):
 		return data.trigger_mode != WeaponComponentData.TriggerMode.CHARGE
+	if mobile_input != null and mobile_input.is_auto_fire_active(self, data):
+		return true
 	match data.trigger_mode:
 		WeaponComponentData.TriggerMode.AUTOMATIC:
 			return _attack_held

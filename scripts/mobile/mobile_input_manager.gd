@@ -11,6 +11,7 @@ const TOUCH_PREVIEW := &"TouchPreview"
 const LEFT_HANDED := &"LeftHanded"
 const HAPTICS := &"Haptics"
 const TARGET_INDICATOR_SETTING := &"TargetIndicator"
+const AUTO_FIRE_SETTING := &"AutoFire"
 const TUTORIAL_SHOWN := &"TutorialShown"
 const TARGET_REFRESH_SECONDS := 0.1
 
@@ -22,6 +23,7 @@ const CONTROL_INFO := {
 	"interact": {"caption": "交互", "size": 46.0},
 	"weapon": {"caption": "换枪", "size": 44.0},
 	"inventory": {"caption": "背包", "size": 40.0},
+	"circuit_editor": {"caption": "义体", "size": 40.0},
 	"pause": {"caption": "暂停", "size": 36.0},
 }
 
@@ -40,6 +42,8 @@ var _touch_preview := false
 var _left_handed := false
 var _haptics := true
 var _show_target_indicator := true
+var _auto_fire_enabled := true
+var _auto_fire_was_active := false
 var _layout: Dictionary = {}
 var _editing := false
 var _selected_control := ""
@@ -86,15 +90,26 @@ func _process(delta: float) -> void:
 	_root.visible = gameplay_visible or _editing
 	_editor_toolbar.visible = _editing
 	if _editing:
+		_cancel_active_auto_fire()
 		return
+	_joystick.visible = gameplay_visible
+	for control_name in _buttons:
+		if control_name != "interact":
+			(_buttons[control_name] as MobileActionButton).visible = gameplay_visible
+	_buttons.interact.visible = gameplay_visible and _has_available_interaction()
 	if not gameplay_visible:
 		_clear_manual_aim()
+		_cancel_active_auto_fire()
 		return
-	_buttons.interact.visible = _has_available_interaction()
 	_target_refresh_remaining = maxf(_target_refresh_remaining - delta, 0.0)
 	if _target_refresh_remaining <= 0.0:
 		_target_refresh_remaining = TARGET_REFRESH_SECONDS
 		_refresh_target()
+	var auto_fire_active := is_auto_fire_active(_player, _player.weapons.get_current_weapon())
+	if not auto_fire_active:
+		_cancel_active_auto_fire()
+	else:
+		_auto_fire_was_active = true
 	_indicator.target = _target
 	_indicator.manual_override = not _manual_aim.is_zero_approx()
 	_indicator.enabled = _show_target_indicator
@@ -172,6 +187,30 @@ func is_target_indicator_enabled() -> bool:
 	return _show_target_indicator
 
 
+func set_auto_fire_enabled(enabled: bool) -> void:
+	_auto_fire_enabled = enabled
+	PlayerConfig.set_config(SETTINGS_SECTION, AUTO_FIRE_SETTING, enabled)
+	if not enabled:
+		_cancel_active_auto_fire()
+
+
+func is_auto_fire_enabled() -> bool:
+	return _auto_fire_enabled
+
+
+func is_auto_fire_active(player: PlayerController, weapon: WeaponComponentData) -> bool:
+	return (
+		OS.has_feature("mobile")
+		and _auto_fire_enabled
+		and is_touch_aim_active(player)
+		and weapon != null
+		and weapon.trigger_mode != WeaponComponentData.TriggerMode.CHARGE
+		and weapon.attack_kind != WeaponComponentData.AttackKind.MELEE
+		and _manual_aim.is_zero_approx()
+		and _is_target_valid(_target)
+	)
+
+
 func vibrate(kind: StringName) -> void:
 	if not _haptics or not OS.has_feature("mobile"):
 		return
@@ -188,6 +227,7 @@ func vibrate(kind: StringName) -> void:
 
 
 func begin_layout_edit() -> void:
+	_cancel_active_auto_fire()
 	_editing = true
 	_using_touch = true
 	_selected_control = "attack"
@@ -237,6 +277,7 @@ func _load_settings() -> void:
 	_left_handed = bool(PlayerConfig.get_config(SETTINGS_SECTION, LEFT_HANDED, false))
 	_haptics = bool(PlayerConfig.get_config(SETTINGS_SECTION, HAPTICS, true))
 	_show_target_indicator = bool(PlayerConfig.get_config(SETTINGS_SECTION, TARGET_INDICATOR_SETTING, true))
+	_auto_fire_enabled = bool(PlayerConfig.get_config(SETTINGS_SECTION, AUTO_FIRE_SETTING, true))
 	_load_layout()
 
 
@@ -263,6 +304,7 @@ func _default_layout(left_handed: bool) -> Dictionary:
 		"interact": {"position": Vector2(0.9, 0.52), "scale": 1.0, "opacity": 0.9},
 		"weapon": {"position": Vector2(0.69, 0.85), "scale": 1.0, "opacity": 0.8},
 		"inventory": {"position": Vector2(0.91, 0.16), "scale": 1.0, "opacity": 0.82},
+		"circuit_editor": {"position": Vector2(0.83, 0.16), "scale": 1.0, "opacity": 0.82},
 		"pause": {"position": Vector2(0.96, 0.08), "scale": 1.0, "opacity": 0.82},
 	}
 	if left_handed:
@@ -276,6 +318,7 @@ func _build_controls() -> void:
 	_root = Control.new()
 	_root.name = "TouchControls"
 	_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_root)
 	_joystick = VirtualJoystick.new()
 	_joystick.name = "MoveJoystick"
@@ -296,6 +339,7 @@ func _build_controls() -> void:
 	_add_action_button("interact", &"interact", CyberUITheme.ACCENT)
 	_add_action_button("weapon", &"weapon_switch", CyberUITheme.ACCENT)
 	_add_action_button("inventory", &"inventory_toggle", CyberUITheme.ACCENT)
+	_add_action_button("circuit_editor", &"circuit_editor", CyberUITheme.ACCENT)
 	_add_action_button("pause", &"pause", CyberUITheme.ACCENT)
 	_indicator = TARGET_INDICATOR.new()
 	_indicator.name = "TargetIndicator"
@@ -446,6 +490,7 @@ func _is_target_valid(candidate: Node2D) -> bool:
 
 func _on_manual_aim_changed(vector: Vector2, active: bool, source: StringName) -> void:
 	if active:
+		_cancel_active_auto_fire()
 		_manual_source = source
 		_manual_aim = vector.normalized()
 		_target = null
@@ -465,6 +510,14 @@ func is_manual_attack_active(player: PlayerController) -> bool:
 func _clear_manual_aim() -> void:
 	_manual_aim = Vector2.ZERO
 	_manual_source = &""
+
+
+func _cancel_active_auto_fire() -> void:
+	if not _auto_fire_was_active:
+		return
+	_auto_fire_was_active = false
+	if _player != null:
+		_player.cyberware.cancel_automatic_fire_requests()
 
 
 func _on_damage_resolved(result: DamageResult) -> void:
