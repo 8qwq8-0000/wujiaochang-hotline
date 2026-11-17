@@ -782,7 +782,7 @@ func _refresh_preview() -> void:
 			label += "⇒" + _display_name(effect_id)
 		order.append(label)
 	var stop_slot := int(plan.get("projected_stop_slot", -1))
-	_preview.text = "实际执行：%s\n总耗 %.0f  回能 %.0f  预计净耗 %.0f\n预计中止 %s  能量 %.0f/%.0f" % [
+	_preview.text = "实际执行：%s\n总耗 %.0f  回能 %.0f  预计净耗 %.0f（命中/击杀等条件效果未计入）\n预计中止 %s  能量 %.0f/%.0f" % [
 		" → ".join(order),
 		float(plan.get("gross_energy", 0.0)),
 		float(plan.get("fixed_refund", 0.0)),

@@ -94,7 +94,7 @@ func run_checks() -> void:
 		return
 	check(run.extraction_result.items.size() == 5, "both weapons, defense and spare bag extracted once")
 	check(run.extraction_result.player_state.inventory == before.inventory, "extraction retains equipment and bag")
-	check(int(run.extraction_result.player_state.cyberware_circuit.slot_capacity) == 3 and float(run.extraction_result.player_state.cyberware_circuit.maximum_energy) == 80.0, "extraction resets next run to three slots and eighty energy")
+	check(int(run.extraction_result.player_state.cyberware_circuit.slot_capacity) == 3 and float(run.extraction_result.player_state.cyberware_circuit.maximum_energy) == 60.0, "extraction resets next run to three slots and sixty energy")
 	var result: Dictionary = run.extraction_result.duplicate(true)
 	ui.extract()
 	check(run.extraction_result == result, "repeat extraction does not duplicate rewards")

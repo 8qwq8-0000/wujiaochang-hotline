@@ -184,7 +184,7 @@ godot --headless --path . --script res://tests/integration/automatic_door_check.
 
 固有突进：`godot --headless --path . --script res://tests/integration/dash_check.gd` 覆盖方向优先级、锁向、约 84 px 位移、命中去重、攻击打断、冷却、低物理频率路径扫描、撞墙与隔墙；`dash_invulnerability_check.gd` 覆盖 0.15 秒无敌及独立无敌来源。旧机动品质检查仅保留历史记录，不再作为现行验收。
 
-义体系统：`godot --headless --path . --script res://tests/integration/circuit_attack_phase1_check.gd` 覆盖开火进入回路、回路结束后攻击、同轮加成、事件启动器合成与存档、命中事件、回放及 32 次攻击上限。`circuit_energy_phase2_check.gd` 覆盖 40 能量每秒回复、启动器单独付费、逐槽扣能、中止、动量跳转、轴突折扣和旧 ID 读档迁移。`cyberware_circuit_runtime_check.gd` 覆盖回路构造与运行，`cyberware_circuit_ui_check.gd` 覆盖编辑界面。旧 `cyberware_check.gd` 仍保留其他义体行为的历史检查，混有与新版规则冲突的失败断言，不能作为当前验收入口。`power_box_check.gd` 另覆盖每台终端随机发放一件义体、重复进入不复制奖励和战斗回路编辑入口。
+义体系统：`godot --headless --path . --script res://tests/integration/circuit_attack_phase1_check.gd` 覆盖开火进入回路、回路结束后攻击、同轮加成、事件启动器合成与存档、命中事件、回放及超过 32 条攻击轨迹。`circuit_energy_phase2_check.gd` 覆盖 40 能量每秒回复、启动器单独付费、逐槽扣能、中止、动量跳转、轴突折扣和旧 ID 读档迁移。`cyberware_circuit_runtime_check.gd` 覆盖回路构造与运行，`cyberware_circuit_ui_check.gd` 覆盖编辑界面。旧 `cyberware_check.gd` 仍保留其他义体行为的历史检查，混有与新版规则冲突的失败断言，不能作为当前验收入口。`power_box_check.gd` 另覆盖每台终端随机发放一件义体、重复进入不复制奖励和战斗回路编辑入口。
 
 房间构型：`godot --headless --path . --script res://tests/integration/room_layouts_check.gd`，128 项检查覆盖正式 B/C 构型池、同层去重、种子复现、楼层重抽、跨区导航，以及全部 8 种房型的出生点/道具/出口可达和实际敌人绕墙追踪。去掉 `--headless` 会在 `/tmp/hotline-room-*.png` 输出实际构型截图。
 

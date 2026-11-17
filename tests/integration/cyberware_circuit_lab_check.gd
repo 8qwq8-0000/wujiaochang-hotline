@@ -56,7 +56,7 @@ func _test_trial_loadout() -> void:
 		enough = enough and int(counts[module_id]) >= CyberwareCircuitState.SLOT_COUNT
 	check(enough, "lab grants enough copies for duplicate four-slot experiments")
 	check(player.cyberware.circuit.get_slots() == PackedStringArray(lab.DEFAULT_SLOTS), "lab starts with the active smart explosive weapon chain")
-	check(is_equal_approx(player.cyberware.circuit.maximum_energy, 100.0) and is_equal_approx(player.cyberware.circuit.current_energy, 100.0), "lab starts at 100 of 100 energy")
+	check(is_equal_approx(player.cyberware.circuit.maximum_energy, 80.0) and is_equal_approx(player.cyberware.circuit.current_energy, 80.0), "lab starts at 80 of 80 energy")
 	check(InputMap.has_action("circuit_editor") and InputMap.has_action("circuit_activate"), "lab keeps C editing and F activation controls")
 
 
@@ -83,7 +83,7 @@ func _test_resets_and_targets() -> void:
 	player.cyberware.circuit.set_energy(3.0)
 	player.heat.set_heat(73.0)
 	lab.reset_energy_and_heat()
-	check(is_equal_approx(player.cyberware.circuit.current_energy, 100.0) and is_zero_approx(player.heat.current_heat), "trial control resets energy and heat")
+	check(is_equal_approx(player.cyberware.circuit.current_energy, 80.0) and is_zero_approx(player.heat.current_heat), "trial control resets energy and heat")
 	player.cyberware.set_circuit_slots(PackedStringArray(["combat_synapse_sensor", "guard_coprocessor", "", ""]))
 	lab.reset_circuit()
 	check(player.cyberware.circuit.get_slots() == PackedStringArray(lab.DEFAULT_SLOTS), "trial control restores the default sample circuit")

@@ -22,6 +22,7 @@
 [ext_resource type="AudioStream" uid="uid://d1r05oo2hulov" path="res://assets/audio/sfx/enemies/reinforcement_approach.wav" id="20"]
 [ext_resource type="PackedScene" path="res://scenes/ui/pause_settings_menu.tscn" id="21"]
 [ext_resource type="Script" path="res://scripts/ui/persona_rest_flow.gd" id="22"]
+[ext_resource type="Script" path="res://scripts/ui/control_hint_tray.gd" id="78"]
 [ext_resource type="Script" path="res://scripts/presentation/combat_feedback_manager.gd" id="75"]
 [ext_resource type="Script" path="res://scripts/presentation/cyberpsychosis_screen.gd" id="76"]
 [ext_resource type="AudioStream" path="res://assets/audio/music/combat/cyberpsychosis_intro_17s.ogg" id="77"]
@@ -160,3 +161,6 @@ fade_rect_path = NodePath("../TransitionLayer/Fade")
 [node name="PersonaRestFlow" type="CanvasLayer" parent="."]
 layer = 95
 script = ExtResource("22")
+
+[node name="ControlHintTray" type="CanvasLayer" parent="."]
+script = ExtResource("78")

@@ -242,8 +242,8 @@ func _test_runtime_pointer_and_snapshot_edit() -> void:
 		and pointer.get_global_rect().position.y >= active_card.get_global_rect().end.y,
 		"execution pointer stays centered below its active circuit slot")
 	check("主动▶" in String(hud_state.queues), "HUD identifies the active request type")
-	check(is_equal_approx(player.cyberware.circuit.current_energy, 82.0) and not (hud.get("_circuit_energy_label") as Label).visible, "HUD energy bar follows starter and first-slot spending")
-	check("执行中" in String(hud_state.status) and is_equal_approx(float(hud_state.energy_ratio), 0.82), "HUD exposes execution state and a proportional energy strip")
+	check(is_equal_approx(player.cyberware.circuit.current_energy, 62.0) and not (hud.get("_circuit_energy_label") as Label).visible, "HUD energy bar follows starter and first-slot spending")
+	check("执行中" in String(hud_state.status) and is_equal_approx(float(hud_state.energy_ratio), 0.775), "HUD exposes execution state and a proportional energy strip")
 	var hud_rect: Rect2 = hud_state.rect
 	check(Rect2(Vector2.ZERO, Vector2(640, 360)).encloses(hud_rect), "top-left circuit HUD stays inside 640 by 360")
 	var health_meter: Control = hud.get("_health_meter")

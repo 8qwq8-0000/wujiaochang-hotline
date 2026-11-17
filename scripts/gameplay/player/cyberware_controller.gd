@@ -59,9 +59,9 @@ const CIRCUIT_STARTERS := {
 	&"timed": RHYTHM_PULSER,
 }
 const CIRCUIT_STARTER_INTERVALS := {
-	&"active": 0.35,
-	&"event": 0.75,
-	&"timed": 2.50,
+	&"active": 0.175,
+	&"event": 0.375,
+	&"timed": 1.25,
 }
 
 var modules: PackedStringArray = []
@@ -106,7 +106,7 @@ var _circuit_copy_serial := 0
 var _circuit_abort_slot := -1
 var _circuit_abort_remaining := 0.0
 var _nonprojectile_payloads: Dictionary = {}
-var _rhythm_remaining := 2.50
+var _rhythm_remaining := 1.25
 
 
 func _ready() -> void:
@@ -789,7 +789,7 @@ func _start_next_circuit_request() -> void:
 			var weapon := player.weapons.get_current_weapon()
 			player.weapons.set_cooldown_remaining(0.0 if player.persona_combat.is_nuclear_frenzy_active() else weapon.cooldown / maxf(player.weapons.attack_speed_multiplier + player.weapons.persona_attack_speed_bonus + player.weapons.equipment_attack_speed_bonus, 0.01))
 		_circuit_queues.erase(request_kind)
-		_circuit_cooldowns[cooldown_key] = (0.5 if int(request.get("gravity_room_id", 0)) > 0 else 0.75) if String(request_kind).begins_with("event") else CIRCUIT_STARTER_INTERVALS[request_kind]
+		_circuit_cooldowns[cooldown_key] = (0.25 if int(request.get("gravity_room_id", 0)) > 0 else 0.375) if String(request_kind).begins_with("event") else CIRCUIT_STARTER_INTERVALS[request_kind]
 		circuit_queue_changed.emit(_circuit_queues.duplicate(true))
 		_begin_circuit_round(started_plan, request)
 		return
@@ -854,10 +854,9 @@ func _execute_next_circuit_step() -> void:
 	cost *= float(_active_circuit_round.get("energy_multiplier", 1.0))
 	if bool(_active_circuit_round.get("remaining_energy_discount", false)):
 		cost *= 0.5
-	var effect_for_limit := StringName(step.get("effect_id", step.get("module_id", "")))
-	var overloaded := (effect_for_limit == TACTICAL_COPROCESSOR and _current_attack_trajectory_count() * 2 > 32) or (effect_for_limit == CALAMITY_FLAME and _calamity_projected_count() > 32) or (effect_for_limit == FISSION_CORE and _current_attack_trajectory_count() * 3 > 32) or (effect_for_limit == RELAY_STARTER and _current_attack_trajectory_count() + _base_signal_count(request) > 32)
-	var no_effect := (effect_for_limit == BALLISTIC_SPLICER and not _signal_can_splice()) or (effect_for_limit == WORLD and not _world_stop_available())
-	if overloaded or no_effect:
+	var pending_effect := StringName(step.get("effect_id", step.get("module_id", "")))
+	var no_effect := (pending_effect == BALLISTIC_SPLICER and not _signal_can_splice()) or (pending_effect == WORLD and not _world_stop_available())
+	if no_effect:
 		cost = 0.0
 	if not is_starter_step and not is_paid_starter and not bool(step.get("replay", false)) and not circuit.try_spend_energy(cost, 100.0 if bool(_active_circuit_round.get("frenzy_debt", false)) else 0.0):
 		_circuit_abort_slot = int(step.get("slot", -1))
@@ -875,10 +874,7 @@ func _execute_next_circuit_step() -> void:
 		ACTIVE_NEURAL_SWITCH, COMBAT_SYNAPSE_SENSOR, RHYTHM_PULSER:
 			pass
 		RELAY_STARTER:
-			if overloaded:
-				_publish_weapon_overload()
-			else:
-				_append_base_signal_attacks(request)
+			_append_base_signal_attacks(request)
 		SMART_FIRE:
 			_circuit_modifiers[&"homing"] = int(_circuit_modifiers[&"homing"]) + 1
 			_add_signal_modifier(&"homing")
@@ -886,18 +882,9 @@ func _execute_next_circuit_step() -> void:
 			_circuit_modifiers[&"explosion"] = int(_circuit_modifiers[&"explosion"]) + 1
 			_add_signal_modifier(&"explosion")
 		TACTICAL_COPROCESSOR:
-			if _current_attack_trajectory_count() * 2 <= 32:
-				_duplicate_signal_attacks()
-			else:
-				circuit.add_energy(cost)
-				var events := get_node_or_null("/root/CombatEvents")
-				if events != null:
-					events.publish_notice(&"weapon_overload", "武器过载", Color(1.0, 0.55, 0.2), CombatNotice.Priority.NORMAL, 0.2, 0.6)
+			_duplicate_signal_attacks()
 		FISSION_CORE:
-			if overloaded:
-				_publish_weapon_overload()
-			else:
-				_fission_signal_attacks()
+			_fission_signal_attacks()
 		BALLISTIC_SPLICER:
 			if not no_effect:
 				_splice_signal_attacks()
@@ -935,11 +922,8 @@ func _execute_next_circuit_step() -> void:
 			_circuit_modifiers[&"echo"] = int(_circuit_modifiers.get(&"echo", 0)) + 1
 			_add_signal_modifier(&"echo")
 		CALAMITY_FLAME:
-			if not overloaded:
-				_circuit_calamity_layers += 1
-				_apply_calamity_signal()
-			else:
-				_publish_weapon_overload()
+			_circuit_calamity_layers += 1
+			_apply_calamity_signal()
 	_active_circuit_round["step_index"] = step_index + 1
 	_circuit_step_remaining += _circuit_step_interval
 
@@ -1129,20 +1113,6 @@ func _current_attack_trajectory_count() -> int:
 	return total
 
 
-func _calamity_projected_count() -> int:
-	var total := _current_attack_trajectory_count() + 1
-	for attack in _signal_attacks:
-		if not bool(attack.get("calamity_swing", false)):
-			total += 1
-	return total
-
-
-func _publish_weapon_overload() -> void:
-	var events := get_node_or_null("/root/CombatEvents")
-	if events != null:
-		events.publish_notice(&"weapon_overload", "武器过载", Color(1.0, 0.55, 0.2), CombatNotice.Priority.NORMAL, 0.2, 0.6)
-
-
 func _initialize_signal_attacks(request: Dictionary, dual_channel: bool, copy_first: bool) -> void:
 	_signal_attacks.clear()
 	var weapon := request.get("weapon") as WeaponComponentData
@@ -1195,11 +1165,6 @@ func _duplicate_signal_attacks() -> void:
 			cloned_groups[old_group] = _signal_group_serial
 		copy["group_key"] = int(cloned_groups[old_group])
 		_signal_attacks.append(copy)
-
-
-func _base_signal_count(request: Dictionary) -> int:
-	var weapon := request.get("weapon") as WeaponComponentData
-	return maxi(weapon.projectile_count, 1) if weapon != null and weapon.attack_kind == WeaponComponentData.AttackKind.SPREAD else 1
 
 
 func is_world_stopped() -> bool:
