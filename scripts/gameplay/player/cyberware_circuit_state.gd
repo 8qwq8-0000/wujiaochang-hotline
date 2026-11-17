@@ -7,7 +7,7 @@ func get_definition(module_id: StringName) -> CyberwareData:
 
 const INITIAL_SLOT_COUNT := 3
 const SLOT_COUNT := 6
-const DEFAULT_MAXIMUM_ENERGY := 80.0
+const DEFAULT_MAXIMUM_ENERGY := 60.0
 const ENERGY_REGEN_PER_SECOND := 40.0
 const MIRROR_MODULE_ID := &"instruction_mirror_synapse"
 const RELAY_STARTER_ID := &"relay_starter"
@@ -157,11 +157,6 @@ func compile_plan(start_module_id: StringName = &"") -> Dictionary:
 			replay_count += 1
 	gross_energy = 0.0
 	fixed_refund = 0.0
-	for step in steps:
-		var definition := _definitions.get(StringName(step.module_id)) as CyberwareData
-		if not bool(step.replay) and definition != null and (definition.circuit_kind != CyberwareData.CircuitKind.STARTER or StringName(step.module_id) == RELAY_STARTER_ID):
-			gross_energy += float(step.energy_cost)
-		fixed_refund += float(step.fixed_energy_refund) * float(step.scale)
 	if replay_count > 0:
 		var original := steps.duplicate(true)
 		for replay_index in replay_count:
@@ -172,7 +167,6 @@ func compile_plan(start_module_id: StringName = &"") -> Dictionary:
 				copied["scale"] = float(copied.scale)
 				copied["replay"] = true
 				copied["replay_index"] = replay_index
-				fixed_refund += float(copied.fixed_energy_refund) * float(copied.scale)
 				steps.append(copied)
 	var projected_energy := current_energy
 	var projected_stop_slot := -1
@@ -200,7 +194,15 @@ func compile_plan(start_module_id: StringName = &"") -> Dictionary:
 		if projected_energy + 0.0001 < cost:
 			projected_stop_slot = int(step.slot)
 			break
-		projected_energy = minf(projected_energy - cost + float(step.fixed_energy_refund) * float(step.scale), maximum_energy)
+		gross_energy += cost
+		var refund := float(step.fixed_energy_refund) * float(step.scale)
+		if StringName(step.effect_id) == &"momentum_recovery_tendon":
+			refund += 40.0
+		var after_cost := projected_energy - cost
+		projected_energy = minf(after_cost + refund, maximum_energy)
+		fixed_refund += projected_energy - after_cost
+		if StringName(step.effect_id) == &"momentum_recovery_tendon":
+			break
 		if StringName(step.effect_id) == &"axon_recycler":
 			remaining_discount = true
 	var net_energy := gross_energy - fixed_refund

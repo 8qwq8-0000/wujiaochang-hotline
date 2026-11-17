@@ -95,7 +95,7 @@ const TALENT_TERMS := {
 	&"distortion_gain": ["每轮射击只触发一次爆音。爆音不伤害子弹直接命中的目标，也不会再次触发攻击效果。"],
 	&"seamless_switch": ["发射反馈翻倍不包括首次有效命中的额外反馈。"],
 	&"overload_scream": ["冲击波的命中和击杀可触发事件启动器。"],
-	&"dual_channel_performance": ["副声道攻击享受复制效果，和主攻击共用每轮 32 次上限。"],
+	&"dual_channel_performance": ["副声道攻击享受复制效果，与主攻击共同接受后续义体修改。"],
 	&"encore_autopilot": ["狂热中反馈线性降至零。负能量会在狂热后正常恢复。"],
 }
 

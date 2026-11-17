@@ -69,7 +69,7 @@ func run_checks() -> void:
 	check(rest.is_open and paused and not player.is_input_enabled(), "Esc before drinking cannot skip mandatory rest")
 	check(run.has_persona_authorization(0) and not main.get_node("PauseSettingsMenu").visible, "Esc preserves authorization and does not open pause menu")
 	check(rest.choose_persona(TalentCoreController.DEEP_NINJA), "drink stages first-floor persona choice")
-	check(player.cyberware.circuit.slot_capacity == 4 and is_equal_approx(player.cyberware.circuit.maximum_energy, 100.0), "first drink opens a fourth slot and adds twenty energy capacity")
+	check(player.cyberware.circuit.slot_capacity == 4 and is_equal_approx(player.cyberware.circuit.maximum_energy, 80.0), "first drink opens a fourth slot and adds twenty energy capacity")
 	check(player.talent_core.current_persona_id == TalentCoreController.DEEP_NINJA, "drink activates selected persona")
 	check(player.talent_core.get_persona_level(TalentCoreController.DEEP_NINJA) == 1, "first drink installs level one")
 	check((persona_button.get_node("SelectionLine") as ColorRect).visible, "staged persona keeps a visible amber selection line")
@@ -77,7 +77,7 @@ func run_checks() -> void:
 	check(not rest.choose_persona(TalentCoreController.ROCK_VIGILANTE), "second drink is rejected on same floor")
 	check(rest.choose_talent(1, &"read_opening"), "staged persona allows talent preview")
 	check(rest.undo_choice(), "staged persona choice can be withdrawn")
-	check(player.cyberware.circuit.slot_capacity == 3 and is_equal_approx(player.cyberware.circuit.maximum_energy, 80.0), "undo restores initial circuit capacity and energy")
+	check(player.cyberware.circuit.slot_capacity == 3 and is_equal_approx(player.cyberware.circuit.maximum_energy, 60.0), "undo restores initial circuit capacity and energy")
 	check(player.talent_core.get_persona_level(TalentCoreController.DEEP_NINJA) == 0 and player.talent_core.get_talent_choice(TalentCoreController.DEEP_NINJA, 1).is_empty(), "undo restores level and talents")
 	check(run.has_persona_authorization(0) and rest.choose_persona(TalentCoreController.DEEP_NINJA), "withdrawn choice can be selected again")
 	check(rest.has_unselected_active_talents(), "newly installed persona reports its unlocked empty talent tier")
@@ -119,6 +119,9 @@ func run_checks() -> void:
 	rest._hide_talent_tooltip()
 	check(rest.close(), "rest may close while an unlocked talent is still empty")
 	check(not run.has_persona_authorization(0), "leaving commits the staged choice exactly once")
+	var hint_tray := main.get_node("ControlHintTray") as ControlHintTray
+	check(hint_tray._expanded and paused, "control hint pauses combat when it opens after the drink")
+	hint_tray._set_expanded(false)
 	check(not paused and player.is_input_enabled(), "closing an incomplete rest screen returns control")
 	var escape := InputEventAction.new()
 	escape.action = &"pause"
@@ -149,6 +152,8 @@ func run_checks() -> void:
 	await press_escape()
 	check(rest.is_open and paused and player.talent_core.current_persona_id == TalentCoreController.ROCK_VIGILANTE, "Esc cannot skip talent selection on subsequent floors")
 	rest.get("_close_button").pressed.emit()
+	check(hint_tray._expanded and paused, "control hint pauses the next floor after a drink")
+	hint_tray._set_expanded(false)
 	check(not rest.is_open and not paused and player.is_input_enabled(), "explicit leave button still returns control")
 	main.queue_free()
 	await process_frame

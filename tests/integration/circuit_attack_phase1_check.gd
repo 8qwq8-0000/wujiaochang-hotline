@@ -51,7 +51,7 @@ func run() -> void:
 	await _test_saved_event_queue(combined)
 	await _test_hit_event_chain()
 	await _test_replay_attacks()
-	await _test_attack_copy_cap()
+	await _test_attack_copy_without_cap()
 	_test_attack_order_changes_signal_shape()
 	print("Circuit attack phase one failures: ", failures)
 	root.get_node("GameSettings").quit_game(0 if failures == 0 else 1)
@@ -122,7 +122,7 @@ func _test_replay_attacks() -> void:
 	check(_projectiles().size() == 4, "original and replay each emit their own doubled attack")
 
 
-func _test_attack_copy_cap() -> void:
+func _test_attack_copy_without_cap() -> void:
 	for shot in _projectiles():
 		shot.queue_free()
 	await process_frame
@@ -133,10 +133,15 @@ func _test_attack_copy_cap() -> void:
 	player.cyberware.set_circuit_library_counts({&"active_neural_switch": 1, &"tactical_coprocessor": 5})
 	check(bool(player.cyberware.set_circuit_slots(PackedStringArray(["active_neural_switch", "tactical_coprocessor", "tactical_coprocessor", "tactical_coprocessor", "tactical_coprocessor", "tactical_coprocessor"])).get("ok", false)), "five coprocessors fit six slots")
 	player.cyberware.circuit.set_energy(140.0)
-	check(player.cyberware.submit_circuit_request(&"active"), "maximum copy circuit starts")
+	check(player.cyberware.submit_circuit_request(&"active"), "large copy circuit starts")
+	var request: Dictionary = player.cyberware._circuit_queues[&"active"]
+	var spread := (request.weapon as WeaponComponentData).duplicate(true) as WeaponComponentData
+	spread.attack_kind = WeaponComponentData.AttackKind.SPREAD
+	spread.projectile_count = 2
+	request["weapon"] = spread
 	for index in 9:
 		player.cyberware._physics_process(0.1)
-	check(_projectiles().size() == 32, "five multipliers create exactly 32 attacks")
+	check(_projectiles().size() == 64, "five multipliers can create more than 32 attacks")
 
 
 func _test_attack_order_changes_signal_shape() -> void:

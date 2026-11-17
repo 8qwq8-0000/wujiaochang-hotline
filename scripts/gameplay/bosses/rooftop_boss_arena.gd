@@ -458,7 +458,7 @@ func _on_player_died(_packet: DamagePacket) -> void:
 
 
 func _push_camera_to_altar() -> void:
-	var altar_center := Vector2(640.0, 280.0)
+	var altar_center := Vector2(640.0, 180.0)
 	var desired_offset := player.to_local(altar_center)
 	var tween := create_tween()
 	tween.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)

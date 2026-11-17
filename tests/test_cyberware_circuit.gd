@@ -56,7 +56,7 @@ func test_first_playable_definitions_have_locked_energy_values() -> void:
 func test_slots_require_owned_copies_and_known_definitions() -> void:
 	var circuit = _make_circuit()
 	assert_eq(circuit.slot_capacity, 3)
-	assert_eq(circuit.maximum_energy, 80.0)
+	assert_eq(circuit.maximum_energy, 60.0)
 	circuit.set_library_counts({"smart_fire": 1})
 	assert_true(bool(circuit.set_slots(PackedStringArray(["smart_fire"])).ok))
 	assert_eq(circuit.get_available_count(&"smart_fire"), 0)
@@ -67,7 +67,7 @@ func test_slots_require_owned_copies_and_known_definitions() -> void:
 	assert_true(circuit.set_slot_capacity(4))
 	circuit.expand_capacity()
 	assert_eq(circuit.get_slots().size(), 4)
-	assert_eq(circuit.maximum_energy, 100.0)
+	assert_eq(circuit.maximum_energy, 80.0)
 
 
 func test_circuit_expands_to_six_and_preserves_capacity_in_save() -> void:
@@ -76,7 +76,7 @@ func test_circuit_expands_to_six_and_preserves_capacity_in_save() -> void:
 	for capacity in [4, 5, 6]:
 		assert_true(circuit.set_slot_capacity(capacity))
 		circuit.expand_capacity()
-	assert_eq(circuit.maximum_energy, 140.0)
+	assert_eq(circuit.maximum_energy, 120.0)
 	assert_eq(circuit.get_slots().size(), 6)
 	assert_true(bool(circuit.set_slots(PackedStringArray(["active_neural_switch", "smart_fire", "smart_fire", "smart_fire", "smart_fire", "smart_fire"])).ok))
 	assert_false(circuit.set_slot_capacity(5))
@@ -156,7 +156,7 @@ func test_state_round_trip_preserves_library_slots_and_energy() -> void:
 	assert_eq(restored.get_library_counts(), circuit.get_library_counts())
 	assert_eq(restored.get_slots(), circuit.get_slots())
 	assert_eq(restored.current_energy, 57.5)
-	assert_eq(restored.maximum_energy, 100.0)
+	assert_eq(restored.maximum_energy, 80.0)
 	assert_eq(restored.slot_capacity, 4)
 	var before: Dictionary = restored.export_state()
 	assert_false(restored.import_state({
