@@ -18,6 +18,7 @@ const AMBER := CyberUITheme.ACCENT
 const POSTER_RED := Color("ff334d")
 const POSTER_ORANGE := Color("ff8a00")
 const POSTER_YELLOW := Color("ffe600")
+@export var feedback_url := ""
 var page := "home"
 var _canvas: Control
 var _content: Control
@@ -37,6 +38,7 @@ var _reveal_played := false
 var _reveal_tween: Tween
 var _continue: Button
 var _settings_button: Button
+var _feedback_button: Button
 var _settings_menu: PauseSettingsMenu
 var _status: Label
 var _busy := false
@@ -424,11 +426,14 @@ func show_home() -> void:
 	_home_title()
 	var valid: bool = store.load_profile()
 	var exists: bool = store.has_saved_profile()
-	_continue = _home_button("继续游戏", Rect2(0, 292, 392, 58), continue_game, true)
+	_continue = _home_button("继续游戏", Rect2(0, 276, 392, 48), continue_game, true)
 	_continue.disabled = not exists or not valid
-	var new_game := _home_button("开始新存档", Rect2(0, 360, 392, 58), show_difficulty)
-	_settings_button = _home_button("设置", Rect2(0, 428, 392, 58), _open_settings)
-	_home_button("退出游戏", Rect2(0, 496, 392, 58), func() -> void: get_node("/root/GameSettings").quit_game())
+	var new_game := _home_button("开始新存档", Rect2(0, 334, 392, 48), show_difficulty)
+	_settings_button = _home_button("设置", Rect2(0, 392, 392, 48), _open_settings)
+	_feedback_button = _home_button("意见反馈", Rect2(0, 450, 392, 48), _open_feedback)
+	_feedback_button.disabled = feedback_url.is_empty()
+	_feedback_button.tooltip_text = "在浏览器中打开反馈问卷" if not feedback_url.is_empty() else "反馈问卷尚未开放"
+	_home_button("退出游戏", Rect2(0, 508, 392, 48), func() -> void: get_node("/root/GameSettings").quit_game())
 	var summary := "暂无存档"
 	if exists and valid:
 		var profile: Dictionary = store.get_profile()
@@ -456,6 +461,17 @@ func _open_settings() -> void:
 func _on_settings_closed() -> void:
 	if is_instance_valid(_settings_button):
 		_settings_button.grab_focus()
+
+
+func _open_feedback() -> void:
+	if _busy or feedback_url.is_empty():
+		return
+	if _reveal_active:
+		_finish_home_reveal()
+	if OS.shell_open(feedback_url) != OK:
+		_status.text = "无法打开反馈问卷，请检查默认浏览器后重试。"
+		_status.add_theme_color_override("font_color", AMBER)
+	_feedback_button.grab_focus()
 
 
 func show_difficulty() -> void:
